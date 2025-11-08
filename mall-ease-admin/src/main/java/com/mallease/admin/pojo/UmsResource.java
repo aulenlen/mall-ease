@@ -2,7 +2,7 @@ package com.mallease.admin.pojo;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 后台资源表
@@ -20,7 +20,7 @@ public class UmsResource {
     /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 资源名称

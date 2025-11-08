@@ -6,7 +6,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.mallease.admin.dao.UmsAdminDao;
 import com.mallease.admin.pojo.UmsAdmin;
+import com.mallease.admin.pojo.UmsMenu;
 import com.mallease.admin.pojo.UmsResource;
+import com.mallease.admin.pojo.UmsRole;
+import com.mallease.admin.service.UmsAdminCacheService;
 import com.mallease.admin.service.UmsAdminService;
 import com.mallease.common.constant.AuthConstant;
 import com.mallease.common.dto.UserDto;
@@ -26,7 +29,9 @@ import java.util.List;
 @Slf4j
 public class UmsAdminServiceImpl implements UmsAdminService {
     @Autowired
-    private UmsAdminDao umsAdminDao;
+    private UmsAdminDao adminDao;
+    @Autowired
+    private UmsAdminCacheService cacheService;
 
     @Override
     public SaTokenInfo login(String username, String password) {
@@ -61,12 +66,33 @@ public class UmsAdminServiceImpl implements UmsAdminService {
     }
 
     private List<UmsResource> getResourceList(Long adminId) {
-        return umsAdminDao.getResourceList(adminId);
+        return adminDao.getResourceList(adminId);
     }
 
     @Override
     public UmsAdmin getUmsAdminByUsername(String username) {
-        return umsAdminDao.selectByUsername(username);
+        return adminDao.selectByUsername(username);
+    }
+
+    @Override
+    public UmsAdmin getCurrentAdmin() {
+        UserDto userDto = (UserDto) StpUtil.getSession().get(AuthConstant.STP_ADMIN_INFO);
+        UmsAdmin admin = cacheService.getAdmin(userDto.getId());
+        if (admin == null) {
+            admin = adminDao.selectByPrimaryKey(userDto.getId());
+            cacheService.setAdmin(admin);
+        }
+        return admin;
+    }
+
+    @Override
+    public List<UmsRole> getCurrentRoles(Long adminId) {
+        return adminDao.getRolesByAdminId(adminId);
+    }
+
+    @Override
+    public List<UmsMenu> getCurrentMenus(Long adminId) {
+        return adminDao.getMenusByAdminId(adminId);
     }
 
 

@@ -53,6 +53,38 @@
           AND res.id IS NOT NULL
         GROUP BY res.id
     </select>
+    <select id="getRolesByAdminId" resultType="com.mallease.admin.pojo.UmsRole">
+        SELECT
+            ur.*
+        FROM
+            ums_admin_role_relation rr
+                LEFT JOIN ums_role ur ON rr.role_id = ur.id
+        WHERE
+            rr.admin_id = #{adminId}
+        GROUP BY
+            ur.id
+    </select>
+    <select id="getMenusByAdminId" resultType="com.mallease.admin.pojo.UmsMenu">
+        SELECT
+            m.id id,
+            m.parent_id parentId,
+            m.create_time createTime,
+            m.title title,
+            m.LEVEL LEVEL,
+            m.sort sort,
+            m.NAME NAME,
+            m.icon icon,
+            m.hidden hidden
+        FROM
+            ums_admin_role_relation arr
+                LEFT JOIN ums_role ur ON arr.role_id = ur.id
+                LEFT JOIN ums_role_menu_relation mr ON mr.role_id = ur.id
+                LEFT JOIN ums_menu m ON m.id = mr.menu_id
+        WHERE
+            arr.admin_id = #{adminId}
+        GROUP BY
+            m.id
+    </select>
 
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from ums_admin

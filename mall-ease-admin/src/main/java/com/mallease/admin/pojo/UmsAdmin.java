@@ -2,7 +2,7 @@ package com.mallease.admin.pojo;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 后台用户表
@@ -50,12 +50,12 @@ public class UmsAdmin {
     /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 最后登录时间
      */
-    private LocalDateTime loginTime;
+    private Date loginTime;
 
     /**
      * 帐号启用状态：0->禁用；1->启用

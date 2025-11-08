@@ -2,6 +2,10 @@ package com.mallease.admin.service;
 
 import cn.dev33.satoken.stp.SaTokenInfo;
 import com.mallease.admin.pojo.UmsAdmin;
+import com.mallease.admin.pojo.UmsMenu;
+import com.mallease.admin.pojo.UmsRole;
+
+import java.util.List;
 
 /**
  * @author: Aulen
@@ -24,4 +28,25 @@ public interface UmsAdminService {
      * @return
      */
     UmsAdmin getUmsAdminByUsername(String username);
+
+    /**
+     * 获取登录用户信息
+     *
+     * @return
+     */
+    UmsAdmin getCurrentAdmin();
+
+    /**
+     * 获取登录用户的角色
+     * @param adminId
+     * @return
+     */
+    List<UmsRole> getCurrentRoles(Long adminId);
+
+    /**
+     * 获取登录用户的菜单
+     * @param adminId
+     * @return
+     */
+    List<UmsMenu> getCurrentMenus(Long adminId);
 }

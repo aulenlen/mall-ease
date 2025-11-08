@@ -1,7 +1,9 @@
 package com.mallease.admin.dao;
 
 import com.mallease.admin.pojo.UmsAdmin;
+import com.mallease.admin.pojo.UmsMenu;
 import com.mallease.admin.pojo.UmsResource;
+import com.mallease.admin.pojo.UmsRole;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -84,5 +86,19 @@ public interface UmsAdminDao {
      * @return
      */
     List<UmsResource> getResourceList(@Param("adminId") Long adminId);
+
+    /**
+     * 获取用户角色
+     * @param adminId
+     * @return
+     */
+    List<UmsRole> getRolesByAdminId(@Param("adminId") Long adminId);
+
+    /**
+     * 获取用户菜单
+     * @param adminId
+     * @return
+     */
+    List<UmsMenu> getMenusByAdminId(@Param("adminId") Long adminId);
 }
 
