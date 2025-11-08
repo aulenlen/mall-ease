@@ -1,9 +1,8 @@
 package com.mallease.common.service.impl;
 
 import com.mallease.common.service.RedisService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
@@ -15,10 +14,9 @@ import java.util.concurrent.TimeUnit;
  * @description: redis工具实现类
  * @create: 2025-11-08 01:05
  **/
-@Service
 public class RedisServiceImpl implements RedisService {
 
-    @Autowired
+    @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
     @Override
