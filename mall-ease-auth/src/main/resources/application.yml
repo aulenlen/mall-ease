@@ -1,7 +1,33 @@
 server:
-  port: 8081
+  port: 9054
 
 spring:
   application:
     name: mall-ease-auth
+  data:
+    redis:
+      host: 192.168.50.148
+      database: 0
+      port: 16379
+      password:
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
 
+sa-token:
+  token-name: Authorization
+  timeout: 604800
+  active-timeout: -1
+  is-concurrent: true
+  is-share: false
+  token-style: uuid
+  is-log: false
+  is-read-cookie: false
+  is-read-header: true
+  token-prefix: Bearer
+  jwt-secret-key: sa-secret-key123
+  is-print: false

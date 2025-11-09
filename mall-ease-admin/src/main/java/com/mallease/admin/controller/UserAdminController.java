@@ -1,20 +1,17 @@
 package com.mallease.admin.controller;
 
-import cn.dev33.satoken.stp.SaTokenInfo;
+import com.mallease.admin.dto.request.LoginRequestDto;
 import com.mallease.admin.dto.request.UmsAdminLoginRequest;
-import com.mallease.admin.pojo.UmsAdmin;
-import com.mallease.admin.pojo.UmsMenu;
-import com.mallease.admin.pojo.UmsRole;
-import com.mallease.admin.service.UmsAdminService;
+import com.mallease.admin.service.UserAdminService;
 import com.mallease.common.api.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,50 +25,21 @@ import java.util.Map;
 @Slf4j
 public class UserAdminController {
     @Autowired
-    private UmsAdminService adminService;
-    @Value("${sa-token.token-prefix}")
-    private String tokenHead;
+    private UserAdminService userAdminService;
 
     /**
-     * 登录后返回token
+     * 管理端后台登录
+     *
+     * @param request
+     * @return
      */
     @PostMapping("/login")
     public R login(@Validated @RequestBody UmsAdminLoginRequest request) {
-        SaTokenInfo tokenInfo = adminService.login(request.getUsername(), request.getPassword());
-        if (tokenInfo == null) {
-            return R.validateFailed("用户名或密码错误");
-        }
-        Map<String, String> tokenMap = new HashMap<>();
-        tokenMap.put("token", tokenInfo.getTokenValue());
-        tokenMap.put("tokenHead", tokenHead + " ");
-        return R.success(tokenMap);
-    }
-
-    /**
-     * 获取登录用户信息
-     * @return
-     */
-    @GetMapping("/info")
-    public R info() {
-        UmsAdmin admin = adminService.getCurrentAdmin();
-        List<UmsRole> roleList = adminService.getCurrentRoles(admin.getId());
-        List<String> roles = roleList.stream().map(UmsRole::getName).toList();
-        Map<String, Object> data = new HashMap<>();
-        List<UmsMenu> menus = adminService.getCurrentMenus(admin.getId());
-        data.put("username", admin.getUsername());
-        data.put("icon", admin.getIcon());
-        data.put("roles",roles);
-        data.put("menus",menus);
-        return R.success(data);
-    }
-
-    /**
-     * 登出功能
-     * @return
-     */
-    @PostMapping("/logout")
-    public R logout(){
-        adminService.logout();
-        return R.success(null);
+        LoginRequestDto adminDto = LoginRequestDto.builder()
+                .username(request.getUsername())
+                .password(request.getPassword())
+                .userType("admin").build();
+        Map<String, String> token = userAdminService.login(adminDto);  // 调用Service
+        return R.success(token);
     }
 }
