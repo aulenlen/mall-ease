@@ -49,4 +49,9 @@ public interface UmsAdminService {
      * @return
      */
     List<UmsMenu> getCurrentMenus(Long adminId);
+
+    /**
+     * 用户登出
+     */
+    void logout();
 }

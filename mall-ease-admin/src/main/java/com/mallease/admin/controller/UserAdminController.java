@@ -26,7 +26,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/admin")
 @Slf4j
-@CrossOrigin
 public class UserAdminController {
     @Autowired
     private UmsAdminService adminService;
@@ -64,5 +63,15 @@ public class UserAdminController {
         data.put("roles",roles);
         data.put("menus",menus);
         return R.success(data);
+    }
+
+    /**
+     * 登出功能
+     * @return
+     */
+    @PostMapping("/logout")
+    public R logout(){
+        adminService.logout();
+        return R.success(null);
     }
 }

@@ -24,6 +24,12 @@ spring:
       port: 16379 # Redis服务器连接端口
       password:  # Redis服务器连接密码（默认为空）
       timeout: 3000ms # 连接超时时间（毫秒）
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
 mybatis:
   mapper-locations: classpath:mybatis/mapper/*.xml
 

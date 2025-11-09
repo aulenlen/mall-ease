@@ -95,5 +95,12 @@ public class UmsAdminServiceImpl implements UmsAdminService {
         return adminDao.getMenusByAdminId(adminId);
     }
 
+    @Override
+    public void logout() {
+        UserDto userDto = (UserDto)StpUtil.getSession().get(AuthConstant.STP_ADMIN_INFO);
+        cacheService.delAdmin(userDto.getId());
+        StpUtil.logout();
+    }
+
 
 }
