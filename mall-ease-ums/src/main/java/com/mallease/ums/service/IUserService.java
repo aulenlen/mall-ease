@@ -1,8 +1,6 @@
 package com.mallease.ums.service;
 
-import com.mallease.ums.pojo.UmsAdmin;
-import com.mallease.ums.pojo.UmsMember;
-import com.mallease.ums.pojo.UmsResource;
+import com.mallease.ums.pojo.*;
 
 import java.util.List;
 
@@ -36,4 +34,25 @@ public interface IUserService {
      * 根据ID获取权限
      */
     List<UmsResource> getResourceList(Long adminId);
+
+    /**
+     * 获取登录用户信息
+     *
+     * @return
+     */
+    UmsAdmin getCurrentAdmin();
+
+    /**
+     * 获取登录用户的菜单
+     * @param adminId
+     * @return
+     */
+    List<UmsMenu> getCurrentMenus(Long adminId);
+
+    /**
+     * 获取登录用户的角色
+     * @param adminId
+     * @return
+     */
+    List<UmsRole> getCurrentRoles(Long adminId);
 }

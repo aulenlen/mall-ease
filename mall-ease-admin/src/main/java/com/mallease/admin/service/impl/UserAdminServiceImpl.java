@@ -2,6 +2,7 @@ package com.mallease.admin.service.impl;
 
 import com.mallease.admin.dto.request.LoginRequestDto;
 import com.mallease.admin.feign.AuthServiceFeignClient;
+import com.mallease.admin.feign.UmsServiceFeignClient;
 import com.mallease.admin.service.UserAdminService;
 import com.mallease.common.api.R;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,8 @@ public class UserAdminServiceImpl implements UserAdminService {
 
     @Autowired
     private AuthServiceFeignClient authServiceFeignClient;
+    @Autowired
+    private UmsServiceFeignClient umsServiceFeignClient;
 
     @Override
     public Map<String, String> login(LoginRequestDto loginRequestDto) {
@@ -27,5 +30,11 @@ public class UserAdminServiceImpl implements UserAdminService {
             throw new RuntimeException("登录失败");
         }
         return result.getData();
+    }
+
+    @Override
+    public Map<String, Object> getCurrentAdminInfo() {
+        Map<String, Object> info = umsServiceFeignClient.getCurrentAdmin().getData();
+        return info;
     }
 }

@@ -1,4 +1,4 @@
-package com.mallease.admin.pojo;
+package com.mallease.ums.pojo;
 
 import lombok.Data;
 

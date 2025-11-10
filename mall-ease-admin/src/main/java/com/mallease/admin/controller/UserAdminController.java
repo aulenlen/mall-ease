@@ -7,10 +7,7 @@ import com.mallease.common.api.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -41,5 +38,16 @@ public class UserAdminController {
                 .userType("admin").build();
         Map<String, String> token = userAdminService.login(adminDto);  // 调用Service
         return R.success(token);
+    }
+
+    /**
+     * 获取当前登录用户信息
+     *
+     * @return
+     */
+    @GetMapping("/info")
+    public R info() {
+        Map<String, Object> currentAdminInfo = userAdminService.getCurrentAdminInfo();
+        return R.success(currentAdminInfo);
     }
 }

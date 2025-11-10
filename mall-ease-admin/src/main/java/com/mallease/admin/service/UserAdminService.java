@@ -12,8 +12,15 @@ import java.util.Map;
 public interface UserAdminService {
     /**
      * 管理员登录
+     *
      * @param loginRequestDto 登录请求DTO
      * @return token信息
      */
     Map<String, String> login(LoginRequestDto loginRequestDto);
+
+    /**
+     * 获取当前登录用户信息
+     * @return
+     */
+    Map<String, Object> getCurrentAdminInfo();
 }
