@@ -1,6 +1,5 @@
 package com.mallease.admin.interceptor;
 
-import cn.dev33.satoken.stp.StpUtil;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import jakarta.servlet.http.HttpServletRequest;
