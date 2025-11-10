@@ -1,0 +1,81 @@
+package com.mallease.pms.dao;
+
+import com.mallease.pms.pojo.PmsProductLadder;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+/**
+ * 产品阶梯价格表 Mapper 接口
+ *
+ * @author: Aulen
+ * @create: 2025-11-09
+ */
+@Mapper
+public interface PmsProductLadderDao {
+    /**
+     * 根据主键删除
+     *
+     * @param id 主键ID
+     * @return 影响行数
+     */
+    int deleteByPrimaryKey(Long id);
+
+    /**
+     * 插入记录
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int insert(PmsProductLadder record);
+
+    /**
+     * 选择性插入记录
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int insertSelective(PmsProductLadder record);
+
+    /**
+     * 根据主键查询
+     *
+     * @param id 主键ID
+     * @return 记录
+     */
+    PmsProductLadder selectByPrimaryKey(Long id);
+
+    /**
+     * 根据主键选择性更新
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int updateByPrimaryKeySelective(PmsProductLadder record);
+
+    /**
+     * 根据主键更新
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int updateByPrimaryKey(PmsProductLadder record);
+
+    /**
+     * 根据产品ID查询
+     *
+     * @param productId 产品ID
+     * @return 记录列表
+     */
+    List<PmsProductLadder> selectByProductId(@Param("productId") Long productId);
+
+    /**
+     * 根据产品ID删除
+     *
+     * @param productId 产品ID
+     * @return 影响行数
+     */
+    int deleteByProductId(@Param("productId") Long productId);
+}
+

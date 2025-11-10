@@ -1,0 +1,96 @@
+package com.mallease.pms.dao;
+
+import com.mallease.pms.pojo.PmsProduct;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+/**
+ * 商品信息 Mapper 接口
+ *
+ * @author: Aulen
+ * @create: 2025-11-09
+ */
+@Mapper
+public interface PmsProductDao {
+    /**
+     * 根据主键删除
+     *
+     * @param id 主键ID
+     * @return 影响行数
+     */
+    int deleteByPrimaryKey(Long id);
+
+    /**
+     * 插入记录
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int insert(PmsProduct record);
+
+    /**
+     * 选择性插入记录
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int insertSelective(PmsProduct record);
+
+    /**
+     * 根据主键查询
+     *
+     * @param id 主键ID
+     * @return 记录
+     */
+    PmsProduct selectByPrimaryKey(Long id);
+
+    /**
+     * 根据主键选择性更新
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int updateByPrimaryKeySelective(PmsProduct record);
+
+    /**
+     * 根据主键更新
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int updateByPrimaryKey(PmsProduct record);
+
+    /**
+     * 根据品牌ID查询
+     *
+     * @param brandId 品牌ID
+     * @return 记录列表
+     */
+    List<PmsProduct> selectByBrandId(@Param("brandId") Long brandId);
+
+    /**
+     * 根据产品分类ID查询
+     *
+     * @param productCategoryId 产品分类ID
+     * @return 记录列表
+     */
+    List<PmsProduct> selectByProductCategoryId(@Param("productCategoryId") Long productCategoryId);
+
+    /**
+     * 根据上架状态查询
+     *
+     * @param publishStatus 上架状态：0->下架；1->上架
+     * @return 记录列表
+     */
+    List<PmsProduct> selectByPublishStatus(@Param("publishStatus") Integer publishStatus);
+
+    /**
+     * 查询所有记录
+     *
+     * @return 记录列表
+     */
+    List<PmsProduct> selectAll();
+}
+
