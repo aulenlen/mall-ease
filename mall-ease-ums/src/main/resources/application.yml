@@ -1,6 +1,9 @@
 server:
   port: 9053
 
+url:
+  path: mall-ease-admin
+
 spring:
   application:
     name: mall-ease-ums

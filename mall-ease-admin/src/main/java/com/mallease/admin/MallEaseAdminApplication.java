@@ -13,7 +13,6 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients
-@MapperScan("com.mallease.admin.dao")
 @ComponentScan(basePackages = {"com.mallease.admin", "com.mallease.common"})
 public class MallEaseAdminApplication {
 

@@ -5,6 +5,21 @@ spring:
   cloud:
     gateway:
       routes:
+        # 使用正则表达式匹配多个路径模式的 brand 请求
+        - id: mall-ease-brand
+          uri: lb://mall-ease-pms
+          predicates:
+            - Path=/mall-ease-{segment}/brand/**
+          filters:
+            - StripPrefix=1
+        # pms 模块的标准路由
+        - id: mall-ease-pms
+          uri: lb://mall-ease-pms
+          predicates:
+            - Path=/mall-ease-pms/**
+          filters:
+            - StripPrefix=1
+        # admin 模块的路由
         - id: mall-ease-admin
           uri: lb://mall-ease-admin
           predicates:
