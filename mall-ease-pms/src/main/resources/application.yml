@@ -1,7 +1,11 @@
 server:
-  port: 8086
+  port: 9055
 
 spring:
-  application:
-    name: mall-ease-pms
+  datasource:
+    url: jdbc:mysql://192.168.50.148:13306/mall-ease?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: 123456
 
+mybatis:
+  mapper-locations: classpath:mybatis/mapper/*.xml
