@@ -19,7 +19,6 @@
 
     <modules>
         <module>mall-ease-auth</module>
-        <module>mall-ease-admin</module>
         <module>mall-ease-portal</module>
         <module>mall-ease-common</module>
         <module>mall-ease-gateway</module>

@@ -20,7 +20,7 @@ import java.util.Map;
  * @create: 2025-11-09 21:40
  **/
 @RestController
-@RequestMapping("/ums/user")
+@RequestMapping("/ums")
 @Slf4j
 public class UserController {
     @Autowired
@@ -30,7 +30,7 @@ public class UserController {
      * 示例：获取当前登录用户信息
      * 当admin模块通过Feign调用此接口时，可以通过StpUtil获取当前登录用户信息
      */
-    @GetMapping("/current")
+    @GetMapping("/admin/info")
     public R<Map<String, Object>> getCurrentAdmin() {
         try {
             // 从session中获取管理员信息

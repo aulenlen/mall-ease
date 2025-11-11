@@ -4,6 +4,8 @@ import cn.dev33.satoken.stp.SaTokenInfo;
 import com.mallease.auth.dto.LoginRequest;
 import com.mallease.auth.service.AuthService;
 import com.mallease.common.api.R;
+import com.mallease.common.api.ResultCode;
+import com.mallease.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,7 +57,11 @@ public class AuthController {
     @PostMapping("/admin/login")
     public R<Map<String, String>> adminLogin(@Validated @RequestBody LoginRequest request) {
         request.setUserType("admin");
-        return login(request);
+        R<Map<String, String>> R = login(request);
+        if (R == null || !ResultCode.SUCCESS.getCode().equals(R.getCode())) {
+            throw new ApiException(R != null ? R.getMessage() : "登录失败");
+        }
+        return R;
     }
 
     /**

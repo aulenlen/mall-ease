@@ -19,19 +19,19 @@ import java.util.List;
 @FeignClient(name = "mall-ease-ums")
 public interface UmsServiceFeignClient {
     // 管理员相关方法
-    @GetMapping("/ums/user/admin/username/{username}")
+    @GetMapping("/ums/admin/username/{username}")
     R<UmsAdminDto> getAdminByUsername(@PathVariable("username") String username);
 
-    @GetMapping("/ums/user/admin/{id}")
+    @GetMapping("/ums/admin/{id}")
     R<UmsAdminDto> getAdminById(@PathVariable("id") Long id);
 
     // 会员相关方法
-    @GetMapping("/ums/user/member/username/{username}")
+    @GetMapping("/ums/member/username/{username}")
     R<UmsMemberDto> getMemberByUsername(@PathVariable("username") String username);
 
-    @GetMapping("/ums/user/member/{id}")
+    @GetMapping("/ums/member/{id}")
     R<UmsMemberDto> getMemberById(@PathVariable("id") Long id);
 
-    @GetMapping("/ums/user/admin/resource/{adminId}")
+    @GetMapping("/ums/admin/resource/{adminId}")
     R<List<UmsResourceDto>> getResourceList(@PathVariable Long adminId);
 }

@@ -8,7 +8,6 @@ import cn.dev33.satoken.reactor.filter.SaReactorFilter;
 import cn.dev33.satoken.router.SaHttpMethod;
 import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpUtil;
-import cn.dev33.satoken.util.SaResult;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import com.mallease.common.api.R;
@@ -43,7 +42,7 @@ public class SaTokenConfig {
     @Bean
     public SaReactorFilter getSaReactorFilter() {
         List<String> list = new ArrayList<>();
-        list.add("/mall-ease-admin/admin/login");
+        list.add("/mall-ease-auth/auth/admin/login");
         return new SaReactorFilter()
                 // 拦截地址
                 .addInclude("/**")    /* 拦截全部path */
@@ -55,7 +54,7 @@ public class SaTokenConfig {
                     // 对于OPTIONS预检请求直接放行
                     SaRouter.match(SaHttpMethod.OPTIONS).stop();
                     // 登录校验 -- 拦截所有路由，并排除/user/doLogin 用于开放登录
-                    SaRouter.match("/**", "/mall-ease-admin/admin/login", r -> StpUtil.checkLogin());
+                    SaRouter.match("/**", "/mall-ease-auth/auth/admin/login", r -> StpUtil.checkLogin());
                     // 获取Redis中缓存的各个接口路径所需权限规则
                     Map<Object, Object> map = redisService.hGetAll(AuthConstant.PATH_RESOURCE_MAP);
                     // 获取到访问当前接口所需权限（一个路径对应多个资源时，拥有任意一个资源都可以访问该路径）
