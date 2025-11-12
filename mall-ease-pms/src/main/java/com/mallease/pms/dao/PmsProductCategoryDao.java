@@ -84,5 +84,24 @@ public interface PmsProductCategoryDao {
      * @return 记录列表
      */
     List<PmsProductCategory> selectAll();
+
+    /**
+     * 批量更新导航栏显示状态
+     *
+     * @param ids       分类ID列表
+     * @param navStatus 导航栏显示状态（0->不显示；1->显示）
+     * @return 更新的记录数
+     */
+    int updateNavStatusBatch(@Param("ids") List<Long> ids, @Param("navStatus") Integer navStatus);
+
+    /**
+     * 批量更新显示状态
+     *
+     * @param ids        分类ID列表
+     * @param showStatus 显示状态（0->不显示；1->显示）
+     * @return 更新的记录数
+     */
+    int updateShowStatusBatch(@Param("ids") List<Long> ids, @Param("showStatus") Integer showStatus);
 }
+
 

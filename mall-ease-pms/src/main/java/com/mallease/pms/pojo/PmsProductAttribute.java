@@ -71,3 +71,8 @@ public class PmsProductAttribute {
     private Integer type;
 }
 
+
+
+
+
+

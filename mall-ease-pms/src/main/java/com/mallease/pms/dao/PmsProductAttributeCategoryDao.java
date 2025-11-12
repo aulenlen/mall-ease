@@ -67,5 +67,11 @@ public interface PmsProductAttributeCategoryDao {
      * @return 记录列表
      */
     List<PmsProductAttributeCategory> selectAll();
+
 }
+
+
+
+
+
 

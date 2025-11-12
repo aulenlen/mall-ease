@@ -198,5 +198,24 @@
             description = #{description,jdbcType=LONGVARCHAR}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <update id="updateNavStatusBatch">
+        update pms_product_category
+        set nav_status = #{navStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <update id="updateShowStatusBatch">
+        update pms_product_category
+        set show_status = #{showStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
 </mapper>
+
 

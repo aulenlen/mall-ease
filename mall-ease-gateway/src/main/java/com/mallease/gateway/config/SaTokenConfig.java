@@ -78,7 +78,7 @@ public class SaTokenConfig {
                         }
                     }
                     // 接口需要权限时鉴权
-                    if(CollUtil.isNotEmpty(needPermissionList)){
+                    if (CollUtil.isNotEmpty(needPermissionList)) {
                         SaRouter.match(requestPath, r -> StpUtil.checkPermissionOr(Convert.toStrArray(needPermissionList)));
                     }
                 })

@@ -1,6 +1,7 @@
 package com.mallease.gateway.config;
 
 import cn.dev33.satoken.stp.StpInterface;
+import cn.dev33.satoken.stp.StpUtil;
 import com.mallease.common.constant.AuthConstant;
 import com.mallease.common.dto.UserDto;
 import org.springframework.stereotype.Component;
@@ -23,7 +24,7 @@ public class StpInterfaceImpl implements StpInterface {
     public List<String> getPermissionList(Object loginId, String loginType) {
         // 从 session 中获取用户信息
         try {
-            Object adminInfoObj = cn.dev33.satoken.stp.StpUtil.getSession().get(AuthConstant.STP_ADMIN_INFO);
+            Object adminInfoObj = StpUtil.getSession().get(AuthConstant.STP_ADMIN_INFO);
             if (adminInfoObj instanceof UserDto) {
                 UserDto adminInfo = (UserDto) adminInfoObj;
                 List<String> permissionList = adminInfo.getPermissionList();
