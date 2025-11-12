@@ -8,8 +8,10 @@ import cn.dev33.satoken.reactor.filter.SaReactorFilter;
 import cn.dev33.satoken.router.SaHttpMethod;
 import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpUtil;
+import cn.dev33.satoken.util.SaResult;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.common.api.R;
 import com.mallease.common.constant.AuthConstant;
 import com.mallease.common.service.RedisService;
@@ -17,10 +19,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,23 +88,52 @@ public class SaTokenConfig {
     /**
      * 自定义异常处理
      */
-    private R handleException(Throwable e) {
+    private Object handleException(Throwable e) {
         e.printStackTrace();
-        log.error(e.getMessage());
+        log.error("网关异常处理: {}", e.getMessage(), e);
+
         //设置错误返回格式为JSON
         ServerWebExchange exchange = SaReactorSyncHolder.getContext();
+        if (exchange == null) {
+            log.error("无法获取 ServerWebExchange 上下文");
+            return R.failed("系统异常");
+        }
+
         HttpHeaders headers = exchange.getResponse().getHeaders();
-        headers.set("Content-Type", "application/json; charset=utf-8");
+        headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Access-Control-Allow-Origin", "*");
         headers.set("Cache-Control", "no-cache");
-        R result = null;
+
+        R result;
+        HttpStatus status;
+
         if (e instanceof NotLoginException) {
             result = R.unauthorized(null);
+            status = HttpStatus.UNAUTHORIZED;
         } else if (e instanceof NotPermissionException) {
             result = R.forbidden(null);
+            status = HttpStatus.FORBIDDEN;
         } else {
             result = R.failed(e.getMessage());
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
         }
+
+        // 设置响应状态码
+        exchange.getResponse().setStatusCode(status);
+
+        // 手动写入响应体
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(result);
+            DataBufferFactory bufferFactory = exchange.getResponse().bufferFactory();
+            DataBuffer buffer = bufferFactory.wrap(json.getBytes("UTF-8"));
+
+            // 异步写入响应体
+            exchange.getResponse().writeWith(Mono.just(buffer)).subscribe();
+        } catch (Exception ex) {
+            log.error("序列化响应失败", ex);
+        }
+
         return result;
     }
 }

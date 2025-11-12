@@ -1,6 +1,9 @@
 package com.mallease.pms.pojo;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 品牌表
@@ -9,6 +12,9 @@ import lombok.Data;
  * @create: 2025-11-09
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PmsBrand {
     /**
      * 主键ID

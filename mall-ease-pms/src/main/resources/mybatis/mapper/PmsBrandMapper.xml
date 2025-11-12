@@ -39,6 +39,18 @@
         where show_status = #{showStatus,jdbcType=INTEGER}
     </select>
 
+    <select id="list" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_brand
+        <where>
+            <if test="keyword != null and keyword != ''">
+                name like concat('%', #{keyword,jdbcType=VARCHAR}, '%')
+            </if>
+        </where>
+        order by sort asc
+    </select>
+
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from pms_brand
         where id = #{id,jdbcType=BIGINT}
@@ -179,6 +191,24 @@
             big_pic = #{bigPic,jdbcType=VARCHAR},
             brand_story = #{brandStory,jdbcType=LONGVARCHAR}
         where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <update id="updateShowStatusBatch">
+        update pms_brand
+        set show_status = #{showStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <update id="updateFactoryStatusBatch">
+        update pms_brand
+        set factory_status = #{factoryStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
     </update>
 </mapper>
 

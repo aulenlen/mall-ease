@@ -76,5 +76,31 @@ public interface PmsBrandDao {
      * @return 记录列表
      */
     List<PmsBrand> selectByShowStatus(@Param("showStatus") Integer showStatus);
+
+    /**
+     * 查询品牌列表（支持模糊搜索品牌名）
+     *
+     * @param keyword 品牌名关键字（可选，为空时查询所有）
+     * @return 记录列表
+     */
+    List<PmsBrand> list(@Param("keyword") String keyword);
+
+    /**
+     * 批量更新品牌显示状态
+     *
+     * @param ids        品牌ID列表
+     * @param showStatus 显示状态（0->隐藏；1->显示）
+     * @return 影响行数
+     */
+    int updateShowStatusBatch(@Param("ids") List<Long> ids, @Param("showStatus") Integer showStatus);
+
+    /**
+     * 批量更新品牌厂家制造商状态
+     *
+     * @param ids            品牌ID列表
+     * @param factoryStatus 厂家制造商状态（0->不是；1->是）
+     * @return 影响行数
+     */
+    int updateFactoryStatusBatch(@Param("ids") List<Long> ids, @Param("factoryStatus") Integer factoryStatus);
 }
 
