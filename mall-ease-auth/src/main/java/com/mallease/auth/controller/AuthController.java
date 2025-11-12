@@ -1,7 +1,7 @@
 package com.mallease.auth.controller;
 
 import cn.dev33.satoken.stp.SaTokenInfo;
-import com.mallease.auth.dto.LoginRequest;
+import com.mallease.auth.dto.request.LoginRequest;
 import com.mallease.auth.service.AuthService;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
@@ -9,7 +9,6 @@ import com.mallease.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

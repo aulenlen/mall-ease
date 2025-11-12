@@ -1,7 +1,7 @@
 package com.mallease.auth.service;
 
 import cn.dev33.satoken.stp.SaTokenInfo;
-import com.mallease.auth.dto.LoginRequest;
+import com.mallease.auth.dto.request.LoginRequest;
 
 /**
  * @author: Aulen

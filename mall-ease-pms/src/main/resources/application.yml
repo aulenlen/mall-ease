@@ -9,3 +9,16 @@ spring:
 
 mybatis:
   mapper-locations: classpath:mybatis/mapper/*.xml
+
+minio:
+  endpoint: http://192.168.50.148:19000  # 修改为新的端口
+  bucketName: mall-ease
+  accessKey: minioadmin
+  secretKey: minioadmin
+
+# PageHelper 分页插件配置
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql

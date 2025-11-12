@@ -43,6 +43,7 @@
         <pagehelper.version>6.1.0</pagehelper.version>
         <druid.version>1.2.9</druid.version>
         <sa-token.version>1.37.0</sa-token.version>
+        <minio.version>8.4.5</minio.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -116,6 +117,12 @@
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
                 <version>${mysql-connector.version}</version>
+            </dependency>
+            <!--MinIO JAVA SDK-->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
             </dependency>
             <!-- Sa-Token 权限认证（Reactor响应式集成） -->
             <dependency>

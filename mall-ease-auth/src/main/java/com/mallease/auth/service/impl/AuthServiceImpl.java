@@ -4,7 +4,7 @@ import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
-import com.mallease.auth.dto.LoginRequest;
+import com.mallease.auth.dto.request.LoginRequest;
 import com.mallease.auth.dto.UmsAdminDto;
 import com.mallease.auth.dto.UmsMemberDto;
 import com.mallease.auth.dto.UmsResourceDto;

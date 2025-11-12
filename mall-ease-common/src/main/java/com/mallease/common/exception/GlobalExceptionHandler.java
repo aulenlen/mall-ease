@@ -60,6 +60,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = Exception.class)
     public R handleException(Exception e) {
         log.error("系统异常", e);
-        return R.failed(e.getMessage());
+        return R.failed("系统异常，请联系管理员");
     }
 }

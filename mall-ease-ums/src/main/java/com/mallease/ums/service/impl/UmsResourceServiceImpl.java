@@ -24,14 +24,12 @@ public class UmsResourceServiceImpl implements UmsResourceService {
     private RedisService redisService;
     @Autowired
     private UmsResourceDao resourceDao;
-    @Value("${url.path}")
-    private String url;
 
     @Override
     public Map<String, String> initResource() {
         List<UmsResource> resourceList = resourceDao.selectAll();
         HashMap<String, String> resourceMap = new HashMap<>(resourceList.size());
-        resourceList.forEach(resource -> resourceMap.put("/" + url + resource.getUrl(), resource.getId() + ":" + resource.getName()));
+        resourceList.forEach(resource -> resourceMap.put(resource.getUrl(), resource.getId() + ":" + resource.getName()));
         redisService.del(AuthConstant.PATH_RESOURCE_MAP);
         redisService.hSetAll(AuthConstant.PATH_RESOURCE_MAP, resourceMap);
         return resourceMap;
