@@ -25,6 +25,7 @@
         <module>mall-ease-monitor</module>
         <module>mall-ease-oms</module>
         <module>mall-ease-pms</module>
+        <module>mall-ease-cms</module>
         <module>mall-ease-search</module>
         <module>mall-ease-sms</module>
         <module>mall-ease-ums</module>

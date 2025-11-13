@@ -1,0 +1,16 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: mall-ease-cms
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.50.148:8848
+        namespace: public
+        group: DEFAULT_GROUP
+      config:
+        server-addr: 192.168.50.148:8848
+        namespace: public
+        group: DEFAULT_GROUP
+        file-extension: yaml

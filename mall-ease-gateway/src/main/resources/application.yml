@@ -12,6 +12,13 @@ spring:
             - Path=/mall-ease-pms/**
           filters:
             - StripPrefix=1
+        # cms 模块的路由（内容管理服务）
+        - id: mall-ease-cms
+          uri: lb://mall-ease-cms
+          predicates:
+            - Path=/mall-ease-cms/**
+          filters:
+            - StripPrefix=1
         # auth 模块的路由（认证服务）
         - id: mall-ease-auth
           uri: lb://mall-ease-auth
