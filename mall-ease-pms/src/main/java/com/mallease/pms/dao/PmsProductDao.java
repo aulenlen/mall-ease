@@ -119,6 +119,36 @@ public interface PmsProductDao {
      * @return 更新的记录数
      */
     int updatePublishStatusBatch(@Param("ids") List<Long> ids, @Param("publishStatus") Integer publishStatus);
+
+    /**
+     * 批量更新商品新品状态
+     *
+     * @param ids 商品ID列表
+     * @param newStatus 新品状态：0->不是新品；1->新品
+     * @return 更新的记录数
+     */
+    int updateNewStatusBatch(@Param("ids") List<Long> ids, @Param("newStatus") Integer newStatus);
+
+    /**
+     * 批量更新商品推荐状态
+     *
+     * @param ids 商品ID列表
+     * @param recommendStatus 推荐状态：0->不推荐；1->推荐
+     * @return 更新的记录数
+     */
+    int updateRecommendStatusBatch(@Param("ids") List<Long> ids, @Param("recommendStatus") Integer recommendStatus);
+
+    /**
+     * 批量修改商品审核状态
+     *
+     * @param ids 商品ID列表
+     * @param verifyStatus 审核状态：0->未审核；1->审核通过
+     * @param detail 审核详情
+     * @return 更新的记录数
+     */
+    int updateVerifyStatusBatch(@Param("ids") List<Long> ids,
+                                @Param("verifyStatus") Integer verifyStatus,
+                                @Param("detail") String detail);
 }
 
 

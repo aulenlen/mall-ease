@@ -125,6 +125,36 @@
         </foreach>
     </update>
 
+    <update id="updateNewStatusBatch">
+        update pms_product
+        set new_status = #{newStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <update id="updateRecommendStatusBatch">
+        update pms_product
+        set recommand_status = #{recommendStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <!-- 批量修改商品审核状态
+         注意：detail参数存储到note字段。如果数据库有专门的verify_detail字段，请修改SQL -->
+    <update id="updateVerifyStatusBatch">
+        update pms_product
+        set verify_status = #{verifyStatus,jdbcType=INTEGER},
+            note = #{detail,jdbcType=VARCHAR}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from pms_product
         where id = #{id,jdbcType=BIGINT}

@@ -55,5 +55,58 @@ public class PmsProductController {
         }
         return R.failed(ResultCode.FAILED);
     }
+
+    /**
+     * 批量更新商品新品状态
+     *
+     * @param ids 商品ID列表（数组格式）
+     * @param newStatus 新品状态：0->不是新品；1->新品
+     * @return 更新结果
+     */
+    @PostMapping("/update/newStatus")
+    public R<Integer> updateNewStatus(@RequestParam(value = "ids") List<Long> ids,
+                                      @RequestParam(value = "newStatus") Integer newStatus) {
+        int count = productService.updateNewStatusBatch(ids, newStatus);
+        if (count > 0) {
+            return R.success(count);
+        }
+        return R.failed(ResultCode.FAILED);
+    }
+
+    /**
+     * 批量更新商品推荐状态
+     *
+     * @param ids 商品ID列表（数组格式）
+     * @param recommendStatus 推荐状态：0->不推荐；1->推荐
+     * @return 更新结果
+     */
+    @PostMapping("/update/recommendStatus")
+    public R<Integer> updateRecommendStatus(@RequestParam(value = "ids") List<Long> ids,
+                                            @RequestParam(value = "recommendStatus") Integer recommendStatus) {
+        int count = productService.updateRecommendStatusBatch(ids, recommendStatus);
+        if (count > 0) {
+            return R.success(count);
+        }
+        return R.failed(ResultCode.FAILED);
+    }
+
+    /**
+     * 批量修改商品审核状态
+     *
+     * @param ids 商品ID列表（数组格式）
+     * @param verifyStatus 审核状态：0->未审核；1->审核通过
+     * @param detail 审核详情
+     * @return 更新结果
+     */
+    @PostMapping("/update/verifyStatus")
+    public R<Integer> updateVerifyStatus(@RequestParam(value = "ids") List<Long> ids,
+                                         @RequestParam(value = "verifyStatus") Integer verifyStatus,
+                                         @RequestParam(value = "detail") String detail) {
+        int count = productService.updateVerifyStatusBatch(ids, verifyStatus, detail);
+        if (count > 0) {
+            return R.success(count);
+        }
+        return R.failed(ResultCode.FAILED);
+    }
 }
 

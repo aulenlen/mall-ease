@@ -44,4 +44,40 @@ public class PmsProductServiceImpl implements PmsProductService {
         }
         return productDao.updatePublishStatusBatch(ids, publishStatus);
     }
+
+    @Override
+    public int updateNewStatusBatch(List<Long> ids, Integer newStatus) {
+        if (ids == null || ids.isEmpty()) {
+            throw new ApiException("商品ID列表不能为空");
+        }
+        if (newStatus == null || (newStatus != 0 && newStatus != 1)) {
+            throw new ApiException("新品状态参数错误，只能为0或1");
+        }
+        return productDao.updateNewStatusBatch(ids, newStatus);
+    }
+
+    @Override
+    public int updateRecommendStatusBatch(List<Long> ids, Integer recommendStatus) {
+        if (ids == null || ids.isEmpty()) {
+            throw new ApiException("商品ID列表不能为空");
+        }
+        if (recommendStatus == null || (recommendStatus != 0 && recommendStatus != 1)) {
+            throw new ApiException("推荐状态参数错误，只能为0或1");
+        }
+        return productDao.updateRecommendStatusBatch(ids, recommendStatus);
+    }
+
+    @Override
+    public int updateVerifyStatusBatch(List<Long> ids, Integer verifyStatus, String detail) {
+        if (ids == null || ids.isEmpty()) {
+            throw new ApiException("商品ID列表不能为空");
+        }
+        if (verifyStatus == null) {
+            throw new ApiException("审核状态不能为空");
+        }
+        if (detail == null || detail.trim().isEmpty()) {
+            throw new ApiException("审核详情不能为空");
+        }
+        return productDao.updateVerifyStatusBatch(ids, verifyStatus, detail);
+    }
 }
