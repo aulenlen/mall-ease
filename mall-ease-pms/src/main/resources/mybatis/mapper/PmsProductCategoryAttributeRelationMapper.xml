@@ -97,5 +97,14 @@
             product_attribute_id = #{productAttributeId,jdbcType=BIGINT}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <insert id="insertBatch">
+        insert into pms_product_category_attribute_relation (product_category_id, product_attribute_id)
+        values
+        <foreach collection="relations" item="item" separator=",">
+            (#{item.productCategoryId,jdbcType=BIGINT}, #{item.productAttributeId,jdbcType=BIGINT})
+        </foreach>
+    </insert>
 </mapper>
+
 

@@ -1,5 +1,6 @@
 package com.mallease.pms.dao;
 
+import com.mallease.pms.dto.response.ProductAttrResponse;
 import com.mallease.pms.pojo.PmsProductAttribute;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -84,5 +85,30 @@ public interface PmsProductAttributeDao {
      * @return 记录列表
      */
     List<PmsProductAttribute> selectAll();
+
+    List<ProductAttrResponse> getProductAttrInfo(@Param("id") Long id);
+
+    List<PmsProductAttribute> listByAttributeCategoryIdAndType(@Param("cid") Integer cid, @Param("type") Integer type);
+
+    /**
+     * 批量删除商品属性
+     *
+     * @param ids 属性ID列表
+     * @return 影响行数
+     */
+    int deleteBatch(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据ID列表批量查询商品属性
+     *
+     * @param ids 属性ID列表
+     * @return 属性列表
+     */
+    List<PmsProductAttribute> selectByIds(@Param("ids") List<Long> ids);
 }
+
+
+
+
+
 

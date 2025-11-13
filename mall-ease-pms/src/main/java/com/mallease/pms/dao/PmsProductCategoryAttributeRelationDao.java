@@ -93,5 +93,14 @@ public interface PmsProductCategoryAttributeRelationDao {
      * @return 影响行数
      */
     int deleteByProductAttributeId(@Param("productAttributeId") Long productAttributeId);
+
+    /**
+     * 批量插入分类与属性的关系
+     *
+     * @param relations 关系集合
+     * @return 影响行数
+     */
+    int insertBatch(@Param("relations") List<PmsProductCategoryAttributeRelation> relations);
 }
+
 

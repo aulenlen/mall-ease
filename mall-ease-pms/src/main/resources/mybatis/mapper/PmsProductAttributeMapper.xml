@@ -47,6 +47,31 @@
         from pms_product_attribute
     </select>
 
+    <select id="selectByIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_product_attribute
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </select>
+    <select id="getProductAttrInfo" resultType="com.mallease.pms.dto.response.ProductAttrResponse">
+        SELECT pa.id  attributeId,
+               pac.id attributeCategoryId
+        FROM pms_product_category_attribute_relation pcar
+                 LEFT JOIN pms_product_attribute pa ON pa.id = pcar.product_attribute_id
+                 LEFT JOIN pms_product_attribute_category pac ON pa.product_attribute_category_id = pac.id
+        WHERE pcar.product_category_id = #{id}
+    </select>
+
+    <select id="listByAttributeCategoryIdAndType" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_product_attribute
+        where product_attribute_category_id = #{cid} and type=#{type}
+    </select>
+
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from pms_product_attribute
         where id = #{id,jdbcType=BIGINT}
@@ -198,5 +223,18 @@
             type = #{type,jdbcType=INTEGER}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <delete id="deleteBatch">
+        delete from pms_product_attribute
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </delete>
 </mapper>
+
+
+
+
+
 

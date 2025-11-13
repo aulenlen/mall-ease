@@ -2,6 +2,7 @@ package com.mallease.pms.dao;
 
 import com.mallease.pms.pojo.PmsProductAttributeCategory;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -68,6 +69,13 @@ public interface PmsProductAttributeCategoryDao {
      */
     List<PmsProductAttributeCategory> selectAll();
 
+    /**
+     * 根据ID列表批量查询商品属性分类
+     *
+     * @param ids 分类ID列表
+     * @return 分类列表
+     */
+    List<PmsProductAttributeCategory> selectByIds(@Param("ids") List<Long> ids);
 }
 
 
