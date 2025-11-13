@@ -85,4 +85,12 @@ public interface PmsProductAttributeValueDao {
      * @return 记录列表
      */
     List<PmsProductAttributeValue> selectByProductAttributeId(@Param("productAttributeId") Long productAttributeId);
+
+    /**
+     * 批量插入记录
+     *
+     * @param list 记录列表
+     * @return 影响行数
+     */
+    int insertBatch(@Param("list") List<PmsProductAttributeValue> list);
 }

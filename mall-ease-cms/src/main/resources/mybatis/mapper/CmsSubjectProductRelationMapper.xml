@@ -97,4 +97,12 @@
             product_id = #{productId,jdbcType=BIGINT}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into cms_subject_product_relation (subject_id, product_id)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.subjectId,jdbcType=BIGINT}, #{item.productId,jdbcType=BIGINT})
+        </foreach>
+    </insert>
 </mapper>

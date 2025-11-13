@@ -85,4 +85,12 @@ public interface PmsMemberPriceDao {
      * @return 记录列表
      */
     List<PmsMemberPrice> selectByMemberLevelId(@Param("memberLevelId") Long memberLevelId);
+
+    /**
+     * 批量插入记录
+     *
+     * @param list 记录列表
+     * @return 影响行数
+     */
+    int insertBatch(@Param("list") List<PmsMemberPrice> list);
 }

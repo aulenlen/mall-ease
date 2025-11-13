@@ -2,7 +2,9 @@ package com.mallease.cms.service.impl;
 
 import com.github.pagehelper.PageHelper;
 import com.mallease.cms.dao.CmsSubjectDao;
+import com.mallease.cms.dao.CmsSubjectProductRelationDao;
 import com.mallease.cms.pojo.CmsSubject;
+import com.mallease.cms.pojo.CmsSubjectProductRelation;
 import com.mallease.cms.service.CmsSubjectService;
 import com.mallease.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,9 @@ public class CmsSubjectServiceImpl implements CmsSubjectService {
 
     @Autowired
     private CmsSubjectDao subjectDao;
+
+    @Autowired
+    private CmsSubjectProductRelationDao subjectProductRelationDao;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -118,5 +123,23 @@ public class CmsSubjectServiceImpl implements CmsSubjectService {
             throw new ApiException("显示状态参数错误，只能为0或1");
         }
         return subjectDao.updateShowStatusBatch(ids, showStatus);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int batchAddProductRelation(List<CmsSubjectProductRelation> relationList) {
+        if (relationList == null || relationList.isEmpty()) {
+            throw new ApiException("关联列表不能为空");
+        }
+        // 验证每条关联数据
+        for (CmsSubjectProductRelation relation : relationList) {
+            if (relation.getSubjectId() == null) {
+                throw new ApiException("专题ID不能为空");
+            }
+            if (relation.getProductId() == null) {
+                throw new ApiException("商品ID不能为空");
+            }
+        }
+        return subjectProductRelationDao.insertBatch(relationList);
     }
 }

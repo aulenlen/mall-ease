@@ -1,8 +1,11 @@
 package com.mallease.cms.service.impl;
 
 import com.mallease.cms.dao.CmsPrefrenceAreaDao;
+import com.mallease.cms.dao.CmsPrefrenceAreaProductRelationDao;
 import com.mallease.cms.pojo.CmsPrefrenceArea;
+import com.mallease.cms.pojo.CmsPrefrenceAreaProductRelation;
 import com.mallease.cms.service.CmsPrefrenceAreaService;
+import com.mallease.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,9 @@ public class CmsPrefrenceAreaServiceImpl implements CmsPrefrenceAreaService {
 
     @Autowired
     private CmsPrefrenceAreaDao prefrenceAreaDao;
+
+    @Autowired
+    private CmsPrefrenceAreaProductRelationDao prefrenceAreaProductRelationDao;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -72,5 +78,23 @@ public class CmsPrefrenceAreaServiceImpl implements CmsPrefrenceAreaService {
     @Transactional(rollbackFor = Exception.class)
     public int updateShowStatusBatch(List<Long> ids, Integer showStatus) {
         return prefrenceAreaDao.updateShowStatusBatch(ids, showStatus);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int batchAddProductRelation(List<CmsPrefrenceAreaProductRelation> relationList) {
+        if (relationList == null || relationList.isEmpty()) {
+            throw new ApiException("关联列表不能为空");
+        }
+        // 验证每条关联数据
+        for (CmsPrefrenceAreaProductRelation relation : relationList) {
+            if (relation.getPrefrenceAreaId() == null) {
+                throw new ApiException("优选专区ID不能为空");
+            }
+            if (relation.getProductId() == null) {
+                throw new ApiException("商品ID不能为空");
+            }
+        }
+        return prefrenceAreaProductRelationDao.insertBatch(relationList);
     }
 }

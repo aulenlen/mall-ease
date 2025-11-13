@@ -2,6 +2,7 @@ package com.mallease.cms.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.mallease.cms.pojo.CmsSubject;
+import com.mallease.cms.pojo.CmsSubjectProductRelation;
 import com.mallease.cms.service.CmsSubjectService;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
@@ -166,6 +167,21 @@ public class CmsSubjectController {
     public R<Integer> updateShowStatus(@RequestParam(value = "ids") List<Long> ids,
                                         @RequestParam(value = "showStatus") Integer showStatus) {
         int count = subjectService.updateShowStatusBatch(ids, showStatus);
+        if (count > 0) {
+            return R.success(count);
+        }
+        return R.failed(ResultCode.FAILED);
+    }
+
+    /**
+     * 批量添加专题商品关联
+     *
+     * @param relationList 关联列表
+     * @return 添加结果
+     */
+    @PostMapping("/product/relation/batch")
+    public R<Integer> batchAddProductRelation(@RequestBody List<CmsSubjectProductRelation> relationList) {
+        int count = subjectService.batchAddProductRelation(relationList);
         if (count > 0) {
             return R.success(count);
         }

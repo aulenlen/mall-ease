@@ -2,6 +2,7 @@ package com.mallease.cms.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.mallease.cms.pojo.CmsPrefrenceArea;
+import com.mallease.cms.pojo.CmsPrefrenceAreaProductRelation;
 import com.mallease.cms.service.CmsPrefrenceAreaService;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
@@ -160,6 +161,21 @@ public class CmsPrefrenceAreaController {
     public R<Integer> updateShowStatus(@RequestParam(value = "ids") List<Long> ids,
                                         @RequestParam(value = "showStatus") Integer showStatus) {
         int count = prefrenceAreaService.updateShowStatusBatch(ids, showStatus);
+        if (count > 0) {
+            return R.success(count);
+        }
+        return R.failed(ResultCode.FAILED);
+    }
+
+    /**
+     * 批量添加优选专区商品关联
+     *
+     * @param relationList 关联列表
+     * @return 添加结果
+     */
+    @PostMapping("/product/relation/batch")
+    public R<Integer> batchAddProductRelation(@RequestBody List<CmsPrefrenceAreaProductRelation> relationList) {
+        int count = prefrenceAreaService.batchAddProductRelation(relationList);
         if (count > 0) {
             return R.success(count);
         }

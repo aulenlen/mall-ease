@@ -116,4 +116,13 @@
             member_level_name = #{memberLevelName,jdbcType=VARCHAR}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into pms_member_price (product_id, member_level_id, member_price, member_level_name)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.productId,jdbcType=BIGINT}, #{item.memberLevelId,jdbcType=BIGINT},
+             #{item.memberPrice,jdbcType=DECIMAL}, #{item.memberLevelName,jdbcType=VARCHAR})
+        </foreach>
+    </insert>
 </mapper>

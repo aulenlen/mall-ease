@@ -97,4 +97,12 @@
             product_id = #{productId,jdbcType=BIGINT}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into cms_prefrence_area_product_relation (prefrence_area_id, product_id)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.prefrenceAreaId,jdbcType=BIGINT}, #{item.productId,jdbcType=BIGINT})
+        </foreach>
+    </insert>
 </mapper>

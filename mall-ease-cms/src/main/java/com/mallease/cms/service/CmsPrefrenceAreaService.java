@@ -1,6 +1,7 @@
 package com.mallease.cms.service;
 
 import com.mallease.cms.pojo.CmsPrefrenceArea;
+import com.mallease.cms.pojo.CmsPrefrenceAreaProductRelation;
 
 import java.util.List;
 
@@ -83,4 +84,12 @@ public interface CmsPrefrenceAreaService {
      * @return 更新记录数
      */
     int updateShowStatusBatch(List<Long> ids, Integer showStatus);
+
+    /**
+     * 批量添加优选专区商品关联
+     *
+     * @param relationList 关联列表
+     * @return 添加的记录数
+     */
+    int batchAddProductRelation(List<CmsPrefrenceAreaProductRelation> relationList);
 }

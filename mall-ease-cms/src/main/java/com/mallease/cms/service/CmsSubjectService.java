@@ -1,6 +1,7 @@
 package com.mallease.cms.service;
 
 import com.mallease.cms.pojo.CmsSubject;
+import com.mallease.cms.pojo.CmsSubjectProductRelation;
 
 import java.util.List;
 
@@ -91,4 +92,12 @@ public interface CmsSubjectService {
      * @return 更新的记录数
      */
     int updateShowStatusBatch(List<Long> ids, Integer showStatus);
+
+    /**
+     * 批量添加专题商品关联
+     *
+     * @param relationList 关联列表
+     * @return 添加的记录数
+     */
+    int batchAddProductRelation(List<CmsSubjectProductRelation> relationList);
 }

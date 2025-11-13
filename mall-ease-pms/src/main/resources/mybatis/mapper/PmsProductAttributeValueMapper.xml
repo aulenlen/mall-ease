@@ -103,4 +103,13 @@
             value = #{value,jdbcType=VARCHAR}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into pms_product_attribute_value (product_id, product_attribute_id, value)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.productId,jdbcType=BIGINT}, #{item.productAttributeId,jdbcType=BIGINT},
+             #{item.value,jdbcType=VARCHAR})
+        </foreach>
+    </insert>
 </mapper>

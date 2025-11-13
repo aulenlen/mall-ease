@@ -4,6 +4,7 @@ import com.github.pagehelper.PageHelper;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.pms.dto.request.PmsProductAggregationRequest;
 import com.mallease.pms.dto.request.PmsProductRequest;
 import com.mallease.pms.pojo.PmsProduct;
 import com.mallease.pms.service.PmsProductService;
@@ -37,6 +38,21 @@ public class PmsProductController {
         PageHelper.startPage(request.getPageNum(), request.getPageSize());
         List<PmsProduct> productList = productService.list(request);
         return R.success(Page.restPage(productList));
+    }
+
+    /**
+     * 创建商品（聚合接口）
+     *
+     * @param request 商品聚合请求
+     * @return 创建结果
+     */
+    @PostMapping("/create")
+    public R<Integer> create(@Validated @RequestBody PmsProductAggregationRequest request) {
+        int count = productService.createProduct(request);
+        if (count > 0) {
+            return R.success(count);
+        }
+        return R.failed(ResultCode.FAILED);
     }
 
     /**

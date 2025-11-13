@@ -1,5 +1,6 @@
 package com.mallease.pms.service;
 
+import com.mallease.pms.dto.request.PmsProductAggregationRequest;
 import com.mallease.pms.dto.request.PmsProductRequest;
 import com.mallease.pms.pojo.PmsProduct;
 
@@ -19,6 +20,14 @@ public interface PmsProductService {
      * @return 商品列表
      */
     List<PmsProduct> list(PmsProductRequest request);
+
+    /**
+     * 创建商品（包含所有关联信息）
+     *
+     * @param request 商品聚合请求
+     * @return 影响行数
+     */
+    int createProduct(PmsProductAggregationRequest request);
 
     /**
      * 批量更新商品上架状态

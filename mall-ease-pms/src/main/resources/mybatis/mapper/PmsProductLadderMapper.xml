@@ -109,5 +109,14 @@
             price = #{price,jdbcType=DECIMAL}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into pms_product_ladder (product_id, count, discount, price)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.productId,jdbcType=BIGINT}, #{item.count,jdbcType=INTEGER},
+             #{item.discount,jdbcType=DECIMAL}, #{item.price,jdbcType=DECIMAL})
+        </foreach>
+    </insert>
 </mapper>
 

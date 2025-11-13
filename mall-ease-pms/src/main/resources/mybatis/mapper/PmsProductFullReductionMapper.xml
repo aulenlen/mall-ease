@@ -98,5 +98,14 @@
             reduce_price = #{reducePrice,jdbcType=DECIMAL}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into pms_product_full_reduction (product_id, full_price, reduce_price)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.productId,jdbcType=BIGINT}, #{item.fullPrice,jdbcType=DECIMAL},
+             #{item.reducePrice,jdbcType=DECIMAL})
+        </foreach>
+    </insert>
 </mapper>
 

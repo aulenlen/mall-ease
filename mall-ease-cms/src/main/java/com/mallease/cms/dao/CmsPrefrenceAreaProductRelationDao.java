@@ -93,4 +93,12 @@ public interface CmsPrefrenceAreaProductRelationDao {
      * @return 影响行数
      */
     int deleteByProductId(@Param("productId") Long productId);
+
+    /**
+     * 批量插入记录
+     *
+     * @param list 记录列表
+     * @return 影响行数
+     */
+    int insertBatch(@Param("list") List<CmsPrefrenceAreaProductRelation> list);
 }
