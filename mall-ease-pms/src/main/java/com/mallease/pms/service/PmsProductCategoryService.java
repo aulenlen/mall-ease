@@ -2,6 +2,7 @@ package com.mallease.pms.service;
 
 import com.mallease.pms.dto.request.PmsProductCategoryCreateRequest;
 import com.mallease.pms.dto.request.PmsProductCategoryUpdateRequest;
+import com.mallease.pms.dto.response.PmsProductCategoryWithChildrenResponse;
 import com.mallease.pms.pojo.PmsProductCategory;
 
 import java.util.List;
@@ -69,5 +70,12 @@ public interface PmsProductCategoryService {
      * @return 影响行数
      */
     Integer delete(Long id);
+
+    /**
+     * 查询所有一级分类及其子分类
+     *
+     * @return 一级分类及子分类列表
+     */
+    List<PmsProductCategoryWithChildrenResponse> listWithChildren();
 }
 

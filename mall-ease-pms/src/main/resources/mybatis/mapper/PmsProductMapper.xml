@@ -88,6 +88,43 @@
         from pms_product
     </select>
 
+    <select id="selectByConditions" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_product
+        <where>
+            AND delete_status = 0
+            <if test="publishStatus != null">
+                AND publish_status = #{publishStatus,jdbcType=INTEGER}
+            </if>
+            <if test="verifyStatus != null">
+                AND verify_status = #{verifyStatus,jdbcType=INTEGER}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND name LIKE CONCAT('%', #{keyword,jdbcType=VARCHAR}, '%')
+            </if>
+            <if test="productSn != null and productSn != ''">
+                AND product_sn = #{productSn,jdbcType=VARCHAR}
+            </if>
+            <if test="productCategoryId != null">
+                AND product_category_id = #{productCategoryId,jdbcType=BIGINT}
+            </if>
+            <if test="brandId != null">
+                AND brand_id = #{brandId,jdbcType=BIGINT}
+            </if>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <update id="updatePublishStatusBatch">
+        update pms_product
+        set publish_status = #{publishStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from pms_product
         where id = #{id,jdbcType=BIGINT}

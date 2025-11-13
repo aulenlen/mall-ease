@@ -92,6 +92,33 @@ public interface PmsProductDao {
      * @return 记录列表
      */
     List<PmsProduct> selectAll();
+
+    /**
+     * 根据多条件查询商品列表
+     *
+     * @param publishStatus 上架状态
+     * @param verifyStatus 审核状态
+     * @param keyword 商品名称关键字
+     * @param productSn 商品货号
+     * @param productCategoryId 商品分类编号
+     * @param brandId 商品品牌编号
+     * @return 商品列表
+     */
+    List<PmsProduct> selectByConditions(@Param("publishStatus") Integer publishStatus,
+                                        @Param("verifyStatus") Integer verifyStatus,
+                                        @Param("keyword") String keyword,
+                                        @Param("productSn") String productSn,
+                                        @Param("productCategoryId") Long productCategoryId,
+                                        @Param("brandId") Long brandId);
+
+    /**
+     * 批量更新商品上架状态
+     *
+     * @param ids 商品ID列表
+     * @param publishStatus 上架状态：0->下架；1->上架
+     * @return 更新的记录数
+     */
+    int updatePublishStatusBatch(@Param("ids") List<Long> ids, @Param("publishStatus") Integer publishStatus);
 }
 
 

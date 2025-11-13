@@ -6,6 +6,7 @@ import com.mallease.common.api.ResultCode;
 import com.mallease.common.api.R;
 import com.mallease.pms.dto.request.PmsProductCategoryCreateRequest;
 import com.mallease.pms.dto.request.PmsProductCategoryUpdateRequest;
+import com.mallease.pms.dto.response.PmsProductCategoryWithChildrenResponse;
 import com.mallease.pms.pojo.PmsProductCategory;
 import com.mallease.pms.service.PmsProductCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -127,5 +128,16 @@ public class PmsProductCategoryController {
             return R.success(count);
         }
         return R.failed(ResultCode.FAILED);
+    }
+
+    /**
+     * 查询所有一级分类及其子分类
+     *
+     * @return 一级分类及子分类列表
+     */
+    @GetMapping("/list/withChildren")
+    public R<List<PmsProductCategoryWithChildrenResponse>> listWithChildren() {
+        List<PmsProductCategoryWithChildrenResponse> list = productCategoryService.listWithChildren();
+        return R.success(list);
     }
 }

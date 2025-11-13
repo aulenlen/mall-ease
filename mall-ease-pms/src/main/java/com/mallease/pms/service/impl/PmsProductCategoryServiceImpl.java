@@ -5,6 +5,7 @@ import com.mallease.pms.dao.PmsProductCategoryAttributeRelationDao;
 import com.mallease.pms.dao.PmsProductCategoryDao;
 import com.mallease.pms.dto.request.PmsProductCategoryCreateRequest;
 import com.mallease.pms.dto.request.PmsProductCategoryUpdateRequest;
+import com.mallease.pms.dto.response.PmsProductCategoryWithChildrenResponse;
 import com.mallease.pms.pojo.PmsProductCategory;
 import com.mallease.pms.pojo.PmsProductCategoryAttributeRelation;
 import com.mallease.pms.service.PmsProductCategoryService;
@@ -16,6 +17,8 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author: Aulen
@@ -176,6 +179,29 @@ public class PmsProductCategoryServiceImpl implements PmsProductCategoryService 
         }
 
         return rows;
+    }
+
+    @Override
+    public List<PmsProductCategoryWithChildrenResponse> listWithChildren() {
+        // 一次性查询所有分类
+        List<PmsProductCategory> allCategories = productCategoryDao.selectAll();
+
+        // 使用Stream按parentId分组，构建子分类Map
+        Map<Long, List<PmsProductCategory>> childrenMap = allCategories.stream()
+                .filter(category -> category.getParentId() != 0)
+                .collect(Collectors.groupingBy(PmsProductCategory::getParentId));
+
+        // 筛选一级分类并组装结果
+        return allCategories.stream()
+                .filter(category -> category.getParentId() == 0)
+                .map(parent -> {
+                    PmsProductCategoryWithChildrenResponse response = new PmsProductCategoryWithChildrenResponse();
+                    BeanUtils.copyProperties(parent, response);
+                    // 从Map中获取子分类，如果没有则设置为空列表
+                    response.setChildren(childrenMap.getOrDefault(parent.getId(), new ArrayList<>()));
+                    return response;
+                })
+                .collect(Collectors.toList());
     }
 }
 
