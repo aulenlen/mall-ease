@@ -86,14 +86,14 @@ public class CmsSubjectController {
     }
 
     /**
-     * 根据专题名称分页获取专题
+     * 分页获取专题列表
      *
      * @param keyword 关键字（专题标题模糊匹配，可选）
      * @param pageNum 页码
      * @param pageSize 每页数量
-     * @return 专题列表
+     * @return 专题列表（分页）
      */
-    @GetMapping("/listAll")
+    @GetMapping("/list")
     public R<Page<CmsSubject>> list(@RequestParam(value = "keyword", required = false) String keyword,
                                      @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
                                      @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize) {
@@ -105,6 +105,17 @@ public class CmsSubjectController {
             list = subjectService.list();
         }
         return R.success(Page.restPage(list));
+    }
+
+    /**
+     * 获取所有专题列表
+     *
+     * @return 所有专题列表（不分页）
+     */
+    @GetMapping("/listAll")
+    public R<List<CmsSubject>> listAll() {
+        List<CmsSubject> list = subjectService.list();
+        return R.success(list);
     }
 
     /**
@@ -186,5 +197,29 @@ public class CmsSubjectController {
             return R.success(count);
         }
         return R.failed(ResultCode.FAILED);
+    }
+
+    /**
+     * 根据商品ID查询专题商品关联列表
+     *
+     * @param productId 商品ID
+     * @return 关联列表
+     */
+    @GetMapping("/product/relation/product/{productId}")
+    public R<List<CmsSubjectProductRelation>> getRelationsByProductId(@PathVariable("productId") Long productId) {
+        List<CmsSubjectProductRelation> list = subjectService.getRelationsByProductId(productId);
+        return R.success(list);
+    }
+
+    /**
+     * 根据商品ID删除专题商品关联
+     *
+     * @param productId 商品ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/product/relation/product/{productId}")
+    public R<Integer> deleteRelationsByProductId(@PathVariable("productId") Long productId) {
+        int count = subjectService.deleteRelationsByProductId(productId);
+        return R.success(count);
     }
 }

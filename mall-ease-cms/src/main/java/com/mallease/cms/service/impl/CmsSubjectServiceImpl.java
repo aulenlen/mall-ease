@@ -142,4 +142,21 @@ public class CmsSubjectServiceImpl implements CmsSubjectService {
         }
         return subjectProductRelationDao.insertBatch(relationList);
     }
+
+    @Override
+    public List<CmsSubjectProductRelation> getRelationsByProductId(Long productId) {
+        if (productId == null) {
+            throw new ApiException("商品ID不能为空");
+        }
+        return subjectProductRelationDao.selectByProductId(productId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteRelationsByProductId(Long productId) {
+        if (productId == null) {
+            throw new ApiException("商品ID不能为空");
+        }
+        return subjectProductRelationDao.deleteByProductId(productId);
+    }
 }

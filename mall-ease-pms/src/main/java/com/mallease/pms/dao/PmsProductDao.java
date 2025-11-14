@@ -149,6 +149,14 @@ public interface PmsProductDao {
     int updateVerifyStatusBatch(@Param("ids") List<Long> ids,
                                 @Param("verifyStatus") Integer verifyStatus,
                                 @Param("detail") String detail);
+
+    /**
+     * 获取商品编辑信息（包含品牌和分类名称）
+     *
+     * @param id 商品ID
+     * @return 商品信息
+     */
+    PmsProduct selectUpdateInfoById(@Param("id") Long id);
 }
 
 

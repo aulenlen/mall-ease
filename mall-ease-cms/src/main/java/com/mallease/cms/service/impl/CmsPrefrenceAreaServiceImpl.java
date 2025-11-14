@@ -97,4 +97,21 @@ public class CmsPrefrenceAreaServiceImpl implements CmsPrefrenceAreaService {
         }
         return prefrenceAreaProductRelationDao.insertBatch(relationList);
     }
+
+    @Override
+    public List<CmsPrefrenceAreaProductRelation> getRelationsByProductId(Long productId) {
+        if (productId == null) {
+            throw new ApiException("商品ID不能为空");
+        }
+        return prefrenceAreaProductRelationDao.selectByProductId(productId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteRelationsByProductId(Long productId) {
+        if (productId == null) {
+            throw new ApiException("商品ID不能为空");
+        }
+        return prefrenceAreaProductRelationDao.deleteByProductId(productId);
+    }
 }

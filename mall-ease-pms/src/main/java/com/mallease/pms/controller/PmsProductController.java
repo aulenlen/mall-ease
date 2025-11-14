@@ -6,6 +6,7 @@ import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.pms.dto.request.PmsProductAggregationRequest;
 import com.mallease.pms.dto.request.PmsProductRequest;
+import com.mallease.pms.dto.response.PmsProductResponse;
 import com.mallease.pms.pojo.PmsProduct;
 import com.mallease.pms.service.PmsProductService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -119,6 +120,35 @@ public class PmsProductController {
                                          @RequestParam(value = "verifyStatus") Integer verifyStatus,
                                          @RequestParam(value = "detail") String detail) {
         int count = productService.updateVerifyStatusBatch(ids, verifyStatus, detail);
+        if (count > 0) {
+            return R.success(count);
+        }
+        return R.failed(ResultCode.FAILED);
+    }
+
+    /**
+     * 根据商品ID获取商品编辑信息
+     *
+     * @param id 商品ID
+     * @return 商品完整信息
+     */
+    @GetMapping("/updateInfo/{id}")
+    public R<PmsProductResponse> getUpdateInfo(@PathVariable("id") Long id) {
+        PmsProductResponse result = productService.getUpdateInfo(id);
+        return R.success(result);
+    }
+
+    /**
+     * 更新商品（聚合接口）
+     *
+     * @param id 商品ID
+     * @param request 商品聚合请求
+     * @return 更新结果
+     */
+    @PostMapping("/update/{id}")
+    public R<Integer> update(@PathVariable("id") Long id,
+                             @Validated @RequestBody PmsProductAggregationRequest request) {
+        int count = productService.updateProduct(id, request);
         if (count > 0) {
             return R.success(count);
         }

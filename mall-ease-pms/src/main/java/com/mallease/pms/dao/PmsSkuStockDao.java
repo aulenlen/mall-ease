@@ -93,5 +93,22 @@ public interface PmsSkuStockDao {
      * @return 影响行数
      */
     int insertBatch(@Param("list") List<PmsSkuStock> list);
+
+    /**
+     * 根据产品ID和关键字模糊查询SKU库存
+     *
+     * @param productId 产品ID
+     * @param keyword 关键字 (可选，用于模糊匹配 sku_code)
+     * @return 记录列表
+     */
+    List<PmsSkuStock> selectByProductIdAndKeyword(@Param("productId") Long productId, @Param("keyword") String keyword);
+
+    /**
+     * 批量更新SKU库存信息（选择性更新）
+     *
+     * @param list 记录列表
+     * @return 影响行数
+     */
+    int updateBatchSelective(@Param("list") List<PmsSkuStock> list);
 }
 

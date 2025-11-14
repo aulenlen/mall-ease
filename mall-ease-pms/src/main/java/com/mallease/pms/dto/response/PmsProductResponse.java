@@ -1,0 +1,280 @@
+package com.mallease.pms.dto.response;
+
+import com.mallease.pms.dto.request.CmsPrefrenceAreaProductRelationRequest;
+import com.mallease.pms.dto.request.CmsSubjectProductRelationRequest;
+import com.mallease.pms.dto.request.PmsMemberPriceRequest;
+import com.mallease.pms.dto.request.PmsProductAttributeValueRequest;
+import com.mallease.pms.dto.request.PmsProductFullReductionRequest;
+import com.mallease.pms.dto.request.PmsProductLadderRequest;
+import com.mallease.pms.dto.request.PmsSkuStockRequest;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * 商品编辑信息响应对象
+ *
+ * @author: Aulen
+ * @description: 用于获取商品完整信息进行编辑
+ * @create: 2025-11-14
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PmsProductResponse {
+    /**
+     * 主键ID
+     */
+    private Long id;
+
+    /**
+     * 品牌ID
+     */
+    private Long brandId;
+
+    /**
+     * 产品分类ID
+     */
+    private Long productCategoryId;
+
+    /**
+     * 运费模板ID
+     */
+    private Long feightTemplateId;
+
+    /**
+     * 产品属性分类ID
+     */
+    private Long productAttributeCategoryId;
+
+    /**
+     * 商品名称
+     */
+    private String name;
+
+    /**
+     * 商品图片
+     */
+    private String pic;
+
+    /**
+     * 货号
+     */
+    private String productSn;
+
+    /**
+     * 删除状态：0->未删除；1->已删除
+     */
+    private Integer deleteStatus;
+
+    /**
+     * 上架状态：0->下架；1->上架
+     */
+    private Integer publishStatus;
+
+    /**
+     * 新品状态:0->不是新品；1->新品
+     */
+    private Integer newStatus;
+
+    /**
+     * 推荐状态；0->不推荐；1->推荐
+     */
+    private Integer recommandStatus;
+
+    /**
+     * 审核状态：0->未审核；1->审核通过
+     */
+    private Integer verifyStatus;
+
+    /**
+     * 排序
+     */
+    private Integer sort;
+
+    /**
+     * 销量
+     */
+    private Integer sale;
+
+    /**
+     * 价格
+     */
+    private BigDecimal price;
+
+    /**
+     * 促销价格
+     */
+    private BigDecimal promotionPrice;
+
+    /**
+     * 赠送的成长值
+     */
+    private Integer giftGrowth;
+
+    /**
+     * 赠送的积分
+     */
+    private Integer giftPoint;
+
+    /**
+     * 限制使用的积分数
+     */
+    private Integer usePointLimit;
+
+    /**
+     * 副标题
+     */
+    private String subTitle;
+
+    /**
+     * 市场价
+     */
+    private BigDecimal originalPrice;
+
+    /**
+     * 库存
+     */
+    private Integer stock;
+
+    /**
+     * 库存预警值
+     */
+    private Integer lowStock;
+
+    /**
+     * 单位
+     */
+    private String unit;
+
+    /**
+     * 商品重量，默认为克
+     */
+    private BigDecimal weight;
+
+    /**
+     * 是否为预告商品：0->不是；1->是
+     */
+    private Integer previewStatus;
+
+    /**
+     * 以逗号分割的产品服务：1->无忧退货；2->快速退款；3->免费包邮
+     */
+    private String serviceIds;
+
+    /**
+     * 关键词
+     */
+    private String keywords;
+
+    /**
+     * 备注
+     */
+    private String note;
+
+    /**
+     * 画册图片，连产品图片限制为5张，以逗号分割
+     */
+    private String albumPics;
+
+    /**
+     * 详情标题
+     */
+    private String detailTitle;
+
+    /**
+     * 促销开始时间
+     */
+    private Date promotionStartTime;
+
+    /**
+     * 促销结束时间
+     */
+    private Date promotionEndTime;
+
+    /**
+     * 活动限购数量
+     */
+    private Integer promotionPerLimit;
+
+    /**
+     * 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->限时购
+     */
+    private Integer promotionType;
+
+    /**
+     * 品牌名称
+     */
+    private String brandName;
+
+    /**
+     * 商品分类名称
+     */
+    private String productCategoryName;
+
+    /**
+     * 商品描述
+     */
+    private String description;
+
+    /**
+     * 详情描述
+     */
+    private String detailDesc;
+
+    /**
+     * 产品详情网页内容
+     */
+    private String detailHtml;
+
+    /**
+     * 移动端网页详情
+     */
+    private String detailMobileHtml;
+
+    /**
+     * 商品阶梯价格设置
+     */
+    private List<PmsProductLadderRequest> productLadderList;
+
+    /**
+     * 商品满减价格设置
+     */
+    private List<PmsProductFullReductionRequest> productFullReductionList;
+
+    /**
+     * 商品会员价格设置
+     */
+    private List<PmsMemberPriceRequest> memberPriceList;
+
+    /**
+     * 商品的sku库存信息
+     */
+    private List<PmsSkuStockRequest> skuStockList;
+
+    /**
+     * 商品参数及自定义规格属性
+     */
+    private List<PmsProductAttributeValueRequest> productAttributeValueList;
+
+    /**
+     * 专题和商品关系
+     */
+    private List<CmsSubjectProductRelationRequest> subjectProductRelationList;
+
+    /**
+     * 优选专区和商品的关系
+     */
+    private List<CmsPrefrenceAreaProductRelationRequest> prefrenceAreaProductRelationList;
+
+    /**
+     * 商品所选分类的父id
+     */
+    private Long cateParentId;
+}

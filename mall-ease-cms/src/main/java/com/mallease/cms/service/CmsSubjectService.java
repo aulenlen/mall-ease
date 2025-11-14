@@ -100,4 +100,20 @@ public interface CmsSubjectService {
      * @return 添加的记录数
      */
     int batchAddProductRelation(List<CmsSubjectProductRelation> relationList);
+
+    /**
+     * 根据商品ID查询专题商品关联列表
+     *
+     * @param productId 商品ID
+     * @return 关联列表
+     */
+    List<CmsSubjectProductRelation> getRelationsByProductId(Long productId);
+
+    /**
+     * 根据商品ID删除专题商品关联
+     *
+     * @param productId 商品ID
+     * @return 删除的记录数
+     */
+    int deleteRelationsByProductId(Long productId);
 }

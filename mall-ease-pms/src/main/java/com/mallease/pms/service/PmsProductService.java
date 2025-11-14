@@ -2,6 +2,7 @@ package com.mallease.pms.service;
 
 import com.mallease.pms.dto.request.PmsProductAggregationRequest;
 import com.mallease.pms.dto.request.PmsProductRequest;
+import com.mallease.pms.dto.response.PmsProductResponse;
 import com.mallease.pms.pojo.PmsProduct;
 
 import java.util.List;
@@ -65,4 +66,21 @@ public interface PmsProductService {
      * @return 更新的记录数
      */
     int updateVerifyStatusBatch(List<Long> ids, Integer verifyStatus, String detail);
+
+    /**
+     * 根据商品ID获取商品编辑信息
+     *
+     * @param id 商品ID
+     * @return 商品完整信息
+     */
+    PmsProductResponse getUpdateInfo(Long id);
+
+    /**
+     * 更新商品（包含所有关联信息）
+     *
+     * @param id 商品ID
+     * @param request 商品聚合请求
+     * @return 影响行数
+     */
+    int updateProduct(Long id, PmsProductAggregationRequest request);
 }

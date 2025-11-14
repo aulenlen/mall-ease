@@ -181,4 +181,28 @@ public class CmsPrefrenceAreaController {
         }
         return R.failed(ResultCode.FAILED);
     }
+
+    /**
+     * 根据商品ID查询优选专区商品关联列表
+     *
+     * @param productId 商品ID
+     * @return 关联列表
+     */
+    @GetMapping("/product/relation/product/{productId}")
+    public R<List<CmsPrefrenceAreaProductRelation>> getRelationsByProductId(@PathVariable("productId") Long productId) {
+        List<CmsPrefrenceAreaProductRelation> list = prefrenceAreaService.getRelationsByProductId(productId);
+        return R.success(list);
+    }
+
+    /**
+     * 根据商品ID删除优选专区商品关联
+     *
+     * @param productId 商品ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/product/relation/product/{productId}")
+    public R<Integer> deleteRelationsByProductId(@PathVariable("productId") Long productId) {
+        int count = prefrenceAreaService.deleteRelationsByProductId(productId);
+        return R.success(count);
+    }
 }

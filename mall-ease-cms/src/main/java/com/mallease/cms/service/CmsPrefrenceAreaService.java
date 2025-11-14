@@ -92,4 +92,20 @@ public interface CmsPrefrenceAreaService {
      * @return 添加的记录数
      */
     int batchAddProductRelation(List<CmsPrefrenceAreaProductRelation> relationList);
+
+    /**
+     * 根据商品ID查询优选专区商品关联列表
+     *
+     * @param productId 商品ID
+     * @return 关联列表
+     */
+    List<CmsPrefrenceAreaProductRelation> getRelationsByProductId(Long productId);
+
+    /**
+     * 根据商品ID删除优选专区商品关联
+     *
+     * @param productId 商品ID
+     * @return 删除的记录数
+     */
+    int deleteRelationsByProductId(Long productId);
 }

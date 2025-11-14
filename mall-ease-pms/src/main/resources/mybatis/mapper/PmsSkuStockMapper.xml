@@ -198,5 +198,95 @@
              #{item.lockStock,jdbcType=INTEGER}, #{item.spData,jdbcType=VARCHAR})
         </foreach>
     </insert>
+
+    <select id="selectByProductIdAndKeyword" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_sku_stock
+        where product_id = #{productId,jdbcType=BIGINT}
+        <if test="keyword != null and keyword != ''">
+            and sku_code like concat('%', #{keyword,jdbcType=VARCHAR}, '%')
+        </if>
+    </select>
+
+    <update id="updateBatchSelective" parameterType="java.util.List">
+        update pms_sku_stock
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="product_id = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.productId != null">
+                        when id = #{item.id} then #{item.productId}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="sku_code = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.skuCode != null">
+                        when id = #{item.id} then #{item.skuCode}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="price = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.price != null">
+                        when id = #{item.id} then #{item.price}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="stock = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.stock != null">
+                        when id = #{item.id} then #{item.stock}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="low_stock = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.lowStock != null">
+                        when id = #{item.id} then #{item.lowStock}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="pic = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.pic != null">
+                        when id = #{item.id} then #{item.pic}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="sale = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.sale != null">
+                        when id = #{item.id} then #{item.sale}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="promotion_price = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.promotionPrice != null">
+                        when id = #{item.id} then #{item.promotionPrice}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="lock_stock = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.lockStock != null">
+                        when id = #{item.id} then #{item.lockStock}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="sp_data = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.spData != null">
+                        when id = #{item.id} then #{item.spData}
+                    </if>
+                </foreach>
+            </trim>
+        </trim>
+        where id in
+        <foreach collection="list" item="item" index="index" separator="," open="(" close=")">
+            #{item.id}
+        </foreach>
+    </update>
 </mapper>
 

@@ -144,7 +144,7 @@
     </update>
 
     <!-- 批量修改商品审核状态
-         注意：detail参数存储到note字段。如果数据库有专门的verify_detail字段，请修改SQL -->
+         注意:detail参数存储到note字段。如果数据库有专门的verify_detail字段,请修改SQL -->
     <update id="updateVerifyStatusBatch">
         update pms_product
         set verify_status = #{verifyStatus,jdbcType=INTEGER},
@@ -154,6 +154,24 @@
             #{id,jdbcType=BIGINT}
         </foreach>
     </update>
+
+    <!-- 获取商品编辑信息（包含品牌和分类名称） -->
+    <select id="selectUpdateInfoById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+            p.id, p.brand_id, p.product_category_id, p.feight_template_id, p.product_attribute_category_id,
+            p.name, p.pic, p.product_sn, p.delete_status, p.publish_status, p.new_status, p.recommand_status,
+            p.verify_status, p.sort, p.sale, p.price, p.promotion_price, p.gift_growth, p.gift_point,
+            p.use_point_limit, p.sub_title, p.description, p.original_price, p.stock, p.low_stock, p.unit,
+            p.weight, p.preview_status, p.service_ids, p.keywords, p.note, p.album_pics, p.detail_title,
+            p.detail_desc, p.detail_html, p.detail_mobile_html, p.promotion_start_time, p.promotion_end_time,
+            p.promotion_per_limit, p.promotion_type,
+            b.name as brand_name,
+            c.name as product_category_name
+        from pms_product p
+        left join pms_brand b on p.brand_id = b.id
+        left join pms_product_category c on p.product_category_id = c.id
+        where p.id = #{id,jdbcType=BIGINT}
+    </select>
 
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from pms_product
