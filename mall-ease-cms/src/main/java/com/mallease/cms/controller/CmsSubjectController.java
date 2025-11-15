@@ -11,6 +11,7 @@ import com.mallease.cms.pojo.CmsSubject;
 import com.mallease.cms.pojo.CmsSubjectProductRelation;
 import com.mallease.cms.service.CmsSubjectService;
 import com.mallease.common.api.Page;
+import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -132,8 +133,11 @@ public class CmsSubjectController {
         } else {
             list = subjectService.list();
         }
-        List<CmsSubjectListVO> voList = subjectConverter.entityListToListVoList(list);
-        return R.success(Page.restPage(voList));
+
+        // 使用PageUtils转换分页结果
+        Page<CmsSubjectListVO> result = PageUtils.convertPage(list, subjectConverter::entityListToListVoList);
+
+        return R.success(result);
     }
 
     /**

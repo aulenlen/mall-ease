@@ -11,6 +11,7 @@ import com.mallease.cms.pojo.CmsPreferenceArea;
 import com.mallease.cms.pojo.CmsPreferenceAreaProductRelation;
 import com.mallease.cms.service.CmsPreferenceAreaService;
 import com.mallease.common.api.Page;
+import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,7 +62,7 @@ public class CmsPreferenceAreaController {
     /**
      * 更新优选专区
      *
-     * @param id 优选专区ID
+     * @param id  优选专区ID
      * @param cmd 更新优选专区命令
      * @return 更新结果
      */
@@ -143,8 +144,8 @@ public class CmsPreferenceAreaController {
     /**
      * 分页获取所有优选专区
      *
-     * @param name 名称（模糊匹配，可选）
-     * @param pageNum 页码
+     * @param name     名称（模糊匹配，可选）
+     * @param pageNum  页码
      * @param pageSize 每页数量
      * @return 优选专区分页列表
      */
@@ -156,21 +157,21 @@ public class CmsPreferenceAreaController {
             @Parameter(description = "每页数量") @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         List<CmsPreferenceArea> list;
-        if (name != null && !name.trim().isEmpty()) {
-            list = prefrenceAreaService.listByName(name);
-        } else {
-            list = prefrenceAreaService.listAll();
-        }
-        List<CmsPreferenceAreaListVO> voList = prefrenceAreaConverter.entityListToListVoList(list);
-        return R.success(Page.restPage(voList));
+
+        list = prefrenceAreaService.listByName(name.trim());
+
+        // 使用PageUtils转换分页结果
+        Page<CmsPreferenceAreaListVO> result = PageUtils.convertPage(list, prefrenceAreaConverter::entityListToListVoList);
+
+        return R.success(result);
     }
 
     /**
      * 根据显示状态获取优选专区列表
      *
      * @param showStatus 显示状态：0->不显示；1->显示
-     * @param pageNum 页码
-     * @param pageSize 每页数量
+     * @param pageNum    页码
+     * @param pageSize   每页数量
      * @return 优选专区列表
      */
     @Operation(summary = "根据显示状态查询优选专区")
@@ -181,14 +182,17 @@ public class CmsPreferenceAreaController {
             @Parameter(description = "每页数量") @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         List<CmsPreferenceArea> list = prefrenceAreaService.listByShowStatus(showStatus);
-        List<CmsPreferenceAreaListVO> voList = prefrenceAreaConverter.entityListToListVoList(list);
-        return R.success(Page.restPage(voList));
+
+        // 使用PageUtils转换分页结果
+        Page<CmsPreferenceAreaListVO> result = PageUtils.convertPage(list, prefrenceAreaConverter::entityListToListVoList);
+
+        return R.success(result);
     }
 
     /**
      * 批量更新显示状态
      *
-     * @param ids 优选专区ID列表（数组格式）
+     * @param ids        优选专区ID列表（数组格式）
      * @param showStatus 显示状态：0->不显示；1->显示
      * @return 更新结果
      */
