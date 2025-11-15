@@ -1,8 +1,11 @@
 package com.mallease.pms.controller;
 
 import com.mallease.common.api.R;
-import com.mallease.pms.dto.response.MinioUploadResponse;
+import com.mallease.pms.dto.vo.MinioUploadVO;
 import com.mallease.pms.service.MinioService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +21,9 @@ import java.nio.charset.StandardCharsets;
  * MinIO 文件管理控制器
  *
  * @author: Aulen
- * @create: 2025-11-12
+ * @create: 2025-11-15
  */
+@Tag(name = "MinIO文件管理", description = "文件上传、下载、删除等操作")
 @Slf4j
 @RestController
 @RequestMapping("/minio/file")
@@ -28,45 +32,34 @@ public class MinioController {
     @Autowired
     private MinioService minioService;
 
-    /**
-     * 上传文件
-     *
-     * @param file 文件
-     * @return 文件上传响应（包含URL和文件名）
-     */
+    @Operation(summary = "上传文件")
     @PostMapping("/upload")
-    public R<MinioUploadResponse> uploadFile(@RequestParam("file") MultipartFile file) {
+    public R<MinioUploadVO> uploadFile(@Parameter(description = "文件") @RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return R.failed("文件不能为空");
         }
         try {
-            MinioUploadResponse response = minioService.uploadFile(file);
-            return R.success(response);
+            MinioUploadVO vo = minioService.uploadFile(file);
+            return R.success(vo);
         } catch (Exception e) {
             log.error("文件上传失败", e);
             return R.failed("文件上传失败: " + e.getMessage());
         }
     }
 
-    /**
-     * 下载文件
-     *
-     * @param objectName 对象名称（文件路径）
-     * @param response   HTTP响应
-     */
+    @Operation(summary = "下载文件")
     @GetMapping("/download")
-    public void downloadFile(@RequestParam("objectName") String objectName,
-                             HttpServletResponse response) {
+    public void downloadFile(
+            @Parameter(description = "对象名称(文件路径)") @RequestParam String objectName,
+            HttpServletResponse response) {
         try {
             InputStream inputStream = minioService.downloadFile(objectName);
 
-            // 设置响应头
             String fileName = objectName.substring(objectName.lastIndexOf("/") + 1);
             response.setContentType("application/octet-stream");
             response.setHeader("Content-Disposition",
                     "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
 
-            // 将文件流写入响应
             OutputStream outputStream = response.getOutputStream();
             byte[] buffer = new byte[1024];
             int bytesRead;
@@ -81,16 +74,11 @@ public class MinioController {
         }
     }
 
-    /**
-     * 获取文件访问URL（预签名URL）
-     *
-     * @param objectName 对象名称（文件路径）
-     * @param expiry     过期时间（秒），可选，默认7天
-     * @return 文件访问URL
-     */
+    @Operation(summary = "获取文件访问URL")
     @GetMapping("/url")
-    public R<String> getFileUrl(@RequestParam("objectName") String objectName,
-                                @RequestParam(value = "expiry", required = false) Integer expiry) {
+    public R<String> getFileUrl(
+            @Parameter(description = "对象名称(文件路径)") @RequestParam String objectName,
+            @Parameter(description = "过期时间(秒)") @RequestParam(required = false) Integer expiry) {
         try {
             String url = minioService.getFileUrl(objectName, expiry);
             return R.success(url);
@@ -100,14 +88,9 @@ public class MinioController {
         }
     }
 
-    /**
-     * 删除文件
-     *
-     * @param objectName 对象名称（文件路径）
-     * @return 删除结果
-     */
+    @Operation(summary = "删除文件")
     @DeleteMapping("/delete")
-    public R<Void> deleteFile(@RequestParam("objectName") String objectName) {
+    public R<Void> deleteFile(@Parameter(description = "对象名称(文件路径)") @RequestParam String objectName) {
         try {
             minioService.deleteFile(objectName);
             return R.success(null, "文件删除成功");
@@ -117,14 +100,9 @@ public class MinioController {
         }
     }
 
-    /**
-     * 检查文件是否存在
-     *
-     * @param objectName 对象名称（文件路径）
-     * @return 是否存在
-     */
+    @Operation(summary = "检查文件是否存在")
     @GetMapping("/exists")
-    public R<Boolean> fileExists(@RequestParam("objectName") String objectName) {
+    public R<Boolean> fileExists(@Parameter(description = "对象名称(文件路径)") @RequestParam String objectName) {
         try {
             boolean exists = minioService.fileExists(objectName);
             return R.success(exists);

@@ -2,9 +2,12 @@ package com.mallease.pms.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.mallease.common.api.Page;
+import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.ResultCode;
 import com.mallease.common.api.R;
-import com.mallease.pms.dto.response.ProductAttributeCategoryItemResponse;
+import com.mallease.pms.converter.PmsProductAttributeCategoryConverter;
+import com.mallease.pms.dto.vo.PmsProductAttributeCategoryItemVO;
+import com.mallease.pms.dto.vo.PmsProductAttributeCategoryListVO;
 import com.mallease.pms.pojo.PmsProductAttributeCategory;
 import com.mallease.pms.service.PmsProductAttributeCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +25,9 @@ import java.util.List;
 public class PmsProductAttributeCategoryController {
     @Autowired
     private PmsProductAttributeCategoryService productAttributeCategoryService;
+
+    @Autowired
+    private PmsProductAttributeCategoryConverter categoryConverter;
 
     /**
      * 添加商品属性分类
@@ -41,8 +47,8 @@ public class PmsProductAttributeCategoryController {
 
     @GetMapping("/list/withAttr")
     @ResponseBody
-    public R<List<ProductAttributeCategoryItemResponse>> getCategoryWithAttrList() {
-        List<ProductAttributeCategoryItemResponse> productAttributeCategoryResultList = productAttributeCategoryService.getCategoryWithAttrList();
+    public R<List<PmsProductAttributeCategoryItemVO>> getCategoryWithAttrList() {
+        List<PmsProductAttributeCategoryItemVO> productAttributeCategoryResultList = productAttributeCategoryService.getCategoryWithAttrList();
         return R.success(productAttributeCategoryResultList);
     }
 
@@ -54,12 +60,13 @@ public class PmsProductAttributeCategoryController {
      * @return 分页结果
      */
     @GetMapping("/list")
-    public R<Page<PmsProductAttributeCategory>> list(
+    public R<Page<PmsProductAttributeCategoryListVO>> list(
             @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
             @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         List<PmsProductAttributeCategory> categoryList = productAttributeCategoryService.list(pageNum, pageSize);
-        return R.success(Page.restPage(categoryList));
+        Page<PmsProductAttributeCategoryListVO> result = PageUtils.convertPage(categoryList, categoryConverter::entityListToListVoList);
+        return R.success(result);
     }
 
     /**

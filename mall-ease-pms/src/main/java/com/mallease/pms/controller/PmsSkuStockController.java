@@ -1,6 +1,8 @@
 package com.mallease.pms.controller;
 
 import com.mallease.common.api.R;
+import com.mallease.pms.converter.PmsSkuStockConverter;
+import com.mallease.pms.dto.vo.PmsSkuStockVO;
 import com.mallease.pms.pojo.PmsSkuStock;
 import com.mallease.pms.service.PmsSkuStockService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,9 @@ public class PmsSkuStockController {
     @Autowired
     private PmsSkuStockService skuStockService;
 
+    @Autowired
+    private PmsSkuStockConverter skuStockConverter;
+
     /**
      * 根据商品编号及关键字模糊搜索SKU库存
      *
@@ -29,10 +34,11 @@ public class PmsSkuStockController {
      * @return SKU库存列表
      */
     @GetMapping("/{pid}")
-    public R<List<PmsSkuStock>> getSkuByProductId(@PathVariable("pid") Long pid,
-                                                    @RequestParam(value = "keyword", required = false) String keyword) {
+    public R<List<PmsSkuStockVO>> getSkuByProductId(@PathVariable("pid") Long pid,
+                                                     @RequestParam(value = "keyword", required = false) String keyword) {
         List<PmsSkuStock> skuStockList = skuStockService.getByProductIdAndKeyword(pid, keyword);
-        return R.success(skuStockList);
+        List<PmsSkuStockVO> voList = skuStockConverter.entityListToVoList(skuStockList);
+        return R.success(voList);
     }
 
     /**

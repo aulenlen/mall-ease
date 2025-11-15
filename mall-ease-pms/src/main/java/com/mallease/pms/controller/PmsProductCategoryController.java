@@ -2,13 +2,20 @@ package com.mallease.pms.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.mallease.common.api.Page;
+import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.ResultCode;
 import com.mallease.common.api.R;
-import com.mallease.pms.dto.request.PmsProductCategoryCreateRequest;
-import com.mallease.pms.dto.request.PmsProductCategoryUpdateRequest;
-import com.mallease.pms.dto.response.PmsProductCategoryWithChildrenResponse;
+import com.mallease.pms.converter.PmsProductCategoryConverter;
+import com.mallease.pms.dto.cmd.CreateProductCategoryCmd;
+import com.mallease.pms.dto.cmd.UpdateProductCategoryCmd;
+import com.mallease.pms.dto.vo.PmsProductCategoryDetailVO;
+import com.mallease.pms.dto.vo.PmsProductCategoryListVO;
+import com.mallease.pms.dto.vo.PmsProductCategoryWithChildrenVO;
 import com.mallease.pms.pojo.PmsProductCategory;
 import com.mallease.pms.service.PmsProductCategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -16,128 +23,87 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
+ * 商品分类控制器
+ *
  * @author: Aulen
- * @description: 商品分类控制器
- * @create: 2025-11-12 18:23
- **/
+ * @create: 2025-11-15
+ */
+@Tag(name = "商品分类管理", description = "商品分类增删改查、状态管理")
 @RestController
 @RequestMapping("/pms/productCategory")
 public class PmsProductCategoryController {
+
     @Autowired
     private PmsProductCategoryService productCategoryService;
 
-    /**
-     * 创建商品分类
-     *
-     * @param request 创建请求参数
-     * @return 创建后的商品分类信息
-     */
+    @Autowired
+    private PmsProductCategoryConverter categoryConverter;
+
+    @Operation(summary = "创建商品分类")
     @PostMapping("/create")
-    public R<Integer> create(@Validated @RequestBody PmsProductCategoryCreateRequest request) {
-        Integer count = productCategoryService.create(request);
+    public R<Integer> create(@Validated @RequestBody CreateProductCategoryCmd cmd) {
+        Integer count = productCategoryService.create(cmd);
         return R.success(count);
     }
 
-    /**
-     * 根据ID获取商品分类
-     *
-     * @param id 分类ID
-     * @return 商品分类信息
-     */
+    @Operation(summary = "获取商品分类详情")
     @GetMapping("/{id}")
-    public R<PmsProductCategory> getById(@PathVariable Long id) {
+    public R<PmsProductCategoryDetailVO> getById(@Parameter(description = "分类ID") @PathVariable Long id) {
         PmsProductCategory category = productCategoryService.getById(id);
-        return R.success(category);
+        PmsProductCategoryDetailVO detailVO = categoryConverter.entityToDetailVo(category);
+        return R.success(detailVO);
     }
 
-    /**
-     * 分页查询商品分类
-     *
-     * @param parentId 父级ID（必需）
-     * @param pageNum  页码，默认1
-     * @param pageSize 每页大小，默认5
-     * @return 分页结果
-     */
+    @Operation(summary = "分页查询商品分类", description = "根据父级ID分页查询商品分类")
     @GetMapping("/list/{parentId}")
-    public R<Page<PmsProductCategory>> list(@PathVariable(value = "parentId") Long parentId,
-                                             @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
-                                             @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize) {
+    public R<Page<PmsProductCategoryListVO>> list(
+            @Parameter(description = "父级ID") @PathVariable Long parentId,
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "5") Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         List<PmsProductCategory> categoryList = productCategoryService.listByParentId(parentId);
-        return R.success(Page.restPage(categoryList));
+        Page<PmsProductCategoryListVO> result = PageUtils.convertPage(categoryList, categoryConverter::entityListToListVoList);
+        return R.success(result);
     }
 
-    /**
-     * 批量更新导航栏显示状态
-     *
-     * @param ids       分类ID列表（数组格式）
-     * @param navStatus 导航栏显示状态（0->不显示；1->显示）
-     * @return 更新结果
-     */
+    @Operation(summary = "批量更新导航栏显示状态")
     @PostMapping("/update/navStatus")
-    public R<Integer> updateNavStatus(@RequestParam(value = "ids") List<Long> ids,
-                                      @RequestParam(value = "navStatus") Integer navStatus) {
+    public R<Integer> updateNavStatus(
+            @Parameter(description = "分类ID列表") @RequestParam List<Long> ids,
+            @Parameter(description = "导航栏显示状态(0:不显示 1:显示)") @RequestParam Integer navStatus) {
         int count = productCategoryService.updateNavStatusBatch(ids, navStatus);
-        if (count > 0) {
-            return R.success(count);
-        }
-        return R.failed(ResultCode.FAILED);
+        return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
-    /**
-     * 批量更新显示状态
-     *
-     * @param ids        分类ID列表（数组格式）
-     * @param showStatus 显示状态（0->不显示；1->显示）
-     * @return 更新结果
-     */
+    @Operation(summary = "批量更新显示状态")
     @PostMapping("/update/showStatus")
-    public R<Integer> updateShowStatus(@RequestParam(value = "ids") List<Long> ids,
-                                       @RequestParam(value = "showStatus") Integer showStatus) {
+    public R<Integer> updateShowStatus(
+            @Parameter(description = "分类ID列表") @RequestParam List<Long> ids,
+            @Parameter(description = "显示状态(0:不显示 1:显示)") @RequestParam Integer showStatus) {
         int count = productCategoryService.updateShowStatusBatch(ids, showStatus);
-        if (count > 0) {
-            return R.success(count);
-        }
-        return R.failed(ResultCode.FAILED);
+        return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
-    /**
-     * 更新商品分类
-     *
-     * @param id      分类ID
-     * @param request 更新参数
-     * @return 更新后的分类信息
-     */
+    @Operation(summary = "更新商品分类")
     @PostMapping("/update/{id}")
-    public R<Integer> update(@PathVariable Long id,
-                                        @Validated @RequestBody PmsProductCategoryUpdateRequest request) {
-        Integer count = productCategoryService.update(id, request);
+    public R<Integer> update(
+            @Parameter(description = "分类ID") @PathVariable Long id,
+            @Validated @RequestBody UpdateProductCategoryCmd cmd) {
+        Integer count = productCategoryService.update(id, cmd);
         return R.success(count);
     }
 
-    /**
-     * 删除商品分类
-     *
-     * @param id 分类ID
-     * @return 删除结果
-     */
+    @Operation(summary = "删除商品分类")
     @DeleteMapping("/delete/{id}")
-    public R<Integer> delete(@PathVariable Long id) {
+    public R<Integer> delete(@Parameter(description = "分类ID") @PathVariable Long id) {
         Integer count = productCategoryService.delete(id);
-        if (count > 0) {
-            return R.success(count);
-        }
-        return R.failed(ResultCode.FAILED);
+        return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
-    /**
-     * 查询所有一级分类及其子分类
-     *
-     * @return 一级分类及子分类列表
-     */
+    @Operation(summary = "查询所有一级分类及其子分类")
     @GetMapping("/list/withChildren")
-    public R<List<PmsProductCategoryWithChildrenResponse>> listWithChildren() {
-        List<PmsProductCategoryWithChildrenResponse> list = productCategoryService.listWithChildren();
+    public R<List<PmsProductCategoryWithChildrenVO>> listWithChildren() {
+        List<PmsProductCategoryWithChildrenVO> list = productCategoryService.listWithChildren();
         return R.success(list);
     }
 }
