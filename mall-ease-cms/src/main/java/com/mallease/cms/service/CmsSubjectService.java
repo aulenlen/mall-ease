@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * 专题服务接口
  *
- * @author: Claude
+ * @author: Aulen
  * @create: 2025-11-13
  */
 public interface CmsSubjectService {

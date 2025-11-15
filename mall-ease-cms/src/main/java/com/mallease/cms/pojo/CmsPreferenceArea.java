@@ -5,11 +5,11 @@ import lombok.Data;
 /**
  * 优选专区表
  *
- * @author: Claude
+ * @author: Aulen
  * @create: 2025-11-13
  */
 @Data
-public class CmsPrefrenceArea {
+public class CmsPreferenceArea {
     /**
      * 主键ID
      */

@@ -1,10 +1,10 @@
 package com.mallease.cms.service.impl;
 
-import com.mallease.cms.dao.CmsPrefrenceAreaDao;
-import com.mallease.cms.dao.CmsPrefrenceAreaProductRelationDao;
-import com.mallease.cms.pojo.CmsPrefrenceArea;
-import com.mallease.cms.pojo.CmsPrefrenceAreaProductRelation;
-import com.mallease.cms.service.CmsPrefrenceAreaService;
+import com.mallease.cms.dao.CmsPreferenceAreaDao;
+import com.mallease.cms.dao.CmsPreferenceAreaProductRelationDao;
+import com.mallease.cms.pojo.CmsPreferenceArea;
+import com.mallease.cms.pojo.CmsPreferenceAreaProductRelation;
+import com.mallease.cms.service.CmsPreferenceAreaService;
 import com.mallease.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,28 +16,28 @@ import java.util.List;
 /**
  * 优选专区管理 Service 实现类
  *
- * @author: Claude
+ * @author: Aulen
  * @create: 2025-11-13
  */
 @Slf4j
 @Service
-public class CmsPrefrenceAreaServiceImpl implements CmsPrefrenceAreaService {
+public class CmsPreferenceAreaServiceImpl implements CmsPreferenceAreaService {
 
     @Autowired
-    private CmsPrefrenceAreaDao prefrenceAreaDao;
+    private CmsPreferenceAreaDao prefrenceAreaDao;
 
     @Autowired
-    private CmsPrefrenceAreaProductRelationDao prefrenceAreaProductRelationDao;
+    private CmsPreferenceAreaProductRelationDao prefrenceAreaProductRelationDao;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int create(CmsPrefrenceArea prefrenceArea) {
+    public int create(CmsPreferenceArea prefrenceArea) {
         return prefrenceAreaDao.insertSelective(prefrenceArea);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int update(Long id, CmsPrefrenceArea prefrenceArea) {
+    public int update(Long id, CmsPreferenceArea prefrenceArea) {
         prefrenceArea.setId(id);
         return prefrenceAreaDao.updateByPrimaryKeySelective(prefrenceArea);
     }
@@ -55,22 +55,22 @@ public class CmsPrefrenceAreaServiceImpl implements CmsPrefrenceAreaService {
     }
 
     @Override
-    public CmsPrefrenceArea getById(Long id) {
+    public CmsPreferenceArea getById(Long id) {
         return prefrenceAreaDao.selectByPrimaryKey(id);
     }
 
     @Override
-    public List<CmsPrefrenceArea> listAll() {
+    public List<CmsPreferenceArea> listAll() {
         return prefrenceAreaDao.selectAll();
     }
 
     @Override
-    public List<CmsPrefrenceArea> listByName(String name) {
+    public List<CmsPreferenceArea> listByName(String name) {
         return prefrenceAreaDao.selectByName(name);
     }
 
     @Override
-    public List<CmsPrefrenceArea> listByShowStatus(Integer showStatus) {
+    public List<CmsPreferenceArea> listByShowStatus(Integer showStatus) {
         return prefrenceAreaDao.selectByShowStatus(showStatus);
     }
 
@@ -82,13 +82,13 @@ public class CmsPrefrenceAreaServiceImpl implements CmsPrefrenceAreaService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchAddProductRelation(List<CmsPrefrenceAreaProductRelation> relationList) {
+    public int batchAddProductRelation(List<CmsPreferenceAreaProductRelation> relationList) {
         if (relationList == null || relationList.isEmpty()) {
             throw new ApiException("关联列表不能为空");
         }
         // 验证每条关联数据
-        for (CmsPrefrenceAreaProductRelation relation : relationList) {
-            if (relation.getPrefrenceAreaId() == null) {
+        for (CmsPreferenceAreaProductRelation relation : relationList) {
+            if (relation.getPreferenceAreaId() == null) {
                 throw new ApiException("优选专区ID不能为空");
             }
             if (relation.getProductId() == null) {
@@ -99,7 +99,7 @@ public class CmsPrefrenceAreaServiceImpl implements CmsPrefrenceAreaService {
     }
 
     @Override
-    public List<CmsPrefrenceAreaProductRelation> getRelationsByProductId(Long productId) {
+    public List<CmsPreferenceAreaProductRelation> getRelationsByProductId(Long productId) {
         if (productId == null) {
             throw new ApiException("商品ID不能为空");
         }

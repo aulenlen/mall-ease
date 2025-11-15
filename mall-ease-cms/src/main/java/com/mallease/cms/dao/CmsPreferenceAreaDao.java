@@ -1,6 +1,6 @@
 package com.mallease.cms.dao;
 
-import com.mallease.cms.pojo.CmsPrefrenceArea;
+import com.mallease.cms.pojo.CmsPreferenceArea;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -9,11 +9,11 @@ import java.util.List;
 /**
  * 优选专区表 Mapper 接口
  *
- * @author: Claude
+ * @author: Aulen
  * @create: 2025-11-13
  */
 @Mapper
-public interface CmsPrefrenceAreaDao {
+public interface CmsPreferenceAreaDao {
     /**
      * 根据主键删除
      *
@@ -28,7 +28,7 @@ public interface CmsPrefrenceAreaDao {
      * @param record 记录
      * @return 影响行数
      */
-    int insert(CmsPrefrenceArea record);
+    int insert(CmsPreferenceArea record);
 
     /**
      * 选择性插入记录
@@ -36,7 +36,7 @@ public interface CmsPrefrenceAreaDao {
      * @param record 记录
      * @return 影响行数
      */
-    int insertSelective(CmsPrefrenceArea record);
+    int insertSelective(CmsPreferenceArea record);
 
     /**
      * 根据主键查询
@@ -44,7 +44,7 @@ public interface CmsPrefrenceAreaDao {
      * @param id 主键ID
      * @return 记录
      */
-    CmsPrefrenceArea selectByPrimaryKey(Long id);
+    CmsPreferenceArea selectByPrimaryKey(Long id);
 
     /**
      * 根据主键选择性更新
@@ -52,7 +52,7 @@ public interface CmsPrefrenceAreaDao {
      * @param record 记录
      * @return 影响行数
      */
-    int updateByPrimaryKeySelective(CmsPrefrenceArea record);
+    int updateByPrimaryKeySelective(CmsPreferenceArea record);
 
     /**
      * 根据主键更新
@@ -60,14 +60,14 @@ public interface CmsPrefrenceAreaDao {
      * @param record 记录
      * @return 影响行数
      */
-    int updateByPrimaryKey(CmsPrefrenceArea record);
+    int updateByPrimaryKey(CmsPreferenceArea record);
 
     /**
      * 查询所有优选专区
      *
      * @return 优选专区列表
      */
-    List<CmsPrefrenceArea> selectAll();
+    List<CmsPreferenceArea> selectAll();
 
     /**
      * 根据名称查询优选专区列表
@@ -75,7 +75,7 @@ public interface CmsPrefrenceAreaDao {
      * @param name 名称（模糊匹配）
      * @return 优选专区列表
      */
-    List<CmsPrefrenceArea> selectByName(@Param("name") String name);
+    List<CmsPreferenceArea> selectByName(@Param("name") String name);
 
     /**
      * 根据显示状态查询优选专区列表
@@ -83,7 +83,7 @@ public interface CmsPrefrenceAreaDao {
      * @param showStatus 显示状态：0->不显示；1->显示
      * @return 优选专区列表
      */
-    List<CmsPrefrenceArea> selectByShowStatus(@Param("showStatus") Integer showStatus);
+    List<CmsPreferenceArea> selectByShowStatus(@Param("showStatus") Integer showStatus);
 
     /**
      * 批量更新显示状态

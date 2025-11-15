@@ -9,7 +9,7 @@ import lombok.Data;
  * @create: 2025-11-13
  */
 @Data
-public class CmsPrefrenceAreaProductRelation {
+public class CmsPreferenceAreaProductRelation {
     /**
      * 主键ID
      */
@@ -18,7 +18,7 @@ public class CmsPrefrenceAreaProductRelation {
     /**
      * 优选专区ID
      */
-    private Long prefrenceAreaId;
+    private Long preferenceAreaId;
 
     /**
      * 产品ID

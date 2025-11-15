@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * 专题服务实现类
  *
- * @author: Claude
+ * @author: Aulen
  * @create: 2025-11-13
  */
 @Slf4j

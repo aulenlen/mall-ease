@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * CMS 专题服务 Feign 客户端
  *
- * @author: Claude
+ * @author: Aulen
  * @create: 2025-11-14
  */
 @FeignClient(name = "mall-ease-cms", contextId = "cmsSubjectFeignClient")

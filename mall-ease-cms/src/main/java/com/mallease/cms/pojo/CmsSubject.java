@@ -7,7 +7,7 @@ import java.util.Date;
 /**
  * 专题表
  *
- * @author: Claude
+ * @author: Aulen
  * @create: 2025-11-13
  */
 @Data

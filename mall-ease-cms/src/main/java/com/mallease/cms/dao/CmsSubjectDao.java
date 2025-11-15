@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 专题表 Mapper 接口
  *
- * @author: Claude
+ * @author: Aulen
  * @create: 2025-11-13
  */
 @Mapper
