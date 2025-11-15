@@ -291,5 +291,5 @@ public class PmsProductAggregationRequest {
      * 优选专区商品关联列表
      */
     @Valid
-    private List<CmsPrefrenceAreaProductRelationRequest> prefrenceAreaProductRelationList;
+    private List<CmsPreferenceAreaProductRelationRequest> preferenceAreaProductRelationList;
 }

@@ -5,7 +5,7 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.pms.dao.*;
 import com.mallease.pms.dto.request.*;
 import com.mallease.pms.dto.response.PmsProductResponse;
-import com.mallease.pms.feign.CmsPrefrenceAreaFeignClient;
+import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
 import com.mallease.pms.feign.CmsSubjectFeignClient;
 import com.mallease.pms.pojo.*;
 import com.mallease.pms.service.PmsProductService;
@@ -50,7 +50,7 @@ public class PmsProductServiceImpl implements PmsProductService {
     private CmsSubjectFeignClient cmsSubjectFeignClient;
 
     @Autowired
-    private CmsPrefrenceAreaFeignClient cmsPrefrenceAreaFeignClient;
+    private CmsPreferenceAreaFeignClient cmsPreferenceAreaFeignClient;
 
     @Autowired
     private PmsProductCategoryDao productCategoryDao;
@@ -201,17 +201,17 @@ public class PmsProductServiceImpl implements PmsProductService {
         }
 
         // 优选专区关联
-        if (request.getPrefrenceAreaProductRelationList() != null && !request.getPrefrenceAreaProductRelationList().isEmpty()) {
-            List<CmsPrefrenceAreaProductRelationRequest> relations = request.getPrefrenceAreaProductRelationList().stream()
+        if (request.getPreferenceAreaProductRelationList() != null && !request.getPreferenceAreaProductRelationList().isEmpty()) {
+            List<CmsPreferenceAreaProductRelationRequest> relations = request.getPreferenceAreaProductRelationList().stream()
                     .map(item -> {
-                        CmsPrefrenceAreaProductRelationRequest relation = new CmsPrefrenceAreaProductRelationRequest();
-                        relation.setPrefrenceAreaId(item.getPrefrenceAreaId());
+                        CmsPreferenceAreaProductRelationRequest relation = new CmsPreferenceAreaProductRelationRequest();
+                        relation.setPreferenceAreaId(item.getPreferenceAreaId());
                         relation.setProductId(productId);
                         return relation;
                     }).collect(Collectors.toList());
 
             try {
-                cmsPrefrenceAreaFeignClient.batchAddProductRelation(relations);
+                cmsPreferenceAreaFeignClient.batchAddProductRelation(relations);
                 log.info("调用CMS服务添加优选专区关联 {} 条", relations.size());
             } catch (Exception e) {
                 log.error("调用CMS服务添加优选专区关联失败", e);
@@ -375,15 +375,15 @@ public class PmsProductServiceImpl implements PmsProductService {
 
         // 11. 调用CMS服务查询优选专区关联
         try {
-            R<List<CmsPrefrenceAreaProductRelationRequest>> prefrenceRelations =
-                    cmsPrefrenceAreaFeignClient.getRelationsByProductId(id);
+            R<List<CmsPreferenceAreaProductRelationRequest>> prefrenceRelations =
+                    cmsPreferenceAreaFeignClient.getRelationsByProductId(id);
             if (prefrenceRelations != null && prefrenceRelations.getData() != null) {
-                result.setPrefrenceAreaProductRelationList(prefrenceRelations.getData());
+                result.setPreferenceAreaProductRelationList(prefrenceRelations.getData());
             }
         } catch (Exception e) {
             log.error("查询优选专区关联失败，商品ID: {}", id, e);
             // 不影响整体查询，返回空列表
-            result.setPrefrenceAreaProductRelationList(new ArrayList<>());
+            result.setPreferenceAreaProductRelationList(new ArrayList<>());
         }
 
         return result;
@@ -472,7 +472,7 @@ public class PmsProductServiceImpl implements PmsProductService {
 
         // 删除优选专区关联
         try {
-            cmsPrefrenceAreaFeignClient.deleteRelationsByProductId(productId);
+            cmsPreferenceAreaFeignClient.deleteRelationsByProductId(productId);
             log.info("调用CMS服务删除优选专区关联，商品ID: {}", productId);
         } catch (Exception e) {
             log.error("调用CMS服务删除优选专区关联失败，商品ID: {}", productId, e);

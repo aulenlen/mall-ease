@@ -1,6 +1,6 @@
 package com.mallease.pms.dto.response;
 
-import com.mallease.pms.dto.request.CmsPrefrenceAreaProductRelationRequest;
+import com.mallease.pms.dto.request.CmsPreferenceAreaProductRelationRequest;
 import com.mallease.pms.dto.request.CmsSubjectProductRelationRequest;
 import com.mallease.pms.dto.request.PmsMemberPriceRequest;
 import com.mallease.pms.dto.request.PmsProductAttributeValueRequest;
@@ -46,7 +46,7 @@ public class PmsProductResponse {
     /**
      * 运费模板ID
      */
-    private Long feightTemplateId;
+    private Long freightTemplateId;
 
     /**
      * 产品属性分类ID
@@ -86,7 +86,7 @@ public class PmsProductResponse {
     /**
      * 推荐状态；0->不推荐；1->推荐
      */
-    private Integer recommandStatus;
+    private Integer recommendStatus;
 
     /**
      * 审核状态：0->未审核；1->审核通过
@@ -271,7 +271,7 @@ public class PmsProductResponse {
     /**
      * 优选专区和商品的关系
      */
-    private List<CmsPrefrenceAreaProductRelationRequest> prefrenceAreaProductRelationList;
+    private List<CmsPreferenceAreaProductRelationRequest> preferenceAreaProductRelationList;
 
     /**
      * 商品所选分类的父id

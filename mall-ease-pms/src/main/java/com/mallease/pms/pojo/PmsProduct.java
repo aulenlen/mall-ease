@@ -31,7 +31,7 @@ public class PmsProduct {
     /**
      * 运费模板ID
      */
-    private Long feightTemplateId;
+    private Long freightTemplateId;
 
     /**
      * 产品属性分类ID
@@ -71,7 +71,7 @@ public class PmsProduct {
     /**
      * 推荐状态；0->不推荐；1->推荐
      */
-    private Integer recommandStatus;
+    private Integer recommendStatus;
 
     /**
      * 审核状态：0->未审核；1->审核通过

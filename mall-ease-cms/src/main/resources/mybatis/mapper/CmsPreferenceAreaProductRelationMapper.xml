@@ -1,65 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.cms.dao.CmsPrefrenceAreaProductRelationDao">
-    <resultMap id="BaseResultMap" type="com.mallease.cms.pojo.CmsPrefrenceAreaProductRelation">
+<mapper namespace="com.mallease.cms.dao.CmsPreferenceAreaProductRelationDao">
+    <resultMap id="BaseResultMap" type="com.mallease.cms.pojo.CmsPreferenceAreaProductRelation">
         <id column="id" property="id" jdbcType="BIGINT"/>
-        <result column="prefrence_area_id" property="prefrenceAreaId" jdbcType="BIGINT"/>
+        <result column="preference_area_id" property="preferenceAreaId" jdbcType="BIGINT"/>
         <result column="product_id" property="productId" jdbcType="BIGINT"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, prefrence_area_id, product_id
+        id, preference_area_id, product_id
     </sql>
 
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
-        from cms_prefrence_area_product_relation
+        from cms_preference_area_product_relation
         where id = #{id,jdbcType=BIGINT}
     </select>
 
-    <select id="selectByPrefrenceAreaId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    <select id="selectByPreferenceAreaId" parameterType="java.lang.Long" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
-        from cms_prefrence_area_product_relation
-        where prefrence_area_id = #{prefrenceAreaId,jdbcType=BIGINT}
+        from cms_preference_area_product_relation
+        where preference_area_id = #{preferenceAreaId,jdbcType=BIGINT}
     </select>
 
     <select id="selectByProductId" parameterType="java.lang.Long" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
-        from cms_prefrence_area_product_relation
+        from cms_preference_area_product_relation
         where product_id = #{productId,jdbcType=BIGINT}
     </select>
 
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
-        delete from cms_prefrence_area_product_relation
+        delete from cms_preference_area_product_relation
         where id = #{id,jdbcType=BIGINT}
     </delete>
 
-    <delete id="deleteByPrefrenceAreaId" parameterType="java.lang.Long">
-        delete from cms_prefrence_area_product_relation
-        where prefrence_area_id = #{prefrenceAreaId,jdbcType=BIGINT}
+    <delete id="deleteByPreferenceAreaId" parameterType="java.lang.Long">
+        delete from cms_preference_area_product_relation
+        where preference_area_id = #{preferenceAreaId,jdbcType=BIGINT}
     </delete>
 
     <delete id="deleteByProductId" parameterType="java.lang.Long">
-        delete from cms_prefrence_area_product_relation
+        delete from cms_preference_area_product_relation
         where product_id = #{productId,jdbcType=BIGINT}
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.cms.pojo.CmsPrefrenceAreaProductRelation" useGeneratedKeys="true" keyProperty="id">
-        insert into cms_prefrence_area_product_relation (id, prefrence_area_id, product_id)
-        values (#{id,jdbcType=BIGINT}, #{prefrenceAreaId,jdbcType=BIGINT}, #{productId,jdbcType=BIGINT})
+    <insert id="insert" parameterType="com.mallease.cms.pojo.CmsPreferenceAreaProductRelation" useGeneratedKeys="true" keyProperty="id">
+        insert into cms_preference_area_product_relation (id, preference_area_id, product_id)
+        values (#{id,jdbcType=BIGINT}, #{preferenceAreaId,jdbcType=BIGINT}, #{productId,jdbcType=BIGINT})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.cms.pojo.CmsPrefrenceAreaProductRelation" useGeneratedKeys="true" keyProperty="id">
-        insert into cms_prefrence_area_product_relation
+    <insert id="insertSelective" parameterType="com.mallease.cms.pojo.CmsPreferenceAreaProductRelation" useGeneratedKeys="true" keyProperty="id">
+        insert into cms_preference_area_product_relation
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
                 id,
             </if>
-            <if test="prefrenceAreaId != null">
-                prefrence_area_id,
+            <if test="preferenceAreaId != null">
+                preference_area_id,
             </if>
             <if test="productId != null">
                 product_id,
@@ -69,8 +69,8 @@
             <if test="id != null">
                 #{id,jdbcType=BIGINT},
             </if>
-            <if test="prefrenceAreaId != null">
-                #{prefrenceAreaId,jdbcType=BIGINT},
+            <if test="preferenceAreaId != null">
+                #{preferenceAreaId,jdbcType=BIGINT},
             </if>
             <if test="productId != null">
                 #{productId,jdbcType=BIGINT},
@@ -78,11 +78,11 @@
         </trim>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.cms.pojo.CmsPrefrenceAreaProductRelation">
-        update cms_prefrence_area_product_relation
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.cms.pojo.CmsPreferenceAreaProductRelation">
+        update cms_preference_area_product_relation
         <set>
-            <if test="prefrenceAreaId != null">
-                prefrence_area_id = #{prefrenceAreaId,jdbcType=BIGINT},
+            <if test="preferenceAreaId != null">
+                preference_area_id = #{preferenceAreaId,jdbcType=BIGINT},
             </if>
             <if test="productId != null">
                 product_id = #{productId,jdbcType=BIGINT},
@@ -91,18 +91,18 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.cms.pojo.CmsPrefrenceAreaProductRelation">
-        update cms_prefrence_area_product_relation
-        set prefrence_area_id = #{prefrenceAreaId,jdbcType=BIGINT},
+    <update id="updateByPrimaryKey" parameterType="com.mallease.cms.pojo.CmsPreferenceAreaProductRelation">
+        update cms_preference_area_product_relation
+        set preference_area_id = #{preferenceAreaId,jdbcType=BIGINT},
             product_id = #{productId,jdbcType=BIGINT}
         where id = #{id,jdbcType=BIGINT}
     </update>
 
     <insert id="insertBatch" parameterType="java.util.List">
-        insert into cms_prefrence_area_product_relation (prefrence_area_id, product_id)
+        insert into cms_preference_area_product_relation (preference_area_id, product_id)
         values
         <foreach collection="list" item="item" separator=",">
-            (#{item.prefrenceAreaId,jdbcType=BIGINT}, #{item.productId,jdbcType=BIGINT})
+            (#{item.preferenceAreaId,jdbcType=BIGINT}, #{item.productId,jdbcType=BIGINT})
         </foreach>
     </insert>
 </mapper>
