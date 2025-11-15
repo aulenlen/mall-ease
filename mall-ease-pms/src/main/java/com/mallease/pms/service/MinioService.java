@@ -1,6 +1,6 @@
 package com.mallease.pms.service;
 
-import com.mallease.pms.dto.response.MinioUploadResponse;
+import com.mallease.pms.dto.vo.MinioUploadVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -9,16 +9,17 @@ import java.io.InputStream;
  * MinIO 文件服务接口
  *
  * @author: Aulen
- * @create: 2025-11-12
+ * @create: 2025-11-15
  */
 public interface MinioService {
+
     /**
      * 上传文件（自动生成文件路径）
      *
      * @param file 文件
-     * @return 文件上传响应（包含URL和文件名）
+     * @return 文件上传结果（包含URL和文件名）
      */
-    MinioUploadResponse uploadFile(MultipartFile file);
+    MinioUploadVO uploadFile(MultipartFile file);
 
     /**
      * 下载文件

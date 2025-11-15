@@ -1,7 +1,7 @@
 package com.mallease.pms.feign;
 
 import com.mallease.common.api.R;
-import com.mallease.pms.dto.request.CmsPreferenceAreaProductRelationRequest;
+import com.mallease.pms.dto.CmsPreferenceAreaProductRelationDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,20 +18,20 @@ public interface CmsPreferenceAreaFeignClient {
     /**
      * 批量添加优选专区商品关联
      *
-     * @param relationList 关联列表
+     * @param relationList 关联列表（DTO用于服务间传输）
      * @return 添加结果
      */
     @PostMapping("/cms/preferenceArea/product/relation/batch")
-    R<Integer> batchAddProductRelation(@RequestBody List<CmsPreferenceAreaProductRelationRequest> relationList);
+    R<Integer> batchAddProductRelation(@RequestBody List<CmsPreferenceAreaProductRelationDTO> relationList);
 
     /**
      * 根据商品ID查询优选专区商品关联列表
      *
      * @param productId 商品ID
-     * @return 关联列表
+     * @return 关联列表（DTO用于服务间传输）
      */
     @GetMapping("/cms/preferenceArea/product/relation/product/{productId}")
-    R<List<CmsPreferenceAreaProductRelationRequest>> getRelationsByProductId(@PathVariable("productId") Long productId);
+    R<List<CmsPreferenceAreaProductRelationDTO>> getRelationsByProductId(@PathVariable("productId") Long productId);
 
     /**
      * 根据商品ID删除优选专区商品关联

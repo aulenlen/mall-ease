@@ -1,25 +1,28 @@
 package com.mallease.pms.service;
 
-import com.mallease.pms.dto.request.PmsProductCategoryCreateRequest;
-import com.mallease.pms.dto.request.PmsProductCategoryUpdateRequest;
-import com.mallease.pms.dto.response.PmsProductCategoryWithChildrenResponse;
+import com.mallease.pms.dto.cmd.CreateProductCategoryCmd;
+import com.mallease.pms.dto.cmd.UpdateProductCategoryCmd;
+import com.mallease.pms.dto.vo.PmsProductCategoryWithChildrenVO;
 import com.mallease.pms.pojo.PmsProductCategory;
 
 import java.util.List;
 
 /**
+ * 商品分类服务接口
+ *
  * @author: Aulen
- * @description: 商品分类服务接口
- * @create: 2025-11-12
- **/
+ * @create: 2025-11-15
+ */
 public interface PmsProductCategoryService {
+
     /**
      * 创建商品分类
      *
-     * @param request 创建请求参数
-     * @return 创建后的商品分类信息
+     * @param cmd 创建命令
+     * @return 创建结果
      */
-    Integer create(PmsProductCategoryCreateRequest request);
+    Integer create(CreateProductCategoryCmd cmd);
+
     /**
      * 根据父级ID查询商品分类
      *
@@ -32,7 +35,7 @@ public interface PmsProductCategoryService {
      * 批量更新导航栏显示状态
      *
      * @param ids       分类ID列表
-     * @param navStatus 导航栏显示状态（0->不显示；1->显示）
+     * @param navStatus 导航栏显示状态(0:不显示 1:显示)
      * @return 更新的记录数
      */
     int updateNavStatusBatch(List<Long> ids, Integer navStatus);
@@ -41,7 +44,7 @@ public interface PmsProductCategoryService {
      * 批量更新显示状态
      *
      * @param ids        分类ID列表
-     * @param showStatus 显示状态（0->不显示；1->显示）
+     * @param showStatus 显示状态(0:不显示 1:显示)
      * @return 更新的记录数
      */
     int updateShowStatusBatch(List<Long> ids, Integer showStatus);
@@ -57,11 +60,11 @@ public interface PmsProductCategoryService {
     /**
      * 更新商品分类
      *
-     * @param id      分类ID
-     * @param request 更新请求参数
+     * @param id  分类ID
+     * @param cmd 更新命令
      * @return 影响行数
      */
-    Integer update(Long id, PmsProductCategoryUpdateRequest request);
+    Integer update(Long id, UpdateProductCategoryCmd cmd);
 
     /**
      * 删除商品分类
@@ -76,6 +79,6 @@ public interface PmsProductCategoryService {
      *
      * @return 一级分类及子分类列表
      */
-    List<PmsProductCategoryWithChildrenResponse> listWithChildren();
+    List<PmsProductCategoryWithChildrenVO> listWithChildren();
 }
 

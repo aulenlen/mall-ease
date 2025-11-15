@@ -1,11 +1,12 @@
 package com.mallease.pms.service.impl;
 
 import com.mallease.common.exception.ApiException;
+import com.mallease.pms.converter.PmsProductCategoryConverter;
 import com.mallease.pms.dao.PmsProductCategoryAttributeRelationDao;
 import com.mallease.pms.dao.PmsProductCategoryDao;
-import com.mallease.pms.dto.request.PmsProductCategoryCreateRequest;
-import com.mallease.pms.dto.request.PmsProductCategoryUpdateRequest;
-import com.mallease.pms.dto.response.PmsProductCategoryWithChildrenResponse;
+import com.mallease.pms.dto.cmd.CreateProductCategoryCmd;
+import com.mallease.pms.dto.cmd.UpdateProductCategoryCmd;
+import com.mallease.pms.dto.vo.PmsProductCategoryWithChildrenVO;
 import com.mallease.pms.pojo.PmsProductCategory;
 import com.mallease.pms.pojo.PmsProductCategoryAttributeRelation;
 import com.mallease.pms.service.PmsProductCategoryService;
@@ -21,22 +22,28 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
+ * 商品分类服务实现类
+ *
  * @author: Aulen
- * @description: 商品分类服务实现类
- * @create: 2025-11-12
- **/
+ * @create: 2025-11-15
+ */
 @Service
 public class PmsProductCategoryServiceImpl implements PmsProductCategoryService {
+
     @Autowired
     private PmsProductCategoryDao productCategoryDao;
+
     @Autowired
     private PmsProductCategoryAttributeRelationDao productCategoryAttributeRelationDao;
 
+    @Autowired
+    private PmsProductCategoryConverter categoryConverter;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Integer create(PmsProductCategoryCreateRequest request) {
-        PmsProductCategory category = new PmsProductCategory();
-        BeanUtils.copyProperties(request, category);
+    public Integer create(CreateProductCategoryCmd cmd) {
+        // 使用Converter转换
+        PmsProductCategory category = categoryConverter.createCmdToEntity(cmd);
 
         // 设置父分类ID，如果为null则默认为0（一级分类）
         if (category.getParentId() == null) {
@@ -70,9 +77,9 @@ public class PmsProductCategoryServiceImpl implements PmsProductCategoryService 
         }
 
         // 绑定筛选属性
-        if (!CollectionUtils.isEmpty(request.getProductAttributeIdList())) {
+        if (!CollectionUtils.isEmpty(cmd.getProductAttributeIdList())) {
             List<PmsProductCategoryAttributeRelation> relationList = new ArrayList<>();
-            for (Long attributeId : request.getProductAttributeIdList()) {
+            for (Long attributeId : cmd.getProductAttributeIdList()) {
                 if (attributeId == null) {
                     continue;
                 }
@@ -127,16 +134,15 @@ public class PmsProductCategoryServiceImpl implements PmsProductCategoryService 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Integer update(Long id, PmsProductCategoryUpdateRequest request) {
+    public Integer update(Long id, UpdateProductCategoryCmd cmd) {
         PmsProductCategory existing = productCategoryDao.selectByPrimaryKey(id);
         if (existing == null) {
             throw new ApiException("商品分类不存在");
         }
 
-        PmsProductCategory updateRecord = new PmsProductCategory();
-        updateRecord.setId(id);
-        BeanUtils.copyProperties(request, updateRecord);
-        int rows = productCategoryDao.updateByPrimaryKeySelective(updateRecord);
+        // 使用Converter更新
+        categoryConverter.updateEntityFromCmd(existing, cmd);
+        int rows = productCategoryDao.updateByPrimaryKeySelective(existing);
         if (rows <= 0) {
             throw new ApiException("更新商品分类失败");
         }
@@ -145,9 +151,9 @@ public class PmsProductCategoryServiceImpl implements PmsProductCategoryService 
         productCategoryAttributeRelationDao.deleteByProductCategoryId(id);
 
         // 重新绑定筛选属性
-        if (!CollectionUtils.isEmpty(request.getProductAttributeIdList())) {
+        if (!CollectionUtils.isEmpty(cmd.getProductAttributeIdList())) {
             List<PmsProductCategoryAttributeRelation> relationList = new ArrayList<>();
-            for (Long attributeId : request.getProductAttributeIdList()) {
+            for (Long attributeId : cmd.getProductAttributeIdList()) {
                 if (attributeId == null) {
                     continue;
                 }
@@ -182,7 +188,7 @@ public class PmsProductCategoryServiceImpl implements PmsProductCategoryService 
     }
 
     @Override
-    public List<PmsProductCategoryWithChildrenResponse> listWithChildren() {
+    public List<PmsProductCategoryWithChildrenVO> listWithChildren() {
         // 一次性查询所有分类
         List<PmsProductCategory> allCategories = productCategoryDao.selectAll();
 
@@ -195,11 +201,11 @@ public class PmsProductCategoryServiceImpl implements PmsProductCategoryService 
         return allCategories.stream()
                 .filter(category -> category.getParentId() == 0)
                 .map(parent -> {
-                    PmsProductCategoryWithChildrenResponse response = new PmsProductCategoryWithChildrenResponse();
-                    BeanUtils.copyProperties(parent, response);
+                    PmsProductCategoryWithChildrenVO vo = new PmsProductCategoryWithChildrenVO();
+                    BeanUtils.copyProperties(parent, vo);
                     // 从Map中获取子分类，如果没有则设置为空列表
-                    response.setChildren(childrenMap.getOrDefault(parent.getId(), new ArrayList<>()));
-                    return response;
+                    vo.setChildren(childrenMap.getOrDefault(parent.getId(), new ArrayList<>()));
+                    return vo;
                 })
                 .collect(Collectors.toList());
     }

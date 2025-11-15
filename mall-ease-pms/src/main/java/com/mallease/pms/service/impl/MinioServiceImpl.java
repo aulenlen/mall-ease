@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
 import com.mallease.common.exception.ApiException;
 import com.mallease.pms.dto.BucketPolicyConfig;
-import com.mallease.pms.dto.response.MinioUploadResponse;
+import com.mallease.pms.dto.vo.MinioUploadVO;
 import com.mallease.pms.service.MinioService;
 import io.minio.*;
 import io.minio.http.Method;
@@ -23,7 +23,7 @@ import java.util.UUID;
  * MinIO 文件服务实现类
  *
  * @author: Aulen
- * @create: 2025-11-12
+ * @create: 2025-11-15
  */
 @Slf4j
 @Service
@@ -39,15 +39,12 @@ public class MinioServiceImpl implements MinioService {
     private String endpoint;
 
     @Override
-    public MinioUploadResponse uploadFile(MultipartFile file) {
+    public MinioUploadVO uploadFile(MultipartFile file) {
         try {
-            // 确保 bucket 存在
             ensureBucketExists();
 
-            // 自动生成文件路径
             String objectName = generateObjectName(file.getOriginalFilename());
 
-            // 上传文件
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
@@ -57,12 +54,9 @@ public class MinioServiceImpl implements MinioService {
                             .build()
             );
 
-            // 生成固定格式的访问URL（bucket已配置为公开访问）
-            // 格式: http://endpoint/bucketName/objectName
             String url = endpoint + "/" + bucketName + "/" + objectName;
 
-            // 构建响应对象
-            return MinioUploadResponse.builder()
+            return MinioUploadVO.builder()
                     .url(url)
                     .name(objectName)
                     .build();

@@ -2,9 +2,13 @@ package com.mallease.pms.service.impl;
 
 import com.mallease.common.api.R;
 import com.mallease.common.exception.ApiException;
+import com.mallease.pms.converter.RelationConverter;
 import com.mallease.pms.dao.*;
-import com.mallease.pms.dto.request.*;
-import com.mallease.pms.dto.response.PmsProductResponse;
+import com.mallease.pms.dto.*;
+import com.mallease.pms.dto.cmd.CreateProductCmd;
+import com.mallease.pms.dto.cmd.UpdateProductCmd;
+import com.mallease.pms.dto.query.ProductQuery;
+import com.mallease.pms.dto.vo.*;
 import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
 import com.mallease.pms.feign.CmsSubjectFeignClient;
 import com.mallease.pms.pojo.*;
@@ -23,11 +27,12 @@ import java.util.stream.Collectors;
  * 商品服务实现类
  *
  * @author: Aulen
- * @create: 2025-11-13
+ * @create: 2025-11-15
  */
 @Slf4j
 @Service
 public class PmsProductServiceImpl implements PmsProductService {
+
     @Autowired
     private PmsProductDao productDao;
 
@@ -58,28 +63,29 @@ public class PmsProductServiceImpl implements PmsProductService {
     @Autowired
     private PmsBrandDao brandDao;
 
+    @Autowired
+    private RelationConverter relationConverter;
+
     @Override
-    public List<PmsProduct> list(PmsProductRequest request) {
+    public List<PmsProduct> list(ProductQuery query) {
         return productDao.selectByConditions(
-                request.getPublishStatus(),
-                request.getVerifyStatus(),
-                request.getKeyword(),
-                request.getProductSn(),
-                request.getProductCategoryId(),
-                request.getBrandId()
+                query.getPublishStatus(),
+                query.getVerifyStatus(),
+                query.getKeyword(),
+                query.getProductSn(),
+                query.getProductCategoryId(),
+                query.getBrandId()
         );
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int createProduct(PmsProductAggregationRequest request) {
-        // 1. 参数验证
-        if (request == null) {
+    public int createProduct(CreateProductCmd cmd) {
+        if (cmd == null) {
             throw new ApiException("商品信息不能为空");
         }
 
-        // 2. 转换并插入商品基本信息
-        PmsProduct product = convertToProduct(request);
+        PmsProduct product = convertCreateCmdToProduct(cmd);
         int count = productDao.insertSelective(product);
         if (count == 0) {
             throw new ApiException("商品创建失败");
@@ -88,31 +94,29 @@ public class PmsProductServiceImpl implements PmsProductService {
         Long productId = product.getId();
         log.info("创建商品成功，商品ID: {}", productId);
 
-        // 3. 插入 PMS 关联数据（会员价、阶梯价格、满减、SKU、属性值）
-        insertPmsRelations(productId, request);
-
-        // 4. 调用 CMS 服务处理关联（专题、优选专区）
-        insertCmsRelations(productId, request);
+        insertPmsRelationsFromCreateCmd(productId, cmd);
+        insertCmsRelationsFromCreateCmd(productId, cmd);
 
         return count;
     }
 
     /**
-     * 转换请求对象为商品实体
+     * 转换CreateProductCmd为商品实体
      */
-    private PmsProduct convertToProduct(PmsProductAggregationRequest request) {
+    private PmsProduct convertCreateCmdToProduct(CreateProductCmd cmd) {
         PmsProduct product = new PmsProduct();
-        BeanUtils.copyProperties(request, product);
+        BeanUtils.copyProperties(cmd, product);
+        product.setFreightTemplateId(cmd.getFreightTemplateId());
+        product.setRecommendStatus(cmd.getRecommendStatus());
         return product;
     }
 
     /**
-     * 插入 PMS 关联数据
+     * 插入PMS关联数据
      */
-    private void insertPmsRelations(Long productId, PmsProductAggregationRequest request) {
-        // 会员价格
-        if (request.getMemberPriceList() != null && !request.getMemberPriceList().isEmpty()) {
-            List<PmsMemberPrice> memberPrices = request.getMemberPriceList().stream()
+    private void insertPmsRelationsFromCreateCmd(Long productId, CreateProductCmd cmd) {
+        if (cmd.getMemberPriceList() != null && !cmd.getMemberPriceList().isEmpty()) {
+            List<PmsMemberPrice> memberPrices = cmd.getMemberPriceList().stream()
                     .map(item -> {
                         PmsMemberPrice price = new PmsMemberPrice();
                         BeanUtils.copyProperties(item, price);
@@ -123,9 +127,8 @@ public class PmsProductServiceImpl implements PmsProductService {
             log.info("插入会员价格 {} 条", memberPrices.size());
         }
 
-        // 阶梯价格
-        if (request.getProductLadderList() != null && !request.getProductLadderList().isEmpty()) {
-            List<PmsProductLadder> ladders = request.getProductLadderList().stream()
+        if (cmd.getProductLadderList() != null && !cmd.getProductLadderList().isEmpty()) {
+            List<PmsProductLadder> ladders = cmd.getProductLadderList().stream()
                     .map(item -> {
                         PmsProductLadder ladder = new PmsProductLadder();
                         BeanUtils.copyProperties(item, ladder);
@@ -136,9 +139,8 @@ public class PmsProductServiceImpl implements PmsProductService {
             log.info("插入阶梯价格 {} 条", ladders.size());
         }
 
-        // 满减价格
-        if (request.getProductFullReductionList() != null && !request.getProductFullReductionList().isEmpty()) {
-            List<PmsProductFullReduction> reductions = request.getProductFullReductionList().stream()
+        if (cmd.getProductFullReductionList() != null && !cmd.getProductFullReductionList().isEmpty()) {
+            List<PmsProductFullReduction> reductions = cmd.getProductFullReductionList().stream()
                     .map(item -> {
                         PmsProductFullReduction reduction = new PmsProductFullReduction();
                         BeanUtils.copyProperties(item, reduction);
@@ -149,9 +151,8 @@ public class PmsProductServiceImpl implements PmsProductService {
             log.info("插入满减价格 {} 条", reductions.size());
         }
 
-        // SKU 库存
-        if (request.getSkuStockList() != null && !request.getSkuStockList().isEmpty()) {
-            List<PmsSkuStock> skuStocks = request.getSkuStockList().stream()
+        if (cmd.getSkuStockList() != null && !cmd.getSkuStockList().isEmpty()) {
+            List<PmsSkuStock> skuStocks = cmd.getSkuStockList().stream()
                     .map(item -> {
                         PmsSkuStock sku = new PmsSkuStock();
                         BeanUtils.copyProperties(item, sku);
@@ -162,9 +163,8 @@ public class PmsProductServiceImpl implements PmsProductService {
             log.info("插入SKU库存 {} 条", skuStocks.size());
         }
 
-        // 商品属性值
-        if (request.getProductAttributeValueList() != null && !request.getProductAttributeValueList().isEmpty()) {
-            List<PmsProductAttributeValue> attributeValues = request.getProductAttributeValueList().stream()
+        if (cmd.getProductAttributeValueList() != null && !cmd.getProductAttributeValueList().isEmpty()) {
+            List<PmsProductAttributeValue> attributeValues = cmd.getProductAttributeValueList().stream()
                     .map(item -> {
                         PmsProductAttributeValue value = new PmsProductAttributeValue();
                         BeanUtils.copyProperties(item, value);
@@ -177,45 +177,44 @@ public class PmsProductServiceImpl implements PmsProductService {
     }
 
     /**
-     * 调用 CMS 服务处理关联
+     * 调用CMS服务处理关联
      */
-    private void insertCmsRelations(Long productId, PmsProductAggregationRequest request) {
-        // 专题关联
-        if (request.getSubjectProductRelationList() != null && !request.getSubjectProductRelationList().isEmpty()) {
-            List<CmsSubjectProductRelationRequest> relations = request.getSubjectProductRelationList().stream()
+    private void insertCmsRelationsFromCreateCmd(Long productId, CreateProductCmd cmd) {
+        if (cmd.getSubjectProductRelationList() != null && !cmd.getSubjectProductRelationList().isEmpty()) {
+            List<CmsSubjectProductRelationVO> voList = cmd.getSubjectProductRelationList().stream()
                     .map(item -> {
-                        CmsSubjectProductRelationRequest relation = new CmsSubjectProductRelationRequest();
+                        CmsSubjectProductRelationVO relation = new CmsSubjectProductRelationVO();
                         relation.setSubjectId(item.getSubjectId());
                         relation.setProductId(productId);
                         return relation;
                     }).collect(Collectors.toList());
 
             try {
-                cmsSubjectFeignClient.batchAddProductRelation(relations);
-                log.info("调用CMS服务添加专题关联 {} 条", relations.size());
+                // 将 VO 转换为 DTO 用于 Feign 调用
+                List<CmsSubjectProductRelationDTO> dtoList = relationConverter.subjectRelationVoListToDtoList(voList);
+                cmsSubjectFeignClient.batchAddProductRelation(dtoList);
+                log.info("调用CMS服务添加专题关联 {} 条", dtoList.size());
             } catch (Exception e) {
                 log.error("调用CMS服务添加专题关联失败", e);
-                // 注意：这里不抛出异常，避免影响商品创建的事务
-                // 可以根据业务需求决定是否抛出异常回滚整个事务
             }
         }
 
-        // 优选专区关联
-        if (request.getPreferenceAreaProductRelationList() != null && !request.getPreferenceAreaProductRelationList().isEmpty()) {
-            List<CmsPreferenceAreaProductRelationRequest> relations = request.getPreferenceAreaProductRelationList().stream()
+        if (cmd.getPreferenceAreaProductRelationList() != null && !cmd.getPreferenceAreaProductRelationList().isEmpty()) {
+            List<CmsPreferenceAreaProductRelationVO> voList = cmd.getPreferenceAreaProductRelationList().stream()
                     .map(item -> {
-                        CmsPreferenceAreaProductRelationRequest relation = new CmsPreferenceAreaProductRelationRequest();
+                        CmsPreferenceAreaProductRelationVO relation = new CmsPreferenceAreaProductRelationVO();
                         relation.setPreferenceAreaId(item.getPreferenceAreaId());
                         relation.setProductId(productId);
                         return relation;
                     }).collect(Collectors.toList());
 
             try {
-                cmsPreferenceAreaFeignClient.batchAddProductRelation(relations);
-                log.info("调用CMS服务添加优选专区关联 {} 条", relations.size());
+                // 将 VO 转换为 DTO 用于 Feign 调用
+                List<CmsPreferenceAreaProductRelationDTO> dtoList = relationConverter.preferenceRelationVoListToDtoList(voList);
+                cmsPreferenceAreaFeignClient.batchAddProductRelation(dtoList);
+                log.info("调用CMS服务添加优选专区关联 {} 条", dtoList.size());
             } catch (Exception e) {
                 log.error("调用CMS服务添加优选专区关联失败", e);
-                // 注意：这里不抛出异常，避免影响商品创建的事务
             }
         }
     }
@@ -268,22 +267,31 @@ public class PmsProductServiceImpl implements PmsProductService {
     }
 
     @Override
-    public PmsProductResponse getUpdateInfo(Long id) {
+    public int updateDeleteStatusBatch(List<Long> ids, Integer deleteStatus) {
+        if (ids == null || ids.isEmpty()) {
+            throw new ApiException("商品ID列表不能为空");
+        }
+        if (deleteStatus == null || (deleteStatus != 0 && deleteStatus != 1)) {
+            throw new ApiException("删除状态参数错误，只能为0或1");
+        }
+        return productDao.updateDeleteStatusBatch(ids, deleteStatus);
+    }
+
+    @Override
+    public PmsProductDetailVO getUpdateInfo(Long id) {
         if (id == null) {
             throw new ApiException("商品ID不能为空");
         }
 
-        // 1. 查询商品基本信息（包含品牌名称和分类名称）
         PmsProduct product = productDao.selectUpdateInfoById(id);
         if (product == null) {
             throw new ApiException("商品不存在");
         }
 
-        // 2. 构建结果对象
-        PmsProductResponse result = new PmsProductResponse();
+        PmsProductDetailVO result = new PmsProductDetailVO();
         BeanUtils.copyProperties(product, result);
 
-        // 3. 查询商品分类的父级ID
+        // 查询商品分类的父级ID
         if (product.getProductCategoryId() != null) {
             PmsProductCategory category = productCategoryDao.selectByPrimaryKey(product.getProductCategoryId());
             if (category != null) {
@@ -292,7 +300,7 @@ public class PmsProductServiceImpl implements PmsProductService {
             }
         }
 
-        // 4. 查询品牌名称
+        // 查询品牌名称
         if (product.getBrandId() != null) {
             PmsBrand brand = brandDao.selectByPrimaryKey(product.getBrandId());
             if (brand != null) {
@@ -300,89 +308,93 @@ public class PmsProductServiceImpl implements PmsProductService {
             }
         }
 
-        // 5. 查询商品阶梯价格
+        // 查询商品阶梯价格
         List<PmsProductLadder> ladderList = productLadderDao.selectByProductId(id);
         if (ladderList != null && !ladderList.isEmpty()) {
-            List<PmsProductLadderRequest> ladderRequests = ladderList.stream()
+            List<PmsProductLadderVO> ladderVOs = ladderList.stream()
                     .map(ladder -> {
-                        PmsProductLadderRequest request = new PmsProductLadderRequest();
-                        BeanUtils.copyProperties(ladder, request);
-                        return request;
+                        PmsProductLadderVO vo = new PmsProductLadderVO();
+                        BeanUtils.copyProperties(ladder, vo);
+                        return vo;
                     }).collect(Collectors.toList());
-            result.setProductLadderList(ladderRequests);
+            result.setProductLadderList(ladderVOs);
         }
 
-        // 6. 查询商品满减价格
+        // 查询商品满减价格
         List<PmsProductFullReduction> reductionList = productFullReductionDao.selectByProductId(id);
         if (reductionList != null && !reductionList.isEmpty()) {
-            List<PmsProductFullReductionRequest> reductionRequests = reductionList.stream()
+            List<PmsProductFullReductionVO> reductionVOs = reductionList.stream()
                     .map(reduction -> {
-                        PmsProductFullReductionRequest request = new PmsProductFullReductionRequest();
-                        BeanUtils.copyProperties(reduction, request);
-                        return request;
+                        PmsProductFullReductionVO vo = new PmsProductFullReductionVO();
+                        BeanUtils.copyProperties(reduction, vo);
+                        return vo;
                     }).collect(Collectors.toList());
-            result.setProductFullReductionList(reductionRequests);
+            result.setProductFullReductionList(reductionVOs);
         }
 
-        // 7. 查询商品会员价格
+        // 查询商品会员价格
         List<PmsMemberPrice> memberPriceList = memberPriceDao.selectByProductId(id);
         if (memberPriceList != null && !memberPriceList.isEmpty()) {
-            List<PmsMemberPriceRequest> memberPriceRequests = memberPriceList.stream()
+            List<PmsMemberPriceVO> memberPriceVOs = memberPriceList.stream()
                     .map(memberPrice -> {
-                        PmsMemberPriceRequest request = new PmsMemberPriceRequest();
-                        BeanUtils.copyProperties(memberPrice, request);
-                        return request;
+                        PmsMemberPriceVO vo = new PmsMemberPriceVO();
+                        BeanUtils.copyProperties(memberPrice, vo);
+                        return vo;
                     }).collect(Collectors.toList());
-            result.setMemberPriceList(memberPriceRequests);
+            result.setMemberPriceList(memberPriceVOs);
         }
 
-        // 8. 查询SKU库存
+        // 查询SKU库存
         List<PmsSkuStock> skuStockList = skuStockDao.selectByProductId(id);
         if (skuStockList != null && !skuStockList.isEmpty()) {
-            List<PmsSkuStockRequest> skuStockRequests = skuStockList.stream()
+            List<PmsSkuStockVO> skuStockVOs = skuStockList.stream()
                     .map(sku -> {
-                        PmsSkuStockRequest request = new PmsSkuStockRequest();
-                        BeanUtils.copyProperties(sku, request);
-                        return request;
+                        PmsSkuStockVO vo = new PmsSkuStockVO();
+                        BeanUtils.copyProperties(sku, vo);
+                        return vo;
                     }).collect(Collectors.toList());
-            result.setSkuStockList(skuStockRequests);
+            result.setSkuStockList(skuStockVOs);
         }
 
-        // 9. 查询商品属性值
+        // 查询商品属性值
         List<PmsProductAttributeValue> attributeValueList = productAttributeValueDao.selectByProductId(id);
         if (attributeValueList != null && !attributeValueList.isEmpty()) {
-            List<PmsProductAttributeValueRequest> attributeValueRequests = attributeValueList.stream()
+            List<PmsProductAttributeValueVO> attributeValueVOs = attributeValueList.stream()
                     .map(attrValue -> {
-                        PmsProductAttributeValueRequest request = new PmsProductAttributeValueRequest();
-                        BeanUtils.copyProperties(attrValue, request);
-                        return request;
+                        PmsProductAttributeValueVO vo = new PmsProductAttributeValueVO();
+                        BeanUtils.copyProperties(attrValue, vo);
+                        return vo;
                     }).collect(Collectors.toList());
-            result.setProductAttributeValueList(attributeValueRequests);
+            result.setProductAttributeValueList(attributeValueVOs);
         }
 
-        // 10. 调用CMS服务查询专题关联
+        // 调用CMS服务查询专题关联
         try {
-            R<List<CmsSubjectProductRelationRequest>> subjectRelations =
+            R<List<CmsSubjectProductRelationDTO>> subjectRelationsResult =
                     cmsSubjectFeignClient.getRelationsByProductId(id);
-            if (subjectRelations != null && subjectRelations.getData() != null) {
-                result.setSubjectProductRelationList(subjectRelations.getData());
+            if (subjectRelationsResult != null && subjectRelationsResult.getData() != null) {
+                // 将 DTO 转换为 VO
+                List<CmsSubjectProductRelationVO> voList =
+                        relationConverter.subjectRelationDtoListToVoList(subjectRelationsResult.getData());
+                result.setSubjectProductRelationList(voList);
             }
         } catch (Exception e) {
             log.error("查询专题关联失败，商品ID: {}", id, e);
-            // 不影响整体查询，返回空列表
             result.setSubjectProductRelationList(new ArrayList<>());
         }
 
-        // 11. 调用CMS服务查询优选专区关联
+        // 调用CMS服务查询优选专区关联
         try {
-            R<List<CmsPreferenceAreaProductRelationRequest>> prefrenceRelations =
+            R<List<CmsPreferenceAreaProductRelationDTO>> preferenceRelationsResult =
                     cmsPreferenceAreaFeignClient.getRelationsByProductId(id);
-            if (prefrenceRelations != null && prefrenceRelations.getData() != null) {
-                result.setPreferenceAreaProductRelationList(prefrenceRelations.getData());
+            if (preferenceRelationsResult != null && preferenceRelationsResult.getData() != null) {
+                // 将 DTO 转换为 VO
+                List<CmsPreferenceAreaProductRelationVO> voList =
+                        relationConverter.preferenceRelationDtoListToVoList(preferenceRelationsResult.getData());
+                result.setPreferenceAreaProductRelationList(voList);
             }
         } catch (Exception e) {
             log.error("查询优选专区关联失败，商品ID: {}", id, e);
-            // 不影响整体查询，返回空列表
             result.setPreferenceAreaProductRelationList(new ArrayList<>());
         }
 
@@ -391,23 +403,20 @@ public class PmsProductServiceImpl implements PmsProductService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int updateProduct(Long id, PmsProductAggregationRequest request) {
-        // 1. 参数验证
+    public int updateProduct(Long id, UpdateProductCmd cmd) {
         if (id == null) {
             throw new ApiException("商品ID不能为空");
         }
-        if (request == null) {
+        if (cmd == null) {
             throw new ApiException("商品信息不能为空");
         }
 
-        // 2. 验证商品是否存在
         PmsProduct existProduct = productDao.selectByPrimaryKey(id);
         if (existProduct == null) {
             throw new ApiException("商品不存在");
         }
 
-        // 3. 更新商品基本信息
-        PmsProduct product = convertToProduct(request);
+        PmsProduct product = convertUpdateCmdToProduct(cmd);
         product.setId(id);
         int count = productDao.updateByPrimaryKeySelective(product);
         if (count == 0) {
@@ -416,68 +425,150 @@ public class PmsProductServiceImpl implements PmsProductService {
 
         log.info("更新商品成功，商品ID: {}", id);
 
-        // 4. 删除原有的 PMS 关联数据
         deletePmsRelations(id);
+        insertPmsRelationsFromUpdateCmd(id, cmd);
 
-        // 5. 插入新的 PMS 关联数据
-        insertPmsRelations(id, request);
-
-        // 6. 删除原有的 CMS 关联数据
         deleteCmsRelations(id);
-
-        // 7. 插入新的 CMS 关联数据
-        insertCmsRelations(id, request);
+        insertCmsRelationsFromUpdateCmd(id, cmd);
 
         return count;
     }
 
     /**
-     * 删除 PMS 关联数据
+     * 转换UpdateProductCmd为商品实体
      */
-    private void deletePmsRelations(Long productId) {
-        // 删除会员价格
-        memberPriceDao.deleteByProductId(productId);
-        log.info("删除商品会员价格，商品ID: {}", productId);
-
-        // 删除阶梯价格
-        productLadderDao.deleteByProductId(productId);
-        log.info("删除商品阶梯价格，商品ID: {}", productId);
-
-        // 删除满减价格
-        productFullReductionDao.deleteByProductId(productId);
-        log.info("删除商品满减价格，商品ID: {}", productId);
-
-        // 删除SKU库存
-        skuStockDao.deleteByProductId(productId);
-        log.info("删除商品SKU库存，商品ID: {}", productId);
-
-        // 删除商品属性值
-        productAttributeValueDao.deleteByProductId(productId);
-        log.info("删除商品属性值，商品ID: {}", productId);
+    private PmsProduct convertUpdateCmdToProduct(UpdateProductCmd cmd) {
+        PmsProduct product = new PmsProduct();
+        BeanUtils.copyProperties(cmd, product);
+        return product;
     }
 
     /**
-     * 删除 CMS 关联数据
+     * 插入PMS关联数据（UpdateCmd版本）
      */
-    private void deleteCmsRelations(Long productId) {
-        // 删除专题关联
-        try {
-            cmsSubjectFeignClient.deleteRelationsByProductId(productId);
-            log.info("调用CMS服务删除专题关联，商品ID: {}", productId);
-        } catch (Exception e) {
-            log.error("调用CMS服务删除专题关联失败，商品ID: {}", productId, e);
-            // 根据业务需求决定是否抛出异常
-            // throw new ApiException("删除专题关联失败");
+    private void insertPmsRelationsFromUpdateCmd(Long productId, UpdateProductCmd cmd) {
+        if (cmd.getMemberPriceList() != null && !cmd.getMemberPriceList().isEmpty()) {
+            List<PmsMemberPrice> memberPrices = cmd.getMemberPriceList().stream()
+                    .map(item -> {
+                        PmsMemberPrice price = new PmsMemberPrice();
+                        BeanUtils.copyProperties(item, price);
+                        price.setProductId(productId);
+                        return price;
+                    }).collect(Collectors.toList());
+            memberPriceDao.insertBatch(memberPrices);
         }
 
-        // 删除优选专区关联
+        if (cmd.getProductLadderList() != null && !cmd.getProductLadderList().isEmpty()) {
+            List<PmsProductLadder> ladders = cmd.getProductLadderList().stream()
+                    .map(item -> {
+                        PmsProductLadder ladder = new PmsProductLadder();
+                        BeanUtils.copyProperties(item, ladder);
+                        ladder.setProductId(productId);
+                        return ladder;
+                    }).collect(Collectors.toList());
+            productLadderDao.insertBatch(ladders);
+        }
+
+        if (cmd.getProductFullReductionList() != null && !cmd.getProductFullReductionList().isEmpty()) {
+            List<PmsProductFullReduction> reductions = cmd.getProductFullReductionList().stream()
+                    .map(item -> {
+                        PmsProductFullReduction reduction = new PmsProductFullReduction();
+                        BeanUtils.copyProperties(item, reduction);
+                        reduction.setProductId(productId);
+                        return reduction;
+                    }).collect(Collectors.toList());
+            productFullReductionDao.insertBatch(reductions);
+        }
+
+        if (cmd.getSkuStockList() != null && !cmd.getSkuStockList().isEmpty()) {
+            List<PmsSkuStock> skuStocks = cmd.getSkuStockList().stream()
+                    .map(item -> {
+                        PmsSkuStock sku = new PmsSkuStock();
+                        BeanUtils.copyProperties(item, sku);
+                        sku.setProductId(productId);
+                        return sku;
+                    }).collect(Collectors.toList());
+            skuStockDao.insertBatch(skuStocks);
+        }
+
+        if (cmd.getProductAttributeValueList() != null && !cmd.getProductAttributeValueList().isEmpty()) {
+            List<PmsProductAttributeValue> attributeValues = cmd.getProductAttributeValueList().stream()
+                    .map(item -> {
+                        PmsProductAttributeValue value = new PmsProductAttributeValue();
+                        BeanUtils.copyProperties(item, value);
+                        value.setProductId(productId);
+                        return value;
+                    }).collect(Collectors.toList());
+            productAttributeValueDao.insertBatch(attributeValues);
+        }
+    }
+
+    /**
+     * 调用CMS服务处理关联（UpdateCmd版本）
+     */
+    private void insertCmsRelationsFromUpdateCmd(Long productId, UpdateProductCmd cmd) {
+        if (cmd.getSubjectProductRelationList() != null && !cmd.getSubjectProductRelationList().isEmpty()) {
+            List<CmsSubjectProductRelationVO> voList = cmd.getSubjectProductRelationList().stream()
+                    .map(item -> {
+                        CmsSubjectProductRelationVO relation = new CmsSubjectProductRelationVO();
+                        relation.setSubjectId(item.getSubjectId());
+                        relation.setProductId(productId);
+                        return relation;
+                    }).collect(Collectors.toList());
+
+            try {
+                // 将 VO 转换为 DTO 用于 Feign 调用
+                List<CmsSubjectProductRelationDTO> dtoList = relationConverter.subjectRelationVoListToDtoList(voList);
+                cmsSubjectFeignClient.batchAddProductRelation(dtoList);
+            } catch (Exception e) {
+                log.error("调用CMS服务添加专题关联失败", e);
+            }
+        }
+
+        if (cmd.getPreferenceAreaProductRelationList() != null && !cmd.getPreferenceAreaProductRelationList().isEmpty()) {
+            List<CmsPreferenceAreaProductRelationVO> voList = cmd.getPreferenceAreaProductRelationList().stream()
+                    .map(item -> {
+                        CmsPreferenceAreaProductRelationVO relation = new CmsPreferenceAreaProductRelationVO();
+                        relation.setPreferenceAreaId(item.getPreferenceAreaId());
+                        relation.setProductId(productId);
+                        return relation;
+                    }).collect(Collectors.toList());
+
+            try {
+                // 将 VO 转换为 DTO 用于 Feign 调用
+                List<CmsPreferenceAreaProductRelationDTO> dtoList = relationConverter.preferenceRelationVoListToDtoList(voList);
+                cmsPreferenceAreaFeignClient.batchAddProductRelation(dtoList);
+            } catch (Exception e) {
+                log.error("调用CMS服务添加优选专区关联失败", e);
+            }
+        }
+    }
+
+    /**
+     * 删除PMS关联数据
+     */
+    private void deletePmsRelations(Long productId) {
+        memberPriceDao.deleteByProductId(productId);
+        productLadderDao.deleteByProductId(productId);
+        productFullReductionDao.deleteByProductId(productId);
+        skuStockDao.deleteByProductId(productId);
+        productAttributeValueDao.deleteByProductId(productId);
+    }
+
+    /**
+     * 删除CMS关联数据
+     */
+    private void deleteCmsRelations(Long productId) {
+        try {
+            cmsSubjectFeignClient.deleteRelationsByProductId(productId);
+        } catch (Exception e) {
+            log.error("调用CMS服务删除专题关联失败，商品ID: {}", productId, e);
+        }
+
         try {
             cmsPreferenceAreaFeignClient.deleteRelationsByProductId(productId);
-            log.info("调用CMS服务删除优选专区关联，商品ID: {}", productId);
         } catch (Exception e) {
             log.error("调用CMS服务删除优选专区关联失败，商品ID: {}", productId, e);
-            // 根据业务需求决定是否抛出异常
-            // throw new ApiException("删除优选专区关联失败");
         }
     }
 }

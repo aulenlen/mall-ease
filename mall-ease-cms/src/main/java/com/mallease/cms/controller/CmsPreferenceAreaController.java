@@ -37,10 +37,10 @@ import java.util.List;
 public class CmsPreferenceAreaController {
 
     @Autowired
-    private CmsPreferenceAreaService prefrenceAreaService;
+    private CmsPreferenceAreaService preferenceAreaService;
 
     @Autowired
-    private CmsPreferenceAreaConverter prefrenceAreaConverter;
+    private CmsPreferenceAreaConverter preferenceAreaConverter;
 
     /**
      * 创建优选专区
@@ -51,8 +51,8 @@ public class CmsPreferenceAreaController {
     @Operation(summary = "创建优选专区")
     @PostMapping("/create")
     public R<Integer> create(@Validated @RequestBody CreateCmsPreferenceAreaCmd cmd) {
-        CmsPreferenceArea prefrenceArea = prefrenceAreaConverter.createCmdToEntity(cmd);
-        int count = prefrenceAreaService.create(prefrenceArea);
+        CmsPreferenceArea prefrenceArea = preferenceAreaConverter.createCmdToEntity(cmd);
+        int count = preferenceAreaService.create(prefrenceArea);
         if (count > 0) {
             return R.success(count);
         }
@@ -70,12 +70,12 @@ public class CmsPreferenceAreaController {
     @PostMapping("/update/{id}")
     public R<Integer> update(@PathVariable Long id, @Validated @RequestBody UpdateCmsPreferenceAreaCmd cmd) {
         cmd.setId(id);
-        CmsPreferenceArea prefrenceArea = prefrenceAreaService.getById(id);
+        CmsPreferenceArea prefrenceArea = preferenceAreaService.getById(id);
         if (prefrenceArea == null) {
             return R.failed(ResultCode.FAILED);
         }
-        prefrenceAreaConverter.updateEntityFromCmd(prefrenceArea, cmd);
-        int count = prefrenceAreaService.update(id, prefrenceArea);
+        preferenceAreaConverter.updateEntityFromCmd(prefrenceArea, cmd);
+        int count = preferenceAreaService.update(id, prefrenceArea);
         if (count > 0) {
             return R.success(count);
         }
@@ -91,7 +91,7 @@ public class CmsPreferenceAreaController {
     @Operation(summary = "删除优选专区")
     @PostMapping("/delete/{id}")
     public R<Integer> delete(@PathVariable Long id) {
-        int count = prefrenceAreaService.delete(id);
+        int count = preferenceAreaService.delete(id);
         if (count > 0) {
             return R.success(count);
         }
@@ -107,7 +107,7 @@ public class CmsPreferenceAreaController {
     @Operation(summary = "批量删除优选专区")
     @PostMapping("/delete/batch")
     public R<Integer> deleteBatch(@Parameter(description = "优选专区ID列表") @RequestParam(value = "ids") List<Long> ids) {
-        int count = prefrenceAreaService.deleteBatch(ids);
+        int count = preferenceAreaService.deleteBatch(ids);
         if (count > 0) {
             return R.success(count);
         }
@@ -123,8 +123,8 @@ public class CmsPreferenceAreaController {
     @Operation(summary = "获取优选专区详情")
     @GetMapping("/{id}")
     public R<CmsPreferenceAreaDetailVO> getById(@Parameter(description = "优选专区ID") @PathVariable Long id) {
-        CmsPreferenceArea prefrenceArea = prefrenceAreaService.getById(id);
-        CmsPreferenceAreaDetailVO vo = prefrenceAreaConverter.entityToDetailVo(prefrenceArea);
+        CmsPreferenceArea prefrenceArea = preferenceAreaService.getById(id);
+        CmsPreferenceAreaDetailVO vo = preferenceAreaConverter.entityToDetailVo(prefrenceArea);
         return R.success(vo);
     }
 
@@ -136,8 +136,8 @@ public class CmsPreferenceAreaController {
     @Operation(summary = "获取所有优选专区列表")
     @GetMapping("/listAll")
     public R<List<CmsPreferenceAreaVO>> listAll() {
-        List<CmsPreferenceArea> list = prefrenceAreaService.listAll();
-        List<CmsPreferenceAreaVO> voList = prefrenceAreaConverter.entityListToVoList(list);
+        List<CmsPreferenceArea> list = preferenceAreaService.listAll();
+        List<CmsPreferenceAreaVO> voList = preferenceAreaConverter.entityListToVoList(list);
         return R.success(voList);
     }
 
@@ -158,10 +158,10 @@ public class CmsPreferenceAreaController {
         PageHelper.startPage(pageNum, pageSize);
         List<CmsPreferenceArea> list;
 
-        list = prefrenceAreaService.listByName(name.trim());
+        list = preferenceAreaService.listByName(name.trim());
 
         // 使用PageUtils转换分页结果
-        Page<CmsPreferenceAreaListVO> result = PageUtils.convertPage(list, prefrenceAreaConverter::entityListToListVoList);
+        Page<CmsPreferenceAreaListVO> result = PageUtils.convertPage(list, preferenceAreaConverter::entityListToListVoList);
 
         return R.success(result);
     }
@@ -181,10 +181,10 @@ public class CmsPreferenceAreaController {
             @Parameter(description = "页码") @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
             @Parameter(description = "每页数量") @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
-        List<CmsPreferenceArea> list = prefrenceAreaService.listByShowStatus(showStatus);
+        List<CmsPreferenceArea> list = preferenceAreaService.listByShowStatus(showStatus);
 
         // 使用PageUtils转换分页结果
-        Page<CmsPreferenceAreaListVO> result = PageUtils.convertPage(list, prefrenceAreaConverter::entityListToListVoList);
+        Page<CmsPreferenceAreaListVO> result = PageUtils.convertPage(list, preferenceAreaConverter::entityListToListVoList);
 
         return R.success(result);
     }
@@ -201,7 +201,7 @@ public class CmsPreferenceAreaController {
     public R<Integer> updateShowStatus(
             @Parameter(description = "优选专区ID列表") @RequestParam(value = "ids") List<Long> ids,
             @Parameter(description = "显示状态(0:不显示 1:显示)") @RequestParam(value = "showStatus") Integer showStatus) {
-        int count = prefrenceAreaService.updateShowStatusBatch(ids, showStatus);
+        int count = preferenceAreaService.updateShowStatusBatch(ids, showStatus);
         if (count > 0) {
             return R.success(count);
         }
@@ -217,7 +217,7 @@ public class CmsPreferenceAreaController {
     @Operation(summary = "批量添加优选专区商品关联")
     @PostMapping("/product/relation/batch")
     public R<Integer> batchAddProductRelation(@RequestBody List<CmsPreferenceAreaProductRelation> relationList) {
-        int count = prefrenceAreaService.batchAddProductRelation(relationList);
+        int count = preferenceAreaService.batchAddProductRelation(relationList);
         if (count > 0) {
             return R.success(count);
         }
@@ -234,7 +234,7 @@ public class CmsPreferenceAreaController {
     @GetMapping("/product/relation/product/{productId}")
     public R<List<CmsPreferenceAreaProductRelation>> getRelationsByProductId(
             @Parameter(description = "商品ID") @PathVariable("productId") Long productId) {
-        List<CmsPreferenceAreaProductRelation> list = prefrenceAreaService.getRelationsByProductId(productId);
+        List<CmsPreferenceAreaProductRelation> list = preferenceAreaService.getRelationsByProductId(productId);
         return R.success(list);
     }
 
@@ -248,7 +248,7 @@ public class CmsPreferenceAreaController {
     @DeleteMapping("/product/relation/product/{productId}")
     public R<Integer> deleteRelationsByProductId(
             @Parameter(description = "商品ID") @PathVariable("productId") Long productId) {
-        int count = prefrenceAreaService.deleteRelationsByProductId(productId);
+        int count = preferenceAreaService.deleteRelationsByProductId(productId);
         return R.success(count);
     }
 }

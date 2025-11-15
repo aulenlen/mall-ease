@@ -56,7 +56,7 @@
             #{id,jdbcType=BIGINT}
         </foreach>
     </select>
-    <select id="getProductAttrInfo" resultType="com.mallease.pms.dto.response.ProductAttrResponse">
+    <select id="getProductAttrInfo" resultType="com.mallease.pms.dto.vo.PmsProductAttributeRelationVO">
         SELECT pa.id  attributeId,
                pac.id attributeCategoryId
         FROM pms_product_category_attribute_relation pcar

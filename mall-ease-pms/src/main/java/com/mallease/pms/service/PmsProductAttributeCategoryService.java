@@ -1,6 +1,6 @@
 package com.mallease.pms.service;
 
-import com.mallease.pms.dto.response.ProductAttributeCategoryItemResponse;
+import com.mallease.pms.dto.vo.PmsProductAttributeCategoryItemVO;
 import com.mallease.pms.pojo.PmsProductAttributeCategory;
 
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
  * @create: 2025-11-12 22:32
  **/
 public interface PmsProductAttributeCategoryService {
-    List<ProductAttributeCategoryItemResponse> getCategoryWithAttrList();
+    List<PmsProductAttributeCategoryItemVO> getCategoryWithAttrList();
 
     /**
      * 分页查询所有商品属性分类

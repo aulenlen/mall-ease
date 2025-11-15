@@ -1,6 +1,6 @@
 package com.mallease.pms.dao;
 
-import com.mallease.pms.dto.response.ProductAttrResponse;
+import com.mallease.pms.dto.vo.PmsProductAttributeRelationVO;
 import com.mallease.pms.pojo.PmsProductAttribute;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -11,10 +11,11 @@ import java.util.List;
  * 商品属性参数表 Mapper 接口
  *
  * @author: Aulen
- * @create: 2025-11-09
+ * @create: 2025-11-15
  */
 @Mapper
 public interface PmsProductAttributeDao {
+
     /**
      * 根据主键删除
      *
@@ -74,7 +75,7 @@ public interface PmsProductAttributeDao {
     /**
      * 根据类型查询
      *
-     * @param type 属性的类型；0->规格；1->参数
+     * @param type 属性的类型(0:规格 1:参数)
      * @return 记录列表
      */
     List<PmsProductAttribute> selectByType(@Param("type") Integer type);
@@ -86,8 +87,21 @@ public interface PmsProductAttributeDao {
      */
     List<PmsProductAttribute> selectAll();
 
-    List<ProductAttrResponse> getProductAttrInfo(@Param("id") Long id);
+    /**
+     * 获取商品属性信息
+     *
+     * @param id 商品分类ID
+     * @return 商品属性关联列表
+     */
+    List<PmsProductAttributeRelationVO> getProductAttrInfo(@Param("id") Long id);
 
+    /**
+     * 根据分类ID和类型查询商品属性
+     *
+     * @param cid  分类ID
+     * @param type 属性类型
+     * @return 商品属性列表
+     */
     List<PmsProductAttribute> listByAttributeCategoryIdAndType(@Param("cid") Integer cid, @Param("type") Integer type);
 
     /**

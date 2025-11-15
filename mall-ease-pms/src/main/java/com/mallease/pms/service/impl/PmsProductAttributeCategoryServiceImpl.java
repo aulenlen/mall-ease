@@ -1,9 +1,11 @@
 package com.mallease.pms.service.impl;
 
 import com.mallease.common.exception.ApiException;
+import com.mallease.pms.converter.PmsProductAttributeCategoryConverter;
+import com.mallease.pms.converter.PmsProductAttributeConverter;
 import com.mallease.pms.dao.PmsProductAttributeCategoryDao;
 import com.mallease.pms.dao.PmsProductAttributeDao;
-import com.mallease.pms.dto.response.ProductAttributeCategoryItemResponse;
+import com.mallease.pms.dto.vo.PmsProductAttributeCategoryItemVO;
 import com.mallease.pms.pojo.PmsProductAttribute;
 import com.mallease.pms.pojo.PmsProductAttributeCategory;
 import com.mallease.pms.service.PmsProductAttributeCategoryService;
@@ -26,9 +28,13 @@ public class PmsProductAttributeCategoryServiceImpl implements PmsProductAttribu
     private PmsProductAttributeCategoryDao productAttributeCategoryDao;
     @Autowired
     private PmsProductAttributeDao productAttributeDao;
+    @Autowired
+    private PmsProductAttributeCategoryConverter categoryConverter;
+    @Autowired
+    private PmsProductAttributeConverter attributeConverter;
 
     @Override
-    public List<ProductAttributeCategoryItemResponse> getCategoryWithAttrList() {
+    public List<PmsProductAttributeCategoryItemVO> getCategoryWithAttrList() {
         // 一次性查询所有分类
         List<PmsProductAttributeCategory> categoryList = productAttributeCategoryDao.selectAll();
 
@@ -41,37 +47,18 @@ public class PmsProductAttributeCategoryServiceImpl implements PmsProductAttribu
 
         // 转换为响应对象
         return categoryList.stream().map(category -> {
-            ProductAttributeCategoryItemResponse response = new ProductAttributeCategoryItemResponse();
-            response.setId(category.getId());
-            response.setName(category.getName());
-            response.setAttributeCount(category.getAttributeCount());
-            response.setParamCount(category.getParamCount());
+            // 使用 Converter 转换基础信息
+            PmsProductAttributeCategoryItemVO vo = categoryConverter.entityToItemVo(category);
 
             // 从内存中的Map获取该分类的属性列表
             List<PmsProductAttribute> categoryAttributes = attributeMap.getOrDefault(category.getId(), new ArrayList<>());
 
-            // 将 PmsProductAttribute 转换为 ProductAttributeResponse
-            List<ProductAttributeCategoryItemResponse.ProductAttributeResponse> attrResponseList =
-                    categoryAttributes.stream().map(attr -> {
-                        ProductAttributeCategoryItemResponse.ProductAttributeResponse attrResponse =
-                                new ProductAttributeCategoryItemResponse.ProductAttributeResponse();
-                        attrResponse.setId(attr.getId());
-                        attrResponse.setProductAttributeCategoryId(attr.getProductAttributeCategoryId());
-                        attrResponse.setName(attr.getName());
-                        attrResponse.setSelectType(attr.getSelectType());
-                        attrResponse.setInputType(attr.getInputType());
-                        attrResponse.setInputList(attr.getInputList());
-                        attrResponse.setSort(attr.getSort());
-                        attrResponse.setFilterType(attr.getFilterType());
-                        attrResponse.setSearchType(attr.getSearchType());
-                        attrResponse.setRelatedStatus(attr.getRelatedStatus());
-                        attrResponse.setHandAddStatus(attr.getHandAddStatus());
-                        attrResponse.setType(attr.getType());
-                        return attrResponse;
-                    }).collect(Collectors.toList());
+            // 使用 Converter 转换属性列表
+            List<PmsProductAttributeCategoryItemVO.ProductAttributeItemVO> attrVoList =
+                    attributeConverter.entityListToItemVoList(categoryAttributes);
 
-            response.setProductAttributeList(attrResponseList);
-            return response;
+            vo.setProductAttributeList(attrVoList);
+            return vo;
         }).collect(Collectors.toList());
     }
 

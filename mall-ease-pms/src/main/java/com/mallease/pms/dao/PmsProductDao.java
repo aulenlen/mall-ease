@@ -157,6 +157,15 @@ public interface PmsProductDao {
      * @return 商品信息
      */
     PmsProduct selectUpdateInfoById(@Param("id") Long id);
+
+    /**
+     * 批量更新商品删除状态
+     *
+     * @param ids 商品ID列表
+     * @param deleteStatus 删除状态：0->未删除；1->已删除
+     * @return 更新的记录数
+     */
+    int updateDeleteStatusBatch(@Param("ids") List<Long> ids, @Param("deleteStatus") Integer deleteStatus);
 }
 
 

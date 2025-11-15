@@ -155,6 +155,16 @@
         </foreach>
     </update>
 
+    <!-- 批量更新商品删除状态 -->
+    <update id="updateDeleteStatusBatch">
+        update pms_product
+        set delete_status = #{deleteStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
     <!-- 获取商品编辑信息（包含品牌和分类名称） -->
     <select id="selectUpdateInfoById" parameterType="java.lang.Long" resultMap="BaseResultMap">
         select
