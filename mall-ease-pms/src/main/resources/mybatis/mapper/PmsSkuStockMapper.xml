@@ -209,6 +209,16 @@
         </if>
     </select>
 
+    <select id="selectByProductIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_sku_stock
+        where product_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
     <update id="updateBatchSelective" parameterType="java.util.List">
         update pms_sku_stock
         <trim prefix="set" suffixOverrides=",">

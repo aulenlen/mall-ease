@@ -183,6 +183,16 @@
         where p.id = #{id,jdbcType=BIGINT}
     </select>
 
+    <select id="selectByIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_product
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from pms_product
         where id = #{id,jdbcType=BIGINT}

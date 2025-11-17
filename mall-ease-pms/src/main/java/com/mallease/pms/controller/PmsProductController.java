@@ -9,6 +9,7 @@ import com.mallease.pms.converter.PmsProductConverter;
 import com.mallease.pms.dto.cmd.CreateProductCmd;
 import com.mallease.pms.dto.cmd.UpdateProductCmd;
 import com.mallease.pms.dto.query.ProductQuery;
+import com.mallease.pms.dto.response.PmsProductPublishResult;
 import com.mallease.pms.dto.vo.PmsProductDetailVO;
 import com.mallease.pms.dto.vo.PmsProductListVO;
 import com.mallease.pms.pojo.PmsProduct;
@@ -16,6 +17,7 @@ import com.mallease.pms.service.PmsProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +33,7 @@ import java.util.List;
 @Tag(name = "商品管理", description = "商品增删改查、状态管理")
 @RestController
 @RequestMapping("/pms/product")
+@Slf4j
 public class PmsProductController {
 
     @Autowired
@@ -62,11 +65,16 @@ public class PmsProductController {
 
     @Operation(summary = "批量更新上架状态")
     @PostMapping("/update/publishStatus")
-    public R<Integer> updatePublishStatus(
+    public R<PmsProductPublishResult> updatePublishStatus(
             @Parameter(description = "商品ID列表") @RequestParam List<Long> ids,
             @Parameter(description = "上架状态(0:下架 1:上架)") @RequestParam Integer publishStatus) {
-        int count = productService.updatePublishStatusBatch(ids, publishStatus);
-        return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
+        PmsProductPublishResult result = productService.updatePublishStatusBatch(ids, publishStatus);
+        // 判断是否有失败的商品
+        if (result.getFailCount() > 0) {
+            log.warn("批量上架存在失败，成功: {}, 失败: {}",
+                    result.getSuccessCount(), result.getFailCount());
+        }
+        return R.success(result);
     }
 
     @Operation(summary = "批量更新新品状态")

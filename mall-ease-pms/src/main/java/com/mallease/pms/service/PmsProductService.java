@@ -3,6 +3,7 @@ package com.mallease.pms.service;
 import com.mallease.pms.dto.cmd.CreateProductCmd;
 import com.mallease.pms.dto.cmd.UpdateProductCmd;
 import com.mallease.pms.dto.query.ProductQuery;
+import com.mallease.pms.dto.response.PmsProductPublishResult;
 import com.mallease.pms.dto.vo.PmsProductDetailVO;
 import com.mallease.pms.pojo.PmsProduct;
 
@@ -37,9 +38,9 @@ public interface PmsProductService {
      *
      * @param ids 商品ID列表
      * @param publishStatus 上架状态(0:下架 1:上架)
-     * @return 更新的记录数
+     * @return 更新的记录结果
      */
-    int updatePublishStatusBatch(List<Long> ids, Integer publishStatus);
+    PmsProductPublishResult updatePublishStatusBatch(List<Long> ids, Integer publishStatus);
 
     /**
      * 批量更新商品新品状态

@@ -110,5 +110,12 @@ public interface PmsSkuStockDao {
      * @return 影响行数
      */
     int updateBatchSelective(@Param("list") List<PmsSkuStock> list);
+
+    /**
+     * 根据商品ID列表获取库存信息表
+     * @param ids 商品ID列表
+     * @return  库存信息表
+     */
+    List<PmsSkuStock> selectByProductIds(@Param("ids") List<Long> ids);
 }
 

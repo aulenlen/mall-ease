@@ -29,6 +29,16 @@ knife4j:
   setting:
     language: zh_cn
 
+# 线程池配置
+thread-pool:
+  # 通用业务线程池
+  task-executor:
+    core-pool-size: 10
+    max-pool-size: 20
+    queue-capacity: 200
+    keep-alive-seconds: 60
+    thread-name-prefix: "mall-task-"
+
 # SpringDoc OpenAPI配置
 springdoc:
   api-docs:

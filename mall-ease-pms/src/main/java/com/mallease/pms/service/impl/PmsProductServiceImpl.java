@@ -1,13 +1,17 @@
 package com.mallease.pms.service.impl;
 
 import com.mallease.common.api.R;
+import com.mallease.common.constant.PmsRedisKeys;
 import com.mallease.common.exception.ApiException;
+import com.mallease.common.exception.Asserts;
+import com.mallease.common.service.RedisService;
 import com.mallease.pms.converter.RelationConverter;
 import com.mallease.pms.dao.*;
 import com.mallease.pms.dto.*;
 import com.mallease.pms.dto.cmd.CreateProductCmd;
 import com.mallease.pms.dto.cmd.UpdateProductCmd;
 import com.mallease.pms.dto.query.ProductQuery;
+import com.mallease.pms.dto.response.PmsProductPublishResult;
 import com.mallease.pms.dto.vo.*;
 import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
 import com.mallease.pms.feign.CmsSubjectFeignClient;
@@ -19,9 +23,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 商品服务实现类
@@ -32,6 +39,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class PmsProductServiceImpl implements PmsProductService {
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private PmsProductPublishRecordDao productPublishRecordDao;
 
     @Autowired
     private PmsProductDao productDao;
@@ -220,14 +232,171 @@ public class PmsProductServiceImpl implements PmsProductService {
     }
 
     @Override
-    public int updatePublishStatusBatch(List<Long> ids, Integer publishStatus) {
+    @Transactional(rollbackFor = Exception.class)
+    public PmsProductPublishResult updatePublishStatusBatch(List<Long> ids, Integer publishStatus) {
         if (ids == null || ids.isEmpty()) {
-            throw new ApiException("商品ID列表不能为空");
+            Asserts.fail("商品ID列表不能为空");
         }
         if (publishStatus == null || (publishStatus != 0 && publishStatus != 1)) {
-            throw new ApiException("上架状态参数错误，只能为0或1");
+            Asserts.fail("上架状态参数错误，只能为0或1");
         }
-        return productDao.updatePublishStatusBatch(ids, publishStatus);
+
+        log.info("开始批量{}商品，数量: {}", publishStatus == 1 ? "上架" : "下架", ids.size());
+
+        List<PmsProduct> productList = productDao.selectByIds(ids);
+        if (productList == null || productList.isEmpty()) {
+            Asserts.fail("商品不存在");
+        }
+        Map<Long, PmsProduct> productMap = productList.stream()
+                .collect(Collectors.toMap(PmsProduct::getId, item -> item));
+
+        List<PmsSkuStock> skuStockList = skuStockDao.selectByProductIds(ids);
+        Map<Long, List<PmsSkuStock>> skuMap = skuStockList.stream()
+                .collect(Collectors.groupingBy(PmsSkuStock::getProductId));
+
+        //分别校验
+        List<Long> successIds = new ArrayList<>();
+        List<PmsProductPublishResult.PublishFailDetail> failList = new ArrayList<>();
+        ids.forEach(id -> {
+            PmsProduct product = productMap.get(id);
+            if (product == null) {
+                failList.add(PmsProductPublishResult.PublishFailDetail.builder()
+                        .productId(id).reason("商品不存在").productName("未知商品名")
+                        .build());
+            }
+
+            //校验并获取校验失败的原因，null为校验通过
+            String failReason = validated(product, skuMap.get(id), publishStatus);
+            if (failReason != null) {
+                PmsProductPublishResult.PublishFailDetail failDetail = PmsProductPublishResult.PublishFailDetail.builder()
+                        .productId(id)
+                        .reason(failReason)
+                        .productName(product != null ? product.getName() : "未知商品名").build();
+                failList.add(failDetail);
+            } else {
+                successIds.add(id);
+            }
+
+            //更新通过校验商品的上架状态
+            if (!successIds.isEmpty()) {
+                int updatedCount = productDao.updatePublishStatusBatch(successIds, publishStatus);
+                log.info("成功更新{}个商品的上架状态", updatedCount);
+
+                //上架成功就让让缓存失效，防止前端读到脏数据
+                clearCache(ids, productMap);
+
+                //记录操作记录
+                savePublishRecords(ids, productMap, publishStatus);
+            }
+        });
+        //返回结果
+        PmsProductPublishResult result = PmsProductPublishResult.builder()
+                .failDetails(failList)
+                .failCount(failList.size())
+                .successCount(successIds.size())
+                .build();
+
+        log.info("批量{}完成，成功: {}, 失败: {}",
+                publishStatus == 1 ? "上架" : "下架",
+                result.getSuccessCount(),
+                result.getFailCount());
+
+        return result;
+    }
+
+    /**
+     * 保存上架记录
+     *
+     * @param productIds    商品ID列表
+     * @param productMap    商品Map
+     * @param publishStatus 上架状态
+     */
+    private void savePublishRecords(List<Long> productIds, Map<Long, PmsProduct> productMap, Integer publishStatus) {
+        List<PmsProductPublishRecord> records = new ArrayList<>();
+
+        for (Long productId : productIds) {
+            PmsProduct product = productMap.get(productId);
+            if (product == null) continue;
+
+            PmsProductPublishRecord record = new PmsProductPublishRecord();
+            record.setProductId(productId);
+            record.setProductName(product.getName());
+            // TODO: 从Sa-Token Session获取操作人信息
+            // record.setOperatorId(StpUtil.getLoginIdAsLong());
+            // record.setOperatorName(StpUtil.getSession().getString("username"));
+            record.setAction(publishStatus == 1 ? 1 : 0);  // 1-上架, 0-下架
+            record.setFromStatus(product.getPublishStatus());
+            record.setToStatus(publishStatus);
+
+            records.add(record);
+        }
+
+        if (!records.isEmpty()) {
+            productPublishRecordDao.insertBatch(records);
+            log.info("保存上架记录 {} 条", records.size());
+        }
+    }
+
+    /**
+     * 清除商品相关
+     *
+     * @param productIds 商品ID列表
+     * @param productMap 商品Map
+     */
+    private void clearCache(List<Long> productIds, Map<Long, PmsProduct> productMap) {
+        //TODO完善缓存逻辑
+        productIds.forEach(id -> {
+            try {
+                redisService.del(PmsRedisKeys.PRODUCT_DETAIL_PREFIX + id);
+                PmsProduct pmsProduct = productMap.get(id);
+            } catch (Exception e) {
+                log.error("清除商品缓存失败，商品ID: {}", id);
+            }
+        });
+        log.info("清除商品缓存完成，数量: {}", productIds.size());
+    }
+
+    private String validated(PmsProduct product, List<PmsSkuStock> skuStockList, Integer publishStatus) {
+        if (publishStatus == 0) {
+            return null;
+        }
+        if (product.getDeleteStatus() != null && product.getDeleteStatus() == 1) {
+            return "商品已删除";
+        }
+        if (product != null && product.getVerifyStatus() == 0) {
+            return "审核未通过";
+        }
+        if (product.getName() == null || product.getName().trim().isEmpty()) {
+            return "商品名称不能为空";
+        }
+        if (product.getProductSn() == null || product.getProductSn().trim().isEmpty()) {
+            return "商品货号不能为空";
+        }
+        if (product.getPrice() == null || product.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            return "商品价格必须大于0";
+        }
+        if (product.getPic() == null || product.getPic().trim().isEmpty()) {
+            return "商品主图不能为空";
+        }
+        if (product.getProductCategoryId() == null) {
+            return "商品分类不能为空";
+        }
+        if (product.getBrandId() == null) {
+            return "商品品牌不能为空";
+        }
+
+        if (skuStockList == null || skuStockList.isEmpty()) {
+            return "至少需要有一个sku";
+        }
+
+        boolean hasStock = skuStockList.stream().anyMatch(
+                sku -> sku.getStock() != null && sku.getStock() > 0);
+
+        if (!hasStock || (product.getStock() == null || product.getStock() <= 0)) {
+            return "商品无库存";
+        }
+
+        return null;
     }
 
     @Override

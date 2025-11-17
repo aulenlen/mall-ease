@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.pms.dao.PmsProductPublishRecordDao">
+    <resultMap id="BaseResultMap" type="com.mallease.pms.pojo.PmsProductPublishRecord">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="product_id" property="productId" jdbcType="BIGINT"/>
+        <result column="product_name" property="productName" jdbcType="VARCHAR"/>
+        <result column="operator_id" property="operatorId" jdbcType="BIGINT"/>
+        <result column="operator_name" property="operatorName" jdbcType="VARCHAR"/>
+        <result column="action" property="action" jdbcType="TINYINT"/>
+        <result column="from_status" property="fromStatus" jdbcType="TINYINT"/>
+        <result column="to_status" property="toStatus" jdbcType="TINYINT"/>
+        <result column="reason" property="reason" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, product_id, product_name, operator_id, operator_name, action, from_status, to_status, reason, create_time
+    </sql>
+
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_product_publish_record
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <select id="selectByProductId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_product_publish_record
+        where product_id = #{productId,jdbcType=BIGINT}
+        order by create_time desc
+    </select>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        delete from pms_product_publish_record
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+
+    <insert id="insert" parameterType="com.mallease.pms.pojo.PmsProductPublishRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into pms_product_publish_record (id, product_id, product_name,
+                                                operator_id, operator_name, action,
+                                                from_status, to_status, reason,
+                                                create_time)
+        values (#{id,jdbcType=BIGINT}, #{productId,jdbcType=BIGINT}, #{productName,jdbcType=VARCHAR},
+                #{operatorId,jdbcType=BIGINT}, #{operatorName,jdbcType=VARCHAR}, #{action,jdbcType=TINYINT},
+                #{fromStatus,jdbcType=TINYINT}, #{toStatus,jdbcType=TINYINT}, #{reason,jdbcType=VARCHAR},
+                #{createTime,jdbcType=TIMESTAMP})
+    </insert>
+
+    <insert id="insertSelective" parameterType="com.mallease.pms.pojo.PmsProductPublishRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into pms_product_publish_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                id,
+            </if>
+            <if test="productId != null">
+                product_id,
+            </if>
+            <if test="productName != null">
+                product_name,
+            </if>
+            <if test="operatorId != null">
+                operator_id,
+            </if>
+            <if test="operatorName != null">
+                operator_name,
+            </if>
+            <if test="action != null">
+                action,
+            </if>
+            <if test="fromStatus != null">
+                from_status,
+            </if>
+            <if test="toStatus != null">
+                to_status,
+            </if>
+            <if test="reason != null">
+                reason,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="productId != null">
+                #{productId,jdbcType=BIGINT},
+            </if>
+            <if test="productName != null">
+                #{productName,jdbcType=VARCHAR},
+            </if>
+            <if test="operatorId != null">
+                #{operatorId,jdbcType=BIGINT},
+            </if>
+            <if test="operatorName != null">
+                #{operatorName,jdbcType=VARCHAR},
+            </if>
+            <if test="action != null">
+                #{action,jdbcType=TINYINT},
+            </if>
+            <if test="fromStatus != null">
+                #{fromStatus,jdbcType=TINYINT},
+            </if>
+            <if test="toStatus != null">
+                #{toStatus,jdbcType=TINYINT},
+            </if>
+            <if test="reason != null">
+                #{reason,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into pms_product_publish_record (product_id, product_name, operator_id,
+                                                operator_name, action, from_status,
+                                                to_status, reason, create_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.productId,jdbcType=BIGINT}, #{item.productName,jdbcType=VARCHAR}, #{item.operatorId,jdbcType=BIGINT},
+             #{item.operatorName,jdbcType=VARCHAR}, #{item.action,jdbcType=TINYINT}, #{item.fromStatus,jdbcType=TINYINT},
+             #{item.toStatus,jdbcType=TINYINT}, #{item.reason,jdbcType=VARCHAR}, #{item.createTime,jdbcType=TIMESTAMP})
+        </foreach>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.pms.pojo.PmsProductPublishRecord">
+        update pms_product_publish_record
+        <set>
+            <if test="productId != null">
+                product_id = #{productId,jdbcType=BIGINT},
+            </if>
+            <if test="productName != null">
+                product_name = #{productName,jdbcType=VARCHAR},
+            </if>
+            <if test="operatorId != null">
+                operator_id = #{operatorId,jdbcType=BIGINT},
+            </if>
+            <if test="operatorName != null">
+                operator_name = #{operatorName,jdbcType=VARCHAR},
+            </if>
+            <if test="action != null">
+                action = #{action,jdbcType=TINYINT},
+            </if>
+            <if test="fromStatus != null">
+                from_status = #{fromStatus,jdbcType=TINYINT},
+            </if>
+            <if test="toStatus != null">
+                to_status = #{toStatus,jdbcType=TINYINT},
+            </if>
+            <if test="reason != null">
+                reason = #{reason,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <update id="updateByPrimaryKey" parameterType="com.mallease.pms.pojo.PmsProductPublishRecord">
+        update pms_product_publish_record
+        set product_id = #{productId,jdbcType=BIGINT},
+            product_name = #{productName,jdbcType=VARCHAR},
+            operator_id = #{operatorId,jdbcType=BIGINT},
+            operator_name = #{operatorName,jdbcType=VARCHAR},
+            action = #{action,jdbcType=TINYINT},
+            from_status = #{fromStatus,jdbcType=TINYINT},
+            to_status = #{toStatus,jdbcType=TINYINT},
+            reason = #{reason,jdbcType=VARCHAR},
+            create_time = #{createTime,jdbcType=TIMESTAMP}
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+</mapper>
+
