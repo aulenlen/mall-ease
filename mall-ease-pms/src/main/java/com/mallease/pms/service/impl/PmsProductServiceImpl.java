@@ -5,13 +5,14 @@ import com.mallease.common.constant.PmsRedisKeys;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.exception.Asserts;
 import com.mallease.common.service.RedisService;
+import com.mallease.common.util.LoginContextUtil;
 import com.mallease.pms.converter.RelationConverter;
 import com.mallease.pms.dao.*;
 import com.mallease.pms.dto.*;
 import com.mallease.pms.dto.cmd.CreateProductCmd;
 import com.mallease.pms.dto.cmd.UpdateProductCmd;
 import com.mallease.pms.dto.query.ProductQuery;
-import com.mallease.pms.dto.response.PmsProductPublishResult;
+import com.mallease.pms.dto.vo.PmsProductPublishVO;
 import com.mallease.pms.dto.vo.*;
 import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
 import com.mallease.pms.feign.CmsSubjectFeignClient;
@@ -28,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * 商品服务实现类
@@ -233,7 +233,7 @@ public class PmsProductServiceImpl implements PmsProductService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PmsProductPublishResult updatePublishStatusBatch(List<Long> ids, Integer publishStatus) {
+    public PmsProductPublishVO updatePublishStatusBatch(List<Long> ids, Integer publishStatus) {
         if (ids == null || ids.isEmpty()) {
             Asserts.fail("商品ID列表不能为空");
         }
@@ -256,41 +256,43 @@ public class PmsProductServiceImpl implements PmsProductService {
 
         //分别校验
         List<Long> successIds = new ArrayList<>();
-        List<PmsProductPublishResult.PublishFailDetail> failList = new ArrayList<>();
-        ids.forEach(id -> {
-            PmsProduct product = productMap.get(id);
+        List<PublishFailDetailVO> failList = new ArrayList<>();
+        ids.forEach(productId -> {
+            PmsProduct product = productMap.get(productId);
             if (product == null) {
-                failList.add(PmsProductPublishResult.PublishFailDetail.builder()
-                        .productId(id).reason("商品不存在").productName("未知商品名")
+                failList.add(PublishFailDetailVO.builder()
+                        .productId(productId).reason("商品不存在").productName("未知商品名")
                         .build());
             }
 
             //校验并获取校验失败的原因，null为校验通过
-            String failReason = validated(product, skuMap.get(id), publishStatus);
+            String failReason = validated(product, skuMap.get(productId), publishStatus);
             if (failReason != null) {
-                PmsProductPublishResult.PublishFailDetail failDetail = PmsProductPublishResult.PublishFailDetail.builder()
-                        .productId(id)
+                PublishFailDetailVO failDetail = PublishFailDetailVO.builder()
+                        .productId(productId)
                         .reason(failReason)
                         .productName(product != null ? product.getName() : "未知商品名").build();
                 failList.add(failDetail);
             } else {
-                successIds.add(id);
-            }
-
-            //更新通过校验商品的上架状态
-            if (!successIds.isEmpty()) {
-                int updatedCount = productDao.updatePublishStatusBatch(successIds, publishStatus);
-                log.info("成功更新{}个商品的上架状态", updatedCount);
-
-                //上架成功就让让缓存失效，防止前端读到脏数据
-                clearCache(ids, productMap);
-
-                //记录操作记录
-                savePublishRecords(ids, productMap, publishStatus);
+                successIds.add(productId);
             }
         });
+
+
+        //更新通过校验商品的上架状态
+        if (!successIds.isEmpty()) {
+            int updatedCount = productDao.updatePublishStatusBatch(successIds, publishStatus);
+            log.info("成功更新{}个商品的上架状态", updatedCount);
+
+            //上架成功就让让缓存失效，防止前端读到脏数据
+            clearCache(ids, productMap);
+
+            //记录操作记录
+            savePublishRecords(ids, productMap, publishStatus, failList);
+        }
+
         //返回结果
-        PmsProductPublishResult result = PmsProductPublishResult.builder()
+        PmsProductPublishVO result = PmsProductPublishVO.builder()
                 .failDetails(failList)
                 .failCount(failList.size())
                 .successCount(successIds.size())
@@ -304,58 +306,6 @@ public class PmsProductServiceImpl implements PmsProductService {
         return result;
     }
 
-    /**
-     * 保存上架记录
-     *
-     * @param productIds    商品ID列表
-     * @param productMap    商品Map
-     * @param publishStatus 上架状态
-     */
-    private void savePublishRecords(List<Long> productIds, Map<Long, PmsProduct> productMap, Integer publishStatus) {
-        List<PmsProductPublishRecord> records = new ArrayList<>();
-
-        for (Long productId : productIds) {
-            PmsProduct product = productMap.get(productId);
-            if (product == null) continue;
-
-            PmsProductPublishRecord record = new PmsProductPublishRecord();
-            record.setProductId(productId);
-            record.setProductName(product.getName());
-            // TODO: 从Sa-Token Session获取操作人信息
-            // record.setOperatorId(StpUtil.getLoginIdAsLong());
-            // record.setOperatorName(StpUtil.getSession().getString("username"));
-            record.setAction(publishStatus == 1 ? 1 : 0);  // 1-上架, 0-下架
-            record.setFromStatus(product.getPublishStatus());
-            record.setToStatus(publishStatus);
-
-            records.add(record);
-        }
-
-        if (!records.isEmpty()) {
-            productPublishRecordDao.insertBatch(records);
-            log.info("保存上架记录 {} 条", records.size());
-        }
-    }
-
-    /**
-     * 清除商品相关
-     *
-     * @param productIds 商品ID列表
-     * @param productMap 商品Map
-     */
-    private void clearCache(List<Long> productIds, Map<Long, PmsProduct> productMap) {
-        //TODO完善缓存逻辑
-        productIds.forEach(id -> {
-            try {
-                redisService.del(PmsRedisKeys.PRODUCT_DETAIL_PREFIX + id);
-                PmsProduct pmsProduct = productMap.get(id);
-            } catch (Exception e) {
-                log.error("清除商品缓存失败，商品ID: {}", id);
-            }
-        });
-        log.info("清除商品缓存完成，数量: {}", productIds.size());
-    }
-
     private String validated(PmsProduct product, List<PmsSkuStock> skuStockList, Integer publishStatus) {
         if (publishStatus == 0) {
             return null;
@@ -363,7 +313,7 @@ public class PmsProductServiceImpl implements PmsProductService {
         if (product.getDeleteStatus() != null && product.getDeleteStatus() == 1) {
             return "商品已删除";
         }
-        if (product != null && product.getVerifyStatus() == 0) {
+        if (product.getVerifyStatus() != null && product.getVerifyStatus() == 0) {
             return "审核未通过";
         }
         if (product.getName() == null || product.getName().trim().isEmpty()) {
@@ -397,6 +347,64 @@ public class PmsProductServiceImpl implements PmsProductService {
         }
 
         return null;
+    }
+
+    /**
+     * 保存上架记录
+     *
+     * @param productIds    商品ID列表
+     * @param productMap    商品Map
+     * @param publishStatus 上架状态
+     * @param failList      失败商品列表
+     */
+    private void savePublishRecords(List<Long> productIds, Map<Long, PmsProduct> productMap, Integer publishStatus, List<PublishFailDetailVO> failList) {
+        List<PmsProductPublishRecord> records = new ArrayList<>();
+        Map<Long, PublishFailDetailVO> failDetailMap =
+                failList.stream().collect(
+                        Collectors.toMap(PublishFailDetailVO::getProductId,
+                                item -> item));
+        // 获取当前操作人信息
+        Long operatorId = LoginContextUtil.getUserId();
+        String operatorName = LoginContextUtil.getUserName();
+
+        for (Long productId : productIds) {
+            PmsProduct product = productMap.get(productId);
+            if (product == null) continue;
+            PmsProductPublishRecord record = new PmsProductPublishRecord();
+            record.setProductId(productId);
+            record.setProductName(product.getName());
+            record.setOperatorId(operatorId);
+            record.setOperatorName(operatorName);
+            record.setAction(publishStatus == 1 ? 1 : 0);  // 1-上架, 0-下架
+            record.setFromStatus(product.getPublishStatus());
+            record.setToStatus(publishStatus);
+            record.setReason(failDetailMap.get(productId) == null ? "" : failDetailMap.get(productId).getReason());
+            records.add(record);
+        }
+
+        if (!records.isEmpty()) {
+            productPublishRecordDao.insertBatch(records);
+            log.info("保存上架记录 {} 条", records.size());
+        }
+    }
+
+    /**
+     * 清除商品相关
+     *
+     * @param productIds 商品ID列表
+     * @param productMap 商品Map
+     */
+    private void clearCache(List<Long> productIds, Map<Long, PmsProduct> productMap) {
+        //TODO完善缓存逻辑
+        productIds.forEach(id -> {
+            try {
+                redisService.del(PmsRedisKeys.PRODUCT_DETAIL_PREFIX + id);
+                PmsProduct pmsProduct = productMap.get(id);
+            } catch (Exception e) {
+                log.error("清除商品缓存失败，商品ID: {}", id);
+            }
+        });
+        log.info("清除商品缓存完成，数量: {}", productIds.size());
     }
 
     @Override

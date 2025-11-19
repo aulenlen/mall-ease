@@ -9,14 +9,14 @@ import com.mallease.pms.converter.PmsProductConverter;
 import com.mallease.pms.dto.cmd.CreateProductCmd;
 import com.mallease.pms.dto.cmd.UpdateProductCmd;
 import com.mallease.pms.dto.query.ProductQuery;
-import com.mallease.pms.dto.response.PmsProductPublishResult;
-import com.mallease.pms.dto.vo.PmsProductDetailVO;
-import com.mallease.pms.dto.vo.PmsProductListVO;
+import com.mallease.pms.dto.vo.*;
 import com.mallease.pms.pojo.PmsProduct;
 import com.mallease.pms.service.PmsProductService;
+import com.mallease.pms.service.SmartPublishService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -42,6 +42,9 @@ public class PmsProductController {
     @Autowired
     private PmsProductConverter productConverter;
 
+    @Autowired
+    private SmartPublishService smartPublishService;
+
     @Operation(summary = "查询商品列表", description = "支持多条件查询和分页")
     @GetMapping("/list")
     public R<Page<PmsProductListVO>> list(@Validated @ModelAttribute ProductQuery query) {
@@ -63,16 +66,34 @@ public class PmsProductController {
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
+    @Operation(summary = "商品上架进度查询")
+    @GetMapping("/publish/progress/{taskId}")
+    public R<TaskProgressVO> getProgress(@PathVariable String taskId) {
+        TaskProgressVO progress = smartPublishService.getProgress(taskId);
+        if (progress == null) {
+            return R.failed(ResultCode.VALIDATE_FAILED, "任务不存在或已过期");
+        }
+        return R.success(progress);
+    }
+
     @Operation(summary = "批量更新上架状态")
     @PostMapping("/update/publishStatus")
-    public R<PmsProductPublishResult> updatePublishStatus(
-            @Parameter(description = "商品ID列表") @RequestParam List<Long> ids,
+    @Validated
+    public R<SmartPublishResultVO> updatePublishStatus(
+            @Parameter(description = "商品ID列表")
+            @RequestParam List<Long> ids,
             @Parameter(description = "上架状态(0:下架 1:上架)") @RequestParam Integer publishStatus) {
-        PmsProductPublishResult result = productService.updatePublishStatusBatch(ids, publishStatus);
+
+        if(ids.size()>=500){
+            return R.failed("超过500条最大限制");
+        }
+
+        SmartPublishResultVO result = smartPublishService.smartPublish(ids, publishStatus);
+        SmartPublishResultVO.PublishMode mode = result.getMode();
         // 判断是否有失败的商品
-        if (result.getFailCount() > 0) {
+        if (mode == SmartPublishResultVO.PublishMode.SYNC && result.getResult().getFailCount() > 0) {
             log.warn("批量上架存在失败，成功: {}, 失败: {}",
-                    result.getSuccessCount(), result.getFailCount());
+                    result.getResult().getSuccessCount(), result.getResult().getFailCount());
         }
         return R.success(result);
     }
