@@ -1,6 +1,9 @@
 package com.mallease.pms.dto.vo;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +15,10 @@ import java.util.List;
  *
  */
 @Data
-public class TaskProgress {
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class TaskProgressVO {
     private String taskId;
     private Integer total;
     private Integer processed = 0;
@@ -24,7 +30,7 @@ public class TaskProgress {
     private Long startTime = System.currentTimeMillis();
     private Long endTime;
 
-    public TaskProgress(String taskId, Integer total) {
+    public TaskProgressVO(String taskId, Integer total) {
         this.taskId = taskId;
         this.total = total;
     }
