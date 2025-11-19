@@ -21,9 +21,20 @@
             <artifactId>mall-ease-common</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <exclusions>
+                <!-- Gateway 是 WebFlux 响应式框架，不需要 Servlet Web -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-web</artifactId>
+                </exclusion>
+                <!-- Gateway 使用 Reactor 版本的 Sa-Token，排除 Servlet 版本 -->
+                <exclusion>
+                    <groupId>cn.dev33</groupId>
+                    <artifactId>sa-token-spring-boot3-starter</artifactId>
+                </exclusion>
+                <!-- Gateway 不需要 Servlet API -->
+                <exclusion>
+                    <groupId>jakarta.servlet</groupId>
+                    <artifactId>jakarta.servlet-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -65,4 +76,3 @@
         </dependency>
     </dependencies>
 </project>
-
