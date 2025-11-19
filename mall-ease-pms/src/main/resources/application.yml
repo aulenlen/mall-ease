@@ -7,6 +7,21 @@ spring:
     username: root
     password: 123456
 
+  # Redis 配置（与 auth 服务保持一致）
+  data:
+    redis:
+      host: 192.168.50.148
+      database: 0
+      port: 16379
+      password:
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
 mybatis:
   mapper-locations: classpath:mybatis/mapper/*.xml
 
@@ -15,6 +30,21 @@ minio:
   bucketName: mall-ease
   accessKey: minioadmin
   secretKey: minioadmin
+
+# Sa-Token 配置（与 auth 服务保持一致）
+sa-token:
+  token-name: Authorization
+  timeout: 604800
+  active-timeout: -1
+  is-concurrent: true
+  is-share: false
+  token-style: uuid
+  is-log: false
+  is-read-cookie: false
+  is-read-header: true
+  token-prefix: Bearer
+  jwt-secret-key: sa-secret-key123
+  is-print: false
 
 # PageHelper 分页插件配置
 pagehelper:
