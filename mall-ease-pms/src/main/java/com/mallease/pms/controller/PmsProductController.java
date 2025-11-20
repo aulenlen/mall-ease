@@ -16,6 +16,9 @@ import com.mallease.pms.service.SmartPublishService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,10 +84,10 @@ public class PmsProductController {
     @Validated
     public R<SmartPublishResultVO> updatePublishStatus(
             @Parameter(description = "商品ID列表")
-            @RequestParam List<Long> ids,
-            @Parameter(description = "上架状态(0:下架 1:上架)") @RequestParam Integer publishStatus) {
+            @RequestParam @NotEmpty(message = "商品ID列表不能为空") List<Long> ids,
+            @Parameter(description = "上架状态(0:下架 1:上架)") @Min(0) @Max(1) @RequestParam Integer publishStatus) {
 
-        if(ids.size()>=500){
+        if (ids.size() > 500) {
             return R.failed("超过500条最大限制");
         }
 

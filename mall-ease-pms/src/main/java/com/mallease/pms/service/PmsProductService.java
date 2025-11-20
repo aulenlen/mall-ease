@@ -36,16 +36,18 @@ public interface PmsProductService {
     /**
      * 批量更新商品上架状态
      *
-     * @param ids 商品ID列表
+     * @param ids           商品ID列表
      * @param publishStatus 上架状态(0:下架 1:上架)
+     * @param operatorId
+     * @param operatorName
      * @return 更新的记录结果
      */
-    PmsProductPublishVO updatePublishStatusBatch(List<Long> ids, Integer publishStatus);
+    PmsProductPublishVO updatePublishStatusBatch(List<Long> ids, Integer publishStatus, Long operatorId, String operatorName);
 
     /**
      * 批量更新商品新品状态
      *
-     * @param ids 商品ID列表
+     * @param ids       商品ID列表
      * @param newStatus 新品状态(0:不是新品 1:新品)
      * @return 更新的记录数
      */
@@ -54,7 +56,7 @@ public interface PmsProductService {
     /**
      * 批量更新商品推荐状态
      *
-     * @param ids 商品ID列表
+     * @param ids             商品ID列表
      * @param recommendStatus 推荐状态(0:不推荐 1:推荐)
      * @return 更新的记录数
      */
@@ -63,9 +65,9 @@ public interface PmsProductService {
     /**
      * 批量修改商品审核状态
      *
-     * @param ids 商品ID列表
+     * @param ids          商品ID列表
      * @param verifyStatus 审核状态(0:未审核 1:审核通过)
-     * @param detail 审核详情
+     * @param detail       审核详情
      * @return 更新的记录数
      */
     int updateVerifyStatusBatch(List<Long> ids, Integer verifyStatus, String detail);
@@ -73,7 +75,7 @@ public interface PmsProductService {
     /**
      * 批量更新商品删除状态
      *
-     * @param ids 商品ID列表
+     * @param ids          商品ID列表
      * @param deleteStatus 删除状态(0:未删除 1:已删除)
      * @return 更新的记录数
      */
@@ -90,7 +92,7 @@ public interface PmsProductService {
     /**
      * 更新商品（包含所有关联信息）
      *
-     * @param id 商品ID
+     * @param id  商品ID
      * @param cmd 更新商品命令
      * @return 影响行数
      */

@@ -47,4 +47,13 @@ public class TaskProgressVO {
         this.status = "COMPLETED";
         this.endTime = System.currentTimeMillis();
     }
+
+    public void updateChunkFailed(int processed, int chunkSize, String message) {
+        this.processed = processed;
+        this.fail += chunkSize;
+        this.percentage = 100.0 * processed / total;
+
+        PublishFailDetailVO failDetail = PublishFailDetailVO.builder().productId(0L).productName("Chunk处理失败").reason("批量处理异常: " + message).build();
+        this.failList.add(failDetail);
+    }
 }

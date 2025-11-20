@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,28 +27,45 @@ public class PublishProductAsyncHandler {
     private PmsProductService productService;
 
     @Async("taskExecutor")
-    @Transactional(rollbackFor = Exception.class)
-    public void processAsync(List<Long> productids, Integer publishStatus, String taskId) {
+    public void processAsync(List<Long> productids, Integer publishStatus, String taskId, Long operatorId, String operatorName) {
+        log.info("异步任务开始，线程: {}", Thread.currentThread().getName());
+        TaskProgressVO taskProgressVO = new TaskProgressVO(taskId, productids.size());
 
         try {
-            TaskProgressVO taskProgressVO = new TaskProgressVO(taskId, productids.size());
             saveProgress(taskId, taskProgressVO);
-            List<List<Long>> chunkList = partition(productids, 50);
-            Integer processed = 0;
+        } catch (Exception e) {
+            log.error("保存初始进度失败: {}", e.getMessage());
+        }
 
-            for (List<Long> chunk : chunkList) {
-                PmsProductPublishVO result = productService.updatePublishStatusBatch(chunk, publishStatus);
+        List<List<Long>> chunkList = partition(productids, 50);
+        int processed = 0;
+
+        for (List<Long> chunk : chunkList) {
+            try {
+                PmsProductPublishVO result = productService.updatePublishStatusBatch(chunk, publishStatus, operatorId, operatorName);
 
                 processed += chunk.size();
                 taskProgressVO.update(result, processed);
-                saveProgress(taskId, taskProgressVO);
+
+            } catch (Exception e) {
+                log.error("chunk处理失败,继续下一个: {}", chunk, e);
+                processed += chunk.size();
+                taskProgressVO.updateChunkFailed(processed, chunk.size(), e.getMessage());
             }
 
-            taskProgressVO.complete();
+            // Redis失败不影响业务
+            try {
+                saveProgress(taskId, taskProgressVO);
+            } catch (Exception e) {
+                log.error("保存进度失败，不影响业务: {}", e.getMessage());
+            }
+        }
+
+        taskProgressVO.complete();
+        try {
             saveProgress(taskId, taskProgressVO);
         } catch (Exception e) {
-            log.error("异步上架商品任务失败 message: {}", e.getMessage());
-            Asserts.fail("异步上架商品任务失败");
+            log.error("保存最终进度失败: {}", e.getMessage());
         }
     }
 

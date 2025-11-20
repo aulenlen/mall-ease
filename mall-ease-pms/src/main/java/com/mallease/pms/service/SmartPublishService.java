@@ -13,11 +13,11 @@ import java.util.List;
 public interface SmartPublishService {
     /**
      *
-     * @param productids    商品ID列表
+     * @param productIds    商品ID列表
      * @param publishStatus 商品发布状态 1 0
      * @return
      */
-    SmartPublishResultVO smartPublish(List<Long> productids, Integer publishStatus);
+    SmartPublishResultVO smartPublish(List<Long> productIds, Integer publishStatus);
 
     /**
      * 查询任务进度

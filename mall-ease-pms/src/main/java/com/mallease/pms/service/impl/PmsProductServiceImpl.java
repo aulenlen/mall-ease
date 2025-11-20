@@ -5,7 +5,6 @@ import com.mallease.common.constant.PmsRedisKeys;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.exception.Asserts;
 import com.mallease.common.service.RedisService;
-import com.mallease.common.util.LoginContextUtil;
 import com.mallease.pms.converter.RelationConverter;
 import com.mallease.pms.dao.*;
 import com.mallease.pms.dto.*;
@@ -233,7 +232,7 @@ public class PmsProductServiceImpl implements PmsProductService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PmsProductPublishVO updatePublishStatusBatch(List<Long> ids, Integer publishStatus) {
+    public PmsProductPublishVO updatePublishStatusBatch(List<Long> ids, Integer publishStatus, Long operatorId, String operatorName) {
         if (ids == null || ids.isEmpty()) {
             Asserts.fail("商品ID列表不能为空");
         }
@@ -263,6 +262,7 @@ public class PmsProductServiceImpl implements PmsProductService {
                 failList.add(PublishFailDetailVO.builder()
                         .productId(productId).reason("商品不存在").productName("未知商品名")
                         .build());
+                return;
             }
 
             //校验并获取校验失败的原因，null为校验通过
@@ -288,7 +288,7 @@ public class PmsProductServiceImpl implements PmsProductService {
             clearCache(ids, productMap);
 
             //记录操作记录
-            savePublishRecords(ids, productMap, publishStatus, failList);
+            savePublishRecords(ids, productMap, publishStatus, failList, operatorId, operatorName);
         }
 
         //返回结果
@@ -356,16 +356,15 @@ public class PmsProductServiceImpl implements PmsProductService {
      * @param productMap    商品Map
      * @param publishStatus 上架状态
      * @param failList      失败商品列表
+     * @param operatorId
+     * @param operatorName
      */
-    private void savePublishRecords(List<Long> productIds, Map<Long, PmsProduct> productMap, Integer publishStatus, List<PublishFailDetailVO> failList) {
+    private void savePublishRecords(List<Long> productIds, Map<Long, PmsProduct> productMap, Integer publishStatus, List<PublishFailDetailVO> failList, Long operatorId, String operatorName) {
         List<PmsProductPublishRecord> records = new ArrayList<>();
         Map<Long, PublishFailDetailVO> failDetailMap =
                 failList.stream().collect(
                         Collectors.toMap(PublishFailDetailVO::getProductId,
                                 item -> item));
-        // 获取当前操作人信息
-        Long operatorId = LoginContextUtil.getUserId();
-        String operatorName = LoginContextUtil.getUserName();
 
         for (Long productId : productIds) {
             PmsProduct product = productMap.get(productId);
