@@ -51,6 +51,18 @@
         order by sort asc
     </select>
 
+    <select id="selectByIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_brand
+        <where>
+            id in
+            <foreach collection="brandIds" item="brandId" open="(" separator="," close=")">
+                #{brandId}
+            </foreach>
+        </where>
+    </select>
+
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from pms_brand
         where id = #{id,jdbcType=BIGINT}

@@ -17,7 +17,8 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, product_attribute_category_id, name, select_type, input_type, input_list, sort, filter_type, search_type, related_status, hand_add_status, type
+        id
+        , product_attribute_category_id, name, select_type, input_type, input_list, sort, filter_type, search_type, related_status, hand_add_status, type
     </sql>
 
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
@@ -72,23 +73,38 @@
         where product_attribute_category_id = #{cid} and type=#{type}
     </select>
 
+    <select id="selectByProductAttributeCategoryIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_product_attribute
+        <where>
+            product_attribute_category_id in
+            <foreach collection="productAttributeCategoryIds" item="productAttributeCategoryId" open="(" separator="," close=")">
+                #{productAttributeCategoryId}
+            </foreach>
+        </where>
+    </select>
+
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
-        delete from pms_product_attribute
+        delete
+        from pms_product_attribute
         where id = #{id,jdbcType=BIGINT}
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.pms.pojo.PmsProductAttribute" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.pms.pojo.PmsProductAttribute" useGeneratedKeys="true"
+            keyProperty="id">
         insert into pms_product_attribute (id, product_attribute_category_id, name,
-                                          select_type, input_type, input_list,
-                                          sort, filter_type, search_type,
-                                          related_status, hand_add_status, type)
+                                           select_type, input_type, input_list,
+                                           sort, filter_type, search_type,
+                                           related_status, hand_add_status, type)
         values (#{id,jdbcType=BIGINT}, #{productAttributeCategoryId,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR},
                 #{selectType,jdbcType=INTEGER}, #{inputType,jdbcType=INTEGER}, #{inputList,jdbcType=VARCHAR},
                 #{sort,jdbcType=INTEGER}, #{filterType,jdbcType=INTEGER}, #{searchType,jdbcType=INTEGER},
                 #{relatedStatus,jdbcType=INTEGER}, #{handAddStatus,jdbcType=INTEGER}, #{type,jdbcType=INTEGER})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.pms.pojo.PmsProductAttribute" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.pms.pojo.PmsProductAttribute" useGeneratedKeys="true"
+            keyProperty="id">
         insert into pms_product_attribute
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
@@ -211,16 +227,16 @@
     <update id="updateByPrimaryKey" parameterType="com.mallease.pms.pojo.PmsProductAttribute">
         update pms_product_attribute
         set product_attribute_category_id = #{productAttributeCategoryId,jdbcType=BIGINT},
-            name = #{name,jdbcType=VARCHAR},
-            select_type = #{selectType,jdbcType=INTEGER},
-            input_type = #{inputType,jdbcType=INTEGER},
-            input_list = #{inputList,jdbcType=VARCHAR},
-            sort = #{sort,jdbcType=INTEGER},
-            filter_type = #{filterType,jdbcType=INTEGER},
-            search_type = #{searchType,jdbcType=INTEGER},
-            related_status = #{relatedStatus,jdbcType=INTEGER},
-            hand_add_status = #{handAddStatus,jdbcType=INTEGER},
-            type = #{type,jdbcType=INTEGER}
+            name                          = #{name,jdbcType=VARCHAR},
+            select_type                   = #{selectType,jdbcType=INTEGER},
+            input_type                    = #{inputType,jdbcType=INTEGER},
+            input_list                    = #{inputList,jdbcType=VARCHAR},
+            sort                          = #{sort,jdbcType=INTEGER},
+            filter_type                   = #{filterType,jdbcType=INTEGER},
+            search_type                   = #{searchType,jdbcType=INTEGER},
+            related_status                = #{relatedStatus,jdbcType=INTEGER},
+            hand_add_status               = #{handAddStatus,jdbcType=INTEGER},
+            type                          = #{type,jdbcType=INTEGER}
         where id = #{id,jdbcType=BIGINT}
     </update>
 

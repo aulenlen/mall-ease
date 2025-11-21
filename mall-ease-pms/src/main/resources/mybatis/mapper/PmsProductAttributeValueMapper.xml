@@ -33,6 +33,30 @@
         where product_attribute_id = #{productAttributeId,jdbcType=BIGINT}
     </select>
 
+    <select id="selectByProductAttributeIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_product_attribute_value
+        <where>
+            product_attribute_id in
+            <foreach collection="attributeIds" item="attributeId" open="(" separator="," close=")">
+                #{attributeId}
+            </foreach>
+        </where>
+    </select>
+
+    <select id="selectByProductIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from pms_product_attribute_value
+        <where>
+            product_id in
+            <foreach collection="productIds" item="productId" open="(" separator="," close=")">
+                #{productId}
+            </foreach>
+        </where>
+    </select>
+
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from pms_product_attribute_value
         where id = #{id,jdbcType=BIGINT}
