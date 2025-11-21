@@ -93,4 +93,20 @@ public interface PmsProductAttributeValueDao {
      * @return 影响行数
      */
     int insertBatch(@Param("list") List<PmsProductAttributeValue> list);
+
+    /**
+     * 根据商品属性定义ID列表获取商品属性值列表
+     *
+     * @param attributeIds 商品属性定义ID列表
+     * @return 商品属性值列表
+     */
+    List<PmsProductAttributeValue> selectByProductAttributeIds(@Param("attributeIds") List<Long> attributeIds);
+
+    /**
+     * 根据商品ID列表获取商品属性值列表
+     *
+     * @param productIds 商品ID列表
+     * @return 商品属性值列表
+     */
+    List<PmsProductAttributeValue> selectByProductIds(@Param("productIds") List<Long> productIds);
 }

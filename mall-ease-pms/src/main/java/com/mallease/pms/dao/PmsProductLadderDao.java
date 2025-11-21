@@ -85,5 +85,12 @@ public interface PmsProductLadderDao {
      * @return 影响行数
      */
     int insertBatch(@Param("list") List<PmsProductLadder> list);
+
+    /**
+     * 根据商品ID列表获取商品阶梯价格列表
+     * @param productIds 商品ID列表
+     * @return 商品阶梯价格列表
+     */
+    List<PmsProductLadder> selectByProductIds(@Param("productIds") List<Long> productIds);
 }
 

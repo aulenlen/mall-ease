@@ -93,4 +93,11 @@ public interface PmsMemberPriceDao {
      * @return 影响行数
      */
     int insertBatch(@Param("list") List<PmsMemberPrice> list);
+
+    /**
+     * 根据产品ID列表查询
+     * @param productIds 产品ID列表
+     * @return 记录列表
+     */
+    List<PmsMemberPrice> selectByProductIds(@Param("productIds") List<Long> productIds);
 }

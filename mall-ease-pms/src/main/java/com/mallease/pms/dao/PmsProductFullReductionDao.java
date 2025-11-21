@@ -85,5 +85,13 @@ public interface PmsProductFullReductionDao {
      * @return 影响行数
      */
     int insertBatch(@Param("list") List<PmsProductFullReduction> list);
+
+    /**
+     * 根据产品ID列表查询
+     *
+     * @param productIds 产品ID列表
+     * @return 记录列表
+     */
+    List<PmsProductFullReduction> selectByProductIds(@Param("productIds") List<Long> productIds);
 }
 

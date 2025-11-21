@@ -119,6 +119,13 @@ public interface PmsProductAttributeDao {
      * @return 属性列表
      */
     List<PmsProductAttribute> selectByIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据商品属性ID列表查询商品属性列表
+     * @param productAttributeCategoryIds 品属性ID列表
+     * @return 商品属性列表
+     */
+    List<PmsProductAttribute> selectByProductAttributeCategoryIds(@Param("productAttributeCategoryIds") List<Long> productAttributeCategoryIds);
 }
 
 

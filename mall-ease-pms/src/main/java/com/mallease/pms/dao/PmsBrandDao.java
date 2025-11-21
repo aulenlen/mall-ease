@@ -97,10 +97,18 @@ public interface PmsBrandDao {
     /**
      * 批量更新品牌厂家制造商状态
      *
-     * @param ids            品牌ID列表
+     * @param ids           品牌ID列表
      * @param factoryStatus 厂家制造商状态（0->不是；1->是）
      * @return 影响行数
      */
     int updateFactoryStatusBatch(@Param("ids") List<Long> ids, @Param("factoryStatus") Integer factoryStatus);
+
+    /**
+     * 根据品牌ID列表获取品牌列表
+     *
+     * @param brandIds 品牌ID列表
+     * @return 品牌列表
+     */
+    List<PmsBrand> selectByIds(@Param("brandIds") List<Long> brandIds);
 }
 
