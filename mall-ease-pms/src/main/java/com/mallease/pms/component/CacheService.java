@@ -1,151 +1,152 @@
 package com.mallease.pms.component;
 
-import com.mallease.common.constant.PmsRedisKeys;
 import com.mallease.common.service.RedisService;
-import com.mallease.pms.dto.cache.PmsProductDetailCacheDTO;
-import com.mallease.pms.service.PmsProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 商品缓存组件（高性能版本）
- * 使用扩展后的 RedisService 进行批量操作
+ * 通用缓存工具类
  *
  * @author: Aulen
  * @create: 2025-11-21
  */
 @Component
 @Slf4j
-public class CacheComponent {
+public class CacheService {
 
     @Autowired
     private RedisService redisService;
 
-    @Autowired
-    private PmsProductService productService;
-
     /**
-     * 批量获取商品详情（带缓存）
+     * 批量获取缓存
      *
-     * @param productIds 商品ID列表
-     * @return 商品详情列表
+     * @param ids       ID列表
+     * @param keyPrefix 缓存key前缀
+     * @param clazz     目标类型
+     * @param <T>       泛型类型
+     * @return ID到对象的映射
      */
-    public List<PmsProductDetailCacheDTO> getProductDetailBatchWithCache(List<Long> productIds) {
-        if (productIds == null || productIds.isEmpty()) {
-            return Collections.emptyList();
+    public <T> Map<Long, T> batchGet(List<Long> ids, String keyPrefix, Class<T> clazz) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyMap();
         }
 
-        // 批量从 Redis 获取
-        Map<Long, PmsProductDetailCacheDTO> cachedMap = batchGetFromCache(productIds);
-        log.info("从缓存获取到 {} 个商品", cachedMap.size());
-
-        // 2.找出未命中的商品ID
-        List<Long> missedIds = productIds.stream()
-                .filter(id -> !cachedMap.containsKey(id))
-                .toList();
-
-        // 3. 从数据库查询未命中的数据
-        if (!missedIds.isEmpty()) {
-            log.info("缓存未命中 {} 个商品，从数据库查询", missedIds.size());
-            List<PmsProductDetailCacheDTO> fromDb = productService.getProductDetailBatch(missedIds);
-
-            // 4.批量写入缓存
-            batchSetToCache(fromDb);
-
-            // 5. 合并结果
-            fromDb.forEach(dto -> cachedMap.put(dto.getProduct().getId(), dto));
-        }
-
-        // 6. 按原始顺序返回
-        return productIds.stream()
-                .map(cachedMap::get)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    /**
-     * 批量从缓存获取
-     */
-    private Map<Long, PmsProductDetailCacheDTO> batchGetFromCache(List<Long> productIds) {
         // 构建 key 列表
-        List<String> keys = productIds.stream()
-                .map(id -> PmsRedisKeys.PRODUCT_DETAIL_PREFIX + id)
+        List<String> keys = ids.stream()
+                .map(id -> keyPrefix + id)
                 .toList();
 
         List<Object> values = redisService.multiGet(keys);
 
-        Map<Long, PmsProductDetailCacheDTO> result = new HashMap<>();
+        Map<Long, T> result = new HashMap<>();
         if (values != null) {
-            for (int i = 0; i < productIds.size(); i++) {
+            for (int i = 0; i < ids.size(); i++) {
                 Object value = values.get(i);
-                if (value instanceof PmsProductDetailCacheDTO) {
-                    result.put(productIds.get(i), (PmsProductDetailCacheDTO) value);
+                if (value != null && clazz.isInstance(value)) {
+                    result.put(ids.get(i), clazz.cast(value));
                 }
             }
         }
 
+        log.debug("批量获取缓存，总数: {}, 命中: {}", ids.size(), result.size());
         return result;
     }
 
     /**
-     * 批量写入缓存
+     * 批量设置缓存
+     *
+     * @param items         数据列表
+     * @param keyPrefix     缓存key前缀
+     * @param idExtractor   ID提取函数
+     * @param expireSeconds 过期时间（秒）
+     * @param <T>           泛型类型
      */
-    private void batchSetToCache(List<PmsProductDetailCacheDTO> dtoList) {
-        if (dtoList == null || dtoList.isEmpty()) {
+    public <T> void batchSet(List<T> items,
+                             String keyPrefix,
+                             Function<T, Long> idExtractor,
+                             long expireSeconds) {
+        if (items == null || items.isEmpty()) {
             return;
         }
 
         // 构建 key-value map
-        Map<String, Object> cacheMap = dtoList.stream()
+        Map<String, Object> cacheMap = items.stream()
                 .collect(Collectors.toMap(
-                        dto -> PmsRedisKeys.PRODUCT_DETAIL_PREFIX + dto.getProduct().getId(),
-                        dto -> dto
+                        item -> keyPrefix + idExtractor.apply(item),
+                        item -> item
                 ));
 
-        // 【使用扩展方法】批量写入（1次网络往返）
-        redisService.multiSetWithExpire(cacheMap, PmsRedisKeys.getProductDetailCacheExpireSeconds());
-
-        log.info("批量写入缓存 {} 个商品", dtoList.size());
+        // 批量写入
+        redisService.multiSetWithExpire(cacheMap, expireSeconds);
+        log.info("批量写入缓存 {} 条", items.size());
     }
 
     /**
-     * 删除缓存
+     * 删除单个缓存
+     *
+     * @param id        ID
+     * @param keyPrefix 缓存key前缀
      */
-    public void deleteCache(Long productId) {
-        String key = PmsRedisKeys.PRODUCT_DETAIL_PREFIX + productId;
+    public void delete(Long id, String keyPrefix) {
+        if (id == null) {
+            return;
+        }
+        String key = keyPrefix + id;
         redisService.del(key);
-        log.info("删除商品缓存，商品ID: {}", productId);
+        log.debug("删除缓存，key: {}", key);
     }
 
     /**
      * 批量删除缓存
+     *
+     * @param ids       ID列表
+     * @param keyPrefix 缓存key前缀
      */
-    public void deleteCacheBatch(List<Long> productIds) {
-        if (productIds == null || productIds.isEmpty()) {
+    public void deleteBatch(List<Long> ids, String keyPrefix) {
+        if (ids == null || ids.isEmpty()) {
             return;
         }
 
-        List<String> keys = productIds.stream()
-                .map(id -> PmsRedisKeys.PRODUCT_DETAIL_PREFIX + id)
+        List<String> keys = ids.stream()
+                .map(id -> keyPrefix + id)
                 .toList();
 
         redisService.del(keys);
-        log.info("批量删除商品缓存 {} 个", productIds.size());
+        log.info("批量删除缓存 {} 条", ids.size());
     }
 
     /**
-     * 预热缓存（在商品上架后调用）
+     * 检查缓存是否存在
+     *
+     * @param id        ID
+     * @param keyPrefix 缓存key前缀
+     * @return 是否存在
      */
-    public void warmUpCache(List<Long> productIds) {
-        log.info("开始预热商品缓存，商品数量: {}", productIds.size());
+    public boolean exists(Long id, String keyPrefix) {
+        if (id == null) {
+            return false;
+        }
+        String key = keyPrefix + id;
+        return redisService.hasKey(key);
+    }
 
-        List<PmsProductDetailCacheDTO> dtoList = productService.getProductDetailBatch(productIds);
-        batchSetToCache(dtoList);
-
-        log.info("商品缓存预热完成");
+    /**
+     * 获取缓存剩余过期时间
+     *
+     * @param id        ID
+     * @param keyPrefix 缓存key前缀
+     * @return 剩余秒数，-1表示永久有效，-2表示不存在
+     */
+    public Long getExpire(Long id, String keyPrefix) {
+        if (id == null) {
+            return -2L;
+        }
+        String key = keyPrefix + id;
+        return redisService.getExpire(key);
     }
 }

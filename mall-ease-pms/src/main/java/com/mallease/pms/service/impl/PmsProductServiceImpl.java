@@ -4,14 +4,16 @@ import com.mallease.common.api.R;
 import com.mallease.common.constant.PmsRedisKeys;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.exception.Asserts;
-import com.mallease.common.service.RedisService;
+import com.mallease.pms.component.CacheService;
+import com.mallease.pms.converter.PmsProductCacheConverter;
 import com.mallease.pms.converter.RelationConverter;
 import com.mallease.pms.dao.*;
-import com.mallease.pms.dto.*;
+import com.mallease.pms.dto.CmsPreferenceAreaProductRelationDTO;
+import com.mallease.pms.dto.CmsSubjectProductRelationDTO;
+import com.mallease.pms.dto.cache.PmsProductDetailCacheDTO;
 import com.mallease.pms.dto.cmd.CreateProductCmd;
 import com.mallease.pms.dto.cmd.UpdateProductCmd;
 import com.mallease.pms.dto.query.ProductQuery;
-import com.mallease.pms.dto.vo.PmsProductPublishVO;
 import com.mallease.pms.dto.vo.*;
 import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
 import com.mallease.pms.feign.CmsSubjectFeignClient;
@@ -24,9 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -39,7 +39,10 @@ import java.util.stream.Collectors;
 @Service
 public class PmsProductServiceImpl implements PmsProductService {
     @Autowired
-    private RedisService redisService;
+    private CacheService cacheService;
+
+    @Autowired
+    private PmsProductCacheConverter productCacheConverter;
 
     @Autowired
     private PmsProductPublishRecordDao productPublishRecordDao;
@@ -76,6 +79,8 @@ public class PmsProductServiceImpl implements PmsProductService {
 
     @Autowired
     private RelationConverter relationConverter;
+    @Autowired
+    private PmsProductAttributeDao pmsProductAttributeDao;
 
     @Override
     public List<PmsProduct> list(ProductQuery query) {
@@ -232,7 +237,7 @@ public class PmsProductServiceImpl implements PmsProductService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PmsProductPublishVO updatePublishStatusBatch(List<Long> ids, Integer publishStatus, Long operatorId, String operatorName) {
+    public PmsProductPublishVO  updatePublishStatusBatch(List<Long> ids, Integer publishStatus, Long operatorId, String operatorName) {
         if (ids == null || ids.isEmpty()) {
             Asserts.fail("商品ID列表不能为空");
         }
@@ -242,6 +247,7 @@ public class PmsProductServiceImpl implements PmsProductService {
 
         log.info("开始批量{}商品，数量: {}", publishStatus == 1 ? "上架" : "下架", ids.size());
 
+        // 查询商品基本信息
         List<PmsProduct> productList = productDao.selectByIds(ids);
         if (productList == null || productList.isEmpty()) {
             Asserts.fail("商品不存在");
@@ -249,73 +255,116 @@ public class PmsProductServiceImpl implements PmsProductService {
         Map<Long, PmsProduct> productMap = productList.stream()
                 .collect(Collectors.toMap(PmsProduct::getId, item -> item));
 
-        List<PmsSkuStock> skuStockList = skuStockDao.selectByProductIds(ids);
-        Map<Long, List<PmsSkuStock>> skuMap = skuStockList.stream()
-                .collect(Collectors.groupingBy(PmsSkuStock::getProductId));
+        // 查询SKU库存信息（上架时需要）
+        Map<Long, List<PmsSkuStock>> skuMap = new HashMap<>();
+        if (publishStatus == 1) {
+            List<PmsSkuStock> skuStockList = skuStockDao.selectByProductIds(ids);
+            skuMap = skuStockList.stream()
+                    .collect(Collectors.groupingBy(PmsSkuStock::getProductId));
+        }
 
-        //分别校验
+        // 分类处理：已处于目标状态、校验失败、校验成功
         List<Long> successIds = new ArrayList<>();
         List<PublishFailDetailVO> failList = new ArrayList<>();
-        ids.forEach(productId -> {
+        List<Long> skippedIds = new ArrayList<>();  // 已处于目标状态的商品
+
+        for (Long productId : ids) {
             PmsProduct product = productMap.get(productId);
             if (product == null) {
                 failList.add(PublishFailDetailVO.builder()
-                        .productId(productId).reason("商品不存在").productName("未知商品名")
+                        .productId(productId)
+                        .reason("商品不存在")
+                        .productName("未知商品")
                         .build());
-                return;
+                continue;
             }
 
-            //校验并获取校验失败的原因，null为校验通过
-            String failReason = validated(product, skuMap.get(productId), publishStatus);
+            // 检查商品是否已经处于目标状态
+            if (product.getPublishStatus() != null && product.getPublishStatus().equals(publishStatus)) {
+                skippedIds.add(productId);
+                log.debug("商品{}已处于{}状态，跳过处理", productId,
+                        publishStatus == 1 ? "上架" : "下架");
+                continue;
+            }
+
+            // 根据上下架类型选择不同的验证逻辑
+            String failReason = publishStatus == 1
+                ? validateForPublish(product, skuMap.get(productId))  // 上架验证
+                : validateForUnpublish(product);  // 下架验证
+
             if (failReason != null) {
-                PublishFailDetailVO failDetail = PublishFailDetailVO.builder()
+                failList.add(PublishFailDetailVO.builder()
                         .productId(productId)
                         .reason(failReason)
-                        .productName(product != null ? product.getName() : "未知商品名").build();
-                failList.add(failDetail);
+                        .productName(product.getName())
+                        .build());
             } else {
                 successIds.add(productId);
             }
-        });
+        }
 
-
-        //更新通过校验商品的上架状态
+        // 执行状态更新
         if (!successIds.isEmpty()) {
             int updatedCount = productDao.updatePublishStatusBatch(successIds, publishStatus);
             log.info("成功更新{}个商品的上架状态", updatedCount);
 
-            //上架成功就让让缓存失效，防止前端读到脏数据
-            clearCache(ids, productMap);
-
-            //记录操作记录
-            savePublishRecords(ids, productMap, publishStatus, failList, operatorId, operatorName);
+            // 处理缓存
+            if (publishStatus == 1) {
+                // 上架：预热缓存
+                log.info("开始预热商品缓存，商品数量: {}", successIds.size());
+                List<PmsProductDetailCacheDTO> productDetails = getProductDetailBatch(successIds);
+                cacheService.deleteBatch(successIds, PmsRedisKeys.PRODUCT_DETAIL_PREFIX);
+                cacheService.batchSet(
+                        productDetails,
+                        PmsRedisKeys.PRODUCT_DETAIL_PREFIX,
+                        dto -> dto.getProduct().getId(),
+                        PmsRedisKeys.getProductDetailCacheExpireSeconds()
+                );
+                log.info("商品缓存预热完成");
+            } else {
+                // 下架：清除缓存
+                cacheService.deleteBatch(successIds, PmsRedisKeys.PRODUCT_DETAIL_PREFIX);
+                log.info("清除下架商品缓存，数量: {}", successIds.size());
+            }
         }
 
-        //返回结果
+        // 记录操作日志（包括成功、失败和跳过的）
+        savePublishRecords(ids, productMap, publishStatus, failList, operatorId, operatorName);
+
+        // 构造返回结果
         PmsProductPublishVO result = PmsProductPublishVO.builder()
                 .failDetails(failList)
                 .failCount(failList.size())
                 .successCount(successIds.size())
+                .skippedCount(skippedIds.size())
+                .skippedIds(skippedIds)
                 .build();
 
-        log.info("批量{}完成，成功: {}, 失败: {}",
+        log.info("批量{}完成，成功: {}, 失败: {}, 跳过: {}（已处于目标状态）",
                 publishStatus == 1 ? "上架" : "下架",
                 result.getSuccessCount(),
-                result.getFailCount());
+                result.getFailCount(),
+                result.getSkippedCount());
 
         return result;
     }
 
-    private String validated(PmsProduct product, List<PmsSkuStock> skuStockList, Integer publishStatus) {
-        if (publishStatus == 0) {
-            return null;
-        }
+    /**
+     * 上架验证逻辑
+     * @param product 商品信息
+     * @param skuStockList SKU库存列表
+     * @return 验证失败原因，null表示通过
+     */
+    private String validateForPublish(PmsProduct product, List<PmsSkuStock> skuStockList) {
+        // 基础状态检查
         if (product.getDeleteStatus() != null && product.getDeleteStatus() == 1) {
             return "商品已删除";
         }
         if (product.getVerifyStatus() != null && product.getVerifyStatus() == 0) {
-            return "审核未通过";
+            return "商品审核未通过";
         }
+
+        // 必填信息检查
         if (product.getName() == null || product.getName().trim().isEmpty()) {
             return "商品名称不能为空";
         }
@@ -335,16 +384,41 @@ public class PmsProductServiceImpl implements PmsProductService {
             return "商品品牌不能为空";
         }
 
+        // SKU和库存检查
         if (skuStockList == null || skuStockList.isEmpty()) {
-            return "至少需要有一个sku";
+            return "商品至少需要一个SKU";
         }
 
-        boolean hasStock = skuStockList.stream().anyMatch(
-                sku -> sku.getStock() != null && sku.getStock() > 0);
+        boolean hasStock = skuStockList.stream()
+                .anyMatch(sku -> sku.getStock() != null && sku.getStock() > 0);
 
-        if (!hasStock || (product.getStock() == null || product.getStock() <= 0)) {
-            return "商品无库存";
+        if (!hasStock) {
+            return "商品库存不足，无法上架";
         }
+
+        if (product.getStock() == null || product.getStock() <= 0) {
+            return "商品总库存不足";
+        }
+
+        return null;
+    }
+
+    /**
+     * 下架验证逻辑
+     * @param product 商品信息
+     * @return 验证失败原因，null表示通过
+     */
+    private String validateForUnpublish(PmsProduct product) {
+        // 下架只需要检查基本条件
+        if (product.getDeleteStatus() != null && product.getDeleteStatus() == 1) {
+            return "商品已删除，无需下架";
+        }
+
+        // 可以添加其他业务规则，比如：
+        // - 检查是否有进行中的订单
+        // - 检查是否参与活动中
+        // - 检查是否有预售状态
+        // 这里暂时只做基础检查
 
         return null;
     }
@@ -385,25 +459,6 @@ public class PmsProductServiceImpl implements PmsProductService {
             productPublishRecordDao.insertBatch(records);
             log.info("保存上架记录 {} 条", records.size());
         }
-    }
-
-    /**
-     * 清除商品相关
-     *
-     * @param productIds 商品ID列表
-     * @param productMap 商品Map
-     */
-    private void clearCache(List<Long> productIds, Map<Long, PmsProduct> productMap) {
-        //TODO完善缓存逻辑
-        productIds.forEach(id -> {
-            try {
-                redisService.del(PmsRedisKeys.PRODUCT_DETAIL_PREFIX + id);
-                PmsProduct pmsProduct = productMap.get(id);
-            } catch (Exception e) {
-                log.error("清除商品缓存失败，商品ID: {}", id);
-            }
-        });
-        log.info("清除商品缓存完成，数量: {}", productIds.size());
     }
 
     @Override
@@ -575,6 +630,108 @@ public class PmsProductServiceImpl implements PmsProductService {
         }
 
         return result;
+    }
+
+    @Override
+    public List<PmsProductDetailCacheDTO> getProductDetailBatch(List<Long> productIds) {
+        // 商品基本信息
+        List<PmsProduct> pmsProductList = productDao.selectByIds(productIds);
+        Map<Long, PmsProduct> productMap = pmsProductList.stream().collect(Collectors.toMap(PmsProduct::getId, pmsProduct -> pmsProduct));
+
+        // 品牌信息
+        List<Long> brandIds = pmsProductList.stream().map(PmsProduct::getBrandId).distinct().toList();
+        List<PmsBrand> brandList = brandDao.selectByIds(brandIds);
+        Map<Long, PmsBrand> brandMap = brandList.stream().collect(Collectors.toMap(PmsBrand::getId, pmsBrand -> pmsBrand));
+
+        // 商品属性值列表
+        List<PmsProductAttributeValue> attributeValueList = productAttributeValueDao.selectByProductIds(productIds);
+        Map<Long, List<PmsProductAttributeValue>> attrValueMap = attributeValueList.stream().collect(Collectors.groupingBy(PmsProductAttributeValue::getProductId));
+
+        // 商品属性定义列表
+        List<Long> attributeIds = attributeValueList.stream()
+                .map(PmsProductAttributeValue::getProductAttributeId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, PmsProductAttribute> attributeMap = Collections.emptyMap();
+        if (!attributeIds.isEmpty()) {
+            List<PmsProductAttribute> productAttributeList2 = pmsProductAttributeDao.selectByIds(attributeIds);
+            attributeMap = productAttributeList2.stream()
+                    .collect(Collectors.toMap(PmsProductAttribute::getId, a -> a));
+        }
+
+        // sku库存
+        List<PmsSkuStock> skuStockList = skuStockDao.selectByProductIds(productIds);
+        Map<Long, List<PmsSkuStock>> skuMap = skuStockList.stream().collect(Collectors.groupingBy(PmsSkuStock::getProductId));
+        // 商品阶梯价格列表
+        List<PmsProductLadder> productLadderList = productLadderDao.selectByProductIds(productIds);
+        Map<Long, List<PmsProductLadder>> ladderMap = productLadderList.stream().collect(Collectors.groupingBy(PmsProductLadder::getProductId));
+        // 商品满减列表
+        List<PmsProductFullReduction> productFullReductionList = productFullReductionDao.selectByProductIds(productIds);
+        Map<Long, List<PmsProductFullReduction>> fullReductionMap = productFullReductionList.stream().collect(Collectors.groupingBy(PmsProductFullReduction::getProductId));
+        // 商品会员价格列表
+        List<PmsMemberPrice> memberPriceList = memberPriceDao.selectByProductIds(productIds);
+        Map<Long, List<PmsMemberPrice>> memberPriceMap = memberPriceList.stream().collect(Collectors.groupingBy(PmsMemberPrice::getProductId));
+
+        // 组装DTO
+        final Map<Long, PmsBrand> finalBrandMap = brandMap;
+        final Map<Long, PmsProductAttribute> finalAttributeMap = attributeMap;
+
+        return productIds.stream()
+                .map(productId -> {
+                    PmsProduct product = productMap.get(productId);
+                    if (product == null) {
+                        return null;
+                    }
+
+                    // 获取该商品用到的属性定义列表
+                    List<PmsProductAttributeVO> attrDefVOList = getAttributeDefinitionsForProduct(
+                            attrValueMap.get(productId), finalAttributeMap);
+
+                    return PmsProductDetailCacheDTO.builder()
+                            .product(productCacheConverter.productToBasicCache(product))
+                            .brand(finalBrandMap.get(product.getBrandId()) != null ?
+                                    productCacheConverter.brandToCache(finalBrandMap.get(product.getBrandId())) : null)
+                            .productAttributeList(attrDefVOList)
+                            .productAttributeValueList(productCacheConverter.attributeValueListToVoList(
+                                    attrValueMap.getOrDefault(productId, Collections.emptyList())))
+                            .skuStockList(productCacheConverter.skuListToVoList(
+                                    skuMap.getOrDefault(productId, Collections.emptyList())))
+                            .productLadderList(productCacheConverter.ladderListToVoList(
+                                    ladderMap.getOrDefault(productId, Collections.emptyList())))
+                            .productFullReductionList(productCacheConverter.reductionListToVoList(
+                                    fullReductionMap.getOrDefault(productId, Collections.emptyList())))
+                            .memberPriceList(productCacheConverter.memberPriceListToVoList(
+                                    memberPriceMap.getOrDefault(productId, Collections.emptyList())))
+                            .cacheTime(System.currentTimeMillis())
+                            .version(1)
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * 获取商品用到的属性定义列表
+     *
+     * @param attrValues   商品的属性值列表
+     * @param attributeMap 属性定义Map
+     * @return 属性定义VO列表
+     */
+    private List<PmsProductAttributeVO> getAttributeDefinitionsForProduct(
+            List<PmsProductAttributeValue> attrValues,
+            Map<Long, PmsProductAttribute> attributeMap) {
+        if (attrValues == null || attrValues.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return attrValues.stream()
+                .map(PmsProductAttributeValue::getProductAttributeId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .map(attributeMap::get)
+                .filter(Objects::nonNull)
+                .map(productCacheConverter::attributeToVo)
+                .toList();
     }
 
     @Override

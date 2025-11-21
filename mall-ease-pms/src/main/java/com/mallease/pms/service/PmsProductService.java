@@ -1,5 +1,6 @@
 package com.mallease.pms.service;
 
+import com.mallease.pms.dto.cache.PmsProductDetailCacheDTO;
 import com.mallease.pms.dto.cmd.CreateProductCmd;
 import com.mallease.pms.dto.cmd.UpdateProductCmd;
 import com.mallease.pms.dto.query.ProductQuery;
@@ -88,6 +89,14 @@ public interface PmsProductService {
      * @return 商品详情
      */
     PmsProductDetailVO getUpdateInfo(Long id);
+
+    /**
+     * 根据商品ID列表获取商品详情信息集
+     *
+     * @param productIds 商品ID列表
+     * @return 商品详情信息集
+     */
+    List<PmsProductDetailCacheDTO> getProductDetailBatch(List<Long> productIds);
 
     /**
      * 更新商品（包含所有关联信息）

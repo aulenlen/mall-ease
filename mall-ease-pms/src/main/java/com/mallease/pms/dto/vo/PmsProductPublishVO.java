@@ -30,7 +30,17 @@ public class PmsProductPublishVO {
     private Integer failCount;
 
     /**
+     * 跳过数量（已处于目标状态的商品）
+     */
+    private Integer skippedCount;
+
+    /**
      * 失败详情列表
      */
     private List<PublishFailDetailVO> failDetails;
+
+    /**
+     * 跳过的商品ID列表（已处于目标状态）
+     */
+    private List<Long> skippedIds;
 }
