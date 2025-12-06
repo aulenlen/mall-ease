@@ -21,6 +21,11 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
+  elasticsearch:
+    rest:
+      uris: http://192.168.50.148:9200
+      connection-timeout: 5s
+      read-timeout: 60s
 
 mybatis:
   mapper-locations: classpath:mybatis/mapper/*.xml
