@@ -5,3 +5,9 @@ spring:
   application:
     name: mall-ease-search
 
+  elasticsearch:
+    rest:
+      uris: http://192.168.50.148:9200
+      connection-timeout: 5s
+      read-timeout: 60s
+
