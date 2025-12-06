@@ -37,9 +37,7 @@ public class CacheService {
         }
 
         // 构建 key 列表
-        List<String> keys = ids.stream()
-                .map(id -> keyPrefix + id)
-                .toList();
+        List<String> keys = ids.stream().map(id -> keyPrefix + id).toList();
 
         List<Object> values = redisService.multiGet(keys);
 
@@ -66,20 +64,13 @@ public class CacheService {
      * @param expireSeconds 过期时间（秒）
      * @param <T>           泛型类型
      */
-    public <T> void batchSet(List<T> items,
-                             String keyPrefix,
-                             Function<T, Long> idExtractor,
-                             long expireSeconds) {
+    public <T> void batchSetList(List<T> items, String keyPrefix, Function<T, Long> idExtractor, long expireSeconds) {
         if (items == null || items.isEmpty()) {
             return;
         }
 
         // 构建 key-value map
-        Map<String, Object> cacheMap = items.stream()
-                .collect(Collectors.toMap(
-                        item -> keyPrefix + idExtractor.apply(item),
-                        item -> item
-                ));
+        Map<String, Object> cacheMap = items.stream().collect(Collectors.toMap(item -> keyPrefix + idExtractor.apply(item), item -> item));
 
         // 批量写入
         redisService.multiSetWithExpire(cacheMap, expireSeconds);
@@ -112,9 +103,7 @@ public class CacheService {
             return;
         }
 
-        List<String> keys = ids.stream()
-                .map(id -> keyPrefix + id)
-                .toList();
+        List<String> keys = ids.stream().map(id -> keyPrefix + id).toList();
 
         redisService.del(keys);
         log.info("批量删除缓存 {} 条", ids.size());
@@ -148,5 +137,87 @@ public class CacheService {
         }
         String key = keyPrefix + id;
         return redisService.getExpire(key);
+    }
+
+    /**
+     * 批量设置简单键值对缓存
+     *
+     * @param dataMap       数据映射（ID -> 值）
+     * @param keyPrefix     缓存key前缀
+     * @param expireSeconds 过期时间（秒），0表示永久有效
+     * @param <V>           值类型
+     */
+    public <V> void batchSetMap(String keyPrefix, Map<Long, V> dataMap, long expireSeconds) {
+        if (dataMap == null || dataMap.isEmpty()) {
+            return;
+        }
+
+        // 构建 key-value map
+        Map<String, Object> cacheMap = dataMap.entrySet().stream().collect(Collectors.toMap(entry -> keyPrefix + entry.getKey(), Map.Entry::getValue));
+
+        // 批量写入
+        if (expireSeconds > 0) {
+            redisService.multiSetWithExpire(cacheMap, expireSeconds);
+        } else {
+            redisService.multiSet(cacheMap);
+        }
+
+        log.info("批量写入简单KV缓存 {} 条", dataMap.size());
+    }
+
+    /**
+     * 批量设置 Hash 结构缓存（用于商品多 SKU 库存等场景）
+     *
+     * @param keyPrefix     缓存 key 前缀（如 "sku:stock:"）
+     * @param dataMap       数据映射（商品ID -> Hash字段映射）
+     * @param expireSeconds 过期时间（秒），0表示永久有效
+     * @param <V>           Hash 值类型
+     */
+    public <V> void batchSetHashMap(String keyPrefix, Map<Long, Map<String, V>> dataMap, long expireSeconds) {
+        if (dataMap == null || dataMap.isEmpty()) {
+            return;
+        }
+
+        // 转换为 RedisService 需要的格式：完整key -> Hash字段映射
+        Map<String, Map<String, Object>> cacheMap = new HashMap<>();
+        dataMap.forEach((id, hashValue) -> {
+            if (hashValue != null && !hashValue.isEmpty()) {
+                String key = keyPrefix + id;
+                Map<String, Object> objectMap = new HashMap<>(hashValue);
+                cacheMap.put(key, objectMap);
+            }
+        });
+
+        redisService.multiSetHashWithExpire(cacheMap, expireSeconds);
+
+        log.info("批量写入Hash缓存 {} 条，共 {} 个字段，过期时间: {}秒",
+                cacheMap.size(),
+                cacheMap.values().stream().mapToInt(Map::size).sum(),
+                expireSeconds == 0 ? "永久" : expireSeconds);
+    }
+
+    /**
+     * 默认使用 Pipeline 模式即可满足大多数缓存场景需求。
+     *
+     * @param keyPrefix     缓存 key 前缀
+     * @param dataMap       数据映射（商品ID -> Hash字段映射）
+     * @param expireSeconds 过期时间（秒），0表示永久有效
+     * @param <V>           Hash 值类型
+     */
+    private <V> void batchSetHashMapByLua(String keyPrefix, Map<Long, Map<String, V>> dataMap, long expireSeconds) {
+        dataMap.forEach((id, value) -> {
+            String key = keyPrefix + id;
+            Map<String, Object> hashValue = new HashMap<>(value);
+
+            if (expireSeconds > 0) {
+                redisService.hSetAllWithExpire(key, hashValue, expireSeconds);
+            } else {
+                redisService.hSetAll(key, hashValue);
+            }
+        });
+
+        log.info("批量写入Hash缓存(Lua模式) {} 条，共 {} 个SKU",
+                dataMap.size(),
+                dataMap.values().stream().mapToInt(Map::size).sum());
     }
 }
