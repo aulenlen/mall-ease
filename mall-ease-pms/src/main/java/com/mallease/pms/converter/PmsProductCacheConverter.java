@@ -5,6 +5,7 @@ import com.mallease.pms.dto.cache.PmsProductBasicCacheDTO;
 import com.mallease.pms.dto.vo.*;
 import com.mallease.pms.pojo.*;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 

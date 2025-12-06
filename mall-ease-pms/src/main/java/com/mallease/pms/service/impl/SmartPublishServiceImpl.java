@@ -29,7 +29,7 @@ public class SmartPublishServiceImpl implements SmartPublishService {
     @Autowired
     private PublishProductAsyncHandler publishProductAsyncHandler;
 
-    private static final int ASYNC_THRESHOLD = 20;
+    private static final int ASYNC_THRESHOLD = 100;
 
 
     @Override

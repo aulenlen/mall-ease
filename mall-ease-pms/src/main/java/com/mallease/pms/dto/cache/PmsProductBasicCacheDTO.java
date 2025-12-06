@@ -69,9 +69,6 @@ public class PmsProductBasicCacheDTO implements Serializable {
     @Schema(description = "排序")
     private Integer sort;
 
-    @Schema(description = "销量")
-    private Integer sale;
-
     @Schema(description = "价格")
     private BigDecimal price;
 
@@ -80,9 +77,6 @@ public class PmsProductBasicCacheDTO implements Serializable {
 
     @Schema(description = "市场价")
     private BigDecimal originalPrice;
-
-    @Schema(description = "库存")
-    private Integer stock;
 
     @Schema(description = "库存预警值")
     private Integer lowStock;
