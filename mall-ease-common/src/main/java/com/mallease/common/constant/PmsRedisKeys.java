@@ -4,6 +4,8 @@ package com.mallease.common.constant;
  * Redis 键前缀集中管理，避免硬编码字符串。
  */
 public final class PmsRedisKeys {
+
+
     private PmsRedisKeys() {
     }
 
@@ -11,6 +13,11 @@ public final class PmsRedisKeys {
      * 商品详情缓存前缀.
      */
     public static final String PRODUCT_DETAIL_PREFIX = "product:detail:";
+
+    /**
+     * 库存
+     */
+    public static final String PRODUCT_SKU_STOCK_PREFIX = "product:sku:stock:";
 
     /**
      * 分类商品列表缓存前缀.
@@ -27,6 +34,11 @@ public final class PmsRedisKeys {
      */
     static final long PRODUCT_DETAIL_CACHE_EXPIRE_SECONDS = 3600L;
 
+    /**
+     * sku库存缓存时间
+     */
+    public static final long SKU_STOCK_DEFAULT_EXPIRE_SECONDS = 3600L;
+
     public static String productDetailKey(Long productId) {
         return PRODUCT_DETAIL_PREFIX + productId;
     }
@@ -41,5 +53,9 @@ public final class PmsRedisKeys {
 
     public static long getProductDetailCacheExpireSeconds() {
         return PRODUCT_DETAIL_CACHE_EXPIRE_SECONDS;
+    }
+
+    public static long getSkuStockCacheExpireSeconds() {
+        return SKU_STOCK_DEFAULT_EXPIRE_SECONDS;
     }
 }
