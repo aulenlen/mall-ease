@@ -237,7 +237,7 @@ public class PmsProductServiceImpl implements PmsProductService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PmsProductPublishVO  updatePublishStatusBatch(List<Long> ids, Integer publishStatus, Long operatorId, String operatorName) {
+    public PmsProductPublishVO updatePublishStatusBatch(List<Long> ids, Integer publishStatus, Long operatorId, String operatorName) {
         if (ids == null || ids.isEmpty()) {
             Asserts.fail("商品ID列表不能为空");
         }
@@ -289,8 +289,8 @@ public class PmsProductServiceImpl implements PmsProductService {
 
             // 根据上下架类型选择不同的验证逻辑
             String failReason = publishStatus == 1
-                ? validateForPublish(product, skuMap.get(productId))  // 上架验证
-                : validateForUnpublish(product);  // 下架验证
+                    ? validateForPublish(product, skuMap.get(productId))  // 上架验证
+                    : validateForUnpublish(product);  // 下架验证
 
             if (failReason != null) {
                 failList.add(PublishFailDetailVO.builder()
@@ -308,23 +308,41 @@ public class PmsProductServiceImpl implements PmsProductService {
             int updatedCount = productDao.updatePublishStatusBatch(successIds, publishStatus);
             log.info("成功更新{}个商品的上架状态", updatedCount);
 
-            // 处理缓存
-            if (publishStatus == 1) {
-                // 上架：预热缓存
-                log.info("开始预热商品缓存，商品数量: {}", successIds.size());
-                List<PmsProductDetailCacheDTO> productDetails = getProductDetailBatch(successIds);
-                cacheService.deleteBatch(successIds, PmsRedisKeys.PRODUCT_DETAIL_PREFIX);
-                cacheService.batchSet(
-                        productDetails,
-                        PmsRedisKeys.PRODUCT_DETAIL_PREFIX,
-                        dto -> dto.getProduct().getId(),
-                        PmsRedisKeys.getProductDetailCacheExpireSeconds()
-                );
-                log.info("商品缓存预热完成");
-            } else {
-                // 下架：清除缓存
-                cacheService.deleteBatch(successIds, PmsRedisKeys.PRODUCT_DETAIL_PREFIX);
-                log.info("清除下架商品缓存，数量: {}", successIds.size());
+            // 处理缓存（缓存失败不影响业务结果）
+            try {
+                if (publishStatus == 1) {
+                    // 上架：预热缓存
+                    log.info("开始预热商品缓存，商品数量: {}", successIds.size());
+                    List<PmsProductDetailCacheDTO> productDetails = getProductDetailBatch(successIds);
+                    cacheService.deleteBatch(successIds, PmsRedisKeys.PRODUCT_DETAIL_PREFIX);
+                    cacheService.batchSetList(
+                            productDetails,
+                            PmsRedisKeys.PRODUCT_DETAIL_PREFIX,
+                            dto -> dto.getProduct().getId(),
+                            PmsRedisKeys.getProductDetailCacheExpireSeconds()
+                    );
+
+                    // SKU库存
+                    Map<Long, Map<String, Integer>> skuStockByProduct = productDetails.stream()
+                            .collect(Collectors.toMap(
+                                    dto -> dto.getProduct().getId(),
+                                    dto -> dto.getSkuStockList().stream()
+                                            .collect(Collectors.toMap(
+                                                    sku -> String.valueOf(sku.getId()),
+                                                    PmsSkuStockVO::getStock
+                                            ))
+                            ));
+
+                    cacheService.batchSetHashMap(PmsRedisKeys.PRODUCT_SKU_STOCK_PREFIX, skuStockByProduct, PmsRedisKeys.SKU_STOCK_DEFAULT_EXPIRE_SECONDS);
+                    log.info("商品缓存预热完成");
+                } else {
+                    // 下架：清除缓存
+                    cacheService.deleteBatch(successIds, PmsRedisKeys.PRODUCT_DETAIL_PREFIX);
+                    cacheService.deleteBatch(successIds, PmsRedisKeys.PRODUCT_SKU_STOCK_PREFIX);
+                    log.info("清除下架商品缓存，数量: {}", successIds.size());
+                }
+            } catch (Exception e) {
+                log.error("缓存操作失败，商品IDs: {}，操作类型: {}", successIds, publishStatus == 1 ? "预热" : "清除", e);
             }
         }
 
@@ -351,7 +369,8 @@ public class PmsProductServiceImpl implements PmsProductService {
 
     /**
      * 上架验证逻辑
-     * @param product 商品信息
+     *
+     * @param product      商品信息
      * @param skuStockList SKU库存列表
      * @return 验证失败原因，null表示通过
      */
@@ -405,6 +424,7 @@ public class PmsProductServiceImpl implements PmsProductService {
 
     /**
      * 下架验证逻辑
+     *
      * @param product 商品信息
      * @return 验证失败原因，null表示通过
      */
