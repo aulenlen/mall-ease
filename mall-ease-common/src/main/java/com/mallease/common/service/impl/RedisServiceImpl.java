@@ -4,15 +4,16 @@ import com.mallease.common.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.DataType;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -454,4 +455,141 @@ public class RedisServiceImpl implements RedisService {
             throw new RuntimeException("Redis批量操作失败", e);
         }
     }
+
+    @Override
+    public Long execute(String script, List<String> keys, List<String> args) {
+        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
+        redisScript.setScriptText(script);
+        redisScript.setResultType(Long.class);
+
+        return redisTemplate.execute(redisScript, keys, args.toArray());
+    }
+
+    @Override
+    public void hSetAllWithExpire(String key, Map<String, Object> map, long expireSeconds) {
+        if (map == null || map.isEmpty()) {
+            return;
+        }
+
+        // 修复 Lua 脚本语法：使用换行符和分号分隔语句
+        String luaScript =
+                "redis.call('HMSET', KEYS[1], unpack(ARGV, 1, #ARGV-1)); " +
+                "local ttl = tonumber(ARGV[#ARGV]); " +
+                "if ttl and ttl > 0 then " +
+                "  redis.call('EXPIRE', KEYS[1], ttl); " +
+                "end; " +
+                "return 1";
+
+        List<String> args = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            args.add(entry.getKey());
+            args.add(String.valueOf(entry.getValue()));
+        }
+        args.add(String.valueOf(expireSeconds));
+
+        try {
+            execute(luaScript, Collections.singletonList(key), args);
+        } catch (Exception e) {
+            log.error("Redis Lua脚本执行失败，key: {}, expireSeconds: {}", key, expireSeconds, e);
+            throw new RuntimeException("Redis操作失败: hash set all with expire", e);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> List<T> executePipelined(RedisCallback<T> action) {
+        if (action == null) {
+            return Collections.emptyList();
+        }
+        try {
+            List<Object> results = redisTemplate.executePipelined(action);
+            return (List<T>) results;
+        } catch (Exception e) {
+            log.error("Redis Pipeline操作失败", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public Set<String> scan(String pattern) {
+        if (pattern == null || pattern.isEmpty()) {
+            return Collections.emptySet();
+        }
+        try {
+            Set<String> keys = new HashSet<>();
+            redisTemplate.execute((RedisCallback<Set<String>>) connection -> {
+                Cursor<byte[]> cursor = connection.keyCommands().scan(
+                        ScanOptions.scanOptions()
+                                .match(pattern)
+                                .count(1000)
+                                .build()
+                );
+
+                RedisSerializer<String> keySerializer = redisTemplate.getStringSerializer();
+                while (cursor.hasNext()) {
+                    byte[] keyBytes = cursor.next();
+                    String key = keySerializer.deserialize(keyBytes);
+                    if (key != null) {
+                        keys.add(key);
+                    }
+                }
+
+                // 关闭游标
+                try {
+                    cursor.close();
+                } catch (Exception e) {
+                    log.warn("关闭SCAN游标失败", e);
+                }
+
+                return keys;
+            });
+
+            return keys;
+        } catch (Exception e) {
+            log.error("Redis SCAN操作失败，pattern: {}", pattern, e);
+            return Collections.emptySet();
+        }
+    }
+
+    @Override
+    public void multiSetHashWithExpire(Map<String, Map<String, Object>> dataMap, long expireSeconds) {
+        if (dataMap == null || dataMap.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 获取序列化器（复用全局配置）
+            RedisSerializer<String> keySerializer = redisTemplate.getStringSerializer();
+
+            redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                dataMap.forEach((key, hashValue) -> {
+                    if (hashValue != null && !hashValue.isEmpty()) {
+                        // 序列化 Hash 字段
+                        Map<byte[], byte[]> byteMap = new HashMap<>();
+                        hashValue.forEach((hashKey, value) -> {
+                            byte[] hashKeyBytes = hashKey.getBytes(StandardCharsets.UTF_8);
+                            byte[] valueBytes = String.valueOf(value).getBytes(StandardCharsets.UTF_8);
+                            byteMap.put(hashKeyBytes, valueBytes);
+                        });
+
+                        byte[] keyBytes = keySerializer.serialize(key);
+                        if (keyBytes != null) {
+                            connection.hashCommands().hMSet(keyBytes, byteMap);
+
+                            if (expireSeconds > 0) {
+                                connection.keyCommands().expire(keyBytes, expireSeconds);
+                            }
+                        }
+                    }
+                });
+                return null;
+            });
+
+            log.debug("批量写入Hash缓存 {} 条，过期时间: {}秒", dataMap.size(), expireSeconds == 0 ? "永久" : expireSeconds);
+        } catch (Exception e) {
+            log.error("Redis批量Hash操作失败，size: {}", dataMap.size(), e);
+            throw new RuntimeException("Redis操作失败: multi set hash with expire", e);
+        }
+    }
+
 }

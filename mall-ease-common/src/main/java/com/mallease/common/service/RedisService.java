@@ -1,6 +1,7 @@
 package com.mallease.common.service;
 
 import jakarta.annotation.Nullable;
+import org.springframework.data.redis.core.RedisCallback;
 
 import java.util.List;
 import java.util.Map;
@@ -258,8 +259,53 @@ public interface RedisService {
      * 批量设置（使用 Pipeline + SETEX 原子操作）
      * 使用 SETEX 命令保证设置值和过期时间的原子性，避免内存泄漏
      *
-     * @param map 键值对
+     * @param map  键值对
      * @param time 过期时间（秒）
      */
     void multiSetWithExpire(Map<String, Object> map, long time);
+
+    /**
+     * 执行Lua脚本
+     *
+     * @param script Lua脚本
+     * @param keys   Key列表
+     * @param args   参数列表
+     * @return 执行结果
+     */
+    Long execute(String script, List<String> keys, List<String> args);
+
+    /**
+     * 原子化设置 Hash + 过期时间（使用 Lua 脚本）
+     *
+     * @param key           Redis key
+     * @param map           Hash 字段映射
+     * @param expireSeconds 过期时间（秒），0表示永久
+     */
+    void hSetAllWithExpire(String key, Map<String, Object> map, long expireSeconds);
+
+    /**
+     * Pipeline 批量执行器
+     *
+     * @param action 批量操作回调
+     * @return 执行结果列表
+     */
+    <T> List<T> executePipelined(RedisCallback<T> action);
+
+    /**
+     * 扫描匹配的 key（用于清理任务）
+     *
+     * @param pattern key 匹配模式（如 "sku:stock:*"）
+     * @return 匹配的 key 集合
+     */
+    Set<String> scan(String pattern);
+
+    /**
+     * 批量设置 Hash 结构（使用 Pipeline + HMSET）
+     * <p>
+     * 适用于商品多 SKU 库存等场景，所有 Redis 命令在一次网络往返中完成。
+     *
+     * @param dataMap       数据映射（完整key -> Hash字段映射）
+     * @param expireSeconds 过期时间（秒），0表示永久有效
+     */
+    void multiSetHashWithExpire(Map<String, Map<String, Object>> dataMap, long expireSeconds);
 }
