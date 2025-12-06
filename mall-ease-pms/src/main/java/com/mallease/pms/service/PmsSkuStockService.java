@@ -28,4 +28,14 @@ public interface PmsSkuStockService {
      * @return 更新的记录数
      */
     int updateBatch(Long productId, List<PmsSkuStock> skuStockList);
+
+    /**
+     * 扣减库存（原子操作）
+     *
+     * @param productId 商品ID（用于定位Hash key）
+     * @param skuId SKU ID（用于定位Hash field）
+     * @param quantity 扣减数量
+     * @return true=扣减成功, false=库存不足
+     */
+    boolean deductStock(Long productId, Long skuId, Integer quantity);
 }
