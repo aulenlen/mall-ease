@@ -15,9 +15,104 @@
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
 
+    <!-- 遗留结果映射（兼容旧表结构，包含 product_id、sku_code 等字段） -->
+    <!-- TODO: 完成 SKU 重构后删除 -->
+    <resultMap id="LegacyResultMap" type="com.mallease.pms.pojo.PmsSkuStock">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="product_id" property="productId" jdbcType="BIGINT"/>
+        <result column="sku_code" property="skuCode" jdbcType="VARCHAR"/>
+        <result column="price" property="price" jdbcType="DECIMAL"/>
+        <result column="promotion_price" property="promotionPrice" jdbcType="DECIMAL"/>
+        <result column="stock" property="stock" jdbcType="INTEGER"/>
+        <result column="lock_stock" property="lockStock" jdbcType="INTEGER"/>
+        <result column="low_stock" property="lowStock" jdbcType="INTEGER"/>
+        <result column="sale" property="sale" jdbcType="INTEGER"/>
+        <result column="sp_data" property="spData" jdbcType="VARCHAR"/>
+        <result column="pic" property="pic" jdbcType="VARCHAR"/>
+    </resultMap>
+
     <sql id="Base_Column_List">
         id, sku_id, stock, lock_stock, sale, low_stock, stock_status, version, create_time, update_time
     </sql>
+
+    <!-- 遗留列列表（旧表结构） -->
+    <!-- TODO: 完成 SKU 重构后删除 -->
+    <sql id="Legacy_Column_List">
+        id, product_id, sku_code, price, promotion_price, stock, lock_stock, low_stock, sale, sp_data, pic
+    </sql>
+
+    <!-- ========================================================================
+         遗留 SQL（基于 product_id）- 待迁移后删除
+         这些 SQL 访问旧表结构，新代码请使用基于 sku_id 的方法
+         TODO: 完成 SKU 重构后删除以下 SQL
+         ======================================================================== -->
+
+    <!-- 根据主键删除 (遗留) -->
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        DELETE FROM pms_sku_stock WHERE id = #{id,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 根据产品ID查询 (遗留) -->
+    <select id="selectByProductId" parameterType="java.lang.Long" resultMap="LegacyResultMap">
+        SELECT <include refid="Legacy_Column_List"/>
+        FROM pms_sku_stock
+        WHERE product_id = #{productId,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据SKU编码查询 (遗留) -->
+    <select id="selectBySkuCode" parameterType="java.lang.String" resultMap="LegacyResultMap">
+        SELECT <include refid="Legacy_Column_List"/>
+        FROM pms_sku_stock
+        WHERE sku_code = #{skuCode,jdbcType=VARCHAR}
+    </select>
+
+    <!-- 根据产品ID删除 (遗留) -->
+    <delete id="deleteByProductId" parameterType="java.lang.Long">
+        DELETE FROM pms_sku_stock WHERE product_id = #{productId,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 根据产品ID和关键字模糊查询 (遗留) -->
+    <select id="selectByProductIdAndKeyword" resultMap="LegacyResultMap">
+        SELECT <include refid="Legacy_Column_List"/>
+        FROM pms_sku_stock
+        WHERE product_id = #{productId,jdbcType=BIGINT}
+        <if test="keyword != null and keyword != ''">
+            AND sku_code LIKE CONCAT('%', #{keyword,jdbcType=VARCHAR}, '%')
+        </if>
+    </select>
+
+    <!-- 批量更新（选择性） (遗留) -->
+    <update id="updateBatchSelective" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE pms_sku_stock
+            <set>
+                <if test="item.skuCode != null">sku_code = #{item.skuCode,jdbcType=VARCHAR},</if>
+                <if test="item.price != null">price = #{item.price,jdbcType=DECIMAL},</if>
+                <if test="item.promotionPrice != null">promotion_price = #{item.promotionPrice,jdbcType=DECIMAL},</if>
+                <if test="item.stock != null">stock = #{item.stock,jdbcType=INTEGER},</if>
+                <if test="item.lockStock != null">lock_stock = #{item.lockStock,jdbcType=INTEGER},</if>
+                <if test="item.lowStock != null">low_stock = #{item.lowStock,jdbcType=INTEGER},</if>
+                <if test="item.sale != null">sale = #{item.sale,jdbcType=INTEGER},</if>
+                <if test="item.spData != null">sp_data = #{item.spData,jdbcType=VARCHAR},</if>
+                <if test="item.pic != null">pic = #{item.pic,jdbcType=VARCHAR},</if>
+            </set>
+            WHERE id = #{item.id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <!-- 根据商品ID列表查询 (遗留) -->
+    <select id="selectByProductIds" resultMap="LegacyResultMap">
+        SELECT <include refid="Legacy_Column_List"/>
+        FROM pms_sku_stock
+        WHERE product_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </select>
+
+    <!-- ========================================================================
+         新 SQL（基于 sku_id）- 推荐使用
+         ======================================================================== -->
 
     <!-- 根据主键查询 -->
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
