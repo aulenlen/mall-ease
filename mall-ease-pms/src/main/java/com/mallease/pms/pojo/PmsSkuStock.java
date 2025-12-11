@@ -2,13 +2,13 @@ package com.mallease.pms.pojo;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
- * sku的库存
+ * SKU库存信息（读写分离，高频更新）
  *
  * @author: Aulen
- * @create: 2025-11-09
+ * @create: 2025-12-10
  */
 @Data
 public class PmsSkuStock {
@@ -18,53 +18,48 @@ public class PmsSkuStock {
     private Long id;
 
     /**
-     * 产品ID
+     * SKU ID（关联 pms_sku.id）
      */
-    private Long productId;
+    private Long skuId;
 
     /**
-     * sku编码
-     */
-    private String skuCode;
-
-    /**
-     * 价格
-     */
-    private BigDecimal price;
-
-    /**
-     * 库存
+     * 可用库存
      */
     private Integer stock;
 
     /**
-     * 预警库存
-     */
-    private Integer lowStock;
-
-    /**
-     * 展示图片
-     */
-    private String pic;
-
-    /**
-     * 销量
-     */
-    private Integer sale;
-
-    /**
-     * 单品促销价格
-     */
-    private BigDecimal promotionPrice;
-
-    /**
-     * 锁定库存
+     * 锁定库存（下单未支付）
      */
     private Integer lockStock;
 
     /**
-     * 商品销售属性，json格式
+     * 累计销量
      */
-    private String spData;
+    private Integer sale;
+
+    /**
+     * 库存预警值
+     */
+    private Integer lowStock;
+
+    /**
+     * 库存状态: 0-无货, 1-有货, 2-预售
+     */
+    private Integer stockStatus;
+
+    /**
+     * 乐观锁版本号（库存扣减必备）
+     */
+    private Integer version;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updateTime;
 }
 
