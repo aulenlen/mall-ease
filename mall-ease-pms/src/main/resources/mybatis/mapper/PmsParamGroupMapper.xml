@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.pms.dao.PmsParamGroupDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.pms.pojo.PmsParamGroup">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="sort" property="sort" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="TINYINT"/>
+        <result column="deleted" property="deleted" jdbcType="TINYINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, sort, status, deleted, create_time, update_time, creator, updater
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_param_group
+        WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
+    </select>
+
+    <!-- 根据ID列表批量查询 -->
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_param_group
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+        ORDER BY sort, id
+    </select>
+
+    <!-- 根据名称查询 -->
+    <select id="selectByName" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_param_group
+        WHERE name = #{name,jdbcType=VARCHAR} AND deleted = 0
+    </select>
+
+    <!-- 根据状态查询 -->
+    <select id="selectByStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_param_group
+        WHERE status = #{status,jdbcType=TINYINT} AND deleted = 0
+        ORDER BY sort, id
+    </select>
+
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_param_group
+        WHERE deleted = 0
+        ORDER BY sort, id
+    </select>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.mallease.pms.pojo.PmsParamGroup" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pms_param_group (
+            name, sort, status, deleted, creator, updater
+        ) VALUES (
+            #{name,jdbcType=VARCHAR}, #{sort,jdbcType=INTEGER}, #{status,jdbcType=TINYINT},
+            0, #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 选择性插入 -->
+    <insert id="insertSelective" parameterType="com.mallease.pms.pojo.PmsParamGroup" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pms_param_group
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null">name,</if>
+            <if test="sort != null">sort,</if>
+            <if test="status != null">status,</if>
+            <if test="creator != null">creator,</if>
+            deleted,
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="name != null">#{name,jdbcType=VARCHAR},</if>
+            <if test="sort != null">#{sort,jdbcType=INTEGER},</if>
+            <if test="status != null">#{status,jdbcType=TINYINT},</if>
+            <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
+            0,
+        </trim>
+    </insert>
+
+    <!-- 根据主键更新 -->
+    <update id="updateByPrimaryKey" parameterType="com.mallease.pms.pojo.PmsParamGroup">
+        UPDATE pms_param_group
+        SET name = #{name,jdbcType=VARCHAR},
+            sort = #{sort,jdbcType=INTEGER},
+            status = #{status,jdbcType=TINYINT},
+            updater = #{updater,jdbcType=VARCHAR}
+        WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
+    </update>
+
+    <!-- 根据主键选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.pms.pojo.PmsParamGroup">
+        UPDATE pms_param_group
+        <set>
+            <if test="name != null">name = #{name,jdbcType=VARCHAR},</if>
+            <if test="sort != null">sort = #{sort,jdbcType=INTEGER},</if>
+            <if test="status != null">status = #{status,jdbcType=TINYINT},</if>
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
+    </update>
+
+    <!-- 批量更新状态 -->
+    <update id="updateStatusBatch">
+        UPDATE pms_param_group
+        SET status = #{status,jdbcType=TINYINT}
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <!-- 逻辑删除 -->
+    <update id="deleteById" parameterType="java.lang.Long">
+        UPDATE pms_param_group
+        SET deleted = 1
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 批量逻辑删除 -->
+    <update id="deleteBatch">
+        UPDATE pms_param_group
+        SET deleted = 1
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+</mapper>
