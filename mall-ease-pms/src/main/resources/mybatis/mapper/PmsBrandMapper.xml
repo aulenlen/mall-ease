@@ -13,10 +13,14 @@
         <result column="logo" property="logo" jdbcType="VARCHAR"/>
         <result column="big_pic" property="bigPic" jdbcType="VARCHAR"/>
         <result column="brand_story" property="brandStory" jdbcType="LONGVARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, first_letter, sort, factory_status, show_status, product_count, product_comment_count, logo, big_pic, brand_story
+        id, name, first_letter, sort, factory_status, show_status, product_count, product_comment_count, logo, big_pic, brand_story, create_time, update_time, creator, updater
     </sql>
 
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
@@ -72,11 +76,11 @@
         insert into pms_brand (id, name, first_letter,
                                sort, factory_status, show_status,
                                product_count, product_comment_count, logo,
-                               big_pic, brand_story)
+                               big_pic, brand_story, create_time, creator)
         values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{firstLetter,jdbcType=VARCHAR},
                 #{sort,jdbcType=INTEGER}, #{factoryStatus,jdbcType=INTEGER}, #{showStatus,jdbcType=INTEGER},
                 #{productCount,jdbcType=INTEGER}, #{productCommentCount,jdbcType=INTEGER}, #{logo,jdbcType=VARCHAR},
-                #{bigPic,jdbcType=VARCHAR}, #{brandStory,jdbcType=LONGVARCHAR})
+                #{bigPic,jdbcType=VARCHAR}, #{brandStory,jdbcType=LONGVARCHAR}, #{createTime,jdbcType=TIMESTAMP}, #{creator,jdbcType=VARCHAR})
     </insert>
 
     <insert id="insertSelective" parameterType="com.mallease.pms.pojo.PmsBrand" useGeneratedKeys="true" keyProperty="id">
@@ -115,6 +119,12 @@
             <if test="brandStory != null">
                 brand_story,
             </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="creator != null">
+                creator,
+            </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">
@@ -149,6 +159,12 @@
             </if>
             <if test="brandStory != null">
                 #{brandStory,jdbcType=LONGVARCHAR},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="creator != null">
+                #{creator,jdbcType=VARCHAR},
             </if>
         </trim>
     </insert>
@@ -186,6 +202,9 @@
             <if test="brandStory != null">
                 brand_story = #{brandStory,jdbcType=LONGVARCHAR},
             </if>
+            <if test="updater != null">
+                updater = #{updater,jdbcType=VARCHAR},
+            </if>
         </set>
         where id = #{id,jdbcType=BIGINT}
     </update>
@@ -201,7 +220,8 @@
             product_comment_count = #{productCommentCount,jdbcType=INTEGER},
             logo = #{logo,jdbcType=VARCHAR},
             big_pic = #{bigPic,jdbcType=VARCHAR},
-            brand_story = #{brandStory,jdbcType=LONGVARCHAR}
+            brand_story = #{brandStory,jdbcType=LONGVARCHAR},
+            updater = #{updater,jdbcType=VARCHAR}
         where id = #{id,jdbcType=BIGINT}
     </update>
 

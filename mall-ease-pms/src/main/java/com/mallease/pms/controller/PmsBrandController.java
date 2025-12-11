@@ -5,6 +5,7 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.common.util.LoginContextUtil;
 import com.mallease.pms.converter.PmsBrandConverter;
 import com.mallease.pms.dto.cmd.CreateBrandCmd;
 import com.mallease.pms.dto.cmd.UpdateBrandCmd;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -79,6 +81,9 @@ public class PmsBrandController {
         if (brand.getShowStatus() == null) {
             brand.setShowStatus(1);
         }
+        // 设置审计字段
+        brand.setCreateTime(LocalDateTime.now());
+        brand.setCreator(LoginContextUtil.getUserName());
         PmsBrand createdBrand = brandService.create(brand);
         return createdBrand != null ? R.success(1) : R.failed(ResultCode.FAILED);
     }
@@ -116,6 +121,8 @@ public class PmsBrandController {
             return R.failed(ResultCode.FAILED);
         }
         brandConverter.updateEntityFromCmd(brand, cmd);
+        // 设置更新人
+        brand.setUpdater(LoginContextUtil.getUserName());
         PmsBrand updatedBrand = brandService.update(brand);
         return updatedBrand != null ? R.success(1) : R.failed(ResultCode.FAILED);
     }

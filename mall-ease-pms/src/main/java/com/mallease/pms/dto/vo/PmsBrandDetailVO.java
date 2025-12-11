@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * 品牌详情响应类
  *
@@ -81,4 +83,24 @@ public class PmsBrandDetailVO {
      * 产品评论数量
      */
     private Integer productCommentCount;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updateTime;
+
+    /**
+     * 创建人
+     */
+    private String creator;
+
+    /**
+     * 更新人
+     */
+    private String updater;
 }

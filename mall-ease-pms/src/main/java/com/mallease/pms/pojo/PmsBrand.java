@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * 品牌表
  *
@@ -70,6 +72,26 @@ public class PmsBrand {
      * 品牌故事
      */
     private String brandStory;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updateTime;
+
+    /**
+     * 创建人
+     */
+    private String creator;
+
+    /**
+     * 更新人
+     */
+    private String updater;
 }
 
 
