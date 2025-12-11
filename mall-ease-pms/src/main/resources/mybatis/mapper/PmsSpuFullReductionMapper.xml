@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.pms.dao.PmsSpuFullReductionDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.pms.pojo.PmsSpuFullReduction">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
+        <result column="full_price" property="fullPrice" jdbcType="DECIMAL"/>
+        <result column="reduce_price" property="reducePrice" jdbcType="DECIMAL"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, spu_id, full_price, reduce_price, creator, updater, create_time, update_time
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_spu_full_reduction
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据SPU ID查询所有满减规则 -->
+    <select id="selectBySpuId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_spu_full_reduction
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+        ORDER BY full_price ASC
+    </select>
+
+    <!-- 根据SPU ID列表批量查询 -->
+    <select id="selectBySpuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_spu_full_reduction
+        WHERE spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+            #{spuId,jdbcType=BIGINT}
+        </foreach>
+        ORDER BY spu_id, full_price ASC
+    </select>
+
+    <!-- 查询满足金额的最优满减规则 -->
+    <select id="selectBestReduction" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_spu_full_reduction
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+          AND full_price &lt;= #{price,jdbcType=DECIMAL}
+        ORDER BY full_price DESC
+        LIMIT 1
+    </select>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.mallease.pms.pojo.PmsSpuFullReduction" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pms_spu_full_reduction (
+            spu_id, full_price, reduce_price, creator, updater
+        ) VALUES (
+            #{spuId,jdbcType=BIGINT}, #{fullPrice,jdbcType=DECIMAL}, #{reducePrice,jdbcType=DECIMAL},
+            #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 选择性插入 -->
+    <insert id="insertSelective" parameterType="com.mallease.pms.pojo.PmsSpuFullReduction" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pms_spu_full_reduction
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="spuId != null">spu_id,</if>
+            <if test="fullPrice != null">full_price,</if>
+            <if test="reducePrice != null">reduce_price,</if>
+            <if test="creator != null">creator,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="spuId != null">#{spuId,jdbcType=BIGINT},</if>
+            <if test="fullPrice != null">#{fullPrice,jdbcType=DECIMAL},</if>
+            <if test="reducePrice != null">#{reducePrice,jdbcType=DECIMAL},</if>
+            <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO pms_spu_full_reduction (
+            spu_id, full_price, reduce_price, creator
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.spuId,jdbcType=BIGINT}, #{item.fullPrice,jdbcType=DECIMAL},
+                #{item.reducePrice,jdbcType=DECIMAL}, #{item.creator,jdbcType=VARCHAR}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据主键更新 -->
+    <update id="updateByPrimaryKey" parameterType="com.mallease.pms.pojo.PmsSpuFullReduction">
+        UPDATE pms_spu_full_reduction
+        SET spu_id = #{spuId,jdbcType=BIGINT},
+            full_price = #{fullPrice,jdbcType=DECIMAL},
+            reduce_price = #{reducePrice,jdbcType=DECIMAL},
+            updater = #{updater,jdbcType=VARCHAR}
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据主键选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.pms.pojo.PmsSpuFullReduction">
+        UPDATE pms_spu_full_reduction
+        <set>
+            <if test="spuId != null">spu_id = #{spuId,jdbcType=BIGINT},</if>
+            <if test="fullPrice != null">full_price = #{fullPrice,jdbcType=DECIMAL},</if>
+            <if test="reducePrice != null">reduce_price = #{reducePrice,jdbcType=DECIMAL},</if>
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据SPU ID删除 -->
+    <delete id="deleteBySpuId" parameterType="java.lang.Long">
+        DELETE FROM pms_spu_full_reduction
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBatch">
+        DELETE FROM pms_spu_full_reduction
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </delete>
+
+</mapper>

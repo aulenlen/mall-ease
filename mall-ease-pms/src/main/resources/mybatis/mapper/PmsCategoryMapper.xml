@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.pms.dao.PmsCategoryDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.pms.pojo.PmsCategory">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="parent_id" property="parentId" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="path" property="path" jdbcType="VARCHAR"/>
+        <result column="level" property="level" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="TINYINT"/>
+        <result column="is_nav" property="isNav" jdbcType="TINYINT"/>
+        <result column="sort" property="sort" jdbcType="INTEGER"/>
+        <result column="icon" property="icon" jdbcType="VARCHAR"/>
+        <result column="image" property="image" jdbcType="VARCHAR"/>
+        <result column="keywords" property="keywords" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="deleted" property="deleted" jdbcType="TINYINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, parent_id, name, path, level, status, is_nav, sort, icon, image,
+        keywords, description, deleted, create_time, update_time, creator, updater
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
+    </select>
+
+    <!-- 根据ID列表批量查询 -->
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+        ORDER BY level, sort, id
+    </select>
+
+    <!-- 根据父ID查询直接子分类 -->
+    <select id="selectByParentId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE parent_id = #{parentId,jdbcType=BIGINT} AND deleted = 0
+        ORDER BY sort, id
+    </select>
+
+    <!-- 根据路径前缀查询所有子孙分类（物化路径查询） -->
+    <select id="selectByPathPrefix" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE path LIKE CONCAT(#{pathPrefix,jdbcType=VARCHAR}, '%') AND deleted = 0
+        ORDER BY level, sort, id
+    </select>
+
+    <!-- 根据层级查询 -->
+    <select id="selectByLevel" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE level = #{level,jdbcType=INTEGER} AND deleted = 0
+        ORDER BY sort, id
+    </select>
+
+    <!-- 根据状态查询 -->
+    <select id="selectByStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE status = #{status,jdbcType=TINYINT} AND deleted = 0
+        ORDER BY level, sort, id
+    </select>
+
+    <!-- 查询导航分类 -->
+    <select id="selectNavCategories" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE is_nav = 1 AND status = 1 AND deleted = 0
+        ORDER BY level, sort, id
+    </select>
+
+    <!-- 根据名称模糊查询 -->
+    <select id="selectByNameLike" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE name LIKE CONCAT('%', #{name,jdbcType=VARCHAR}, '%') AND deleted = 0
+        ORDER BY level, sort, id
+    </select>
+
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE deleted = 0
+        ORDER BY level, sort, id
+    </select>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.mallease.pms.pojo.PmsCategory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pms_category (
+            parent_id, name, path, level, status, is_nav, sort, icon, image,
+            keywords, description, deleted, creator, updater
+        ) VALUES (
+            #{parentId,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{path,jdbcType=VARCHAR},
+            #{level,jdbcType=INTEGER}, #{status,jdbcType=TINYINT}, #{isNav,jdbcType=TINYINT},
+            #{sort,jdbcType=INTEGER}, #{icon,jdbcType=VARCHAR}, #{image,jdbcType=VARCHAR},
+            #{keywords,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, 0,
+            #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 选择性插入 -->
+    <insert id="insertSelective" parameterType="com.mallease.pms.pojo.PmsCategory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pms_category
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">parent_id,</if>
+            <if test="name != null">name,</if>
+            <if test="path != null">path,</if>
+            <if test="level != null">level,</if>
+            <if test="status != null">status,</if>
+            <if test="isNav != null">is_nav,</if>
+            <if test="sort != null">sort,</if>
+            <if test="icon != null">icon,</if>
+            <if test="image != null">image,</if>
+            <if test="keywords != null">keywords,</if>
+            <if test="description != null">description,</if>
+            <if test="creator != null">creator,</if>
+            deleted,
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="parentId != null">#{parentId,jdbcType=BIGINT},</if>
+            <if test="name != null">#{name,jdbcType=VARCHAR},</if>
+            <if test="path != null">#{path,jdbcType=VARCHAR},</if>
+            <if test="level != null">#{level,jdbcType=INTEGER},</if>
+            <if test="status != null">#{status,jdbcType=TINYINT},</if>
+            <if test="isNav != null">#{isNav,jdbcType=TINYINT},</if>
+            <if test="sort != null">#{sort,jdbcType=INTEGER},</if>
+            <if test="icon != null">#{icon,jdbcType=VARCHAR},</if>
+            <if test="image != null">#{image,jdbcType=VARCHAR},</if>
+            <if test="keywords != null">#{keywords,jdbcType=VARCHAR},</if>
+            <if test="description != null">#{description,jdbcType=VARCHAR},</if>
+            <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
+            0,
+        </trim>
+    </insert>
+
+    <!-- 根据主键更新 -->
+    <update id="updateByPrimaryKey" parameterType="com.mallease.pms.pojo.PmsCategory">
+        UPDATE pms_category
+        SET parent_id = #{parentId,jdbcType=BIGINT},
+            name = #{name,jdbcType=VARCHAR},
+            path = #{path,jdbcType=VARCHAR},
+            level = #{level,jdbcType=INTEGER},
+            status = #{status,jdbcType=TINYINT},
+            is_nav = #{isNav,jdbcType=TINYINT},
+            sort = #{sort,jdbcType=INTEGER},
+            icon = #{icon,jdbcType=VARCHAR},
+            image = #{image,jdbcType=VARCHAR},
+            keywords = #{keywords,jdbcType=VARCHAR},
+            description = #{description,jdbcType=VARCHAR},
+            updater = #{updater,jdbcType=VARCHAR}
+        WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
+    </update>
+
+    <!-- 根据主键选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.pms.pojo.PmsCategory">
+        UPDATE pms_category
+        <set>
+            <if test="parentId != null">parent_id = #{parentId,jdbcType=BIGINT},</if>
+            <if test="name != null">name = #{name,jdbcType=VARCHAR},</if>
+            <if test="path != null">path = #{path,jdbcType=VARCHAR},</if>
+            <if test="level != null">level = #{level,jdbcType=INTEGER},</if>
+            <if test="status != null">status = #{status,jdbcType=TINYINT},</if>
+            <if test="isNav != null">is_nav = #{isNav,jdbcType=TINYINT},</if>
+            <if test="sort != null">sort = #{sort,jdbcType=INTEGER},</if>
+            <if test="icon != null">icon = #{icon,jdbcType=VARCHAR},</if>
+            <if test="image != null">image = #{image,jdbcType=VARCHAR},</if>
+            <if test="keywords != null">keywords = #{keywords,jdbcType=VARCHAR},</if>
+            <if test="description != null">description = #{description,jdbcType=VARCHAR},</if>
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
+    </update>
+
+    <!-- 批量更新状态 -->
+    <update id="updateStatusBatch">
+        UPDATE pms_category
+        SET status = #{status,jdbcType=TINYINT}
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <!-- 批量更新路径（移动分类时使用） -->
+    <update id="updatePathBatch">
+        UPDATE pms_category
+        SET path = CONCAT(#{newPathPrefix,jdbcType=VARCHAR}, SUBSTRING(path, LENGTH(#{oldPathPrefix,jdbcType=VARCHAR}) + 1)),
+            level = level + #{levelDiff,jdbcType=INTEGER}
+        WHERE path LIKE CONCAT(#{oldPathPrefix,jdbcType=VARCHAR}, '%') AND deleted = 0
+    </update>
+
+    <!-- 逻辑删除 -->
+    <update id="deleteById" parameterType="java.lang.Long">
+        UPDATE pms_category
+        SET deleted = 1
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 批量逻辑删除 -->
+    <update id="deleteBatch">
+        UPDATE pms_category
+        SET deleted = 1
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+</mapper>
