@@ -6,7 +6,7 @@
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="spu_code" property="spuCode" jdbcType="VARCHAR"/>
         <result column="brand_id" property="brandId" jdbcType="BIGINT"/>
-        <result column="product_category_id" property="productCategoryId" jdbcType="BIGINT"/>
+        <result column="category_id" property="categoryId" jdbcType="BIGINT"/>
         <result column="freight_template_id" property="freightTemplateId" jdbcType="BIGINT"/>
         <result column="category_ids" property="categoryIds" jdbcType="VARCHAR"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
@@ -29,7 +29,7 @@
         <result column="max_price" property="maxPrice" jdbcType="DECIMAL"/>
         <result column="stock" property="stock" jdbcType="INTEGER"/>
         <result column="brand_name" property="brandName" jdbcType="VARCHAR"/>
-        <result column="product_category_name" property="productCategoryName" jdbcType="VARCHAR"/>
+        <result column="category_name" property="categoryName" jdbcType="VARCHAR"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
         <result column="creator" property="creator" jdbcType="VARCHAR"/>
@@ -38,10 +38,10 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, spu_code, brand_id, product_category_id, freight_template_id, category_ids,
+        id, spu_code, brand_id, category_id, freight_template_id, category_ids,
         name, sub_title, description, keywords, note, pic, album_pics, unit, weight,
         deleted, publish_status, new_status, recommend_status, verify_status, sort,
-        sale, min_price, max_price, stock, brand_name, product_category_name,
+        sale, min_price, max_price, stock, brand_name, category_name,
         create_time, update_time, creator, updater, version
     </sql>
 
@@ -81,7 +81,7 @@
     <select id="selectByCategoryId" parameterType="java.lang.Long" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM pms_spu
-        WHERE product_category_id = #{categoryId,jdbcType=BIGINT} AND deleted = 0
+        WHERE category_id = #{categoryId,jdbcType=BIGINT} AND deleted = 0
         ORDER BY sort, id DESC
     </select>
 
@@ -98,7 +98,7 @@
                 AND brand_id = #{brandId,jdbcType=BIGINT}
             </if>
             <if test="categoryId != null">
-                AND product_category_id = #{categoryId,jdbcType=BIGINT}
+                AND category_id = #{categoryId,jdbcType=BIGINT}
             </if>
             <if test="publishStatus != null">
                 AND publish_status = #{publishStatus,jdbcType=TINYINT}
@@ -127,13 +127,13 @@
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.pms.pojo.PmsSpu" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO pms_spu (
-            spu_code, brand_id, product_category_id, freight_template_id, category_ids,
+            spu_code, brand_id, category_id, freight_template_id, category_ids,
             name, sub_title, description, keywords, note, pic, album_pics, unit, weight,
             deleted, publish_status, new_status, recommend_status, verify_status, sort,
-            sale, min_price, max_price, stock, brand_name, product_category_name,
+            sale, min_price, max_price, stock, brand_name, category_name,
             creator, updater, version
         ) VALUES (
-            #{spuCode,jdbcType=VARCHAR}, #{brandId,jdbcType=BIGINT}, #{productCategoryId,jdbcType=BIGINT},
+            #{spuCode,jdbcType=VARCHAR}, #{brandId,jdbcType=BIGINT}, #{categoryId,jdbcType=BIGINT},
             #{freightTemplateId,jdbcType=BIGINT}, #{categoryIds,jdbcType=VARCHAR},
             #{name,jdbcType=VARCHAR}, #{subTitle,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR},
             #{keywords,jdbcType=VARCHAR}, #{note,jdbcType=VARCHAR}, #{pic,jdbcType=VARCHAR},
@@ -141,7 +141,7 @@
             #{deleted,jdbcType=TINYINT}, #{publishStatus,jdbcType=TINYINT}, #{newStatus,jdbcType=TINYINT},
             #{recommendStatus,jdbcType=TINYINT}, #{verifyStatus,jdbcType=TINYINT}, #{sort,jdbcType=INTEGER},
             #{sale,jdbcType=INTEGER}, #{minPrice,jdbcType=DECIMAL}, #{maxPrice,jdbcType=DECIMAL},
-            #{stock,jdbcType=INTEGER}, #{brandName,jdbcType=VARCHAR}, #{productCategoryName,jdbcType=VARCHAR},
+            #{stock,jdbcType=INTEGER}, #{brandName,jdbcType=VARCHAR}, #{categoryName,jdbcType=VARCHAR},
             #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}, 0
         )
     </insert>
@@ -152,7 +152,7 @@
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="spuCode != null">spu_code,</if>
             <if test="brandId != null">brand_id,</if>
-            <if test="productCategoryId != null">product_category_id,</if>
+            <if test="categoryId != null">category_id,</if>
             <if test="freightTemplateId != null">freight_template_id,</if>
             <if test="categoryIds != null">category_ids,</if>
             <if test="name != null">name,</if>
@@ -174,14 +174,14 @@
             <if test="maxPrice != null">max_price,</if>
             <if test="stock != null">stock,</if>
             <if test="brandName != null">brand_name,</if>
-            <if test="productCategoryName != null">product_category_name,</if>
+            <if test="categoryName != null">category_name,</if>
             <if test="creator != null">creator,</if>
             deleted, version,
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
             <if test="spuCode != null">#{spuCode,jdbcType=VARCHAR},</if>
             <if test="brandId != null">#{brandId,jdbcType=BIGINT},</if>
-            <if test="productCategoryId != null">#{productCategoryId,jdbcType=BIGINT},</if>
+            <if test="categoryId != null">#{categoryId,jdbcType=BIGINT},</if>
             <if test="freightTemplateId != null">#{freightTemplateId,jdbcType=BIGINT},</if>
             <if test="categoryIds != null">#{categoryIds,jdbcType=VARCHAR},</if>
             <if test="name != null">#{name,jdbcType=VARCHAR},</if>
@@ -203,7 +203,7 @@
             <if test="maxPrice != null">#{maxPrice,jdbcType=DECIMAL},</if>
             <if test="stock != null">#{stock,jdbcType=INTEGER},</if>
             <if test="brandName != null">#{brandName,jdbcType=VARCHAR},</if>
-            <if test="productCategoryName != null">#{productCategoryName,jdbcType=VARCHAR},</if>
+            <if test="categoryName != null">#{categoryName,jdbcType=VARCHAR},</if>
             <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
             0, 0,
         </trim>
@@ -212,16 +212,16 @@
     <!-- 批量插入 -->
     <insert id="insertBatch" parameterType="java.util.List">
         INSERT INTO pms_spu (
-            spu_code, brand_id, product_category_id, freight_template_id, category_ids,
+            spu_code, brand_id, category_id, freight_template_id, category_ids,
             name, sub_title, description, keywords, note, pic, album_pics, unit, weight,
             deleted, publish_status, new_status, recommend_status, verify_status, sort,
-            sale, min_price, max_price, stock, brand_name, product_category_name,
+            sale, min_price, max_price, stock, brand_name, category_name,
             creator, version
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
                 #{item.spuCode,jdbcType=VARCHAR}, #{item.brandId,jdbcType=BIGINT},
-                #{item.productCategoryId,jdbcType=BIGINT}, #{item.freightTemplateId,jdbcType=BIGINT},
+                #{item.categoryId,jdbcType=BIGINT}, #{item.freightTemplateId,jdbcType=BIGINT},
                 #{item.categoryIds,jdbcType=VARCHAR}, #{item.name,jdbcType=VARCHAR},
                 #{item.subTitle,jdbcType=VARCHAR}, #{item.description,jdbcType=VARCHAR},
                 #{item.keywords,jdbcType=VARCHAR}, #{item.note,jdbcType=VARCHAR},
@@ -232,7 +232,7 @@
                 #{item.sort,jdbcType=INTEGER}, #{item.sale,jdbcType=INTEGER},
                 #{item.minPrice,jdbcType=DECIMAL}, #{item.maxPrice,jdbcType=DECIMAL},
                 #{item.stock,jdbcType=INTEGER}, #{item.brandName,jdbcType=VARCHAR},
-                #{item.productCategoryName,jdbcType=VARCHAR}, #{item.creator,jdbcType=VARCHAR}, 0
+                #{item.categoryName,jdbcType=VARCHAR}, #{item.creator,jdbcType=VARCHAR}, 0
             )
         </foreach>
     </insert>
@@ -242,7 +242,7 @@
         UPDATE pms_spu
         SET spu_code = #{spuCode,jdbcType=VARCHAR},
             brand_id = #{brandId,jdbcType=BIGINT},
-            product_category_id = #{productCategoryId,jdbcType=BIGINT},
+            category_id = #{categoryId,jdbcType=BIGINT},
             freight_template_id = #{freightTemplateId,jdbcType=BIGINT},
             category_ids = #{categoryIds,jdbcType=VARCHAR},
             name = #{name,jdbcType=VARCHAR},
@@ -264,7 +264,7 @@
             max_price = #{maxPrice,jdbcType=DECIMAL},
             stock = #{stock,jdbcType=INTEGER},
             brand_name = #{brandName,jdbcType=VARCHAR},
-            product_category_name = #{productCategoryName,jdbcType=VARCHAR},
+            category_name = #{categoryName,jdbcType=VARCHAR},
             updater = #{updater,jdbcType=VARCHAR},
             version = version + 1
         WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
@@ -276,7 +276,7 @@
         <set>
             <if test="spuCode != null">spu_code = #{spuCode,jdbcType=VARCHAR},</if>
             <if test="brandId != null">brand_id = #{brandId,jdbcType=BIGINT},</if>
-            <if test="productCategoryId != null">product_category_id = #{productCategoryId,jdbcType=BIGINT},</if>
+            <if test="categoryId != null">category_id = #{categoryId,jdbcType=BIGINT},</if>
             <if test="freightTemplateId != null">freight_template_id = #{freightTemplateId,jdbcType=BIGINT},</if>
             <if test="categoryIds != null">category_ids = #{categoryIds,jdbcType=VARCHAR},</if>
             <if test="name != null">name = #{name,jdbcType=VARCHAR},</if>
@@ -298,7 +298,7 @@
             <if test="maxPrice != null">max_price = #{maxPrice,jdbcType=DECIMAL},</if>
             <if test="stock != null">stock = #{stock,jdbcType=INTEGER},</if>
             <if test="brandName != null">brand_name = #{brandName,jdbcType=VARCHAR},</if>
-            <if test="productCategoryName != null">product_category_name = #{productCategoryName,jdbcType=VARCHAR},</if>
+            <if test="categoryName != null">category_name = #{categoryName,jdbcType=VARCHAR},</if>
             <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
             version = version + 1,
         </set>

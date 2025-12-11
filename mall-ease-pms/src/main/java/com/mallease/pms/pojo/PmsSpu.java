@@ -31,7 +31,7 @@ public class PmsSpu {
     /**
      * 商品分类ID（叶子节点）
      */
-    private Long productCategoryId;
+    private Long categoryId;
 
     /**
      * 运费模板ID
@@ -146,7 +146,7 @@ public class PmsSpu {
     /**
      * 商品分类名称（冗余）
      */
-    private String productCategoryName;
+    private String categoryName;
 
     /**
      * 创建时间
