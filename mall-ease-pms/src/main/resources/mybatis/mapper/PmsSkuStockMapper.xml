@@ -1,302 +1,221 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.mallease.pms.dao.PmsSkuStockDao">
+
     <resultMap id="BaseResultMap" type="com.mallease.pms.pojo.PmsSkuStock">
         <id column="id" property="id" jdbcType="BIGINT"/>
-        <result column="product_id" property="productId" jdbcType="BIGINT"/>
-        <result column="sku_code" property="skuCode" jdbcType="VARCHAR"/>
-        <result column="price" property="price" jdbcType="DECIMAL"/>
+        <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
         <result column="stock" property="stock" jdbcType="INTEGER"/>
-        <result column="low_stock" property="lowStock" jdbcType="INTEGER"/>
-        <result column="pic" property="pic" jdbcType="VARCHAR"/>
-        <result column="sale" property="sale" jdbcType="INTEGER"/>
-        <result column="promotion_price" property="promotionPrice" jdbcType="DECIMAL"/>
         <result column="lock_stock" property="lockStock" jdbcType="INTEGER"/>
-        <result column="sp_data" property="spData" jdbcType="VARCHAR"/>
+        <result column="sale" property="sale" jdbcType="INTEGER"/>
+        <result column="low_stock" property="lowStock" jdbcType="INTEGER"/>
+        <result column="stock_status" property="stockStatus" jdbcType="TINYINT"/>
+        <result column="version" property="version" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, product_id, sku_code, price, stock, low_stock, pic, sale, promotion_price, lock_stock, sp_data
+        id, sku_id, stock, lock_stock, sale, low_stock, stock_status, version, create_time, update_time
     </sql>
 
+    <!-- 根据主键查询 -->
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
-        select
-        <include refid="Base_Column_List"/>
-        from pms_sku_stock
-        where id = #{id,jdbcType=BIGINT}
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_stock
+        WHERE id = #{id,jdbcType=BIGINT}
     </select>
 
-    <select id="selectByProductId" parameterType="java.lang.Long" resultMap="BaseResultMap">
-        select
-        <include refid="Base_Column_List"/>
-        from pms_sku_stock
-        where product_id = #{productId,jdbcType=BIGINT}
+    <!-- 根据SKU ID查询（一对一关系） -->
+    <select id="selectBySkuId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_stock
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
     </select>
 
-    <select id="selectBySkuCode" parameterType="java.lang.String" resultMap="BaseResultMap">
-        select
-        <include refid="Base_Column_List"/>
-        from pms_sku_stock
-        where sku_code = #{skuCode,jdbcType=VARCHAR}
+    <!-- 根据SKU ID列表批量查询 -->
+    <select id="selectBySkuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_stock
+        WHERE sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+            #{skuId,jdbcType=BIGINT}
+        </foreach>
     </select>
 
-    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
-        delete from pms_sku_stock
-        where id = #{id,jdbcType=BIGINT}
-    </delete>
+    <!-- 根据库存状态查询 -->
+    <select id="selectByStockStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_stock
+        WHERE stock_status = #{stockStatus,jdbcType=TINYINT}
+    </select>
 
-    <delete id="deleteByProductId" parameterType="java.lang.Long">
-        delete from pms_sku_stock
-        where product_id = #{productId,jdbcType=BIGINT}
-    </delete>
+    <!-- 查询库存预警（库存低于预警值） -->
+    <select id="selectLowStockWarning" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_stock
+        WHERE stock &lt;= low_stock AND low_stock > 0
+        ORDER BY stock ASC
+    </select>
 
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_stock
+        ORDER BY sku_id
+    </select>
+
+    <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.pms.pojo.PmsSkuStock" useGeneratedKeys="true" keyProperty="id">
-        insert into pms_sku_stock (id, product_id, sku_code,
-                                    price, stock, low_stock,
-                                    pic, sale, promotion_price,
-                                    lock_stock, sp_data)
-        values (#{id,jdbcType=BIGINT}, #{productId,jdbcType=BIGINT}, #{skuCode,jdbcType=VARCHAR},
-                #{price,jdbcType=DECIMAL}, #{stock,jdbcType=INTEGER}, #{lowStock,jdbcType=INTEGER},
-                #{pic,jdbcType=VARCHAR}, #{sale,jdbcType=INTEGER}, #{promotionPrice,jdbcType=DECIMAL},
-                #{lockStock,jdbcType=INTEGER}, #{spData,jdbcType=VARCHAR})
+        INSERT INTO pms_sku_stock (
+            sku_id, stock, lock_stock, sale, low_stock, stock_status, version
+        ) VALUES (
+            #{skuId,jdbcType=BIGINT}, #{stock,jdbcType=INTEGER}, #{lockStock,jdbcType=INTEGER},
+            #{sale,jdbcType=INTEGER}, #{lowStock,jdbcType=INTEGER}, #{stockStatus,jdbcType=TINYINT}, 0
+        )
     </insert>
 
+    <!-- 选择性插入 -->
     <insert id="insertSelective" parameterType="com.mallease.pms.pojo.PmsSkuStock" useGeneratedKeys="true" keyProperty="id">
-        insert into pms_sku_stock
+        INSERT INTO pms_sku_stock
         <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test="id != null">
-                id,
-            </if>
-            <if test="productId != null">
-                product_id,
-            </if>
-            <if test="skuCode != null">
-                sku_code,
-            </if>
-            <if test="price != null">
-                price,
-            </if>
-            <if test="stock != null">
-                stock,
-            </if>
-            <if test="lowStock != null">
-                low_stock,
-            </if>
-            <if test="pic != null">
-                pic,
-            </if>
-            <if test="sale != null">
-                sale,
-            </if>
-            <if test="promotionPrice != null">
-                promotion_price,
-            </if>
-            <if test="lockStock != null">
-                lock_stock,
-            </if>
-            <if test="spData != null">
-                sp_data,
-            </if>
+            <if test="skuId != null">sku_id,</if>
+            <if test="stock != null">stock,</if>
+            <if test="lockStock != null">lock_stock,</if>
+            <if test="sale != null">sale,</if>
+            <if test="lowStock != null">low_stock,</if>
+            <if test="stockStatus != null">stock_status,</if>
+            version,
         </trim>
-        <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test="id != null">
-                #{id,jdbcType=BIGINT},
-            </if>
-            <if test="productId != null">
-                #{productId,jdbcType=BIGINT},
-            </if>
-            <if test="skuCode != null">
-                #{skuCode,jdbcType=VARCHAR},
-            </if>
-            <if test="price != null">
-                #{price,jdbcType=DECIMAL},
-            </if>
-            <if test="stock != null">
-                #{stock,jdbcType=INTEGER},
-            </if>
-            <if test="lowStock != null">
-                #{lowStock,jdbcType=INTEGER},
-            </if>
-            <if test="pic != null">
-                #{pic,jdbcType=VARCHAR},
-            </if>
-            <if test="sale != null">
-                #{sale,jdbcType=INTEGER},
-            </if>
-            <if test="promotionPrice != null">
-                #{promotionPrice,jdbcType=DECIMAL},
-            </if>
-            <if test="lockStock != null">
-                #{lockStock,jdbcType=INTEGER},
-            </if>
-            <if test="spData != null">
-                #{spData,jdbcType=VARCHAR},
-            </if>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="skuId != null">#{skuId,jdbcType=BIGINT},</if>
+            <if test="stock != null">#{stock,jdbcType=INTEGER},</if>
+            <if test="lockStock != null">#{lockStock,jdbcType=INTEGER},</if>
+            <if test="sale != null">#{sale,jdbcType=INTEGER},</if>
+            <if test="lowStock != null">#{lowStock,jdbcType=INTEGER},</if>
+            <if test="stockStatus != null">#{stockStatus,jdbcType=TINYINT},</if>
+            0,
         </trim>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.pms.pojo.PmsSkuStock">
-        update pms_sku_stock
-        <set>
-            <if test="productId != null">
-                product_id = #{productId,jdbcType=BIGINT},
-            </if>
-            <if test="skuCode != null">
-                sku_code = #{skuCode,jdbcType=VARCHAR},
-            </if>
-            <if test="price != null">
-                price = #{price,jdbcType=DECIMAL},
-            </if>
-            <if test="stock != null">
-                stock = #{stock,jdbcType=INTEGER},
-            </if>
-            <if test="lowStock != null">
-                low_stock = #{lowStock,jdbcType=INTEGER},
-            </if>
-            <if test="pic != null">
-                pic = #{pic,jdbcType=VARCHAR},
-            </if>
-            <if test="sale != null">
-                sale = #{sale,jdbcType=INTEGER},
-            </if>
-            <if test="promotionPrice != null">
-                promotion_price = #{promotionPrice,jdbcType=DECIMAL},
-            </if>
-            <if test="lockStock != null">
-                lock_stock = #{lockStock,jdbcType=INTEGER},
-            </if>
-            <if test="spData != null">
-                sp_data = #{spData,jdbcType=VARCHAR},
-            </if>
-        </set>
-        where id = #{id,jdbcType=BIGINT}
-    </update>
-
-    <update id="updateByPrimaryKey" parameterType="com.mallease.pms.pojo.PmsSkuStock">
-        update pms_sku_stock
-        set product_id = #{productId,jdbcType=BIGINT},
-            sku_code = #{skuCode,jdbcType=VARCHAR},
-            price = #{price,jdbcType=DECIMAL},
-            stock = #{stock,jdbcType=INTEGER},
-            low_stock = #{lowStock,jdbcType=INTEGER},
-            pic = #{pic,jdbcType=VARCHAR},
-            sale = #{sale,jdbcType=INTEGER},
-            promotion_price = #{promotionPrice,jdbcType=DECIMAL},
-            lock_stock = #{lockStock,jdbcType=INTEGER},
-            sp_data = #{spData,jdbcType=VARCHAR}
-        where id = #{id,jdbcType=BIGINT}
-    </update>
-
+    <!-- 批量插入 -->
     <insert id="insertBatch" parameterType="java.util.List">
-        insert into pms_sku_stock (product_id, sku_code, price, stock, low_stock, pic, sale, promotion_price, lock_stock, sp_data)
-        values
+        INSERT INTO pms_sku_stock (
+            sku_id, stock, lock_stock, sale, low_stock, stock_status, version
+        ) VALUES
         <foreach collection="list" item="item" separator=",">
-            (#{item.productId,jdbcType=BIGINT}, #{item.skuCode,jdbcType=VARCHAR},
-             #{item.price,jdbcType=DECIMAL}, #{item.stock,jdbcType=INTEGER},
-             #{item.lowStock,jdbcType=INTEGER}, #{item.pic,jdbcType=VARCHAR},
-             #{item.sale,jdbcType=INTEGER}, #{item.promotionPrice,jdbcType=DECIMAL},
-             #{item.lockStock,jdbcType=INTEGER}, #{item.spData,jdbcType=VARCHAR})
+            (
+                #{item.skuId,jdbcType=BIGINT}, #{item.stock,jdbcType=INTEGER},
+                #{item.lockStock,jdbcType=INTEGER}, #{item.sale,jdbcType=INTEGER},
+                #{item.lowStock,jdbcType=INTEGER}, #{item.stockStatus,jdbcType=TINYINT}, 0
+            )
         </foreach>
     </insert>
 
-    <select id="selectByProductIdAndKeyword" resultMap="BaseResultMap">
-        select
-        <include refid="Base_Column_List"/>
-        from pms_sku_stock
-        where product_id = #{productId,jdbcType=BIGINT}
-        <if test="keyword != null and keyword != ''">
-            and sku_code like concat('%', #{keyword,jdbcType=VARCHAR}, '%')
-        </if>
-    </select>
+    <!-- 根据主键更新 -->
+    <update id="updateByPrimaryKey" parameterType="com.mallease.pms.pojo.PmsSkuStock">
+        UPDATE pms_sku_stock
+        SET sku_id = #{skuId,jdbcType=BIGINT},
+            stock = #{stock,jdbcType=INTEGER},
+            lock_stock = #{lockStock,jdbcType=INTEGER},
+            sale = #{sale,jdbcType=INTEGER},
+            low_stock = #{lowStock,jdbcType=INTEGER},
+            stock_status = #{stockStatus,jdbcType=TINYINT},
+            version = version + 1
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
 
-    <select id="selectByProductIds" resultMap="BaseResultMap">
-        select
-        <include refid="Base_Column_List"/>
-        from pms_sku_stock
-        where product_id in
-        <foreach collection="ids" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-    </select>
+    <!-- 根据主键选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.pms.pojo.PmsSkuStock">
+        UPDATE pms_sku_stock
+        <set>
+            <if test="skuId != null">sku_id = #{skuId,jdbcType=BIGINT},</if>
+            <if test="stock != null">stock = #{stock,jdbcType=INTEGER},</if>
+            <if test="lockStock != null">lock_stock = #{lockStock,jdbcType=INTEGER},</if>
+            <if test="sale != null">sale = #{sale,jdbcType=INTEGER},</if>
+            <if test="lowStock != null">low_stock = #{lowStock,jdbcType=INTEGER},</if>
+            <if test="stockStatus != null">stock_status = #{stockStatus,jdbcType=TINYINT},</if>
+            version = version + 1,
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
 
-    <update id="updateBatchSelective" parameterType="java.util.List">
-        update pms_sku_stock
-        <trim prefix="set" suffixOverrides=",">
-            <trim prefix="product_id = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.productId != null">
-                        when id = #{item.id} then #{item.productId}
-                    </if>
-                </foreach>
-            </trim>
-            <trim prefix="sku_code = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.skuCode != null">
-                        when id = #{item.id} then #{item.skuCode}
-                    </if>
-                </foreach>
-            </trim>
-            <trim prefix="price = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.price != null">
-                        when id = #{item.id} then #{item.price}
-                    </if>
-                </foreach>
-            </trim>
-            <trim prefix="stock = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.stock != null">
-                        when id = #{item.id} then #{item.stock}
-                    </if>
-                </foreach>
-            </trim>
-            <trim prefix="low_stock = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.lowStock != null">
-                        when id = #{item.id} then #{item.lowStock}
-                    </if>
-                </foreach>
-            </trim>
-            <trim prefix="pic = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.pic != null">
-                        when id = #{item.id} then #{item.pic}
-                    </if>
-                </foreach>
-            </trim>
-            <trim prefix="sale = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.sale != null">
-                        when id = #{item.id} then #{item.sale}
-                    </if>
-                </foreach>
-            </trim>
-            <trim prefix="promotion_price = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.promotionPrice != null">
-                        when id = #{item.id} then #{item.promotionPrice}
-                    </if>
-                </foreach>
-            </trim>
-            <trim prefix="lock_stock = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.lockStock != null">
-                        when id = #{item.id} then #{item.lockStock}
-                    </if>
-                </foreach>
-            </trim>
-            <trim prefix="sp_data = case" suffix="end,">
-                <foreach collection="list" item="item" index="index">
-                    <if test="item.spData != null">
-                        when id = #{item.id} then #{item.spData}
-                    </if>
-                </foreach>
-            </trim>
-        </trim>
-        where id in
-        <foreach collection="list" item="item" index="index" separator="," open="(" close=")">
-            #{item.id}
+    <!-- 扣减库存（乐观锁） -->
+    <!-- 核心方法：通过 version 字段实现乐观锁，防止超卖 -->
+    <!-- 返回0表示扣减失败（版本号不匹配或库存不足），需要业务层重试 -->
+    <update id="decreaseStock">
+        UPDATE pms_sku_stock
+        SET stock = stock - #{quantity,jdbcType=INTEGER},
+            version = version + 1
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+          AND version = #{version,jdbcType=INTEGER}
+          AND stock >= #{quantity,jdbcType=INTEGER}
+    </update>
+
+    <!-- 增加库存 -->
+    <update id="increaseStock">
+        UPDATE pms_sku_stock
+        SET stock = stock + #{quantity,jdbcType=INTEGER},
+            version = version + 1
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+    </update>
+
+    <!-- 锁定库存（下单未支付） -->
+    <!-- 乐观锁：将可用库存转为锁定库存 -->
+    <update id="lockStock">
+        UPDATE pms_sku_stock
+        SET stock = stock - #{quantity,jdbcType=INTEGER},
+            lock_stock = lock_stock + #{quantity,jdbcType=INTEGER},
+            version = version + 1
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+          AND version = #{version,jdbcType=INTEGER}
+          AND stock >= #{quantity,jdbcType=INTEGER}
+    </update>
+
+    <!-- 解锁库存（支付超时或取消订单） -->
+    <!-- 将锁定库存释放回可用库存 -->
+    <update id="unlockStock">
+        UPDATE pms_sku_stock
+        SET stock = stock + #{quantity,jdbcType=INTEGER},
+            lock_stock = lock_stock - #{quantity,jdbcType=INTEGER},
+            version = version + 1
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+          AND lock_stock >= #{quantity,jdbcType=INTEGER}
+    </update>
+
+    <!-- 确认扣减库存（支付成功后） -->
+    <!-- 将锁定库存转为实际扣减（减少lock_stock，不改变stock） -->
+    <update id="confirmDecrease">
+        UPDATE pms_sku_stock
+        SET lock_stock = lock_stock - #{quantity,jdbcType=INTEGER},
+            version = version + 1
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+          AND lock_stock >= #{quantity,jdbcType=INTEGER}
+    </update>
+
+    <!-- 增加销量 -->
+    <update id="increaseSale">
+        UPDATE pms_sku_stock
+        SET sale = sale + #{quantity,jdbcType=INTEGER},
+            version = version + 1
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+    </update>
+
+    <!-- 批量更新库存状态 -->
+    <update id="updateStockStatusBatch">
+        UPDATE pms_sku_stock
+        SET stock_status = #{stockStatus,jdbcType=TINYINT},
+            version = version + 1
+        WHERE sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+            #{skuId,jdbcType=BIGINT}
         </foreach>
     </update>
-</mapper>
 
+    <!-- 根据SKU ID删除库存 -->
+    <delete id="deleteBySkuId" parameterType="java.lang.Long">
+        DELETE FROM pms_sku_stock
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+    </delete>
+
+</mapper>

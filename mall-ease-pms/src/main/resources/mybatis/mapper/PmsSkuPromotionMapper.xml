@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.pms.dao.PmsSkuPromotionDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.pms.pojo.PmsSkuPromotion">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
+        <result column="promotion_type" property="promotionType" jdbcType="TINYINT"/>
+        <result column="preview_status" property="previewStatus" jdbcType="TINYINT"/>
+        <result column="promotion_price" property="promotionPrice" jdbcType="DECIMAL"/>
+        <result column="promotion_start_time" property="promotionStartTime" jdbcType="TIMESTAMP"/>
+        <result column="promotion_end_time" property="promotionEndTime" jdbcType="TIMESTAMP"/>
+        <result column="promotion_per_limit" property="promotionPerLimit" jdbcType="INTEGER"/>
+        <result column="gift_growth" property="giftGrowth" jdbcType="INTEGER"/>
+        <result column="gift_point" property="giftPoint" jdbcType="INTEGER"/>
+        <result column="use_point_limit" property="usePointLimit" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+        <result column="version" property="version" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, sku_id, promotion_type, preview_status, promotion_price,
+        promotion_start_time, promotion_end_time, promotion_per_limit,
+        gift_growth, gift_point, use_point_limit,
+        create_time, update_time, creator, updater, version
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_promotion
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据SKU ID查询 -->
+    <select id="selectBySkuId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_promotion
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据SKU ID列表批量查询 -->
+    <select id="selectBySkuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_promotion
+        WHERE sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+            #{skuId,jdbcType=BIGINT}
+        </foreach>
+    </select>
+
+    <!-- 根据促销类型查询 -->
+    <select id="selectByPromotionType" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_promotion
+        WHERE promotion_type = #{promotionType,jdbcType=TINYINT}
+    </select>
+
+    <!-- 查询进行中的促销 -->
+    <select id="selectActivePromotions" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_promotion
+        WHERE promotion_type > 0
+          AND preview_status = 0
+          AND promotion_start_time &lt;= NOW()
+          AND promotion_end_time >= NOW()
+        ORDER BY sku_id
+    </select>
+
+    <!-- 查询预告中的促销商品 -->
+    <select id="selectPreviewPromotions" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_promotion
+        WHERE preview_status = 1
+          AND promotion_start_time > NOW()
+        ORDER BY promotion_start_time
+    </select>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.mallease.pms.pojo.PmsSkuPromotion" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pms_sku_promotion (
+            sku_id, promotion_type, preview_status, promotion_price,
+            promotion_start_time, promotion_end_time, promotion_per_limit,
+            gift_growth, gift_point, use_point_limit, creator, updater, version
+        ) VALUES (
+            #{skuId,jdbcType=BIGINT}, #{promotionType,jdbcType=TINYINT}, #{previewStatus,jdbcType=TINYINT},
+            #{promotionPrice,jdbcType=DECIMAL}, #{promotionStartTime,jdbcType=TIMESTAMP},
+            #{promotionEndTime,jdbcType=TIMESTAMP}, #{promotionPerLimit,jdbcType=INTEGER},
+            #{giftGrowth,jdbcType=INTEGER}, #{giftPoint,jdbcType=INTEGER},
+            #{usePointLimit,jdbcType=INTEGER}, #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}, 0
+        )
+    </insert>
+
+    <!-- 选择性插入 -->
+    <insert id="insertSelective" parameterType="com.mallease.pms.pojo.PmsSkuPromotion" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pms_sku_promotion
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="skuId != null">sku_id,</if>
+            <if test="promotionType != null">promotion_type,</if>
+            <if test="previewStatus != null">preview_status,</if>
+            <if test="promotionPrice != null">promotion_price,</if>
+            <if test="promotionStartTime != null">promotion_start_time,</if>
+            <if test="promotionEndTime != null">promotion_end_time,</if>
+            <if test="promotionPerLimit != null">promotion_per_limit,</if>
+            <if test="giftGrowth != null">gift_growth,</if>
+            <if test="giftPoint != null">gift_point,</if>
+            <if test="usePointLimit != null">use_point_limit,</if>
+            <if test="creator != null">creator,</if>
+            version,
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="skuId != null">#{skuId,jdbcType=BIGINT},</if>
+            <if test="promotionType != null">#{promotionType,jdbcType=TINYINT},</if>
+            <if test="previewStatus != null">#{previewStatus,jdbcType=TINYINT},</if>
+            <if test="promotionPrice != null">#{promotionPrice,jdbcType=DECIMAL},</if>
+            <if test="promotionStartTime != null">#{promotionStartTime,jdbcType=TIMESTAMP},</if>
+            <if test="promotionEndTime != null">#{promotionEndTime,jdbcType=TIMESTAMP},</if>
+            <if test="promotionPerLimit != null">#{promotionPerLimit,jdbcType=INTEGER},</if>
+            <if test="giftGrowth != null">#{giftGrowth,jdbcType=INTEGER},</if>
+            <if test="giftPoint != null">#{giftPoint,jdbcType=INTEGER},</if>
+            <if test="usePointLimit != null">#{usePointLimit,jdbcType=INTEGER},</if>
+            <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
+            0,
+        </trim>
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO pms_sku_promotion (
+            sku_id, promotion_type, preview_status, promotion_price,
+            promotion_start_time, promotion_end_time, promotion_per_limit,
+            gift_growth, gift_point, use_point_limit, creator, version
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.skuId,jdbcType=BIGINT}, #{item.promotionType,jdbcType=TINYINT},
+                #{item.previewStatus,jdbcType=TINYINT}, #{item.promotionPrice,jdbcType=DECIMAL},
+                #{item.promotionStartTime,jdbcType=TIMESTAMP}, #{item.promotionEndTime,jdbcType=TIMESTAMP},
+                #{item.promotionPerLimit,jdbcType=INTEGER}, #{item.giftGrowth,jdbcType=INTEGER},
+                #{item.giftPoint,jdbcType=INTEGER}, #{item.usePointLimit,jdbcType=INTEGER},
+                #{item.creator,jdbcType=VARCHAR}, 0
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据主键更新 -->
+    <update id="updateByPrimaryKey" parameterType="com.mallease.pms.pojo.PmsSkuPromotion">
+        UPDATE pms_sku_promotion
+        SET sku_id = #{skuId,jdbcType=BIGINT},
+            promotion_type = #{promotionType,jdbcType=TINYINT},
+            preview_status = #{previewStatus,jdbcType=TINYINT},
+            promotion_price = #{promotionPrice,jdbcType=DECIMAL},
+            promotion_start_time = #{promotionStartTime,jdbcType=TIMESTAMP},
+            promotion_end_time = #{promotionEndTime,jdbcType=TIMESTAMP},
+            promotion_per_limit = #{promotionPerLimit,jdbcType=INTEGER},
+            gift_growth = #{giftGrowth,jdbcType=INTEGER},
+            gift_point = #{giftPoint,jdbcType=INTEGER},
+            use_point_limit = #{usePointLimit,jdbcType=INTEGER},
+            updater = #{updater,jdbcType=VARCHAR},
+            version = version + 1
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据主键选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.pms.pojo.PmsSkuPromotion">
+        UPDATE pms_sku_promotion
+        <set>
+            <if test="skuId != null">sku_id = #{skuId,jdbcType=BIGINT},</if>
+            <if test="promotionType != null">promotion_type = #{promotionType,jdbcType=TINYINT},</if>
+            <if test="previewStatus != null">preview_status = #{previewStatus,jdbcType=TINYINT},</if>
+            <if test="promotionPrice != null">promotion_price = #{promotionPrice,jdbcType=DECIMAL},</if>
+            <if test="promotionStartTime != null">promotion_start_time = #{promotionStartTime,jdbcType=TIMESTAMP},</if>
+            <if test="promotionEndTime != null">promotion_end_time = #{promotionEndTime,jdbcType=TIMESTAMP},</if>
+            <if test="promotionPerLimit != null">promotion_per_limit = #{promotionPerLimit,jdbcType=INTEGER},</if>
+            <if test="giftGrowth != null">gift_growth = #{giftGrowth,jdbcType=INTEGER},</if>
+            <if test="giftPoint != null">gift_point = #{giftPoint,jdbcType=INTEGER},</if>
+            <if test="usePointLimit != null">use_point_limit = #{usePointLimit,jdbcType=INTEGER},</if>
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+            version = version + 1,
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据SKU ID更新促销信息 -->
+    <update id="updateBySkuId" parameterType="com.mallease.pms.pojo.PmsSkuPromotion">
+        UPDATE pms_sku_promotion
+        <set>
+            <if test="promotionType != null">promotion_type = #{promotionType,jdbcType=TINYINT},</if>
+            <if test="previewStatus != null">preview_status = #{previewStatus,jdbcType=TINYINT},</if>
+            <if test="promotionPrice != null">promotion_price = #{promotionPrice,jdbcType=DECIMAL},</if>
+            <if test="promotionStartTime != null">promotion_start_time = #{promotionStartTime,jdbcType=TIMESTAMP},</if>
+            <if test="promotionEndTime != null">promotion_end_time = #{promotionEndTime,jdbcType=TIMESTAMP},</if>
+            <if test="promotionPerLimit != null">promotion_per_limit = #{promotionPerLimit,jdbcType=INTEGER},</if>
+            <if test="giftGrowth != null">gift_growth = #{giftGrowth,jdbcType=INTEGER},</if>
+            <if test="giftPoint != null">gift_point = #{giftPoint,jdbcType=INTEGER},</if>
+            <if test="usePointLimit != null">use_point_limit = #{usePointLimit,jdbcType=INTEGER},</if>
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+            version = version + 1,
+        </set>
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+    </update>
+
+    <!-- 批量更新促销类型 -->
+    <update id="updatePromotionTypeBatch">
+        UPDATE pms_sku_promotion
+        SET promotion_type = #{promotionType,jdbcType=TINYINT},
+            version = version + 1
+        WHERE sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+            #{skuId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <!-- 结束过期促销 -->
+    <update id="expirePromotions">
+        UPDATE pms_sku_promotion
+        SET promotion_type = 0,
+            version = version + 1
+        WHERE promotion_type > 0
+          AND promotion_end_time &lt; #{now,jdbcType=TIMESTAMP}
+    </update>
+
+    <!-- 根据SKU ID删除 -->
+    <delete id="deleteBySkuId" parameterType="java.lang.Long">
+        DELETE FROM pms_sku_promotion
+        WHERE sku_id = #{skuId,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBatch">
+        DELETE FROM pms_sku_promotion
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </delete>
+
+</mapper>
