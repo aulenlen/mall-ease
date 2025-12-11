@@ -2,19 +2,23 @@ server:
   port: 9056
 
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
   datasource:
-    url: jdbc:mysql://192.168.50.148:13306/mall-ease?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
-    username: root
-    password: 123456
+    url: ${DB_URL:}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
 
 mybatis:
   mapper-locations: classpath:mybatis/mapper/*.xml
 
+
 minio:
-  endpoint: http://192.168.50.148:19000
-  bucketName: mall-ease
-  accessKey: minioadmin
-  secretKey: minioadmin
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  bucketName: ${MINIO_BUCKET:mall-ease}
+  accessKey: ${MINIO_ACCESS_KEY:}
+  secretKey: ${MINIO_SECRET_KEY:}
 
 # PageHelper 分页插件配置
 pagehelper:

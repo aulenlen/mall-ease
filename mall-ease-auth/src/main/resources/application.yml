@@ -2,14 +2,18 @@ server:
   port: 9054
 
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
   application:
     name: mall-ease-auth
+
   data:
     redis:
-      host: 192.168.50.148
-      database: 0
-      port: 16379
-      password:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      password: ${REDIS_PASSWORD:}
       timeout: 3000ms
       lettuce:
         pool:
@@ -29,5 +33,5 @@ sa-token:
   is-read-cookie: false
   is-read-header: true
   token-prefix: Bearer
-  jwt-secret-key: sa-secret-key123
+  jwt-secret-key: ${SA_TOKEN_SECRET:sa-secret-key-default}
   is-print: false
