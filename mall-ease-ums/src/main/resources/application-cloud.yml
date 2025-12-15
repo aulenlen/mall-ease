@@ -1,0 +1,37 @@
+# =================================================================
+# UMS TiDB Cloud 配置
+# 敏感信息通过环境变量注入
+# =================================================================
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    druid:
+      initial-size: 3
+      min-idle: 3
+      max-active: 10
+      max-wait: 30000
+      time-between-eviction-runs-millis: 30000
+      min-evictable-idle-time-millis: 180000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      database: ${REDIS_DATABASE:0}
+      ssl:
+        enabled: false
+
+sa-token:
+  jwt-secret-key: ${SA_TOKEN_SECRET}
+
+logging:
+  level:
+    com.mallease: INFO

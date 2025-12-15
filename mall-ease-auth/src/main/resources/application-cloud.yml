@@ -1,0 +1,21 @@
+# =================================================================
+# Auth TiDB Cloud / 生产环境配置
+# 敏感信息通过环境变量注入
+# =================================================================
+
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      database: ${REDIS_DATABASE:0}
+      ssl:
+        enabled: false
+
+sa-token:
+  jwt-secret-key: ${SA_TOKEN_SECRET}
+
+logging:
+  level:
+    com.mallease: INFO
