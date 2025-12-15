@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import cn.hutool.core.util.StrUtil;
+
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,6 +23,7 @@ import java.util.UUID;
 
 /**
  * MinIO 文件服务实现类
+ * 支持 MinIO / Cloudflare R2 / 阿里云 OSS 等 S3 兼容存储
  *
  * @author: Aulen
  * @create: 2025-11-15
@@ -38,6 +41,9 @@ public class MinioServiceImpl implements MinioService {
     @Value("${minio.endpoint}")
     private String endpoint;
 
+    @Value("${storage.public-url:}")
+    private String publicUrl;
+
     @Override
     public MinioUploadVO uploadFile(MultipartFile file) {
         try {
@@ -54,7 +60,15 @@ public class MinioServiceImpl implements MinioService {
                             .build()
             );
 
-            String url = endpoint + "/" + bucketName + "/" + objectName;
+            // 生成公开访问 URL
+            String url;
+            if (StrUtil.isNotBlank(publicUrl)) {
+                // 使用自定义域名（R2/CDN 场景）
+                url = publicUrl + "/" + objectName;
+            } else {
+                // 回退到 endpoint（MinIO 本地场景）
+                url = endpoint + "/" + bucketName + "/" + objectName;
+            }
 
             return MinioUploadVO.builder()
                     .url(url)
@@ -149,20 +163,31 @@ public class MinioServiceImpl implements MinioService {
                 minioClient.makeBucket(MakeBucketArgs.builder()
                         .bucket(bucketName)
                         .build());
-                BucketPolicyConfig bucketPolicyConfig = createBucketPolicyConfig(bucketName);
-
-                SetBucketPolicyArgs setBucketPolicyArgs = SetBucketPolicyArgs.builder()
-                        .bucket(bucketName)
-                        .config(JSONUtil.toJsonStr(bucketPolicyConfig))
-                        .build();
-                minioClient.setBucketPolicy(setBucketPolicyArgs);
-
                 log.info("创建 bucket 成功: {}", bucketName);
+
+                // R2 不支持通过 API 设置 bucket 策略，需要在控制台配置公开访问
+                // 仅在非 R2 环境（如本地 MinIO）设置策略
+                if (!isR2Storage()) {
+                    BucketPolicyConfig bucketPolicyConfig = createBucketPolicyConfig(bucketName);
+                    SetBucketPolicyArgs setBucketPolicyArgs = SetBucketPolicyArgs.builder()
+                            .bucket(bucketName)
+                            .config(JSONUtil.toJsonStr(bucketPolicyConfig))
+                            .build();
+                    minioClient.setBucketPolicy(setBucketPolicyArgs);
+                    log.info("设置 bucket 公共读策略成功: {}", bucketName);
+                }
             }
         } catch (Exception e) {
             log.error("检查或创建 bucket 失败: {}", e.getMessage(), e);
             throw new ApiException("检查或创建 bucket 失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 判断是否为 R2 存储（或其他不支持 API 设置策略的存储）
+     */
+    private boolean isR2Storage() {
+        return endpoint != null && endpoint.contains("r2.cloudflarestorage.com");
     }
 
     private BucketPolicyConfig createBucketPolicyConfig(String bucketName) {

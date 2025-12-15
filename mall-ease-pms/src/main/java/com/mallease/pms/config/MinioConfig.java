@@ -28,6 +28,7 @@ public class MinioConfig {
         return MinioClient.builder()
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
+                .region("auto")  // R2 需要指定 region 为 auto，MinIO 会忽略此参数
                 .build();
     }
 }
