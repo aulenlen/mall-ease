@@ -79,8 +79,6 @@ public interface PmsSkuConverter {
     @Mapping(target = "creator", ignore = true)
     @Mapping(target = "updater", ignore = true)
     @Mapping(target = "version", ignore = true)
-    @Mapping(target = "stock", ignore = true)      // 单独处理库存
-    @Mapping(target = "promotion", ignore = true)  // 单独处理促销
     PmsSku createCmdToEntity(CreatePmsSkuCmd cmd);
 
     /**

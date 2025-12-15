@@ -100,7 +100,6 @@ public interface PmsSpuConverter {
     @Mapping(target = "creator", ignore = true)
     @Mapping(target = "updater", ignore = true)
     @Mapping(target = "version", ignore = true)
-    @Mapping(target = "spuDetail", ignore = true)      // 单独处理
     PmsSpu createCmdToEntity(CreatePmsSpuCmd cmd);
 
     /**
