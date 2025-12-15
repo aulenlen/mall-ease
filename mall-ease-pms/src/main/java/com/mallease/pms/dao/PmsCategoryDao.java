@@ -41,6 +41,14 @@ public interface PmsCategoryDao {
     List<PmsCategory> selectByParentId(@Param("parentId") Long parentId);
 
     /**
+     * 批量查询子分类（根据多个父ID）
+     *
+     * @param parentIds 父分类ID列表
+     * @return 子分类列表
+     */
+    List<PmsCategory> selectByParentIds(@Param("parentIds") List<Long> parentIds);
+
+    /**
      * 根据路径前缀查询所有子孙分类（物化路径查询）
      * 例如：pathPrefix = '/1/' 查询ID为1的分类的所有子孙
      *

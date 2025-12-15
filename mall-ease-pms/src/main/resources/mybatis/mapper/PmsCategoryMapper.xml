@@ -53,6 +53,17 @@
         ORDER BY sort, id
     </select>
 
+    <!-- 根据父ID列表批量查询子分类 -->
+    <select id="selectByParentIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_category
+        WHERE deleted = 0 AND parent_id IN
+        <foreach collection="parentIds" item="parentId" open="(" separator="," close=")">
+            #{parentId,jdbcType=BIGINT}
+        </foreach>
+        ORDER BY parent_id, sort, id
+    </select>
+
     <!-- 根据路径前缀查询所有子孙分类（物化路径查询） -->
     <select id="selectByPathPrefix" parameterType="java.lang.String" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
