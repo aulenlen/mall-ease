@@ -12,6 +12,13 @@ spring:
       database: ${REDIS_DATABASE:0}
       ssl:
         enabled: false
+      timeout: 10s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 4
+          max-wait: 3000ms
 
 sa-token:
   jwt-secret-key: ${SA_TOKEN_SECRET}

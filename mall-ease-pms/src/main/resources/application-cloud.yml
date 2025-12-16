@@ -40,7 +40,7 @@ spring:
       database: ${REDIS_DATABASE:0}
       ssl:
         enabled: false
-      timeout: 5000ms
+      timeout: 10s
       lettuce:
         pool:
           max-active: 16
