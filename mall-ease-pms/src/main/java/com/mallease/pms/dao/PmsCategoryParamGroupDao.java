@@ -17,28 +17,12 @@ import java.util.List;
 public interface PmsCategoryParamGroupDao {
 
     /**
-     * 根据主键查询
-     *
-     * @param id 主键ID
-     * @return 关联记录
-     */
-    PmsCategoryParamGroup selectByPrimaryKey(Long id);
-
-    /**
      * 根据分类ID查询
      *
      * @param categoryId 分类ID
      * @return 关联列表
      */
     List<PmsCategoryParamGroup> selectByCategoryId(@Param("categoryId") Long categoryId);
-
-    /**
-     * 根据分类ID列表批量查询
-     *
-     * @param categoryIds 分类ID列表
-     * @return 关联列表
-     */
-    List<PmsCategoryParamGroup> selectByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
 
     /**
      * 根据参数组ID查询
@@ -75,26 +59,28 @@ public interface PmsCategoryParamGroupDao {
     int insertBatch(@Param("list") List<PmsCategoryParamGroup> list);
 
     /**
-     * 根据主键删除
-     *
-     * @param id 主键ID
-     * @return 影响行数
-     */
-    int deleteByPrimaryKey(@Param("id") Long id);
-
-    /**
-     * 根据分类ID删除
-     *
-     * @param categoryId 分类ID
-     * @return 影响行数
-     */
-    int deleteByCategoryId(@Param("categoryId") Long categoryId);
-
-    /**
      * 根据参数组ID删除
      *
      * @param paramGroupId 参数组ID
      * @return 影响行数
      */
     int deleteByParamGroupId(@Param("paramGroupId") Long paramGroupId);
+
+    /**
+     * 根据分类ID和参数组ID列表批量删除
+     *
+     * @param categoryId 分类ID
+     * @param paramGroupIds 参数组ID列表
+     * @return 影响行数
+     */
+    int deleteByCategoryIdAndParamGroupIds(@Param("categoryId") Long categoryId,
+                                           @Param("paramGroupIds") List<Long> paramGroupIds);
+
+    /**
+     * 根据参数组ID列表批量删除
+     *
+     * @param paramGroupIds 参数组ID列表
+     * @return 影响行数
+     */
+    int deleteByParamGroupIds(@Param("paramGroupIds") List<Long> paramGroupIds);
 }

@@ -35,4 +35,7 @@ public class CreatePmsParamGroupCmd {
     @Max(value = 1, message = "状态值必须为0或1")
     @Builder.Default
     private Integer status = 1;
+
+    @Schema(description = "关联的分类ID（可选，传入则自动绑定到该分类）")
+    private Long categoryId;
 }

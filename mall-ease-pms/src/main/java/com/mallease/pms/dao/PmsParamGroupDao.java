@@ -41,14 +41,6 @@ public interface PmsParamGroupDao {
     PmsParamGroup selectByName(@Param("name") String name);
 
     /**
-     * 根据状态查询
-     *
-     * @param status 状态：0-禁用 1-启用
-     * @return 参数组列表
-     */
-    List<PmsParamGroup> selectByStatus(@Param("status") Integer status);
-
-    /**
      * 查询所有
      *
      * @return 参数组列表
@@ -86,15 +78,6 @@ public interface PmsParamGroupDao {
      * @return 影响行数
      */
     int updateByPrimaryKeySelective(PmsParamGroup record);
-
-    /**
-     * 批量更新状态
-     *
-     * @param ids ID列表
-     * @param status 状态
-     * @return 影响行数
-     */
-    int updateStatusBatch(@Param("ids") List<Long> ids, @Param("status") Integer status);
 
     /**
      * 逻辑删除
