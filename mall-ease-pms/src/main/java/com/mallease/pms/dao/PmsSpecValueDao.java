@@ -120,4 +120,12 @@ public interface PmsSpecValueDao {
      * @return 影响行数
      */
     int deleteBatch(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据规格ID列表批量逻辑删除
+     *
+     * @param specIds 规格ID列表
+     * @return 影响行数
+     */
+    int deleteBySpecIds(@Param("specIds") List<Long> specIds);
 }

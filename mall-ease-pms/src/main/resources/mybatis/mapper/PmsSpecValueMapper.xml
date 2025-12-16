@@ -157,4 +157,14 @@
         </foreach>
     </update>
 
+    <!-- 根据规格ID列表批量逻辑删除 -->
+    <update id="deleteBySpecIds">
+        UPDATE pms_spec_value
+        SET deleted = 1
+        WHERE spec_id IN
+        <foreach collection="specIds" item="specId" open="(" separator="," close=")">
+            #{specId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
 </mapper>

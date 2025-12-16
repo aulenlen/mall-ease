@@ -40,13 +40,7 @@ public interface PmsSpecGroupDao {
      */
     PmsSpecGroup selectByName(@Param("name") String name);
 
-    /**
-     * 根据状态查询
-     *
-     * @param status 状态：0-禁用 1-启用
-     * @return 规格组列表
-     */
-    List<PmsSpecGroup> selectByStatus(@Param("status") Integer status);
+    
 
     /**
      * 查询所有
@@ -87,14 +81,7 @@ public interface PmsSpecGroupDao {
      */
     int updateByPrimaryKeySelective(PmsSpecGroup record);
 
-    /**
-     * 批量更新状态
-     *
-     * @param ids ID列表
-     * @param status 状态
-     * @return 影响行数
-     */
-    int updateStatusBatch(@Param("ids") List<Long> ids, @Param("status") Integer status);
+    
 
     /**
      * 逻辑删除
