@@ -149,7 +149,7 @@
     </insert>
 
     <!-- 批量插入 -->
-    <insert id="insertBatch" parameterType="java.util.List">
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO pms_param (
             group_id, name, unit, input_type, input_list, is_required, is_searchable,
             is_highlight, is_comparable, sort, deleted, creator

@@ -2,6 +2,7 @@ package com.mallease.pms.controller;
 
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsSpecCmd;
 import com.mallease.pms.dto.cmd.CreatePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSpecCmd;
@@ -109,6 +110,13 @@ public class PmsSpecController {
             @RequestBody List<Long> specGroupIds) {
         int count = specGroupService.unbindFromCategory(categoryId, specGroupIds);
         return R.success(count);
+    }
+
+    @Operation(summary = "克隆规格组到分类", description = "复制规格组及其规格/规格值，解除原关联并绑定到目标分类")
+    @PostMapping("/group/clone")
+    public R<Long> cloneGroupToCategory(@Validated @RequestBody ClonePmsSpecGroupCmd cmd) {
+        Long newGroupId = specGroupService.cloneToCategory(cmd);
+        return R.success(newGroupId);
     }
 
     // ==================== 规格定义管理 ====================

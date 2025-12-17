@@ -5,13 +5,15 @@ import com.mallease.pms.converter.PmsAttributeConverter;
 import com.mallease.pms.dao.PmsCategorySpecGroupDao;
 import com.mallease.pms.dao.PmsSpecDao;
 import com.mallease.pms.dao.PmsSpecGroupDao;
+import com.mallease.pms.dao.PmsSpecValueDao;
+import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSpecGroupCmd;
 import com.mallease.pms.dto.vo.PmsSpecGroupVO;
-import com.mallease.pms.dto.vo.PmsSpecVO;
 import com.mallease.pms.pojo.PmsCategorySpecGroup;
 import com.mallease.pms.pojo.PmsSpec;
 import com.mallease.pms.pojo.PmsSpecGroup;
+import com.mallease.pms.pojo.PmsSpecValue;
 import com.mallease.pms.service.PmsSpecGroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,9 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
 
     @Autowired
     private PmsCategorySpecGroupDao categorySpecGroupDao;
+
+    @Autowired
+    private PmsSpecValueDao specValueDao;
 
     @Autowired
     private PmsAttributeConverter attributeConverter;
@@ -214,6 +219,101 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
         }
 
         return categorySpecGroupDao.deleteByCategoryIdAndSpecGroupIds(categoryId, specGroupIds);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long cloneToCategory(ClonePmsSpecGroupCmd cmd) {
+        Long sourceGroupId = cmd.getSpecGroupId();
+        Long categoryId = cmd.getCategoryId();
+
+        // 1. 查询原规格组
+        PmsSpecGroup sourceGroup = specGroupDao.selectByPrimaryKey(sourceGroupId);
+        if (sourceGroup == null) {
+            throw new ApiException("规格组不存在，ID: " + sourceGroupId);
+        }
+
+        // 2. 创建新规格组（复制基本信息）
+        String newName = StringUtils.hasText(cmd.getNewName())
+                ? cmd.getNewName()
+                : sourceGroup.getName() + "_副本";
+
+        // 检查名称是否重复，如果重复则添加时间戳
+        PmsSpecGroup existingGroup = specGroupDao.selectByName(newName);
+        if (existingGroup != null) {
+            newName = newName + "_" + System.currentTimeMillis();
+        }
+
+        PmsSpecGroup newGroup = new PmsSpecGroup();
+        newGroup.setName(newName);
+        newGroup.setSort(sourceGroup.getSort());
+        newGroup.setStatus(sourceGroup.getStatus());
+        specGroupDao.insertSelective(newGroup);
+        Long newGroupId = newGroup.getId();
+
+        // 3. 复制规格定义及规格值
+        List<PmsSpec> sourceSpecs = specDao.selectByGroupId(sourceGroupId);
+        if (!CollectionUtils.isEmpty(sourceSpecs)) {
+            // 一次性查询所有规格值（避免循环查库）
+            List<Long> sourceSpecIds = sourceSpecs.stream()
+                    .map(PmsSpec::getId)
+                    .collect(Collectors.toList());
+            List<PmsSpecValue> allSourceValues = specValueDao.selectBySpecIds(sourceSpecIds);
+            Map<Long, List<PmsSpecValue>> valuesBySpecId = allSourceValues.stream()
+                    .collect(Collectors.groupingBy(PmsSpecValue::getSpecId));
+
+            // 构建新规格列表，同时保存 sourceSpecId -> newSpec 的映射
+            List<PmsSpec> newSpecs = new ArrayList<>();
+            Map<Long, PmsSpec> sourceToNewSpecMap = new java.util.LinkedHashMap<>();
+
+            for (PmsSpec sourceSpec : sourceSpecs) {
+                PmsSpec newSpec = new PmsSpec();
+                newSpec.setGroupId(newGroupId);
+                newSpec.setName(sourceSpec.getName());
+                newSpec.setDisplayType(sourceSpec.getDisplayType());
+                newSpec.setIsRequired(sourceSpec.getIsRequired());
+                newSpec.setIsSearchable(sourceSpec.getIsSearchable());
+                newSpec.setIsFilterable(sourceSpec.getIsFilterable());
+                newSpec.setSort(sourceSpec.getSort());
+                newSpecs.add(newSpec);
+                sourceToNewSpecMap.put(sourceSpec.getId(), newSpec);
+            }
+
+            // 批量插入新规格（insertBatch 配置了 useGeneratedKeys，会自动填充ID）
+            specDao.insertBatch(newSpecs);
+
+            // 构建新规格值列表
+            List<PmsSpecValue> allNewValues = new ArrayList<>();
+            for (Map.Entry<Long, PmsSpec> entry : sourceToNewSpecMap.entrySet()) {
+                Long sourceSpecId = entry.getKey();
+                Long newSpecId = entry.getValue().getId();
+
+                List<PmsSpecValue> sourceValues = valuesBySpecId.getOrDefault(sourceSpecId, new ArrayList<>());
+                for (PmsSpecValue sv : sourceValues) {
+                    PmsSpecValue newValue = new PmsSpecValue();
+                    newValue.setSpecId(newSpecId);
+                    newValue.setValue(sv.getValue());
+                    newValue.setImage(sv.getImage());
+                    newValue.setColorCode(sv.getColorCode());
+                    newValue.setSort(sv.getSort());
+                    allNewValues.add(newValue);
+                }
+            }
+
+            // 批量插入所有规格值
+            if (!CollectionUtils.isEmpty(allNewValues)) {
+                specValueDao.insertBatch(allNewValues);
+            }
+        }
+
+        // 4. 解除当前分类与原规格组的关联
+        unbindFromCategory(categoryId, List.of(sourceGroupId));
+
+        // 5. 绑定新规格组到当前分类
+        bindToCategory(categoryId, List.of(newGroupId));
+
+        log.info("克隆规格组成功，原ID: {}, 新ID: {}, 分类ID: {}", sourceGroupId, newGroupId, categoryId);
+        return newGroupId;
     }
 
     /**

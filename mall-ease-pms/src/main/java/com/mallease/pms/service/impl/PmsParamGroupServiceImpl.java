@@ -5,6 +5,7 @@ import com.mallease.pms.converter.PmsAttributeConverter;
 import com.mallease.pms.dao.PmsCategoryParamGroupDao;
 import com.mallease.pms.dao.PmsParamDao;
 import com.mallease.pms.dao.PmsParamGroupDao;
+import com.mallease.pms.dto.cmd.ClonePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsParamGroupCmd;
 import com.mallease.pms.dto.vo.PmsParamGroupVO;
@@ -213,6 +214,69 @@ public class PmsParamGroupServiceImpl implements PmsParamGroupService {
         }
 
         return categoryParamGroupDao.deleteByCategoryIdAndParamGroupIds(categoryId, paramGroupIds);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long cloneToCategory(ClonePmsParamGroupCmd cmd) {
+        Long sourceGroupId = cmd.getParamGroupId();
+        Long categoryId = cmd.getCategoryId();
+
+        // 1. 查询原参数组
+        PmsParamGroup sourceGroup = paramGroupDao.selectByPrimaryKey(sourceGroupId);
+        if (sourceGroup == null) {
+            throw new ApiException("参数组不存在，ID: " + sourceGroupId);
+        }
+
+        // 2. 创建新参数组（复制基本信息）
+        String newName = StringUtils.hasText(cmd.getNewName())
+                ? cmd.getNewName()
+                : sourceGroup.getName() + "_副本";
+
+        // 检查名称是否重复，如果重复则添加时间戳
+        PmsParamGroup existingGroup = paramGroupDao.selectByName(newName);
+        if (existingGroup != null) {
+            newName = newName + "_" + System.currentTimeMillis();
+        }
+
+        PmsParamGroup newGroup = new PmsParamGroup();
+        newGroup.setName(newName);
+        newGroup.setSort(sourceGroup.getSort());
+        newGroup.setStatus(sourceGroup.getStatus());
+        paramGroupDao.insertSelective(newGroup);
+        Long newGroupId = newGroup.getId();
+
+        // 3. 复制参数定义
+        List<PmsParam> sourceParams = paramDao.selectByGroupId(sourceGroupId);
+        if (!CollectionUtils.isEmpty(sourceParams)) {
+            List<PmsParam> newParams = new ArrayList<>();
+            for (PmsParam sourceParam : sourceParams) {
+                PmsParam newParam = new PmsParam();
+                newParam.setGroupId(newGroupId);
+                newParam.setName(sourceParam.getName());
+                newParam.setUnit(sourceParam.getUnit());
+                newParam.setInputType(sourceParam.getInputType());
+                newParam.setInputList(sourceParam.getInputList());
+                newParam.setIsRequired(sourceParam.getIsRequired());
+                newParam.setIsSearchable(sourceParam.getIsSearchable());
+                newParam.setIsHighlight(sourceParam.getIsHighlight());
+                newParam.setIsComparable(sourceParam.getIsComparable());
+                newParam.setSort(sourceParam.getSort());
+                newParams.add(newParam);
+            }
+
+            // 批量插入新参数
+            paramDao.insertBatch(newParams);
+        }
+
+        // 4. 解除当前分类与原参数组的关联
+        unbindFromCategory(categoryId, List.of(sourceGroupId));
+
+        // 5. 绑定新参数组到当前分类
+        bindToCategory(categoryId, List.of(newGroupId));
+
+        log.info("克隆参数组成功，原ID: {}, 新ID: {}, 分类ID: {}", sourceGroupId, newGroupId, categoryId);
+        return newGroupId;
     }
 
     /**

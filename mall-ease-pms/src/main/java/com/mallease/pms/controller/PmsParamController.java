@@ -2,6 +2,7 @@ package com.mallease.pms.controller;
 
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.pms.dto.cmd.ClonePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsParamCmd;
 import com.mallease.pms.dto.cmd.CreatePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsParamCmd;
@@ -108,6 +109,13 @@ public class PmsParamController {
             @RequestBody List<Long> paramGroupIds) {
         int count = paramGroupService.unbindFromCategory(categoryId, paramGroupIds);
         return R.success(count);
+    }
+
+    @Operation(summary = "克隆参数组到分类", description = "复制参数组及其参数定义，解除原关联并绑定到目标分类")
+    @PostMapping("/group/clone")
+    public R<Long> cloneGroupToCategory(@Validated @RequestBody ClonePmsParamGroupCmd cmd) {
+        Long newGroupId = paramGroupService.cloneToCategory(cmd);
+        return R.success(newGroupId);
     }
 
     // ==================== 参数定义管理 ====================

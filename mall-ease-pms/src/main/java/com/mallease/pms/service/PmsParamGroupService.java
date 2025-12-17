@@ -1,5 +1,6 @@
 package com.mallease.pms.service;
 
+import com.mallease.pms.dto.cmd.ClonePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsParamGroupCmd;
 import com.mallease.pms.dto.vo.PmsParamGroupVO;
@@ -94,4 +95,14 @@ public interface PmsParamGroupService {
      * @return 影响行数
      */
     int unbindFromCategory(Long categoryId, List<Long> paramGroupIds);
+
+    /**
+     * 克隆参数组到指定分类
+     * <p>
+     * 完整复制参数组及其参数定义，并绑定到目标分类
+     *
+     * @param cmd 克隆命令
+     * @return 新参数组ID
+     */
+    Long cloneToCategory(ClonePmsParamGroupCmd cmd);
 }

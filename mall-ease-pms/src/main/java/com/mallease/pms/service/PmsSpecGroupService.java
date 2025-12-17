@@ -1,5 +1,6 @@
 package com.mallease.pms.service;
 
+import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSpecGroupCmd;
 import com.mallease.pms.dto.vo.PmsSpecGroupVO;
@@ -94,4 +95,14 @@ public interface PmsSpecGroupService {
      * @return 影响行数
      */
     int unbindFromCategory(Long categoryId, List<Long> specGroupIds);
+
+    /**
+     * 克隆规格组到指定分类
+     * <p>
+     * 完整复制规格组、规格定义、规格值，并绑定到目标分类
+     *
+     * @param cmd 克隆命令
+     * @return 新规格组ID
+     */
+    Long cloneToCategory(ClonePmsSpecGroupCmd cmd);
 }

@@ -131,7 +131,7 @@
     </insert>
 
     <!-- 批量插入 -->
-    <insert id="insertBatch" parameterType="java.util.List">
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO pms_spec (
             group_id, name, display_type, is_required, is_searchable, is_filterable,
             sort, deleted, creator
