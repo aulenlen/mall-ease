@@ -51,6 +51,17 @@
         ORDER BY sort, id
     </select>
 
+    <!-- 根据关键字查询（模糊匹配名称） -->
+    <select id="selectByKeyword" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_param_group
+        WHERE deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND name LIKE CONCAT('%', #{keyword,jdbcType=VARCHAR}, '%')
+        </if>
+        ORDER BY sort, id
+    </select>
+
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.pms.pojo.PmsParamGroup" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO pms_param_group (

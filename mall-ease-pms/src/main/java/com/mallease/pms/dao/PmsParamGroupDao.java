@@ -48,6 +48,14 @@ public interface PmsParamGroupDao {
     List<PmsParamGroup> selectAll();
 
     /**
+     * 根据关键字查询（模糊匹配名称）
+     *
+     * @param keyword 关键字（可为空）
+     * @return 参数组列表
+     */
+    List<PmsParamGroup> selectByKeyword(@Param("keyword") String keyword);
+
+    /**
      * 插入记录
      *
      * @param record 参数组记录

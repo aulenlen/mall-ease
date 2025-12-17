@@ -1,5 +1,8 @@
 package com.mallease.pms.controller;
 
+import com.github.pagehelper.PageHelper;
+import com.mallease.common.api.Page;
+import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
@@ -7,9 +10,11 @@ import com.mallease.pms.dto.cmd.CreatePmsSpecCmd;
 import com.mallease.pms.dto.cmd.CreatePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSpecCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSpecGroupCmd;
+import com.mallease.pms.dto.query.PmsSpecGroupQuery;
 import com.mallease.pms.dto.vo.PmsSpecGroupVO;
 import com.mallease.pms.dto.vo.PmsSpecVO;
 import com.mallease.pms.dto.vo.PmsSpecValueVO;
+import com.mallease.pms.pojo.PmsSpecGroup;
 import com.mallease.pms.service.PmsSpecGroupService;
 import com.mallease.pms.service.PmsSpecService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -79,11 +84,18 @@ public class PmsSpecController {
         return R.success(vo);
     }
 
-    @Operation(summary = "获取所有规格组")
+    @Operation(summary = "分页查询规格组", description = "支持分页、模糊搜索规格组名称")
     @GetMapping("/group/list")
-    public R<List<PmsSpecGroupVO>> listAllGroups() {
-        List<PmsSpecGroupVO> list = specGroupService.listAll();
-        return R.success(list);
+    public R<Page<PmsSpecGroupVO>> listGroups(@Validated @ModelAttribute PmsSpecGroupQuery query) {
+        PageHelper.startPage(query.getPageNum(), query.getPageSize());
+        List<PmsSpecGroup> entityList = specGroupService.listEntities(query.getKeyword());
+
+        // 转换为VO列表并填充规格
+        List<PmsSpecGroupVO> voList = specGroupService.toVoListWithSpecs(entityList);
+
+        // 使用PageUtils保留分页信息
+        Page<PmsSpecGroupVO> result = PageUtils.buildPage(entityList, voList);
+        return R.success(result);
     }
 
     @Operation(summary = "按分类查询规格组")

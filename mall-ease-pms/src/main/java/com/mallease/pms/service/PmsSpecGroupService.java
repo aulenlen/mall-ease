@@ -4,6 +4,7 @@ import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSpecGroupCmd;
 import com.mallease.pms.dto.vo.PmsSpecGroupVO;
+import com.mallease.pms.pojo.PmsSpecGroup;
 
 import java.util.List;
 
@@ -67,6 +68,36 @@ public interface PmsSpecGroupService {
      * @return 规格组列表
      */
     List<PmsSpecGroupVO> listAll();
+
+    /**
+     * 根据关键字查询规格组（返回实体列表）
+     * <p>
+     * 配合 PageHelper 实现分页，返回原始实体列表以保留分页信息
+     *
+     * @param keyword 关键字（可为空，模糊匹配名称）
+     * @return 规格组实体列表
+     */
+    List<PmsSpecGroup> listEntities(String keyword);
+
+    /**
+     * 根据关键字查询规格组
+     * <p>
+     * 配合 PageHelper 实现分页
+     *
+     * @param keyword 关键字（可为空，模糊匹配名称）
+     * @return 规格组列表
+     */
+    List<PmsSpecGroupVO> list(String keyword);
+
+    /**
+     * 将规格组实体列表转换为VO列表并填充规格
+     * <p>
+     * 批量填充规格列表，避免N+1查询
+     *
+     * @param specGroups 规格组实体列表
+     * @return 规格组VO列表（含规格列表）
+     */
+    List<PmsSpecGroupVO> toVoListWithSpecs(List<PmsSpecGroup> specGroups);
 
     /**
      * 根据分类ID查询关联的规格组

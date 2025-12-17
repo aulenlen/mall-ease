@@ -50,6 +50,14 @@ public interface PmsSpecGroupDao {
     List<PmsSpecGroup> selectAll();
 
     /**
+     * 根据关键字查询（模糊匹配名称）
+     *
+     * @param keyword 关键字（可为空）
+     * @return 规格组列表
+     */
+    List<PmsSpecGroup> selectByKeyword(@Param("keyword") String keyword);
+
+    /**
      * 插入记录
      *
      * @param record 规格组记录

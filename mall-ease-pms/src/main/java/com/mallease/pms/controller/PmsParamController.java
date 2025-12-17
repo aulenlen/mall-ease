@@ -1,5 +1,8 @@
 package com.mallease.pms.controller;
 
+import com.github.pagehelper.PageHelper;
+import com.mallease.common.api.Page;
+import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.pms.dto.cmd.ClonePmsParamGroupCmd;
@@ -7,8 +10,10 @@ import com.mallease.pms.dto.cmd.CreatePmsParamCmd;
 import com.mallease.pms.dto.cmd.CreatePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsParamCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsParamGroupCmd;
+import com.mallease.pms.dto.query.PmsParamGroupQuery;
 import com.mallease.pms.dto.vo.PmsParamGroupVO;
 import com.mallease.pms.dto.vo.PmsParamVO;
+import com.mallease.pms.pojo.PmsParamGroup;
 import com.mallease.pms.service.PmsParamGroupService;
 import com.mallease.pms.service.PmsParamService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -78,11 +83,18 @@ public class PmsParamController {
         return R.success(vo);
     }
 
-    @Operation(summary = "获取所有参数组")
+    @Operation(summary = "分页查询参数组", description = "支持分页、模糊搜索参数组名称")
     @GetMapping("/group/list")
-    public R<List<PmsParamGroupVO>> listAllGroups() {
-        List<PmsParamGroupVO> list = paramGroupService.listAll();
-        return R.success(list);
+    public R<Page<PmsParamGroupVO>> listGroups(@Validated @ModelAttribute PmsParamGroupQuery query) {
+        PageHelper.startPage(query.getPageNum(), query.getPageSize());
+        List<PmsParamGroup> entityList = paramGroupService.listEntities(query.getKeyword());
+
+        // 转换为VO列表并填充参数
+        List<PmsParamGroupVO> voList = paramGroupService.toVoListWithParams(entityList);
+
+        // 使用PageUtils保留分页信息
+        Page<PmsParamGroupVO> result = PageUtils.buildPage(entityList, voList);
+        return R.success(result);
     }
 
     @Operation(summary = "按分类查询参数组")

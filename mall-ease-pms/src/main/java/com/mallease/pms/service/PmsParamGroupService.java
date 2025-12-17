@@ -4,6 +4,7 @@ import com.mallease.pms.dto.cmd.ClonePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsParamGroupCmd;
 import com.mallease.pms.dto.vo.PmsParamGroupVO;
+import com.mallease.pms.pojo.PmsParamGroup;
 
 import java.util.List;
 
@@ -67,6 +68,36 @@ public interface PmsParamGroupService {
      * @return 参数组列表
      */
     List<PmsParamGroupVO> listAll();
+
+    /**
+     * 根据关键字查询参数组（返回实体列表）
+     * <p>
+     * 配合 PageHelper 实现分页，返回原始实体列表以保留分页信息
+     *
+     * @param keyword 关键字（可为空，模糊匹配名称）
+     * @return 参数组实体列表
+     */
+    List<PmsParamGroup> listEntities(String keyword);
+
+    /**
+     * 根据关键字查询参数组
+     * <p>
+     * 配合 PageHelper 实现分页
+     *
+     * @param keyword 关键字（可为空，模糊匹配名称）
+     * @return 参数组列表
+     */
+    List<PmsParamGroupVO> list(String keyword);
+
+    /**
+     * 将参数组实体列表转换为VO列表并填充参数
+     * <p>
+     * 批量填充参数列表，避免N+1查询
+     *
+     * @param paramGroups 参数组实体列表
+     * @return 参数组VO列表（含参数列表）
+     */
+    List<PmsParamGroupVO> toVoListWithParams(List<PmsParamGroup> paramGroups);
 
     /**
      * 根据分类ID查询关联的参数组

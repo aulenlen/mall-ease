@@ -166,6 +166,22 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
     }
 
     @Override
+    public List<PmsSpecGroup> listEntities(String keyword) {
+        return specGroupDao.selectByKeyword(keyword);
+    }
+
+    @Override
+    public List<PmsSpecGroupVO> list(String keyword) {
+        List<PmsSpecGroup> specGroups = specGroupDao.selectByKeyword(keyword);
+        return fillSpecList(specGroups);
+    }
+
+    @Override
+    public List<PmsSpecGroupVO> toVoListWithSpecs(List<PmsSpecGroup> specGroups) {
+        return fillSpecList(specGroups);
+    }
+
+    @Override
     public List<PmsSpecGroupVO> listByCategoryId(Long categoryId) {
         // 通过关联表查询规格组ID
         List<PmsCategorySpecGroup> relations = categorySpecGroupDao.selectByCategoryId(categoryId);

@@ -161,6 +161,22 @@ public class PmsParamGroupServiceImpl implements PmsParamGroupService {
     }
 
     @Override
+    public List<PmsParamGroup> listEntities(String keyword) {
+        return paramGroupDao.selectByKeyword(keyword);
+    }
+
+    @Override
+    public List<PmsParamGroupVO> list(String keyword) {
+        List<PmsParamGroup> paramGroups = paramGroupDao.selectByKeyword(keyword);
+        return fillParamList(paramGroups);
+    }
+
+    @Override
+    public List<PmsParamGroupVO> toVoListWithParams(List<PmsParamGroup> paramGroups) {
+        return fillParamList(paramGroups);
+    }
+
+    @Override
     public List<PmsParamGroupVO> listByCategoryId(Long categoryId) {
         // 通过关联表查询参数组ID
         List<PmsCategoryParamGroup> relations = categoryParamGroupDao.selectByCategoryId(categoryId);
