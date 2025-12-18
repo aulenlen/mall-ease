@@ -29,15 +29,11 @@ public interface PmsProductCategoryConverter {
     /**
      * Entity → ListVO（列表场景）
      */
-    @Mapping(source = "navStatus", target = "navStatusName", qualifiedByName = "navStatusToName")
-    @Mapping(source = "showStatus", target = "showStatusName", qualifiedByName = "showStatusToName")
     PmsProductCategoryListVO entityToListVo(PmsProductCategory entity);
 
     /**
      * Entity → DetailVO（详情场景）
      */
-    @Mapping(source = "navStatus", target = "navStatusName", qualifiedByName = "navStatusToName")
-    @Mapping(source = "showStatus", target = "showStatusName", qualifiedByName = "showStatusToName")
     PmsProductCategoryDetailVO entityToDetailVo(PmsProductCategory entity);
 
     // ========== 列表转换 ==========
@@ -64,28 +60,4 @@ public interface PmsProductCategoryConverter {
     @Mapping(target = "productCount", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromCmd(@MappingTarget PmsProductCategory entity, UpdateProductCategoryCmd cmd);
-
-    // ========== 自定义映射方法 ==========
-
-    /**
-     * 导航栏状态转中文
-     */
-    @Named("navStatusToName")
-    default String navStatusToName(Integer navStatus) {
-        if (navStatus == null) {
-            return "未知";
-        }
-        return navStatus == 1 ? "显示" : "不显示";
-    }
-
-    /**
-     * 显示状态转中文
-     */
-    @Named("showStatusToName")
-    default String showStatusToName(Integer showStatus) {
-        if (showStatus == null) {
-            return "未知";
-        }
-        return showStatus == 1 ? "显示" : "不显示";
-    }
 }

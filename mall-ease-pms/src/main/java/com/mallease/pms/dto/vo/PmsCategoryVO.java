@@ -41,14 +41,8 @@ public class PmsCategoryVO {
     @Schema(description = "状态: 0-禁用, 1-启用")
     private Integer status;
 
-    @Schema(description = "状态名称")
-    private String statusName;
-
     @Schema(description = "是否导航栏显示: 0-否, 1-是")
     private Integer isNav;
-
-    @Schema(description = "导航显示名称")
-    private String isNavName;
 
     @Schema(description = "排序值")
     private Integer sort;

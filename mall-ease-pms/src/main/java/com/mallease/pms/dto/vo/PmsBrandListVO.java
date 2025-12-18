@@ -50,19 +50,9 @@ public class PmsBrandListVO {
     private Integer factoryStatus;
 
     /**
-     * 制造商状态名称
-     */
-    private String factoryStatusName;
-
-    /**
      * 显示状态：0->不显示 1->显示
      */
     private Integer showStatus;
-
-    /**
-     * 显示状态名称
-     */
-    private String showStatusName;
 
     /**
      * 产品数量

@@ -38,9 +38,6 @@ public class PmsCategoryTreeVO {
     @Schema(description = "状态: 0-禁用, 1-启用")
     private Integer status;
 
-    @Schema(description = "状态名称")
-    private String statusName;
-
     @Schema(description = "是否导航栏显示: 0-否, 1-是")
     private Integer isNav;
 

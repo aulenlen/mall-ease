@@ -59,9 +59,6 @@ public class PmsSkuVO {
     @Schema(description = "启用状态: 0-禁用, 1-启用")
     private Integer enableStatus;
 
-    @Schema(description = "启用状态名称")
-    private String enableStatusName;
-
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
 
@@ -96,18 +93,12 @@ public class PmsSkuVO {
     @Schema(description = "库存状态: 0-无货, 1-有货, 2-预售")
     private Integer stockStatus;
 
-    @Schema(description = "库存状态名称")
-    private String stockStatusName;
-
     // ========================================================================
     // 促销信息
     // ========================================================================
 
     @Schema(description = "促销类型: 0-无促销, 1-促销价, 2-会员价, 3-阶梯价, 4-满减价, 5-限时购")
     private Integer promotionType;
-
-    @Schema(description = "促销类型名称")
-    private String promotionTypeName;
 
     @Schema(description = "促销价格")
     private BigDecimal promotionPrice;

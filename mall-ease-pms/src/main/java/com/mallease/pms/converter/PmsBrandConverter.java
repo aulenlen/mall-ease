@@ -29,15 +29,11 @@ public interface PmsBrandConverter {
     /**
      * Entity → ListVO（列表场景）
      */
-    @Mapping(source = "factoryStatus", target = "factoryStatusName", qualifiedByName = "factoryStatusToName")
-    @Mapping(source = "showStatus", target = "showStatusName", qualifiedByName = "showStatusToName")
     PmsBrandListVO entityToListVo(PmsBrand entity);
 
     /**
      * Entity → DetailVO（详情场景）
      */
-    @Mapping(source = "factoryStatus", target = "factoryStatusName", qualifiedByName = "factoryStatusToName")
-    @Mapping(source = "showStatus", target = "showStatusName", qualifiedByName = "showStatusToName")
     PmsBrandDetailVO entityToDetailVo(PmsBrand entity);
 
     // ========== 列表转换 ==========
@@ -66,28 +62,4 @@ public interface PmsBrandConverter {
     @Mapping(target = "productCommentCount", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromCmd(@MappingTarget PmsBrand entity, UpdateBrandCmd cmd);
-
-    // ========== 自定义映射方法 ==========
-
-    /**
-     * 制造商状态转中文
-     */
-    @Named("factoryStatusToName")
-    default String factoryStatusToName(Integer factoryStatus) {
-        if (factoryStatus == null) {
-            return "未知";
-        }
-        return factoryStatus == 1 ? "是" : "否";
-    }
-
-    /**
-     * 显示状态转中文
-     */
-    @Named("showStatusToName")
-    default String showStatusToName(Integer showStatus) {
-        if (showStatus == null) {
-            return "未知";
-        }
-        return showStatus == 1 ? "显示" : "不显示";
-    }
 }

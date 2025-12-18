@@ -37,9 +37,6 @@ public class PmsSpecVO {
     @Schema(description = "展示类型: 0-文字, 1-颜色块, 2-图片")
     private Integer displayType;
 
-    @Schema(description = "展示类型名称")
-    private String displayTypeName;
-
     @Schema(description = "是否必选: 0-否, 1-是")
     private Integer isRequired;
 

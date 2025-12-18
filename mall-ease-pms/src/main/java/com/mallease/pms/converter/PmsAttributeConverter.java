@@ -24,7 +24,6 @@ public interface PmsAttributeConverter {
     // 规格组（SpecGroup）转换
     // ========================================================================
 
-    @Mapping(source = "status", target = "statusName", qualifiedByName = "statusToName")
     @Mapping(target = "specCount", ignore = true)
     @Mapping(target = "specList", ignore = true)
     PmsSpecGroupVO specGroupToVo(PmsSpecGroup entity);
@@ -52,7 +51,6 @@ public interface PmsAttributeConverter {
     // 规格定义（Spec）转换
     // ========================================================================
 
-    @Mapping(source = "displayType", target = "displayTypeName", qualifiedByName = "displayTypeToName")
     @Mapping(target = "groupName", ignore = true)
     @Mapping(target = "valueCount", ignore = true)
     @Mapping(target = "valueList", ignore = true)
@@ -99,7 +97,6 @@ public interface PmsAttributeConverter {
     // 参数组（ParamGroup）转换
     // ========================================================================
 
-    @Mapping(source = "status", target = "statusName", qualifiedByName = "statusToName")
     @Mapping(target = "paramCount", ignore = true)
     @Mapping(target = "paramList", ignore = true)
     PmsParamGroupVO paramGroupToVo(PmsParamGroup entity);
@@ -127,7 +124,6 @@ public interface PmsAttributeConverter {
     // 参数定义（Param）转换
     // ========================================================================
 
-    @Mapping(source = "inputType", target = "inputTypeName", qualifiedByName = "inputTypeToName")
     @Mapping(source = "inputList", target = "inputOptions", qualifiedByName = "splitInputList")
     @Mapping(target = "groupName", ignore = true)
     PmsParamVO paramToVo(PmsParam entity);
@@ -154,44 +150,6 @@ public interface PmsAttributeConverter {
     // ========================================================================
     // 自定义映射方法
     // ========================================================================
-
-    /**
-     * 状态转中文
-     */
-    @Named("statusToName")
-    default String statusToName(Integer status) {
-        if (status == null) {
-            return "未知";
-        }
-        return status == 1 ? "启用" : "禁用";
-    }
-
-    /**
-     * 展示类型转中文
-     */
-    @Named("displayTypeToName")
-    default String displayTypeToName(Integer displayType) {
-        if (displayType == null) {
-            return "未知";
-        }
-        return switch (displayType) {
-            case 0 -> "文字";
-            case 1 -> "颜色块";
-            case 2 -> "图片";
-            default -> "未知";
-        };
-    }
-
-    /**
-     * 录入方式转中文
-     */
-    @Named("inputTypeToName")
-    default String inputTypeToName(Integer inputType) {
-        if (inputType == null) {
-            return "未知";
-        }
-        return inputType == 1 ? "从列表选择" : "手动输入";
-    }
 
     /**
      * 分割可选值列表

@@ -38,19 +38,9 @@ public class PmsProductAttributeListVO {
     private Integer selectType;
 
     /**
-     * 选择类型名称
-     */
-    private String selectTypeName;
-
-    /**
      * 属性录入方式：0->手工录入；1->从列表中选取
      */
     private Integer inputType;
-
-    /**
-     * 录入方式名称
-     */
-    private String inputTypeName;
 
     /**
      * 可选值列表，以逗号隔开
@@ -68,27 +58,12 @@ public class PmsProductAttributeListVO {
     private Integer filterType;
 
     /**
-     * 筛选样式名称
-     */
-    private String filterTypeName;
-
-    /**
      * 检索类型：0->不需要进行检索；1->关键字检索；2->范围检索
      */
     private Integer searchType;
 
     /**
-     * 检索类型名称
-     */
-    private String searchTypeName;
-
-    /**
      * 属性的类型：0->规格；1->参数
      */
     private Integer type;
-
-    /**
-     * 属性类型名称
-     */
-    private String typeName;
 }

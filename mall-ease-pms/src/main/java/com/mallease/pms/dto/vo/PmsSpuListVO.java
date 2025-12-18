@@ -54,9 +54,6 @@ public class PmsSpuListVO {
     @Schema(description = "上架状态: 0-下架, 1-上架")
     private Integer publishStatus;
 
-    @Schema(description = "上架状态名称")
-    private String publishStatusName;
-
     @Schema(description = "新品状态: 0-不是新品, 1-新品")
     private Integer newStatus;
 
@@ -65,9 +62,6 @@ public class PmsSpuListVO {
 
     @Schema(description = "审核状态: 0-未审核, 1-审核通过")
     private Integer verifyStatus;
-
-    @Schema(description = "审核状态名称")
-    private String verifyStatusName;
 
     @Schema(description = "排序")
     private Integer sort;

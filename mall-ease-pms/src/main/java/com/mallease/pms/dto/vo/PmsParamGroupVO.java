@@ -34,9 +34,6 @@ public class PmsParamGroupVO {
     @Schema(description = "状态: 0-禁用, 1-启用")
     private Integer status;
 
-    @Schema(description = "状态名称")
-    private String statusName;
-
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
 

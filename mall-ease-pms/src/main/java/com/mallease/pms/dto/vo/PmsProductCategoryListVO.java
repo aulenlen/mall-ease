@@ -53,19 +53,9 @@ public class PmsProductCategoryListVO {
     private Integer navStatus;
 
     /**
-     * 导航栏状态名称
-     */
-    private String navStatusName;
-
-    /**
      * 显示状态：0->不显示；1->显示
      */
     private Integer showStatus;
-
-    /**
-     * 显示状态名称
-     */
-    private String showStatusName;
 
     /**
      * 排序

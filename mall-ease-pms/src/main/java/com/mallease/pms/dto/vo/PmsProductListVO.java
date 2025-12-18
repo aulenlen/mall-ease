@@ -65,11 +65,6 @@ public class PmsProductListVO {
     private Integer publishStatus;
 
     /**
-     * 上架状态名称
-     */
-    private String publishStatusName;
-
-    /**
      * 新品状态：0->不是新品；1->新品
      */
     private Integer newStatus;
@@ -83,11 +78,6 @@ public class PmsProductListVO {
      * 审核状态：0->未审核；1->审核通过
      */
     private Integer verifyStatus;
-
-    /**
-     * 审核状态名称
-     */
-    private String verifyStatusName;
 
     /**
      * 排序

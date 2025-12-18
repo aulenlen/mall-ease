@@ -23,8 +23,6 @@ public interface PmsProductConverter {
     /**
      * Entity → ListVO（列表场景）
      */
-    @Mapping(source = "publishStatus", target = "publishStatusName", qualifiedByName = "publishStatusToName")
-    @Mapping(source = "verifyStatus", target = "verifyStatusName", qualifiedByName = "verifyStatusToName")
     PmsProductListVO entityToListVo(PmsProduct entity);
 
     /**
@@ -60,28 +58,4 @@ public interface PmsProductConverter {
     @Mapping(target = "id", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromCmd(@MappingTarget PmsProduct entity, UpdateProductCmd cmd);
-
-    // ========== 自定义映射方法 ==========
-
-    /**
-     * 上架状态转中文
-     */
-    @Named("publishStatusToName")
-    default String publishStatusToName(Integer publishStatus) {
-        if (publishStatus == null) {
-            return "未知";
-        }
-        return publishStatus == 1 ? "已上架" : "已下架";
-    }
-
-    /**
-     * 审核状态转中文
-     */
-    @Named("verifyStatusToName")
-    default String verifyStatusToName(Integer verifyStatus) {
-        if (verifyStatus == null) {
-            return "未知";
-        }
-        return verifyStatus == 1 ? "审核通过" : "未审核";
-    }
 }

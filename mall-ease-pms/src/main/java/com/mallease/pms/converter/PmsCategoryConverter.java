@@ -29,24 +29,17 @@ public interface PmsCategoryConverter {
     /**
      * Entity → VO（基础视图）
      */
-    @Mapping(source = "status", target = "statusName", qualifiedByName = "statusToName")
-    @Mapping(source = "isNav", target = "isNavName", qualifiedByName = "isNavToName")
     PmsCategoryVO entityToVo(PmsCategory entity);
 
     /**
      * Entity → ListVO（列表视图）
      */
-    @Mapping(source = "status", target = "statusName", qualifiedByName = "statusToName")
-    @Mapping(source = "level", target = "levelName", qualifiedByName = "levelToName")
     @Mapping(target = "childCount", ignore = true) // 由 Service 层填充
     PmsCategoryListVO entityToListVo(PmsCategory entity);
 
     /**
      * Entity → DetailVO（详情视图）
      */
-    @Mapping(source = "status", target = "statusName", qualifiedByName = "statusToName")
-    @Mapping(source = "isNav", target = "isNavName", qualifiedByName = "isNavToName")
-    @Mapping(source = "level", target = "levelName", qualifiedByName = "levelToName")
     @Mapping(target = "parentName", ignore = true)     // 由 Service 层填充
     @Mapping(target = "breadcrumb", ignore = true)     // 由 Service 层填充
     @Mapping(target = "specGroupIds", ignore = true)   // 由 Service 层填充
@@ -56,7 +49,6 @@ public interface PmsCategoryConverter {
     /**
      * Entity → TreeVO（树形视图）
      */
-    @Mapping(source = "status", target = "statusName", qualifiedByName = "statusToName")
     @Mapping(target = "children", ignore = true) // 由 buildTree 方法填充
     PmsCategoryTreeVO entityToTreeVo(PmsCategory entity);
 
@@ -138,43 +130,5 @@ public interface PmsCategoryConverter {
         }
 
         return roots;
-    }
-
-    /**
-     * 状态转中文
-     */
-    @Named("statusToName")
-    default String statusToName(Integer status) {
-        if (status == null) {
-            return "未知";
-        }
-        return status == 1 ? "启用" : "禁用";
-    }
-
-    /**
-     * 导航显示转中文
-     */
-    @Named("isNavToName")
-    default String isNavToName(Integer isNav) {
-        if (isNav == null) {
-            return "未知";
-        }
-        return isNav == 1 ? "是" : "否";
-    }
-
-    /**
-     * 层级转中文
-     */
-    @Named("levelToName")
-    default String levelToName(Integer level) {
-        if (level == null) {
-            return "未知";
-        }
-        return switch (level) {
-            case 0 -> "一级分类";
-            case 1 -> "二级分类";
-            case 2 -> "三级分类";
-            default -> level + "级分类";
-        };
     }
 }

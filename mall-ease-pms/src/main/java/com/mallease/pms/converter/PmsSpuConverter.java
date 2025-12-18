@@ -32,15 +32,11 @@ public interface PmsSpuConverter {
     /**
      * Entity → VO（通用）
      */
-    @Mapping(source = "publishStatus", target = "publishStatusName", qualifiedByName = "publishStatusToName")
-    @Mapping(source = "verifyStatus", target = "verifyStatusName", qualifiedByName = "verifyStatusToName")
     PmsSpuVO entityToVo(PmsSpu entity);
 
     /**
      * Entity → ListVO（列表场景）
      */
-    @Mapping(source = "publishStatus", target = "publishStatusName", qualifiedByName = "publishStatusToName")
-    @Mapping(source = "verifyStatus", target = "verifyStatusName", qualifiedByName = "verifyStatusToName")
     @Mapping(target = "priceRange", expression = "java(formatPriceRange(entity.getMinPrice(), entity.getMaxPrice()))")
     @Mapping(target = "skuCount", ignore = true) // 由 Service 层填充
     PmsSpuListVO entityToListVo(PmsSpu entity);
@@ -48,8 +44,6 @@ public interface PmsSpuConverter {
     /**
      * Entity → DetailVO（详情场景）
      */
-    @Mapping(source = "publishStatus", target = "publishStatusName", qualifiedByName = "publishStatusToName")
-    @Mapping(source = "verifyStatus", target = "verifyStatusName", qualifiedByName = "verifyStatusToName")
     @Mapping(source = "albumPics", target = "albumPicList", qualifiedByName = "splitAlbumPics")
     @Mapping(target = "detailTitle", ignore = true)      // 从 PmsSpuDetail 填充
     @Mapping(target = "detailDesc", ignore = true)       // 从 PmsSpuDetail 填充
@@ -148,28 +142,6 @@ public interface PmsSpuConverter {
     // ========================================================================
     // 自定义映射方法
     // ========================================================================
-
-    /**
-     * 上架状态转中文
-     */
-    @Named("publishStatusToName")
-    default String publishStatusToName(Integer publishStatus) {
-        if (publishStatus == null) {
-            return "未知";
-        }
-        return publishStatus == 1 ? "已上架" : "已下架";
-    }
-
-    /**
-     * 审核状态转中文
-     */
-    @Named("verifyStatusToName")
-    default String verifyStatusToName(Integer verifyStatus) {
-        if (verifyStatus == null) {
-            return "未知";
-        }
-        return verifyStatus == 1 ? "审核通过" : "未审核";
-    }
 
     /**
      * 格式化价格区间

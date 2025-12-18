@@ -40,9 +40,6 @@ public class PmsParamVO {
     @Schema(description = "录入方式: 0-手动输入, 1-从列表选择")
     private Integer inputType;
 
-    @Schema(description = "录入方式名称")
-    private String inputTypeName;
-
     @Schema(description = "可选值列表（逗号分隔）")
     private String inputList;
 
