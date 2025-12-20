@@ -3,12 +3,11 @@ package com.mallease.pms.service.impl;
 import cn.hutool.core.util.IdUtil;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.LoginContextUtil;
-import com.mallease.pms.converter.PmsSpuConverter;
 import com.mallease.pms.dao.*;
 import com.mallease.pms.dto.CmsPreferenceAreaProductRelationDTO;
 import com.mallease.pms.dto.CmsSubjectProductRelationDTO;
-import com.mallease.pms.dto.cmd.CreatePmsSkuCmd;
-import com.mallease.pms.dto.cmd.CreatePmsSpuCmd;
+import com.mallease.pms.dto.context.SkuCreateData;
+import com.mallease.pms.dto.context.SpuCreateContext;
 import com.mallease.pms.dto.query.PmsSpuQuery;
 import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
 import com.mallease.pms.feign.CmsSubjectFeignClient;
@@ -27,8 +26,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class PmsSpuServiceImpl implements PmsSpuService {
-    @Autowired
-    private PmsSpuConverter spuConverter;
     @Autowired
     private PmsCategoryDao categoryDao;
     @Autowired
@@ -52,15 +49,17 @@ public class PmsSpuServiceImpl implements PmsSpuService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public Long create(CreatePmsSpuCmd cmd) {
+    public Long create(SpuCreateContext context) {
         String userName = LoginContextUtil.getUserName();
 
-        if (cmd == null) {
+        if (context == null || context.getSpu() == null) {
             throw new ApiException("商品不能为空");
         }
-        // spu 主表
-        PmsSpu spu = spuConverter.createCmdToEntity(cmd);
 
+        // 1. 获取已转换的SPU实体
+        PmsSpu spu = context.getSpu();
+
+        // 2. 业务逻辑：查询分类品牌信息
         PmsCategory category = categoryDao.selectByPrimaryKey(spu.getCategoryId());
         if (category == null) {
             throw new ApiException("分类为空");
@@ -74,7 +73,6 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         spu.setCategoryName(category.getName());
         spu.setBrandName(brand.getName());
 
-        // 运费模板ID默认值（0表示免运费或使用默认模板）
         if (spu.getFreightTemplateId() == null) {
             spu.setFreightTemplateId(0L);
         }
@@ -85,69 +83,69 @@ public class PmsSpuServiceImpl implements PmsSpuService {
 
         spu.setCreator(userName);
 
-        List<CreatePmsSkuCmd> cmdSkuList = cmd.getSkuList();
-        if (cmdSkuList == null || cmdSkuList.isEmpty()) {
+        List<SkuCreateData> skuDataList = context.getSkuDataList();
+        if (skuDataList == null || skuDataList.isEmpty()) {
             throw new ApiException("SKU为空");
         }
 
-        // 计算总库存
-        int totalStock = cmdSkuList.stream()
-                .filter(sku -> sku.getStock() != null)
-                .mapToInt(sku -> sku.getStock().getStock())
+        int totalStock = skuDataList.stream()
+                .map(SkuCreateData::getStock)
+                .filter(stock -> stock != null && stock.getStock() != null)
+                .mapToInt(PmsSkuStock::getStock)
                 .sum();
         spu.setStock(totalStock);
 
-        // 计算价格区间
-        BigDecimal minPrice = cmdSkuList.stream()
-                .map(CreatePmsSkuCmd::getPrice)
+        BigDecimal minPrice = skuDataList.stream()
+                .map(SkuCreateData::getSku)
+                .map(PmsSku::getPrice)
                 .min(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
-        BigDecimal maxPrice = cmdSkuList.stream()
-                .map(CreatePmsSkuCmd::getPrice)
+        BigDecimal maxPrice = skuDataList.stream()
+                .map(SkuCreateData::getSku)
+                .map(PmsSku::getPrice)
                 .max(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
         spu.setMinPrice(minPrice);
         spu.setMaxPrice(maxPrice);
 
+        // 保存SPU主表
         int spuCount = spuDao.insert(spu);
-
         if (spuCount == 0) {
             throw new ApiException("SPU 保存失败");
         }
 
-        // SPU 详情（可选）
         Long spuId = spu.getId();
-        if (cmd.getSpuDetail() != null) {
-            PmsSpuDetail spuDetail = spuConverter.spuDetailCmdToEntity(cmd.getSpuDetail());
+
+        // 保存SPU详情（可选）
+        if (context.getSpuDetail() != null) {
+            PmsSpuDetail spuDetail = context.getSpuDetail();
             spuDetail.setSpuId(spuId);
             spuDetail.setCreator(userName);
             spuDetailDao.insert(spuDetail);
         }
 
-        // SKU 列表
-        skuService.createBatch(spuId, cmd.getSkuList());
+        // 批量保存SKU及关联数据
+        skuService.createBatch(spuId, context.getSkuDataList());
 
-        // 参数属性值
-        if (cmd.getAttributeValueList() != null && !cmd.getAttributeValueList().isEmpty()) {
-            List<PmsSpuAttributeValue> attrValues = spuConverter.attributeValueCmdListToEntityList(cmd.getAttributeValueList());
-            attrValues.forEach(attr -> attr.setSpuId(spuId));
-            attributeValueDao.insertBatch(attrValues);
+        // 保存参数属性值
+        if (context.getAttributeValueList() != null && !context.getAttributeValueList().isEmpty()) {
+            context.getAttributeValueList().forEach(attr -> attr.setSpuId(spuId));
+            attributeValueDao.insertBatch(context.getAttributeValueList());
         }
 
-        // 满减规则
-        if (cmd.getFullReductionList() != null && !cmd.getFullReductionList().isEmpty()) {
-            List<PmsSpuFullReduction> reductions = spuConverter.fullReductionCmdListToEntityList(cmd.getFullReductionList());
-            reductions.forEach(r -> {
+        // 保存满减规则
+        if (context.getFullReductionList() != null && !context.getFullReductionList().isEmpty()) {
+            context.getFullReductionList().forEach(r -> {
                 r.setSpuId(spuId);
                 r.setCreator(userName);
             });
-            fullReductionDao.insertBatch(reductions);
+            fullReductionDao.insertBatch(context.getFullReductionList());
         }
 
-        // 专题关联（通过 Feign 调用 CMS 服务）
-        if (cmd.getSubjectIds() != null && !cmd.getSubjectIds().isEmpty()) {
+        // 专题关联（Feign）
+        if (context.getSubjectIds() != null && !context.getSubjectIds().isEmpty()) {
             try {
-                List<CmsSubjectProductRelationDTO> subjectRelations = cmd.getSubjectIds().stream()
+                List<CmsSubjectProductRelationDTO> subjectRelations = context.getSubjectIds().stream()
                         .map(subjectId -> CmsSubjectProductRelationDTO.builder()
                                 .productId(spuId)
                                 .subjectId(subjectId)
@@ -159,10 +157,10 @@ public class PmsSpuServiceImpl implements PmsSpuService {
             }
         }
 
-        // 优选专区关联（通过 Feign 调用 CMS 服务）
-        if (cmd.getPreferenceAreaIds() != null && !cmd.getPreferenceAreaIds().isEmpty()) {
+        // 优选专区关联（Feign）
+        if (context.getPreferenceAreaIds() != null && !context.getPreferenceAreaIds().isEmpty()) {
             try {
-                List<CmsPreferenceAreaProductRelationDTO> areaRelations = cmd.getPreferenceAreaIds().stream()
+                List<CmsPreferenceAreaProductRelationDTO> areaRelations = context.getPreferenceAreaIds().stream()
                         .map(areaId -> CmsPreferenceAreaProductRelationDTO.builder()
                                 .productId(spuId)
                                 .preferenceAreaId(areaId)

@@ -4,8 +4,10 @@ import com.github.pagehelper.PageHelper;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
+import com.mallease.pms.assembler.PmsSpuCreateAssembler;
 import com.mallease.pms.converter.PmsSpuConverter;
 import com.mallease.pms.dto.cmd.CreatePmsSpuCmd;
+import com.mallease.pms.dto.context.SpuCreateContext;
 import com.mallease.pms.dto.query.PmsSpuQuery;
 import com.mallease.pms.dto.vo.PmsSpuVO;
 import com.mallease.pms.pojo.PmsSpu;
@@ -25,13 +27,22 @@ import java.util.List;
 public class PmsSpuController {
     @Autowired
     private PmsSpuService pmsSpuService;
+
     @Autowired
     private PmsSpuConverter spuConverter;
+
+    @Autowired
+    private PmsSpuCreateAssembler spuCreateAssembler;
 
     @Operation(summary = "创建商品")
     @PostMapping("/create")
     public R<Long> create(@Validated @RequestBody CreatePmsSpuCmd cmd) {
-        Long spuId = pmsSpuService.create(cmd);
+        // 委托给 Assembler 进行 DTO→Entity 转换
+        SpuCreateContext context = spuCreateAssembler.assemble(cmd);
+
+        // Service 只负责业务逻辑
+        Long spuId = pmsSpuService.create(context);
+
         return R.success(spuId);
     }
 

@@ -2,6 +2,7 @@ package com.mallease.pms.service;
 
 import com.mallease.pms.dto.cmd.CreatePmsSkuCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSkuCmd;
+import com.mallease.pms.dto.context.SkuCreateData;
 import com.mallease.pms.dto.query.PmsSkuQuery;
 import com.mallease.pms.dto.vo.PmsSkuVO;
 import jakarta.validation.Valid;
@@ -24,13 +25,13 @@ public interface PmsSkuService {
 
 
     /**
-     * 创建SKU（含库存、促销、价格策略）
+     * 批量创建SKU（含库存、促销、价格策略）
      *
      * @param spuId SPU ID
-     * @param skuList sku列表
+     * @param skuDataList SKU创建数据列表（已转换的Entity）
      * @return 影响行数
      */
-    int createBatch(Long spuId, List<CreatePmsSkuCmd> skuList);
+    int createBatch(Long spuId, List<SkuCreateData> skuDataList);
 
     /**
      * 更新SKU
