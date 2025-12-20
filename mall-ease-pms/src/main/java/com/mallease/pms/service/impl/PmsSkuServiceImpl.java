@@ -7,11 +7,8 @@ import com.mallease.pms.dao.PmsSkuDao;
 import com.mallease.pms.dao.PmsSkuLadderDao;
 import com.mallease.pms.dao.PmsSkuMemberPriceDao;
 import com.mallease.pms.dao.PmsSkuPromotionDao;
-import com.mallease.pms.dto.cmd.CreatePmsSkuCmd;
-import com.mallease.pms.dto.cmd.UpdatePmsSkuCmd;
 import com.mallease.pms.dto.context.SkuCreateData;
 import com.mallease.pms.dto.query.PmsSkuQuery;
-import com.mallease.pms.dto.vo.PmsSkuVO;
 import com.mallease.pms.pojo.*;
 import com.mallease.pms.service.PmsSkuService;
 import com.mallease.pms.service.PmsSkuStockService;
@@ -39,12 +36,6 @@ public class PmsSkuServiceImpl implements PmsSkuService {
 
     @Autowired
     private PmsSkuStockService skuStockService;
-
-    @Transactional(rollbackFor = Exception.class)
-    @Override
-    public Long create(Long spuId, CreatePmsSkuCmd cmd) {
-        return 0L;
-    }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -127,37 +118,42 @@ public class PmsSkuServiceImpl implements PmsSkuService {
     }
 
     @Override
-    public int update(UpdatePmsSkuCmd cmd) {
+    public int update(PmsSku sku) {
+        // TODO: 实现SKU更新逻辑
         return 0;
     }
 
     @Override
     public int delete(Long id) {
+        // TODO: 实现SKU删除逻辑（级联删除关联数据）
         return 0;
     }
 
     @Override
     public int deleteBySpuId(Long spuId) {
+        // TODO: 实现删除SPU下所有SKU的逻辑
         return 0;
     }
 
     @Override
-    public PmsSkuVO getById(Long id) {
-        return null;
+    public PmsSku getById(Long id) {
+        return skuDao.selectByPrimaryKey(id);
     }
 
     @Override
-    public List<PmsSkuVO> listBySpuId(Long spuId) {
-        return List.of();
+    public List<PmsSku> listBySpuId(Long spuId) {
+        return skuDao.selectBySpuId(spuId);
     }
 
     @Override
-    public List<PmsSkuVO> list(PmsSkuQuery query) {
+    public List<PmsSku> list(PmsSkuQuery query) {
+        // TODO: 实现分页查询逻辑
         return List.of();
     }
 
     @Override
     public int updateEnableStatus(List<Long> ids, Integer status) {
+        // TODO: 实现批量更新状态逻辑
         return 0;
     }
 }

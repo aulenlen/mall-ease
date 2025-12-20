@@ -1,17 +1,33 @@
 package com.mallease.pms.service;
 
-import com.mallease.pms.dto.vo.PmsProductAttributeCategoryItemVO;
+import com.mallease.pms.pojo.PmsProductAttribute;
 import com.mallease.pms.pojo.PmsProductAttributeCategory;
 
 import java.util.List;
+import java.util.Map;
 
 /**
+ * 商品属性分类服务接口
+ *
  * @author: Aulen
- * @description:
- * @create: 2025-11-12 22:32
- **/
+ * @create: 2025-11-12
+ */
 public interface PmsProductAttributeCategoryService {
-    List<PmsProductAttributeCategoryItemVO> getCategoryWithAttrList();
+
+    /**
+     * 查询所有分类
+     *
+     * @return 分类列表
+     */
+    List<PmsProductAttributeCategory> listAll();
+
+    /**
+     * 根据分类ID列表查询关联的属性
+     *
+     * @param categoryIds 分类ID列表
+     * @return 分类ID -> 属性列表的映射
+     */
+    Map<Long, List<PmsProductAttribute>> getAttributesByCategoryIds(List<Long> categoryIds);
 
     /**
      * 分页查询所有商品属性分类
@@ -33,8 +49,9 @@ public interface PmsProductAttributeCategoryService {
 
     /**
      * 添加属性分类
-     * @param name
-     * @return
+     *
+     * @param name 分类名称
+     * @return 影响行数
      */
     int create(String name);
 

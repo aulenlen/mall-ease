@@ -1,15 +1,8 @@
 package com.mallease.pms.service.impl;
 
 import com.mallease.common.exception.ApiException;
-import com.mallease.common.exception.Asserts;
-import com.mallease.pms.converter.PmsCategoryConverter;
 import com.mallease.pms.dao.PmsCategoryDao;
-import com.mallease.pms.dto.cmd.CreatePmsCategoryCmd;
-import com.mallease.pms.dto.cmd.UpdatePmsCategoryCmd;
 import com.mallease.pms.dto.query.PmsCategoryQuery;
-import com.mallease.pms.dto.vo.PmsCategoryDetailVO;
-import com.mallease.pms.dto.vo.PmsCategoryListVO;
-import com.mallease.pms.dto.vo.PmsCategoryTreeVO;
 import com.mallease.pms.pojo.PmsCategory;
 import com.mallease.pms.service.PmsCategoryService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,11 +17,9 @@ import java.util.stream.Collectors;
 
 /**
  * 商品分类服务实现类
- * <p>
  * 核心功能：
  * 1. 物化路径自动维护（创建/移动时自动计算 path 和 level）
- * 2. 树形结构构建（全量树返回）
- * 3. 面包屑查询（基于 path 解析）
+ * 2. 面包屑查询（基于 path 解析）
  *
  * @author: Aulen
  * @create: 2025-12-13
@@ -45,18 +36,10 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
     @Autowired
     private PmsCategoryDao categoryDao;
 
-    @Autowired
-    private PmsCategoryConverter categoryConverter;
-
-
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(CreatePmsCategoryCmd cmd) {
-
-        PmsCategory entity = categoryConverter.createCmdToEntity(cmd);
-
-        if (cmd.getParentId() == null || cmd.getParentId() == 0L) {
-
+    public Long create(PmsCategory entity, Long parentId) {
+        if (parentId == null || parentId == 0L) {
             entity.setParentId(0L);
             entity.setLevel(0);
             categoryDao.insertSelective(entity);
@@ -64,15 +47,15 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
             entity.setPath("/" + entity.getId() + "/");
             categoryDao.updateByPrimaryKeySelective(entity);
         } else {
-
-            PmsCategory parent = categoryDao.selectByPrimaryKey(cmd.getParentId());
+            PmsCategory parent = categoryDao.selectByPrimaryKey(parentId);
             if (parent == null) {
-                throw new ApiException("父分类不存在，ID: " + cmd.getParentId());
+                throw new ApiException("父分类不存在，ID: " + parentId);
             }
 
             if (parent.getLevel() >= MAX_LEVEL) {
                 throw new ApiException("已达到最大分类层级，不能再创建子分类");
             }
+            entity.setParentId(parentId);
             entity.setLevel(parent.getLevel() + 1);
 
             categoryDao.insertSelective(entity);
@@ -87,30 +70,30 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int update(UpdatePmsCategoryCmd cmd) {
-
-        PmsCategory original = categoryDao.selectByPrimaryKey(cmd.getId());
+    public int update(PmsCategory entity, Long newParentId) {
+        PmsCategory original = categoryDao.selectByPrimaryKey(entity.getId());
         if (original == null) {
-            throw new ApiException("分类不存在，ID: " + cmd.getId());
+            throw new ApiException("分类不存在，ID: " + entity.getId());
         }
 
-        boolean needMove = cmd.getParentId() != null && !cmd.getParentId().equals(original.getParentId());
+        // 判断是否需要移动（newParentId不为null且与原parentId不同）
+        boolean needMove = newParentId != null && !newParentId.equals(original.getParentId());
 
         if (needMove) {
-            moveCategory(original, cmd.getParentId());
+            moveCategory(original, newParentId);
+            // 移动后将新的path/level/parentId复制到entity
+            entity.setPath(original.getPath());
+            entity.setLevel(original.getLevel());
+            entity.setParentId(original.getParentId());
         }
 
-        categoryConverter.updateEntityFromCmd(original, cmd);
-        return categoryDao.updateByPrimaryKeySelective(original);
+        return categoryDao.updateByPrimaryKeySelective(entity);
     }
 
     /**
      * 移动分类到新的父分类下
-     * <p>
-     * 核心逻辑：批量更新所有子孙的 path 前缀
      */
     private void moveCategory(PmsCategory category, Long newParentId) {
-
         if (newParentId.equals(category.getId())) {
             throw new ApiException("不能将分类移动到自身");
         }
@@ -163,13 +146,13 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
         // 1. 检查是否有子分类
         List<PmsCategory> children = categoryDao.selectByParentId(id);
         if (!CollectionUtils.isEmpty(children)) {
-            throw new IllegalArgumentException("该分类下存在子分类，请先删除子分类");
+            throw new ApiException("该分类下存在子分类，请先删除子分类");
         }
 
         // 2. TODO: 检查是否有关联商品（需要 PmsSpuDao）
         // int productCount = spuDao.countByCategoryId(id);
         // if (productCount > 0) {
-        //     throw new IllegalArgumentException("该分类下存在商品，请先移除商品");
+        //     throw new ApiException("该分类下存在商品，请先移除商品");
         // }
 
         // 3. 逻辑删除
@@ -189,10 +172,9 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
         }
 
         List<PmsCategory> children = categoryDao.selectByParentIds(ids);
-        
+
         // 如果存在子分类，抛出异常
         if (!CollectionUtils.isEmpty(children)) {
-            // 找到第一个有子分类的父分类
             Long parentId = children.get(0).getParentId();
             PmsCategory parent = categories.stream()
                     .filter(c -> c.getId().equals(parentId))
@@ -205,61 +187,28 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
         return categoryDao.deleteBatch(ids);
     }
 
-
     @Override
-    public PmsCategoryDetailVO getById(Long id) {
-        PmsCategory category = categoryDao.selectByPrimaryKey(id);
-        if (category == null) {
-            return null;
-        }
-
-        PmsCategoryDetailVO vo = categoryConverter.entityToDetailVo(category);
-
-        // 填充父分类名称
-        if (category.getParentId() != null && category.getParentId() > 0) {
-            PmsCategory parent = categoryDao.selectByPrimaryKey(category.getParentId());
-            if (parent != null) {
-                vo.setParentName(parent.getName());
-            }
-        }
-
-        // 填充面包屑
-        vo.setBreadcrumb(getBreadcrumb(id));
-
-        // TODO: 填充关联的规格组/参数组ID（需要关联表 DAO）
-        // vo.setSpecGroupIds(categorySpecGroupDao.selectSpecGroupIdsByCategoryId(id));
-        // vo.setParamGroupIds(categoryParamGroupDao.selectParamGroupIdsByCategoryId(id));
-
-        return vo;
+    public PmsCategory getById(Long id) {
+        return categoryDao.selectByPrimaryKey(id);
     }
 
     @Override
-    public List<PmsCategoryListVO> listByParentId(Long parentId) {
-        List<PmsCategory> categories = categoryDao.selectByParentId(parentId);
-        List<PmsCategoryListVO> voList = categoryConverter.entityListToListVoList(categories);
+    public List<PmsCategory> listByParentId(Long parentId) {
+        return categoryDao.selectByParentId(parentId);
+    }
 
-        if (CollectionUtils.isEmpty(voList)) {
-            return voList;
+    @Override
+    public Map<Long, Long> countChildrenByParentIds(List<Long> parentIds) {
+        if (CollectionUtils.isEmpty(parentIds)) {
+            return Map.of();
         }
-
-        List<Long> categoryIds = categories.stream()
-                .map(PmsCategory::getId)
-                .collect(Collectors.toList());
-
-        List<PmsCategory> allChildren = categoryDao.selectByParentIds(categoryIds);
-
-        Map<Long, Long> childCountMap = allChildren.stream()
+        List<PmsCategory> allChildren = categoryDao.selectByParentIds(parentIds);
+        return allChildren.stream()
                 .collect(Collectors.groupingBy(PmsCategory::getParentId, Collectors.counting()));
-
-        for (PmsCategoryListVO vo : voList) {
-            vo.setChildCount(childCountMap.getOrDefault(vo.getId(), 0L).intValue());
-        }
-
-        return voList;
     }
 
     @Override
-    public List<PmsCategoryListVO> listDescendants(Long id) {
+    public List<PmsCategory> listDescendants(Long id) {
         PmsCategory category = categoryDao.selectByPrimaryKey(id);
         if (category == null) {
             return new ArrayList<>();
@@ -267,51 +216,43 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
 
         List<PmsCategory> descendants = categoryDao.selectByPathPrefix(category.getPath());
 
-        descendants = descendants.stream()
+        // 过滤掉自身
+        return descendants.stream()
                 .filter(c -> !c.getId().equals(id))
                 .collect(Collectors.toList());
-        return categoryConverter.entityListToListVoList(descendants);
     }
 
     @Override
-    public List<PmsCategoryListVO> listByLevel(Integer level) {
-        List<PmsCategory> categories = categoryDao.selectByLevel(level);
-        return categoryConverter.entityListToListVoList(categories);
+    public List<PmsCategory> listByLevel(Integer level) {
+        return categoryDao.selectByLevel(level);
     }
 
     @Override
-    public List<PmsCategoryTreeVO> getFullTree() {
-        List<PmsCategory> allCategories = categoryDao.selectAll();
-        return categoryConverter.buildTree(allCategories);
+    public List<PmsCategory> listAll() {
+        return categoryDao.selectAll();
     }
 
     @Override
-    public List<PmsCategoryTreeVO> getTree(PmsCategoryQuery query) {
-        List<PmsCategory> categories;
-
+    public List<PmsCategory> listByQuery(PmsCategoryQuery query) {
         // 根据查询条件筛选
         if (StringUtils.hasText(query.getKeyword())) {
-            categories = categoryDao.selectByNameLike(query.getKeyword());
+            return categoryDao.selectByNameLike(query.getKeyword());
         } else if (query.getStatus() != null) {
-            categories = categoryDao.selectByStatus(query.getStatus());
+            return categoryDao.selectByStatus(query.getStatus());
         } else if (query.getLevel() != null) {
-            categories = categoryDao.selectByLevel(query.getLevel());
+            return categoryDao.selectByLevel(query.getLevel());
         } else {
-            categories = categoryDao.selectAll();
+            return categoryDao.selectAll();
         }
-
-        return categoryConverter.buildTree(categories);
     }
 
     @Override
-    public List<PmsCategoryTreeVO> getNavTree() {
-        List<PmsCategory> navCategories = categoryDao.selectNavCategories();
-        return categoryConverter.buildTree(navCategories);
+    public List<PmsCategory> listNavCategories() {
+        return categoryDao.selectNavCategories();
     }
 
-    // 查询 - 面包屑
     @Override
-    public List<PmsCategoryDetailVO.BreadcrumbItem> getBreadcrumb(Long id) {
+    public List<PmsCategory> listAncestors(Long id) {
         PmsCategory category = categoryDao.selectByPrimaryKey(id);
         if (category == null || !StringUtils.hasText(category.getPath())) {
             return new ArrayList<>();
@@ -330,18 +271,12 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
         // 批量查询所有祖先（包含自身）
         List<PmsCategory> ancestors = categoryDao.selectByIds(ancestorIds);
 
-        // 按层级排序并转换为面包屑项
+        // 按层级排序
         return ancestors.stream()
                 .sorted(Comparator.comparing(PmsCategory::getLevel))
-                .map(c -> PmsCategoryDetailVO.BreadcrumbItem.builder()
-                        .id(c.getId())
-                        .name(c.getName())
-                        .level(c.getLevel())
-                        .build())
                 .collect(Collectors.toList());
     }
 
-    // 状态管理
     @Override
     public int updateStatus(Long id, Integer status) {
         PmsCategory category = new PmsCategory();

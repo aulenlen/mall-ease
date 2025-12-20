@@ -5,6 +5,7 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.pms.converter.PmsAttributeConverter;
 import com.mallease.pms.dto.cmd.ClonePmsParamGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsParamCmd;
 import com.mallease.pms.dto.cmd.CreatePmsParamGroupCmd;
@@ -13,6 +14,7 @@ import com.mallease.pms.dto.cmd.UpdatePmsParamGroupCmd;
 import com.mallease.pms.dto.query.PmsParamGroupQuery;
 import com.mallease.pms.dto.vo.PmsParamGroupVO;
 import com.mallease.pms.dto.vo.PmsParamVO;
+import com.mallease.pms.pojo.PmsParam;
 import com.mallease.pms.pojo.PmsParamGroup;
 import com.mallease.pms.service.PmsParamGroupService;
 import com.mallease.pms.service.PmsParamService;
@@ -23,12 +25,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 参数管理控制器
  * <p>
  * 整合参数组、参数定义的管理 API
+ * <p>
+ * 设计原则：Controller负责DTO与Entity之间的转换，Service只处理业务逻辑
  *
  * @author: Aulen
  * @create: 2025-12-16
@@ -44,19 +51,31 @@ public class PmsParamController {
     @Autowired
     private PmsParamService paramService;
 
+    @Autowired
+    private PmsAttributeConverter attributeConverter;
+
     // ==================== 参数组管理 ====================
 
     @Operation(summary = "创建参数组")
     @PostMapping("/group/create")
     public R<Long> createGroup(@Validated @RequestBody CreatePmsParamGroupCmd cmd) {
-        Long id = paramGroupService.create(cmd);
+        // Controller负责DTO转换
+        PmsParamGroup entity = attributeConverter.createParamGroupCmdToEntity(cmd);
+        Long id = paramGroupService.create(entity, cmd.getCategoryId());
         return R.success(id);
     }
 
     @Operation(summary = "更新参数组")
     @PostMapping("/group/update")
     public R<Integer> updateGroup(@Validated @RequestBody UpdatePmsParamGroupCmd cmd) {
-        int count = paramGroupService.update(cmd);
+        // 先查询原实体
+        PmsParamGroup entity = paramGroupService.getById(cmd.getId());
+        if (entity == null) {
+            return R.failed(ResultCode.FAILED, "参数组不存在");
+        }
+        // 使用@MappingTarget更新实体
+        attributeConverter.updateParamGroupFromCmd(entity, cmd);
+        int count = paramGroupService.update(entity);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
@@ -79,7 +98,17 @@ public class PmsParamController {
     @GetMapping("/group/{id}")
     public R<PmsParamGroupVO> getGroupById(
             @Parameter(description = "参数组ID") @PathVariable Long id) {
-        PmsParamGroupVO vo = paramGroupService.getById(id);
+        PmsParamGroup entity = paramGroupService.getById(id);
+        if (entity == null) {
+            return R.success(null);
+        }
+        // Controller负责Entity转VO
+        PmsParamGroupVO vo = attributeConverter.paramGroupToVo(entity);
+        // 填充参数列表
+        Map<Long, List<PmsParam>> paramMap = paramGroupService.getParamsByGroupIds(List.of(id));
+        List<PmsParam> params = paramMap.getOrDefault(id, new ArrayList<>());
+        vo.setParamList(attributeConverter.paramListToVoList(params));
+        vo.setParamCount(params.size());
         return R.success(vo);
     }
 
@@ -89,8 +118,8 @@ public class PmsParamController {
         PageHelper.startPage(query.getPageNum(), query.getPageSize());
         List<PmsParamGroup> entityList = paramGroupService.listEntities(query.getKeyword());
 
-        // 转换为VO列表并填充参数
-        List<PmsParamGroupVO> voList = paramGroupService.toVoListWithParams(entityList);
+        // Controller负责Entity转VO并填充参数
+        List<PmsParamGroupVO> voList = toVoListWithParams(entityList);
 
         // 使用PageUtils保留分页信息
         Page<PmsParamGroupVO> result = PageUtils.buildPage(entityList, voList);
@@ -101,8 +130,10 @@ public class PmsParamController {
     @GetMapping("/group/list/category/{categoryId}")
     public R<List<PmsParamGroupVO>> listGroupsByCategoryId(
             @Parameter(description = "分类ID") @PathVariable Long categoryId) {
-        List<PmsParamGroupVO> list = paramGroupService.listByCategoryId(categoryId);
-        return R.success(list);
+        List<PmsParamGroup> entityList = paramGroupService.listByCategoryId(categoryId);
+        // Controller负责Entity转VO并填充参数
+        List<PmsParamGroupVO> voList = toVoListWithParams(entityList);
+        return R.success(voList);
     }
 
     @Operation(summary = "关联参数组到分类")
@@ -196,5 +227,32 @@ public class PmsParamController {
     public R<List<PmsParamVO>> listComparableParams() {
         List<PmsParamVO> list = paramService.listComparable();
         return R.success(list);
+    }
+    
+    /**
+     * 将参数组实体列表转换为VO列表并填充参数
+     */
+    private List<PmsParamGroupVO> toVoListWithParams(List<PmsParamGroup> entityList) {
+        if (entityList == null || entityList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 1. Entity转VO
+        List<PmsParamGroupVO> voList = attributeConverter.paramGroupListToVoList(entityList);
+
+        // 2. 批量查询参数
+        List<Long> groupIds = entityList.stream()
+                .map(PmsParamGroup::getId)
+                .collect(Collectors.toList());
+        Map<Long, List<PmsParam>> paramMap = paramGroupService.getParamsByGroupIds(groupIds);
+
+        // 3. 填充参数列表和数量
+        for (PmsParamGroupVO vo : voList) {
+            List<PmsParam> params = paramMap.getOrDefault(vo.getId(), new ArrayList<>());
+            vo.setParamList(attributeConverter.paramListToVoList(params));
+            vo.setParamCount(params.size());
+        }
+
+        return voList;
     }
 }

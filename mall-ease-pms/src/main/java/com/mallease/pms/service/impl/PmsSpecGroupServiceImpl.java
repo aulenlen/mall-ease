@@ -1,15 +1,11 @@
 package com.mallease.pms.service.impl;
 
 import com.mallease.common.exception.ApiException;
-import com.mallease.pms.converter.PmsAttributeConverter;
 import com.mallease.pms.dao.PmsCategorySpecGroupDao;
 import com.mallease.pms.dao.PmsSpecDao;
 import com.mallease.pms.dao.PmsSpecGroupDao;
 import com.mallease.pms.dao.PmsSpecValueDao;
 import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
-import com.mallease.pms.dto.cmd.CreatePmsSpecGroupCmd;
-import com.mallease.pms.dto.cmd.UpdatePmsSpecGroupCmd;
-import com.mallease.pms.dto.vo.PmsSpecGroupVO;
 import com.mallease.pms.pojo.PmsCategorySpecGroup;
 import com.mallease.pms.pojo.PmsSpec;
 import com.mallease.pms.pojo.PmsSpecGroup;
@@ -23,17 +19,16 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * 规格组服务实现类
- * <p>
  * 核心功能：
  * 1. 规格组 CRUD
  * 2. 分类关联管理（通过 pms_category_spec_group 关联表）
- * 3. 规格列表填充
  *
  * @author: Aulen
  * @create: 2025-12-16
@@ -54,26 +49,22 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
     @Autowired
     private PmsSpecValueDao specValueDao;
 
-    @Autowired
-    private PmsAttributeConverter attributeConverter;
-
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(CreatePmsSpecGroupCmd cmd) {
+    public Long create(PmsSpecGroup entity, Long categoryId) {
         // 检查名称是否重复
-        PmsSpecGroup existing = specGroupDao.selectByName(cmd.getName());
+        PmsSpecGroup existing = specGroupDao.selectByName(entity.getName());
         if (existing != null) {
-            throw new ApiException("规格组名称已存在: " + cmd.getName());
+            throw new ApiException("规格组名称已存在: " + entity.getName());
         }
 
-        PmsSpecGroup entity = attributeConverter.createSpecGroupCmdToEntity(cmd);
         specGroupDao.insertSelective(entity);
 
         // 如果传了 categoryId，自动绑定到该分类
-        if (cmd.getCategoryId() != null) {
-            bindToCategory(cmd.getCategoryId(), List.of(entity.getId()));
+        if (categoryId != null) {
+            bindToCategory(categoryId, List.of(entity.getId()));
             log.info("创建规格组成功并绑定到分类，ID: {}, 名称: {}, 分类ID: {}",
-                    entity.getId(), entity.getName(), cmd.getCategoryId());
+                    entity.getId(), entity.getName(), categoryId);
         } else {
             log.info("创建规格组成功，ID: {}, 名称: {}", entity.getId(), entity.getName());
         }
@@ -82,22 +73,25 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int update(UpdatePmsSpecGroupCmd cmd) {
-        PmsSpecGroup original = specGroupDao.selectByPrimaryKey(cmd.getId());
+    public int update(PmsSpecGroup entity) {
+        if (entity.getId() == null) {
+            throw new ApiException("规格组ID不能为空");
+        }
+
+        PmsSpecGroup original = specGroupDao.selectByPrimaryKey(entity.getId());
         if (original == null) {
-            throw new ApiException("规格组不存在，ID: " + cmd.getId());
+            throw new ApiException("规格组不存在，ID: " + entity.getId());
         }
 
         // 检查名称是否与其他规格组重复
-        if (StringUtils.hasText(cmd.getName()) && !cmd.getName().equals(original.getName())) {
-            PmsSpecGroup existing = specGroupDao.selectByName(cmd.getName());
-            if (existing != null && !existing.getId().equals(cmd.getId())) {
-                throw new ApiException("规格组名称已存在: " + cmd.getName());
+        if (StringUtils.hasText(entity.getName()) && !entity.getName().equals(original.getName())) {
+            PmsSpecGroup existingByName = specGroupDao.selectByName(entity.getName());
+            if (existingByName != null && !existingByName.getId().equals(entity.getId())) {
+                throw new ApiException("规格组名称已存在: " + entity.getName());
             }
         }
 
-        attributeConverter.updateSpecGroupFromCmd(original, cmd);
-        return specGroupDao.updateByPrimaryKeySelective(original);
+        return specGroupDao.updateByPrimaryKeySelective(entity);
     }
 
     @Override
@@ -143,26 +137,13 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
     }
 
     @Override
-    public PmsSpecGroupVO getById(Long id) {
-        PmsSpecGroup specGroup = specGroupDao.selectByPrimaryKey(id);
-        if (specGroup == null) {
-            return null;
-        }
-
-        PmsSpecGroupVO vo = attributeConverter.specGroupToVo(specGroup);
-
-        // 填充规格列表
-        List<PmsSpec> specs = specDao.selectByGroupId(id);
-        vo.setSpecList(attributeConverter.specListToVoList(specs));
-        vo.setSpecCount(specs.size());
-
-        return vo;
+    public PmsSpecGroup getById(Long id) {
+        return specGroupDao.selectByPrimaryKey(id);
     }
 
     @Override
-    public List<PmsSpecGroupVO> listAll() {
-        List<PmsSpecGroup> specGroups = specGroupDao.selectAll();
-        return fillSpecList(specGroups);
+    public List<PmsSpecGroup> listAll() {
+        return specGroupDao.selectAll();
     }
 
     @Override
@@ -171,18 +152,12 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
     }
 
     @Override
-    public List<PmsSpecGroupVO> list(String keyword) {
-        List<PmsSpecGroup> specGroups = specGroupDao.selectByKeyword(keyword);
-        return fillSpecList(specGroups);
+    public List<PmsSpecGroup> list(String keyword) {
+        return specGroupDao.selectByKeyword(keyword);
     }
 
     @Override
-    public List<PmsSpecGroupVO> toVoListWithSpecs(List<PmsSpecGroup> specGroups) {
-        return fillSpecList(specGroups);
-    }
-
-    @Override
-    public List<PmsSpecGroupVO> listByCategoryId(Long categoryId) {
+    public List<PmsSpecGroup> listByCategoryId(Long categoryId) {
         // 通过关联表查询规格组ID
         List<PmsCategorySpecGroup> relations = categorySpecGroupDao.selectByCategoryId(categoryId);
         if (CollectionUtils.isEmpty(relations)) {
@@ -193,8 +168,18 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
                 .map(PmsCategorySpecGroup::getSpecGroupId)
                 .collect(Collectors.toList());
 
-        List<PmsSpecGroup> specGroups = specGroupDao.selectByIds(specGroupIds);
-        return fillSpecList(specGroups);
+        return specGroupDao.selectByIds(specGroupIds);
+    }
+
+    @Override
+    public Map<Long, List<PmsSpec>> getSpecsByGroupIds(List<Long> groupIds) {
+        if (CollectionUtils.isEmpty(groupIds)) {
+            return Map.of();
+        }
+
+        List<PmsSpec> allSpecs = specDao.selectByGroupIds(groupIds);
+        return allSpecs.stream()
+                .collect(Collectors.groupingBy(PmsSpec::getGroupId));
     }
 
     @Override
@@ -280,7 +265,7 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
 
             // 构建新规格列表，同时保存 sourceSpecId -> newSpec 的映射
             List<PmsSpec> newSpecs = new ArrayList<>();
-            Map<Long, PmsSpec> sourceToNewSpecMap = new java.util.LinkedHashMap<>();
+            Map<Long, PmsSpec> sourceToNewSpecMap = new LinkedHashMap<>();
 
             for (PmsSpec sourceSpec : sourceSpecs) {
                 PmsSpec newSpec = new PmsSpec();
@@ -330,38 +315,5 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
 
         log.info("克隆规格组成功，原ID: {}, 新ID: {}, 分类ID: {}", sourceGroupId, newGroupId, categoryId);
         return newGroupId;
-    }
-
-    /**
-     * 批量填充规格列表
-     * <p>
-     * 避免 N+1 查询问题，一次性查询所有规格组的规格
-     */
-    private List<PmsSpecGroupVO> fillSpecList(List<PmsSpecGroup> specGroups) {
-        if (CollectionUtils.isEmpty(specGroups)) {
-            return new ArrayList<>();
-        }
-
-        List<PmsSpecGroupVO> voList = attributeConverter.specGroupListToVoList(specGroups);
-
-        // 批量查询所有规格
-        List<Long> groupIds = specGroups.stream()
-                .map(PmsSpecGroup::getId)
-                .collect(Collectors.toList());
-
-        List<PmsSpec> allSpecs = specDao.selectByGroupIds(groupIds);
-
-        // 按规格组ID分组
-        Map<Long, List<PmsSpec>> specMap = allSpecs.stream()
-                .collect(Collectors.groupingBy(PmsSpec::getGroupId));
-
-        // 填充规格列表和数量
-        for (PmsSpecGroupVO vo : voList) {
-            List<PmsSpec> specs = specMap.getOrDefault(vo.getId(), new ArrayList<>());
-            vo.setSpecList(attributeConverter.specListToVoList(specs));
-            vo.setSpecCount(specs.size());
-        }
-
-        return voList;
     }
 }

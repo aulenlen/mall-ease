@@ -54,38 +54,17 @@ public class PmsBrandController {
     public R<Page<PmsBrandListVO>> list(@Validated @ModelAttribute BrandQuery query) {
         PageHelper.startPage(query.getPageNum(), query.getPageSize());
         List<PmsBrand> brandList = brandService.list(query.getKeyword());
-
-        // 使用PageUtils转换分页结果
         Page<PmsBrandListVO> result = PageUtils.convertPage(brandList, brandConverter::entityListToListVoList);
 
         return R.success(result);
     }
 
-    /**
-     * 创建品牌
-     *
-     * @param cmd 创建品牌命令
-     * @return 创建结果
-     */
     @Operation(summary = "创建品牌")
     @PostMapping("/create")
-    public R<Integer> create(@Validated @RequestBody CreateBrandCmd cmd) {
+    public R<Long> create(@Validated @RequestBody CreateBrandCmd cmd) {
         PmsBrand brand = brandConverter.createCmdToEntity(cmd);
-        // 设置默认值
-        if (brand.getSort() == null) {
-            brand.setSort(0);
-        }
-        if (brand.getFactoryStatus() == null) {
-            brand.setFactoryStatus(0);
-        }
-        if (brand.getShowStatus() == null) {
-            brand.setShowStatus(1);
-        }
-        // 设置审计字段
-        brand.setCreateTime(LocalDateTime.now());
-        brand.setCreator(LoginContextUtil.getUserName());
-        PmsBrand createdBrand = brandService.create(brand);
-        return createdBrand != null ? R.success(1) : R.failed(ResultCode.FAILED);
+        Long brandId = brandService.create(brand);
+        return R.success(brandId);
     }
 
     /**
@@ -105,13 +84,6 @@ public class PmsBrandController {
         return R.success(detailVO);
     }
 
-    /**
-     * 更新品牌
-     *
-     * @param id  品牌ID
-     * @param cmd 更新品牌命令
-     * @return 更新结果
-     */
     @Operation(summary = "更新品牌")
     @PostMapping("/update/{id}")
     public R<Integer> update(@Parameter(description = "品牌ID") @PathVariable Long id,
@@ -121,10 +93,8 @@ public class PmsBrandController {
             return R.failed(ResultCode.FAILED);
         }
         brandConverter.updateEntityFromCmd(brand, cmd);
-        // 设置更新人
-        brand.setUpdater(LoginContextUtil.getUserName());
-        PmsBrand updatedBrand = brandService.update(brand);
-        return updatedBrand != null ? R.success(1) : R.failed(ResultCode.FAILED);
+        int count = brandService.update(brand);
+        return R.success(count);
     }
 
     /**

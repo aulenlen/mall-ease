@@ -3,8 +3,8 @@ package com.mallease.pms.controller;
 import com.github.pagehelper.PageHelper;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
-import com.mallease.common.api.ResultCode;
 import com.mallease.common.api.R;
+import com.mallease.common.api.ResultCode;
 import com.mallease.pms.converter.PmsProductAttributeConverter;
 import com.mallease.pms.dto.cmd.CreateProductAttributeCmd;
 import com.mallease.pms.dto.vo.PmsProductAttributeListVO;
@@ -19,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 商品属性控制器
@@ -41,8 +42,16 @@ public class PmsProductAttributeController {
     @GetMapping("/attrInfo/{productCategoryId}")
     public R<List<PmsProductAttributeRelationVO>> getAttrInfo(
             @Parameter(description = "商品分类ID") @PathVariable Long productCategoryId) {
-        List<PmsProductAttributeRelationVO> list = productAttributeService.getProductAttrInfo(productCategoryId);
-        return R.success(list);
+        List<PmsProductAttribute> attributes = productAttributeService.listByProductCategoryId(productCategoryId);
+        List<PmsProductAttributeRelationVO> voList = attributes.stream()
+                .map(attr -> {
+                    PmsProductAttributeRelationVO vo = new PmsProductAttributeRelationVO();
+                    vo.setAttributeId(attr.getId());
+                    vo.setAttributeCategoryId(attr.getProductAttributeCategoryId());
+                    return vo;
+                })
+                .collect(Collectors.toList());
+        return R.success(voList);
     }
 
     @Operation(summary = "分页查询商品属性", description = "根据分类ID和类型分页查询商品属性")
@@ -61,8 +70,9 @@ public class PmsProductAttributeController {
     @Operation(summary = "创建商品属性")
     @PostMapping("/create")
     public R<Long> create(@Validated @RequestBody CreateProductAttributeCmd cmd) {
-        PmsProductAttribute attribute = productAttributeService.create(cmd);
-        return R.success(attribute.getId());
+        PmsProductAttribute attribute = attributeConverter.createCmdToEntity(cmd);
+        Long attributeId = productAttributeService.create(attribute);
+        return R.success(attributeId);
     }
 
     @Operation(summary = "批量删除商品属性")

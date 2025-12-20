@@ -22,9 +22,9 @@ public interface PmsBrandService {
      * 创建品牌
      *
      * @param brand 品牌信息
-     * @return 创建的品牌信息
+     * @return 创建成功的品牌ID
      */
-    PmsBrand create(PmsBrand brand);
+    Long create(PmsBrand brand);
 
     /**
      * 根据ID获取品牌详情
@@ -38,9 +38,9 @@ public interface PmsBrandService {
      * 更新品牌
      *
      * @param brand 品牌信息
-     * @return 更新后的品牌信息
+     * @return 更新的记录数
      */
-    PmsBrand update(PmsBrand brand);
+    int update(PmsBrand brand);
 
     /**
      * 删除品牌

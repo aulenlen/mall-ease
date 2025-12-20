@@ -1,33 +1,17 @@
 package com.mallease.pms.service;
 
-import com.mallease.pms.dto.cmd.CreatePmsSkuCmd;
-import com.mallease.pms.dto.cmd.UpdatePmsSkuCmd;
 import com.mallease.pms.dto.context.SkuCreateData;
 import com.mallease.pms.dto.query.PmsSkuQuery;
-import com.mallease.pms.dto.vo.PmsSkuVO;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import com.mallease.pms.pojo.PmsSku;
 
 import java.util.List;
 
 public interface PmsSkuService {
-    // ===== CRUD 操作 =====
-
-    /**
-     * 创建SKU（含库存、促销、价格策略）
-     *
-     * @param spuId SPU ID
-     * @param cmd 创建命令
-     * @return SKU ID
-     */
-    Long create(Long spuId, CreatePmsSkuCmd cmd);
-
 
     /**
      * 批量创建SKU（含库存、促销、价格策略）
      *
-     * @param spuId SPU ID
+     * @param spuId       SPU ID
      * @param skuDataList SKU创建数据列表（已转换的Entity）
      * @return 影响行数
      */
@@ -36,10 +20,10 @@ public interface PmsSkuService {
     /**
      * 更新SKU
      *
-     * @param cmd 更新命令
+     * @param sku SKU实体
      * @return 影响行数
      */
-    int update(UpdatePmsSkuCmd cmd);
+    int update(PmsSku sku);
 
     /**
      * 删除SKU（级联删除关联数据）
@@ -57,15 +41,13 @@ public interface PmsSkuService {
      */
     int deleteBySpuId(Long spuId);
 
-    // ===== 查询操作 =====
-
     /**
-     * 根据ID获取SKU详情（含库存、促销信息）
+     * 根据ID获取SKU
      *
      * @param id SKU ID
-     * @return SKU详情
+     * @return SKU实体
      */
-    PmsSkuVO getById(Long id);
+    PmsSku getById(Long id);
 
     /**
      * 根据SPU ID查询SKU列表
@@ -73,7 +55,7 @@ public interface PmsSkuService {
      * @param spuId SPU ID
      * @return SKU列表
      */
-    List<PmsSkuVO> listBySpuId(Long spuId);
+    List<PmsSku> listBySpuId(Long spuId);
 
     /**
      * 分页查询SKU
@@ -81,14 +63,12 @@ public interface PmsSkuService {
      * @param query 查询条件
      * @return SKU列表
      */
-    List<PmsSkuVO> list(PmsSkuQuery query);
-
-    // ===== 状态管理 =====
+    List<PmsSku> list(PmsSkuQuery query);
 
     /**
      * 批量更新启用状态
      *
-     * @param ids SKU ID列表
+     * @param ids    SKU ID列表
      * @param status 状态值
      * @return 影响行数
      */

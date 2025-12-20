@@ -1,16 +1,14 @@
 package com.mallease.pms.service;
 
 import com.mallease.pms.dto.cmd.ClonePmsParamGroupCmd;
-import com.mallease.pms.dto.cmd.CreatePmsParamGroupCmd;
-import com.mallease.pms.dto.cmd.UpdatePmsParamGroupCmd;
-import com.mallease.pms.dto.vo.PmsParamGroupVO;
+import com.mallease.pms.pojo.PmsParam;
 import com.mallease.pms.pojo.PmsParamGroup;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 参数组服务接口
- * <p>
  * 提供参数组的 CRUD、分类关联等功能
  *
  * @author: Aulen
@@ -21,24 +19,21 @@ public interface PmsParamGroupService {
     /**
      * 创建参数组
      *
-     * @param cmd 创建命令
+     * @param entity     参数组实体
+     * @param categoryId 分类ID（可选，传入时自动绑定到该分类）
      * @return 新参数组ID
      */
-    Long create(CreatePmsParamGroupCmd cmd);
+    Long create(PmsParamGroup entity, Long categoryId);
 
     /**
      * 更新参数组
-     *
-     * @param cmd 更新命令
+     * @param entity 参数组实体（包含ID）
      * @return 影响行数
      */
-    int update(UpdatePmsParamGroupCmd cmd);
+    int update(PmsParamGroup entity);
 
     /**
      * 删除参数组
-     * <p>
-     * 前置检查：是否有关联的参数定义（有则禁止删除）
-     *
      * @param id 参数组ID
      * @return 影响行数
      */
@@ -53,27 +48,22 @@ public interface PmsParamGroupService {
     int deleteBatch(List<Long> ids);
 
     /**
-     * 根据ID查询参数组详情
-     * <p>
-     * 包含：基础信息 + 参数列表
+     * 根据ID查询参数组
      *
      * @param id 参数组ID
-     * @return 参数组详情（含参数列表）
+     * @return 参数组实体
      */
-    PmsParamGroupVO getById(Long id);
+    PmsParamGroup getById(Long id);
 
     /**
      * 查询所有参数组
      *
-     * @return 参数组列表
+     * @return 参数组实体列表
      */
-    List<PmsParamGroupVO> listAll();
+    List<PmsParamGroup> listAll();
 
     /**
      * 根据关键字查询参数组（返回实体列表）
-     * <p>
-     * 配合 PageHelper 实现分页，返回原始实体列表以保留分页信息
-     *
      * @param keyword 关键字（可为空，模糊匹配名称）
      * @return 参数组实体列表
      */
@@ -81,33 +71,27 @@ public interface PmsParamGroupService {
 
     /**
      * 根据关键字查询参数组
-     * <p>
-     * 配合 PageHelper 实现分页
      *
      * @param keyword 关键字（可为空，模糊匹配名称）
-     * @return 参数组列表
+     * @return 参数组实体列表
      */
-    List<PmsParamGroupVO> list(String keyword);
-
-    /**
-     * 将参数组实体列表转换为VO列表并填充参数
-     * <p>
-     * 批量填充参数列表，避免N+1查询
-     *
-     * @param paramGroups 参数组实体列表
-     * @return 参数组VO列表（含参数列表）
-     */
-    List<PmsParamGroupVO> toVoListWithParams(List<PmsParamGroup> paramGroups);
+    List<PmsParamGroup> list(String keyword);
 
     /**
      * 根据分类ID查询关联的参数组
-     * <p>
-     * 通过 pms_category_param_group 关联表查询
      *
      * @param categoryId 分类ID
-     * @return 参数组列表（含参数列表）
+     * @return 参数组实体列表
      */
-    List<PmsParamGroupVO> listByCategoryId(Long categoryId);
+    List<PmsParamGroup> listByCategoryId(Long categoryId);
+
+    /**
+     * 根据ID列表查询参数
+     *
+     * @param groupIds 参数组ID列表
+     * @return 参数组ID -> 参数列表的映射
+     */
+     Map<Long, List<PmsParam>> getParamsByGroupIds(List<Long> groupIds);
 
     /**
      * 关联参数组到分类

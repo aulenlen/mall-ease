@@ -1,6 +1,7 @@
 package com.mallease.pms.service.impl;
 
 import com.mallease.common.exception.ApiException;
+import com.mallease.common.util.LoginContextUtil;
 import com.mallease.pms.dao.PmsBrandDao;
 import com.mallease.pms.pojo.PmsBrand;
 import com.mallease.pms.service.PmsBrandService;
@@ -26,10 +27,24 @@ public class PmsBrandServiceImpl implements PmsBrandService {
     }
 
     @Override
-    public PmsBrand create(PmsBrand brand) {
+    public Long create(PmsBrand brand) {
+        // 设置默认值
+        if (brand.getSort() == null) {
+            brand.setSort(0);
+        }
+        if (brand.getFactoryStatus() == null) {
+            brand.setFactoryStatus(0);
+        }
+        if (brand.getShowStatus() == null) {
+            brand.setShowStatus(1);
+        }
+        // 设置审计字段
+        brand.setCreateTime(java.time.LocalDateTime.now());
+        brand.setCreator(LoginContextUtil.getUserName());
+        
         int result = brandDao.insertSelective(brand);
         if (result > 0) {
-            return brandDao.selectByPrimaryKey(brand.getId());
+            return brand.getId();
         }
         throw new ApiException("创建品牌失败");
     }
@@ -44,15 +59,18 @@ public class PmsBrandServiceImpl implements PmsBrandService {
     }
 
     @Override
-    public PmsBrand update(PmsBrand brand) {
+    public int update(PmsBrand brand) {
         // 先检查品牌是否存在
         PmsBrand existingBrand = brandDao.selectByPrimaryKey(brand.getId());
         if (existingBrand == null) {
             throw new ApiException("品牌不存在");
         }
+        // 设置更新人
+        brand.setUpdater(LoginContextUtil.getUserName());
+        
         int result = brandDao.updateByPrimaryKeySelective(brand);
         if (result > 0) {
-            return brandDao.selectByPrimaryKey(brand.getId());
+            return result;
         }
         throw new ApiException("更新品牌失败");
     }

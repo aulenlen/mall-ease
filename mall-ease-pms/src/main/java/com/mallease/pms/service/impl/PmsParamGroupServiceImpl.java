@@ -1,14 +1,10 @@
 package com.mallease.pms.service.impl;
 
 import com.mallease.common.exception.ApiException;
-import com.mallease.pms.converter.PmsAttributeConverter;
 import com.mallease.pms.dao.PmsCategoryParamGroupDao;
 import com.mallease.pms.dao.PmsParamDao;
 import com.mallease.pms.dao.PmsParamGroupDao;
 import com.mallease.pms.dto.cmd.ClonePmsParamGroupCmd;
-import com.mallease.pms.dto.cmd.CreatePmsParamGroupCmd;
-import com.mallease.pms.dto.cmd.UpdatePmsParamGroupCmd;
-import com.mallease.pms.dto.vo.PmsParamGroupVO;
 import com.mallease.pms.pojo.PmsCategoryParamGroup;
 import com.mallease.pms.pojo.PmsParam;
 import com.mallease.pms.pojo.PmsParamGroup;
@@ -27,12 +23,9 @@ import java.util.stream.Collectors;
 
 /**
  * 参数组服务实现类
- * <p>
  * 核心功能：
  * 1. 参数组 CRUD
  * 2. 分类关联管理（通过 pms_category_param_group 关联表）
- * 3. 参数列表填充
- *
  * @author: Aulen
  * @create: 2025-12-16
  */
@@ -49,26 +42,22 @@ public class PmsParamGroupServiceImpl implements PmsParamGroupService {
     @Autowired
     private PmsCategoryParamGroupDao categoryParamGroupDao;
 
-    @Autowired
-    private PmsAttributeConverter attributeConverter;
-
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(CreatePmsParamGroupCmd cmd) {
+    public Long create(PmsParamGroup entity, Long categoryId) {
         // 检查名称是否重复
-        PmsParamGroup existing = paramGroupDao.selectByName(cmd.getName());
+        PmsParamGroup existing = paramGroupDao.selectByName(entity.getName());
         if (existing != null) {
-            throw new ApiException("参数组名称已存在: " + cmd.getName());
+            throw new ApiException("参数组名称已存在: " + entity.getName());
         }
 
-        PmsParamGroup entity = attributeConverter.createParamGroupCmdToEntity(cmd);
         paramGroupDao.insertSelective(entity);
 
         // 如果传了 categoryId，自动绑定到该分类
-        if (cmd.getCategoryId() != null) {
-            bindToCategory(cmd.getCategoryId(), List.of(entity.getId()));
+        if (categoryId != null) {
+            bindToCategory(categoryId, List.of(entity.getId()));
             log.info("创建参数组成功并绑定到分类，ID: {}, 名称: {}, 分类ID: {}",
-                    entity.getId(), entity.getName(), cmd.getCategoryId());
+                    entity.getId(), entity.getName(), categoryId);
         } else {
             log.info("创建参数组成功，ID: {}, 名称: {}", entity.getId(), entity.getName());
         }
@@ -77,22 +66,25 @@ public class PmsParamGroupServiceImpl implements PmsParamGroupService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int update(UpdatePmsParamGroupCmd cmd) {
-        PmsParamGroup original = paramGroupDao.selectByPrimaryKey(cmd.getId());
+    public int update(PmsParamGroup entity) {
+        if (entity.getId() == null) {
+            throw new ApiException("参数组ID不能为空");
+        }
+
+        PmsParamGroup original = paramGroupDao.selectByPrimaryKey(entity.getId());
         if (original == null) {
-            throw new ApiException("参数组不存在，ID: " + cmd.getId());
+            throw new ApiException("参数组不存在，ID: " + entity.getId());
         }
 
         // 检查名称是否与其他参数组重复
-        if (StringUtils.hasText(cmd.getName()) && !cmd.getName().equals(original.getName())) {
-            PmsParamGroup existing = paramGroupDao.selectByName(cmd.getName());
-            if (existing != null && !existing.getId().equals(cmd.getId())) {
-                throw new ApiException("参数组名称已存在: " + cmd.getName());
+        if (StringUtils.hasText(entity.getName()) && !entity.getName().equals(original.getName())) {
+            PmsParamGroup existingByName = paramGroupDao.selectByName(entity.getName());
+            if (existingByName != null && !existingByName.getId().equals(entity.getId())) {
+                throw new ApiException("参数组名称已存在: " + entity.getName());
             }
         }
 
-        attributeConverter.updateParamGroupFromCmd(original, cmd);
-        return paramGroupDao.updateByPrimaryKeySelective(original);
+        return paramGroupDao.updateByPrimaryKeySelective(entity);
     }
 
     @Override
@@ -138,26 +130,13 @@ public class PmsParamGroupServiceImpl implements PmsParamGroupService {
     }
 
     @Override
-    public PmsParamGroupVO getById(Long id) {
-        PmsParamGroup paramGroup = paramGroupDao.selectByPrimaryKey(id);
-        if (paramGroup == null) {
-            return null;
-        }
-
-        PmsParamGroupVO vo = attributeConverter.paramGroupToVo(paramGroup);
-
-        // 填充参数列表
-        List<PmsParam> params = paramDao.selectByGroupId(id);
-        vo.setParamList(attributeConverter.paramListToVoList(params));
-        vo.setParamCount(params.size());
-
-        return vo;
+    public PmsParamGroup getById(Long id) {
+        return paramGroupDao.selectByPrimaryKey(id);
     }
 
     @Override
-    public List<PmsParamGroupVO> listAll() {
-        List<PmsParamGroup> paramGroups = paramGroupDao.selectAll();
-        return fillParamList(paramGroups);
+    public List<PmsParamGroup> listAll() {
+        return paramGroupDao.selectAll();
     }
 
     @Override
@@ -166,18 +145,12 @@ public class PmsParamGroupServiceImpl implements PmsParamGroupService {
     }
 
     @Override
-    public List<PmsParamGroupVO> list(String keyword) {
-        List<PmsParamGroup> paramGroups = paramGroupDao.selectByKeyword(keyword);
-        return fillParamList(paramGroups);
+    public List<PmsParamGroup> list(String keyword) {
+        return paramGroupDao.selectByKeyword(keyword);
     }
 
     @Override
-    public List<PmsParamGroupVO> toVoListWithParams(List<PmsParamGroup> paramGroups) {
-        return fillParamList(paramGroups);
-    }
-
-    @Override
-    public List<PmsParamGroupVO> listByCategoryId(Long categoryId) {
+    public List<PmsParamGroup> listByCategoryId(Long categoryId) {
         // 通过关联表查询参数组ID
         List<PmsCategoryParamGroup> relations = categoryParamGroupDao.selectByCategoryId(categoryId);
         if (CollectionUtils.isEmpty(relations)) {
@@ -188,8 +161,18 @@ public class PmsParamGroupServiceImpl implements PmsParamGroupService {
                 .map(PmsCategoryParamGroup::getParamGroupId)
                 .collect(Collectors.toList());
 
-        List<PmsParamGroup> paramGroups = paramGroupDao.selectByIds(paramGroupIds);
-        return fillParamList(paramGroups);
+        return paramGroupDao.selectByIds(paramGroupIds);
+    }
+
+    @Override
+    public Map<Long, List<PmsParam>> getParamsByGroupIds(List<Long> groupIds) {
+        if (CollectionUtils.isEmpty(groupIds)) {
+            return Map.of();
+        }
+
+        List<PmsParam> allParams = paramDao.selectByGroupIds(groupIds);
+        return allParams.stream()
+                .collect(Collectors.groupingBy(PmsParam::getGroupId));
     }
 
     @Override
@@ -293,36 +276,5 @@ public class PmsParamGroupServiceImpl implements PmsParamGroupService {
 
         log.info("克隆参数组成功，原ID: {}, 新ID: {}, 分类ID: {}", sourceGroupId, newGroupId, categoryId);
         return newGroupId;
-    }
-
-    /**
-     * 批量填充参数列表
-     */
-    private List<PmsParamGroupVO> fillParamList(List<PmsParamGroup> paramGroups) {
-        if (CollectionUtils.isEmpty(paramGroups)) {
-            return new ArrayList<>();
-        }
-
-        List<PmsParamGroupVO> voList = attributeConverter.paramGroupListToVoList(paramGroups);
-
-        // 批量查询所有参数
-        List<Long> groupIds = paramGroups.stream()
-                .map(PmsParamGroup::getId)
-                .collect(Collectors.toList());
-
-        List<PmsParam> allParams = paramDao.selectByGroupIds(groupIds);
-
-        // 按参数组ID分组
-        Map<Long, List<PmsParam>> paramMap = allParams.stream()
-                .collect(Collectors.groupingBy(PmsParam::getGroupId));
-
-        // 填充参数列表和数量
-        for (PmsParamGroupVO vo : voList) {
-            List<PmsParam> params = paramMap.getOrDefault(vo.getId(), new ArrayList<>());
-            vo.setParamList(attributeConverter.paramListToVoList(params));
-            vo.setParamCount(params.size());
-        }
-
-        return voList;
     }
 }

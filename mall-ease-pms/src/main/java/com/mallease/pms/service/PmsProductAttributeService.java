@@ -1,7 +1,5 @@
 package com.mallease.pms.service;
 
-import com.mallease.pms.dto.cmd.CreateProductAttributeCmd;
-import com.mallease.pms.dto.vo.PmsProductAttributeRelationVO;
 import com.mallease.pms.pojo.PmsProductAttribute;
 
 import java.util.List;
@@ -15,12 +13,12 @@ import java.util.List;
 public interface PmsProductAttributeService {
 
     /**
-     * 获取商品属性信息
+     * 根据商品分类ID查询属性列表
      *
      * @param productCategoryId 商品分类ID
-     * @return 商品属性关联列表
+     * @return 商品属性列表
      */
-    List<PmsProductAttributeRelationVO> getProductAttrInfo(Long productCategoryId);
+    List<PmsProductAttribute> listByProductCategoryId(Long productCategoryId);
 
     /**
      * 根据分类ID和类型查询商品属性
@@ -34,10 +32,10 @@ public interface PmsProductAttributeService {
     /**
      * 创建商品属性
      *
-     * @param cmd 创建命令
-     * @return 创建后的商品属性信息
+     * @param attribute 属性实体
+     * @return 创建成功的属性ID
      */
-    PmsProductAttribute create(CreateProductAttributeCmd cmd);
+    Long create(PmsProductAttribute attribute);
 
     /**
      * 批量删除商品属性

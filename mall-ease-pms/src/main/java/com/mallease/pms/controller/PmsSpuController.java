@@ -37,12 +37,8 @@ public class PmsSpuController {
     @Operation(summary = "创建商品")
     @PostMapping("/create")
     public R<Long> create(@Validated @RequestBody CreatePmsSpuCmd cmd) {
-        // 委托给 Assembler 进行 DTO→Entity 转换
         SpuCreateContext context = spuCreateAssembler.assemble(cmd);
-
-        // Service 只负责业务逻辑
         Long spuId = pmsSpuService.create(context);
-
         return R.success(spuId);
     }
 

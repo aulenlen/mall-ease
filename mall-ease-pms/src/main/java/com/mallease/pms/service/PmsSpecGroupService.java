@@ -1,16 +1,14 @@
 package com.mallease.pms.service;
 
 import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
-import com.mallease.pms.dto.cmd.CreatePmsSpecGroupCmd;
-import com.mallease.pms.dto.cmd.UpdatePmsSpecGroupCmd;
-import com.mallease.pms.dto.vo.PmsSpecGroupVO;
+import com.mallease.pms.pojo.PmsSpec;
 import com.mallease.pms.pojo.PmsSpecGroup;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 规格组服务接口
- * <p>
  * 提供规格组的 CRUD、分类关联等功能
  *
  * @author: Aulen
@@ -21,24 +19,21 @@ public interface PmsSpecGroupService {
     /**
      * 创建规格组
      *
-     * @param cmd 创建命令
+     * @param entity     规格组实体
+     * @param categoryId 分类ID（可选，传入时自动绑定到该分类）
      * @return 新规格组ID
      */
-    Long create(CreatePmsSpecGroupCmd cmd);
+    Long create(PmsSpecGroup entity, Long categoryId);
 
     /**
      * 更新规格组
-     *
-     * @param cmd 更新命令
+     * @param entity 规格组实体（包含ID）
      * @return 影响行数
      */
-    int update(UpdatePmsSpecGroupCmd cmd);
+    int update(PmsSpecGroup entity);
 
     /**
      * 删除规格组
-     * <p>
-     * 前置检查：是否有关联的规格定义（有则禁止删除）
-     *
      * @param id 规格组ID
      * @return 影响行数
      */
@@ -53,27 +48,22 @@ public interface PmsSpecGroupService {
     int deleteBatch(List<Long> ids);
 
     /**
-     * 根据ID查询规格组详情
-     * <p>
-     * 包含：基础信息 + 规格列表
+     * 根据ID查询规格组
      *
      * @param id 规格组ID
-     * @return 规格组详情（含规格列表）
+     * @return 规格组实体
      */
-    PmsSpecGroupVO getById(Long id);
+    PmsSpecGroup getById(Long id);
 
     /**
      * 查询所有规格组
      *
-     * @return 规格组列表
+     * @return 规格组实体列表
      */
-    List<PmsSpecGroupVO> listAll();
+    List<PmsSpecGroup> listAll();
 
     /**
      * 根据关键字查询规格组（返回实体列表）
-     * <p>
-     * 配合 PageHelper 实现分页，返回原始实体列表以保留分页信息
-     *
      * @param keyword 关键字（可为空，模糊匹配名称）
      * @return 规格组实体列表
      */
@@ -81,33 +71,27 @@ public interface PmsSpecGroupService {
 
     /**
      * 根据关键字查询规格组
-     * <p>
-     * 配合 PageHelper 实现分页
      *
      * @param keyword 关键字（可为空，模糊匹配名称）
-     * @return 规格组列表
+     * @return 规格组实体列表
      */
-    List<PmsSpecGroupVO> list(String keyword);
-
-    /**
-     * 将规格组实体列表转换为VO列表并填充规格
-     * <p>
-     * 批量填充规格列表，避免N+1查询
-     *
-     * @param specGroups 规格组实体列表
-     * @return 规格组VO列表（含规格列表）
-     */
-    List<PmsSpecGroupVO> toVoListWithSpecs(List<PmsSpecGroup> specGroups);
+    List<PmsSpecGroup> list(String keyword);
 
     /**
      * 根据分类ID查询关联的规格组
-     * <p>
-     * 通过 pms_category_spec_group 关联表查询
      *
      * @param categoryId 分类ID
-     * @return 规格组列表（含规格列表）
+     * @return 规格组实体列表
      */
-    List<PmsSpecGroupVO> listByCategoryId(Long categoryId);
+    List<PmsSpecGroup> listByCategoryId(Long categoryId);
+
+    /**
+     * 根据ID列表查询规格
+     *
+     * @param groupIds 规格组ID列表
+     * @return 规格组ID -> 规格列表的映射
+     */
+     Map<Long, List<PmsSpec>> getSpecsByGroupIds(List<Long> groupIds);
 
     /**
      * 关联规格组到分类

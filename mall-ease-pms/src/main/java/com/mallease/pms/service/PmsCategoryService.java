@@ -1,17 +1,13 @@
 package com.mallease.pms.service;
 
-import com.mallease.pms.dto.cmd.CreatePmsCategoryCmd;
-import com.mallease.pms.dto.cmd.UpdatePmsCategoryCmd;
 import com.mallease.pms.dto.query.PmsCategoryQuery;
-import com.mallease.pms.dto.vo.PmsCategoryDetailVO;
-import com.mallease.pms.dto.vo.PmsCategoryListVO;
-import com.mallease.pms.dto.vo.PmsCategoryTreeVO;
+import com.mallease.pms.pojo.PmsCategory;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 商品分类服务接口
- * <p>
  * 提供分类的 CRUD、树形查询、物化路径维护等功能
  *
  * @author: Aulen
@@ -21,30 +17,24 @@ public interface PmsCategoryService {
 
     /**
      * 创建分类
-     * <p>
      * 自动计算 path 和 level 字段
-     *
-     * @param cmd 创建命令
+     * @param entity   分类实体（不含path/level，由Service计算）
+     * @param parentId 父分类ID（0或null表示顶级分类）
      * @return 新分类ID
      */
-    Long create(CreatePmsCategoryCmd cmd);
+    Long create(PmsCategory entity, Long parentId);
 
     /**
      * 更新分类
-     * <p>
-     * 注意：修改 parentId 会触发分类移动，批量更新所有子孙的 path
      *
-     * @param cmd 更新命令
+     * @param entity      分类实体
+     * @param newParentId 新的父分类ID（null表示不移动）
      * @return 影响行数
      */
-    int update(UpdatePmsCategoryCmd cmd);
+    int update(PmsCategory entity, Long newParentId);
 
     /**
      * 删除分类
-     * <p>
-     * 前置检查：
-     * 1. 是否有子分类（有则禁止删除）
-     * 2. 是否有关联商品（有则禁止删除）
      *
      * @param id 分类ID
      * @return 影响行数
@@ -60,14 +50,12 @@ public interface PmsCategoryService {
     int deleteBatch(List<Long> ids);
 
     /**
-     * 根据ID查询分类详情
-     * <p>
-     * 包含：基础信息 + 父分类名称 + 面包屑 + 关联的规格组/参数组ID
+     * 根据ID查询分类
      *
      * @param id 分类ID
-     * @return 分类详情
+     * @return 分类实体
      */
-    PmsCategoryDetailVO getById(Long id);
+    PmsCategory getById(Long id);
 
     /**
      * 查询直接子分类
@@ -75,7 +63,15 @@ public interface PmsCategoryService {
      * @param parentId 父分类ID，0表示查询一级分类
      * @return 子分类列表
      */
-    List<PmsCategoryListVO> listByParentId(Long parentId);
+    List<PmsCategory> listByParentId(Long parentId);
+
+    /**
+     * 批量统计子分类数量
+     *
+     * @param parentIds 父分类ID列表
+     * @return 父分类ID -> 子分类数量的映射
+     */
+    Map<Long, Long> countChildrenByParentIds(List<Long> parentIds);
 
     /**
      * 查询所有子孙分类（使用物化路径）
@@ -83,7 +79,7 @@ public interface PmsCategoryService {
      * @param id 分类ID
      * @return 所有子孙分类列表
      */
-    List<PmsCategoryListVO> listDescendants(Long id);
+    List<PmsCategory> listDescendants(Long id);
 
     /**
      * 根据层级查询分类
@@ -91,44 +87,37 @@ public interface PmsCategoryService {
      * @param level 层级：0=一级，1=二级，2=三级
      * @return 分类列表
      */
-    List<PmsCategoryListVO> listByLevel(Integer level);
-
+    List<PmsCategory> listByLevel(Integer level);
 
     /**
-     * 获取完整分类树
-     * <p>
-     * 适用场景：后台分类管理、分类选择器
+     * 查询所有分类
      *
-     * @return 完整分类树
+     * @return 所有分类列表
      */
-    List<PmsCategoryTreeVO> getFullTree();
+    List<PmsCategory> listAll();
 
     /**
-     * 获取分类树（支持筛选条件）
+     * 按条件查询分类列表
      *
      * @param query 查询条件
-     * @return 分类树
+     * @return 分类列表
      */
-    List<PmsCategoryTreeVO> getTree(PmsCategoryQuery query);
+    List<PmsCategory> listByQuery(PmsCategoryQuery query);
 
     /**
-     * 获取导航分类树
-     * <p>
-     * 只返回 isNav=1 的分类，适用于前台导航栏
+     * 查询导航分类
      *
-     * @return 导航分类树
+     * @return 导航分类列表
      */
-    List<PmsCategoryTreeVO> getNavTree();
+    List<PmsCategory> listNavCategories();
 
     /**
-     * 获取面包屑路径
-     * <p>
-     * 从根分类到当前分类的完整路径
+     * 获取面包屑路径中的分类列表
      *
      * @param id 分类ID
-     * @return 面包屑列表（按层级排序）
+     * @return 祖先分类列表（按层级排序）
      */
-    List<PmsCategoryDetailVO.BreadcrumbItem> getBreadcrumb(Long id);
+    List<PmsCategory> listAncestors(Long id);
 
     /**
      * 更新分类状态

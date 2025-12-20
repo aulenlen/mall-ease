@@ -3,101 +3,105 @@ package com.mallease.pms.controller;
 import com.github.pagehelper.PageHelper;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
-import com.mallease.common.api.ResultCode;
 import com.mallease.common.api.R;
+import com.mallease.common.api.ResultCode;
 import com.mallease.pms.converter.PmsProductAttributeCategoryConverter;
+import com.mallease.pms.converter.PmsProductAttributeConverter;
 import com.mallease.pms.dto.vo.PmsProductAttributeCategoryItemVO;
 import com.mallease.pms.dto.vo.PmsProductAttributeCategoryListVO;
+import com.mallease.pms.pojo.PmsProductAttribute;
 import com.mallease.pms.pojo.PmsProductAttributeCategory;
 import com.mallease.pms.service.PmsProductAttributeCategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
+ * 商品属性分类管理
+ *
  * @author: Aulen
- * @description:
- * @create: 2025-11-12 22:27
- **/
+ * @create: 2025-11-12
+ */
+@Tag(name = "商品属性分类管理", description = "属性分类的增删改查")
 @RestController
 @RequestMapping("/pms/productAttribute/category")
 public class PmsProductAttributeCategoryController {
+
     @Autowired
     private PmsProductAttributeCategoryService productAttributeCategoryService;
 
     @Autowired
     private PmsProductAttributeCategoryConverter categoryConverter;
 
-    /**
-     * 添加商品属性分类
-     * @param name
-     * @return
-     */
+    @Autowired
+    private PmsProductAttributeConverter attributeConverter;
+
+    @Operation(summary = "添加商品属性分类")
     @PostMapping("/create")
-    @ResponseBody
-    public R<Integer> create(@RequestParam String name) {
+    public R<Integer> create(@Parameter(description = "分类名称") @RequestParam String name) {
         int count = productAttributeCategoryService.create(name);
-        if (count > 0) {
-            return R.success(count);
-        } else {
-            return R.failed();
-        }
+        return count > 0 ? R.success(count) : R.failed();
     }
 
+    @Operation(summary = "获取分类及其属性列表")
     @GetMapping("/list/withAttr")
-    @ResponseBody
     public R<List<PmsProductAttributeCategoryItemVO>> getCategoryWithAttrList() {
-        List<PmsProductAttributeCategoryItemVO> productAttributeCategoryResultList = productAttributeCategoryService.getCategoryWithAttrList();
-        return R.success(productAttributeCategoryResultList);
+        List<PmsProductAttributeCategory> categoryList = productAttributeCategoryService.listAll();
+
+        if (categoryList.isEmpty()) {
+            return R.success(new ArrayList<>());
+        }
+        
+        List<Long> categoryIds = categoryList.stream()
+                .map(PmsProductAttributeCategory::getId)
+                .collect(Collectors.toList());
+        
+        Map<Long, List<PmsProductAttribute>> attributeMap =
+                productAttributeCategoryService.getAttributesByCategoryIds(categoryIds);
+        
+        List<PmsProductAttributeCategoryItemVO> voList = categoryList.stream().map(category -> {
+            PmsProductAttributeCategoryItemVO vo = categoryConverter.entityToItemVo(category);
+            List<PmsProductAttribute> categoryAttributes = attributeMap.getOrDefault(category.getId(), new ArrayList<>());
+            List<PmsProductAttributeCategoryItemVO.ProductAttributeItemVO> attrVoList =
+                    attributeConverter.entityListToItemVoList(categoryAttributes);
+            vo.setProductAttributeList(attrVoList);
+            return vo;
+        }).collect(Collectors.toList());
+
+        return R.success(voList);
     }
 
-    /**
-     * 分页获取所有商品属性分类
-     *
-     * @param pageNum  页码，默认1
-     * @param pageSize 每页大小，默认5
-     * @return 分页结果
-     */
+    @Operation(summary = "分页获取所有商品属性分类")
     @GetMapping("/list")
     public R<Page<PmsProductAttributeCategoryListVO>> list(
-            @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
-            @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize) {
+            @Parameter(description = "页码") @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
+            @Parameter(description = "每页大小") @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         List<PmsProductAttributeCategory> categoryList = productAttributeCategoryService.list(pageNum, pageSize);
         Page<PmsProductAttributeCategoryListVO> result = PageUtils.convertPage(categoryList, categoryConverter::entityListToListVoList);
         return R.success(result);
     }
 
-    /**
-     * 修改商品属性分类
-     *
-     * @param id   分类ID
-     * @param name 分类名称
-     * @return 更新结果
-     */
+    @Operation(summary = "修改商品属性分类")
     @PostMapping("/update/{id}")
-    public R<Integer> update(@PathVariable Long id,
-                             @RequestParam(value = "name") String name) {
+    public R<Integer> update(
+            @Parameter(description = "分类ID") @PathVariable Long id,
+            @Parameter(description = "分类名称") @RequestParam(value = "name") String name) {
         Integer count = productAttributeCategoryService.update(id, name);
-        if (count > 0) {
-            return R.success(count);
-        }
-        return R.failed(ResultCode.FAILED);
+        return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
-    /**
-     * 删除商品属性分类
-     *
-     * @param id 分类ID
-     * @return 删除结果
-     */
+    @Operation(summary = "删除商品属性分类")
     @DeleteMapping("/delete/{id}")
-    public R<Integer> delete(@PathVariable Long id) {
+    public R<Integer> delete(@Parameter(description = "分类ID") @PathVariable Long id) {
         Integer count = productAttributeCategoryService.delete(id);
-        if (count > 0) {
-            return R.success(count);
-        }
-        return R.failed(ResultCode.FAILED);
+        return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 }
