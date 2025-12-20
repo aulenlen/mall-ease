@@ -39,7 +39,7 @@ public class PmsSpu {
     private Long freightTemplateId;
 
     /**
-     * 分类路径(逗号分隔): 1,5,32
+     * 分类路径，格式如 /1/7/8/，与分类表 path 一致
      */
     private String categoryIds;
 

@@ -12,6 +12,13 @@ import java.util.List;
  */
 public interface PmsSkuStockService {
     /**
+     * 批量创建 sku库存
+     * @return 创建的记录数
+     */
+    Integer createBatch(List<PmsSkuStock> stockList);
+
+
+    /**
      * 根据产品ID和关键字模糊查询SKU库存
      *
      * @param productId 产品ID

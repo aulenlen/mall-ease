@@ -131,7 +131,7 @@
     </insert>
 
     <!-- 批量插入 -->
-    <insert id="insertBatch" parameterType="java.util.List">
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO pms_sku (
             spu_id, sku_code, spec_values, pic, price, original_price,
             deleted, enable_status, creator, version

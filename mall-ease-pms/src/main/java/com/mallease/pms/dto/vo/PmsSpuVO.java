@@ -42,7 +42,7 @@ public class PmsSpuVO {
     @Schema(description = "商品分类名称")
     private String categoryName;
 
-    @Schema(description = "分类路径(逗号分隔)")
+    @Schema(description = "分类路径(如 /1/7/8/)")
     private String categoryIds;
 
     @Schema(description = "SPU名称")

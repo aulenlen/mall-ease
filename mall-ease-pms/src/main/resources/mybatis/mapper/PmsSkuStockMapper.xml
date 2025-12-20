@@ -13,6 +13,8 @@
         <result column="version" property="version" jdbcType="INTEGER"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
     </resultMap>
 
     <!-- 遗留结果映射（兼容旧表结构，包含 product_id、sku_code 等字段） -->
@@ -32,7 +34,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, sku_id, stock, lock_stock, sale, low_stock, stock_status, version, create_time, update_time
+        id, sku_id, stock, lock_stock, sale, low_stock, stock_status, version, create_time, update_time, creator, updater
     </sql>
 
     <!-- 遗留列列表（旧表结构） -->
@@ -163,10 +165,11 @@
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.pms.pojo.PmsSkuStock" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO pms_sku_stock (
-            sku_id, stock, lock_stock, sale, low_stock, stock_status, version
+            sku_id, stock, lock_stock, sale, low_stock, stock_status, version, creator
         ) VALUES (
             #{skuId,jdbcType=BIGINT}, #{stock,jdbcType=INTEGER}, #{lockStock,jdbcType=INTEGER},
-            #{sale,jdbcType=INTEGER}, #{lowStock,jdbcType=INTEGER}, #{stockStatus,jdbcType=TINYINT}, 0
+            #{sale,jdbcType=INTEGER}, #{lowStock,jdbcType=INTEGER}, #{stockStatus,jdbcType=TINYINT}, 0,
+            #{creator,jdbcType=VARCHAR}
         )
     </insert>
 
@@ -180,6 +183,7 @@
             <if test="sale != null">sale,</if>
             <if test="lowStock != null">low_stock,</if>
             <if test="stockStatus != null">stock_status,</if>
+            <if test="creator != null">creator,</if>
             version,
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
@@ -189,6 +193,7 @@
             <if test="sale != null">#{sale,jdbcType=INTEGER},</if>
             <if test="lowStock != null">#{lowStock,jdbcType=INTEGER},</if>
             <if test="stockStatus != null">#{stockStatus,jdbcType=TINYINT},</if>
+            <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
             0,
         </trim>
     </insert>
@@ -196,13 +201,14 @@
     <!-- 批量插入 -->
     <insert id="insertBatch" parameterType="java.util.List">
         INSERT INTO pms_sku_stock (
-            sku_id, stock, lock_stock, sale, low_stock, stock_status, version
+            sku_id, stock, lock_stock, sale, low_stock, stock_status, version, creator
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
                 #{item.skuId,jdbcType=BIGINT}, #{item.stock,jdbcType=INTEGER},
                 #{item.lockStock,jdbcType=INTEGER}, #{item.sale,jdbcType=INTEGER},
-                #{item.lowStock,jdbcType=INTEGER}, #{item.stockStatus,jdbcType=TINYINT}, 0
+                #{item.lowStock,jdbcType=INTEGER}, #{item.stockStatus,jdbcType=TINYINT}, 0,
+                #{item.creator,jdbcType=VARCHAR}
             )
         </foreach>
     </insert>

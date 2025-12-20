@@ -6,7 +6,9 @@ import com.mallease.pms.dto.vo.PmsSpuDetailVO;
 import com.mallease.pms.dto.vo.PmsSpuListVO;
 import com.mallease.pms.dto.vo.PmsSpuVO;
 import com.mallease.pms.pojo.PmsSpu;
+import com.mallease.pms.pojo.PmsSpuAttributeValue;
 import com.mallease.pms.pojo.PmsSpuDetail;
+import com.mallease.pms.pojo.PmsSpuFullReduction;
 import org.mapstruct.*;
 
 import java.math.BigDecimal;
@@ -138,6 +140,42 @@ public interface PmsSpuConverter {
     @Mapping(source = "serviceIds", target = "serviceList", qualifiedByName = "splitServiceIds")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void mergeSpuDetailToVo(@MappingTarget PmsSpuDetailVO vo, PmsSpuDetail detail);
+
+    // ========================================================================
+    // 关联数据转换（spuId 由 Service 层设置）
+    // ========================================================================
+
+    /**
+     * 参数属性值 Cmd → Entity
+     */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "spuId", ignore = true)
+    @Mapping(source = "paramId", target = "productAttributeId")
+    @Mapping(target = "deleted", constant = "0")
+    @Mapping(target = "createTime", ignore = true)
+    @Mapping(target = "updateTime", ignore = true)
+    PmsSpuAttributeValue attributeValueCmdToEntity(CreatePmsSpuCmd.SpuAttributeValueCmd cmd);
+
+    /**
+     * 参数属性值 CmdList → EntityList
+     */
+    List<PmsSpuAttributeValue> attributeValueCmdListToEntityList(List<CreatePmsSpuCmd.SpuAttributeValueCmd> cmdList);
+
+    /**
+     * 满减规则 Cmd → Entity
+     */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "spuId", ignore = true)
+    @Mapping(target = "creator", ignore = true)
+    @Mapping(target = "updater", ignore = true)
+    @Mapping(target = "createTime", ignore = true)
+    @Mapping(target = "updateTime", ignore = true)
+    PmsSpuFullReduction fullReductionCmdToEntity(CreatePmsSpuCmd.SpuFullReductionCmd cmd);
+
+    /**
+     * 满减规则 CmdList → EntityList
+     */
+    List<PmsSpuFullReduction> fullReductionCmdListToEntityList(List<CreatePmsSpuCmd.SpuFullReductionCmd> cmdList);
 
     // ========================================================================
     // 自定义映射方法

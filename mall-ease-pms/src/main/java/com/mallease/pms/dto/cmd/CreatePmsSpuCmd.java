@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 创建SPU命令对象
@@ -97,11 +98,10 @@ public class CreatePmsSpuCmd {
     private Integer sort = 0;
 
     // ========================================================================
-    // SPU 详情（垂直拆分）
+    // SPU 详情
     // ========================================================================
 
-    @Schema(description = "SPU详情信息")
-    @Valid
+    @Schema(description = "SPU详情信息（可选）")
     private SpuDetailCmd spuDetail;
 
     // ========================================================================
@@ -118,12 +118,10 @@ public class CreatePmsSpuCmd {
     // 关联数据
     // ========================================================================
 
-    @Schema(description = "SPU参数属性值列表")
-    @Valid
+    @Schema(description = "SPU参数属性值列表（可选）")
     private List<SpuAttributeValueCmd> attributeValueList;
 
-    @Schema(description = "满减规则列表")
-    @Valid
+    @Schema(description = "满减规则列表（可选）")
     private List<SpuFullReductionCmd> fullReductionList;
 
     @Schema(description = "专题关联ID列表")
@@ -195,6 +193,7 @@ public class CreatePmsSpuCmd {
 
     /**
      * 满减规则命令（内部类）
+     * 说明：整个 fullReductionList 是可选的，但如果传入则需要有效数据
      */
     @Data
     @NoArgsConstructor
@@ -203,14 +202,40 @@ public class CreatePmsSpuCmd {
     @Schema(description = "满减规则")
     public static class SpuFullReductionCmd {
 
-        @Schema(description = "满足金额", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "满足金额不能为空")
+        @Schema(description = "满足金额")
         @DecimalMin(value = "0.01", message = "满足金额必须大于0")
         private BigDecimal fullPrice;
 
-        @Schema(description = "减少金额", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "减少金额不能为空")
+        @Schema(description = "减少金额")
         @DecimalMin(value = "0.01", message = "减少金额必须大于0")
         private BigDecimal reducePrice;
+
+        /**
+         * 判断是否为有效的满减规则
+         */
+        public boolean isValid() {
+            return fullPrice != null && reducePrice != null
+                && fullPrice.compareTo(BigDecimal.ZERO) > 0
+                && reducePrice.compareTo(BigDecimal.ZERO) > 0;
+        }
+    }
+
+    // ========================================================================
+    // 自定义 Getter（覆盖 Lombok 生成的方法，自动过滤无效数据）
+    // ========================================================================
+
+    /**
+     * 获取满减规则列表（自动过滤无效数据）
+     * <p>
+     * 过滤掉无效的满减规则配置，若过滤后为空则返回null
+     */
+    public List<SpuFullReductionCmd> getFullReductionList() {
+        if (fullReductionList == null || fullReductionList.isEmpty()) {
+            return null;
+        }
+        List<SpuFullReductionCmd> validList = fullReductionList.stream()
+            .filter(SpuFullReductionCmd::isValid)
+            .collect(Collectors.toList());
+        return validList.isEmpty() ? null : validList;
     }
 }

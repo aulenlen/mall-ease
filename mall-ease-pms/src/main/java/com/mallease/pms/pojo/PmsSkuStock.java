@@ -63,6 +63,16 @@ public class PmsSkuStock {
      */
     private LocalDateTime updateTime;
 
+    /**
+     * 创建人
+     */
+    private String creator;
+
+    /**
+     * 更新人
+     */
+    private String updater;
+
     // ========================================================================
     // 遗留字段（兼容旧表结构）- 待迁移后删除
     // TODO: 完成 SKU 重构后删除以下字段

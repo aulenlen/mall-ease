@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 创建SKU命令对象
@@ -32,7 +33,7 @@ public class CreatePmsSkuCmd {
     // SKU 基础信息
     // ========================================================================
 
-    @Schema(description = "SKU规格值（JSON格式，如：{\"颜色\":\"红色\",\"尺码\":\"XL\"}）", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "SKU规格值（JSON格式，如：{颜色:红色,尺码:XL}）", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "SKU规格值不能为空")
     private String specValues;
 
@@ -68,20 +69,17 @@ public class CreatePmsSkuCmd {
     // 促销信息（可选）
     // ========================================================================
 
-    @Schema(description = "促销信息")
-    @Valid
+    @Schema(description = "促销信息（可选）")
     private SkuPromotionCmd promotion;
 
     // ========================================================================
     // 价格策略（可选）
     // ========================================================================
 
-    @Schema(description = "会员价格列表")
-    @Valid
+    @Schema(description = "会员价格列表（可选）")
     private List<SkuMemberPriceCmd> memberPriceList;
 
-    @Schema(description = "阶梯价格列表")
-    @Valid
+    @Schema(description = "阶梯价格列表（可选）")
     private List<SkuLadderCmd> ladderList;
 
     // ========================================================================
@@ -162,6 +160,7 @@ public class CreatePmsSkuCmd {
 
     /**
      * SKU会员价格命令（内部类）
+     * 说明：整个 memberPriceList 是可选的，但如果传入则需要有效数据
      */
     @Data
     @NoArgsConstructor
@@ -170,22 +169,29 @@ public class CreatePmsSkuCmd {
     @Schema(description = "SKU会员价格")
     public static class SkuMemberPriceCmd {
 
-        @Schema(description = "会员等级ID", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "会员等级ID不能为空")
+        @Schema(description = "会员等级ID")
         private Long memberLevelId;
 
         @Schema(description = "会员等级名称")
         @Size(max = 100, message = "会员等级名称长度不能超过100个字符")
         private String memberLevelName;
 
-        @Schema(description = "会员价格", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "会员价格不能为空")
+        @Schema(description = "会员价格")
         @DecimalMin(value = "0.01", message = "会员价格必须大于0")
         private BigDecimal memberPrice;
+
+        /**
+         * 判断是否为有效的会员价格配置
+         */
+        public boolean isValid() {
+            return memberLevelId != null && memberPrice != null 
+                && memberPrice.compareTo(BigDecimal.ZERO) > 0;
+        }
     }
 
     /**
      * SKU阶梯价格命令（内部类）
+     * 说明：整个 ladderList 是可选的，但如果传入则需要有效数据
      */
     @Data
     @NoArgsConstructor
@@ -194,13 +200,11 @@ public class CreatePmsSkuCmd {
     @Schema(description = "SKU阶梯价格")
     public static class SkuLadderCmd {
 
-        @Schema(description = "满足数量", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "满足数量不能为空")
+        @Schema(description = "满足数量")
         @Min(value = 1, message = "满足数量必须大于0")
         private Integer count;
 
-        @Schema(description = "折扣（0.00-1.00）", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "折扣不能为空")
+        @Schema(description = "折扣（0.00-1.00）")
         @DecimalMin(value = "0.01", message = "折扣必须大于0")
         @DecimalMax(value = "1.00", message = "折扣不能大于1")
         private BigDecimal discount;
@@ -208,5 +212,64 @@ public class CreatePmsSkuCmd {
         @Schema(description = "折后价格")
         @DecimalMin(value = "0", message = "折后价格不能为负数")
         private BigDecimal price;
+
+        /**
+         * 判断是否为有效的阶梯价格配置
+         */
+        public boolean isValid() {
+            return count != null && count > 0 && discount != null
+                && discount.compareTo(BigDecimal.ZERO) > 0;
+        }
+    }
+
+    // ========================================================================
+    // 自定义 Getter（覆盖 Lombok 生成的方法，自动过滤无效数据）
+    // ========================================================================
+
+    /**
+     * 获取促销信息（自动过滤无效数据）
+     * <p>
+     * 只有当促销价格有效（不为null且大于0）时才返回促销信息
+     */
+    public SkuPromotionCmd getPromotion() {
+        if (promotion == null) {
+            return null;
+        }
+        // 促销价格无效时，视为无促销信息
+        if (promotion.getPromotionPrice() == null
+            || promotion.getPromotionPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        return promotion;
+    }
+
+    /**
+     * 获取会员价格列表（自动过滤无效数据）
+     * <p>
+     * 过滤掉无效的会员价格配置，若过滤后为空则返回null
+     */
+    public List<SkuMemberPriceCmd> getMemberPriceList() {
+        if (memberPriceList == null || memberPriceList.isEmpty()) {
+            return null;
+        }
+        List<SkuMemberPriceCmd> validList = memberPriceList.stream()
+            .filter(SkuMemberPriceCmd::isValid)
+            .collect(Collectors.toList());
+        return validList.isEmpty() ? null : validList;
+    }
+
+    /**
+     * 获取阶梯价格列表（自动过滤无效数据）
+     * <p>
+     * 过滤掉无效的阶梯价格配置，若过滤后为空则返回null
+     */
+    public List<SkuLadderCmd> getLadderList() {
+        if (ladderList == null || ladderList.isEmpty()) {
+            return null;
+        }
+        List<SkuLadderCmd> validList = ladderList.stream()
+            .filter(SkuLadderCmd::isValid)
+            .collect(Collectors.toList());
+        return validList.isEmpty() ? null : validList;
     }
 }

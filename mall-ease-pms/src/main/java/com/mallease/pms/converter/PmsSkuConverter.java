@@ -6,6 +6,7 @@ import com.mallease.pms.dto.cmd.CreatePmsSkuCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSkuCmd;
 import com.mallease.pms.dto.vo.PmsSkuVO;
 import com.mallease.pms.pojo.*;
+import jakarta.validation.Valid;
 import org.mapstruct.*;
 
 import java.util.List;
@@ -56,22 +57,53 @@ public interface PmsSkuConverter {
     PmsSku createCmdToEntity(CreatePmsSkuCmd cmd);
 
     /**
+     * CreateCmd → PmsSku Entity
+     */
+    @Mapping(target = "deleted", constant = "0")
+    List<PmsSku> createCmdListToEntityList(List<CreatePmsSkuCmd> cmdList);
+
+    /**
      * UpdateCmd → Entity（部分更新）
      */
     void updateEntityFromCmd(@MappingTarget PmsSku entity, UpdatePmsSkuCmd cmd);
 
     // ========================================================================
-    // SKU 库存转换
+    // SKU 关联数据转换（skuId 由 Service 层设置）
     // ========================================================================
 
     /**
-     * SkuStockCmd → PmsSkuStock Entity
-     * skuId 由 Service 层设置
+     * 库存 Cmd → Entity
      */
-    @Mapping(target = "lockedStock", constant = "0")
+    @Mapping(target = "lockStock", constant = "0")
     @Mapping(target = "sale", constant = "0")
     @Mapping(target = "version", constant = "1")
-    PmsSkuStock skuStockCmdToEntity(CreatePmsSkuCmd.SkuStockCmd cmd);
+    PmsSkuStock stockCmdToEntity(CreatePmsSkuCmd.SkuStockCmd cmd);
+
+    /**
+     * 促销 Cmd → Entity
+     */
+    @Mapping(target = "version", constant = "1")
+    @Mapping(target = "previewStatus", constant = "0")
+    PmsSkuPromotion promotionCmdToEntity(CreatePmsSkuCmd.SkuPromotionCmd cmd);
+
+    /**
+     * 会员价 Cmd → Entity
+     */
+    PmsSkuMemberPrice memberPriceCmdToEntity(CreatePmsSkuCmd.SkuMemberPriceCmd cmd);
+    /**
+     * 会员价 CmdList → EntityList
+     */
+    List<PmsSkuMemberPrice> memberPriceCmdListToEntityList(List<CreatePmsSkuCmd.SkuMemberPriceCmd> cmdList);
+
+    /**
+     * 阶梯价 Cmd → Entity
+     */
+    PmsSkuLadder ladderCmdToEntity(CreatePmsSkuCmd.SkuLadderCmd cmd);
+
+    /**
+     * 阶梯价 CmdList → EntityList
+     */
+    List<PmsSkuLadder> ladderCmdListToEntityList(List<CreatePmsSkuCmd.SkuLadderCmd> cmdList);
 
     // ========================================================================
     // 自定义映射方法
