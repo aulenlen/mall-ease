@@ -28,11 +28,10 @@ import java.util.List;
 public class UpdatePmsSkuCmd {
 
     // ========================================================================
-    // 必填字段
+    // SKU 标识（有ID=更新，无ID=新增）
     // ========================================================================
 
-    @Schema(description = "SKU ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "SKU ID不能为空")
+    @Schema(description = "SKU ID（有ID表示更新现有SKU，无ID表示新增SKU）")
     private Long id;
 
     // ========================================================================

@@ -46,6 +46,35 @@ public interface PmsSkuConverter {
      */
     void mergeSkuStockToVo(@MappingTarget PmsSkuVO vo, PmsSkuStock stock);
 
+    /**
+     * 合并促销信息到 VO
+     */
+    void mergeSkuPromotionToVo(@MappingTarget PmsSkuVO vo, PmsSkuPromotion promotion);
+
+    // ========================================================================
+    // Entity → VO（关联数据）
+    // ========================================================================
+
+    /**
+     * 阶梯价 Entity → VO
+     */
+    PmsSkuVO.SkuLadderVO ladderEntityToVo(PmsSkuLadder entity);
+
+    /**
+     * 阶梯价 EntityList → VOList
+     */
+    List<PmsSkuVO.SkuLadderVO> ladderEntityListToVoList(List<PmsSkuLadder> entities);
+
+    /**
+     * 会员价 Entity → VO
+     */
+    PmsSkuVO.SkuMemberPriceVO memberPriceEntityToVo(PmsSkuMemberPrice entity);
+
+    /**
+     * 会员价 EntityList → VOList
+     */
+    List<PmsSkuVO.SkuMemberPriceVO> memberPriceEntityListToVoList(List<PmsSkuMemberPrice> entities);
+
     // ========================================================================
     // Command → Entity
     // ========================================================================

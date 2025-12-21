@@ -7,6 +7,7 @@ import com.mallease.pms.dao.PmsSkuDao;
 import com.mallease.pms.dao.PmsSkuLadderDao;
 import com.mallease.pms.dao.PmsSkuMemberPriceDao;
 import com.mallease.pms.dao.PmsSkuPromotionDao;
+import com.mallease.pms.dao.PmsSkuStockDao;
 import com.mallease.pms.dto.context.SkuCreateData;
 import com.mallease.pms.dto.query.PmsSkuQuery;
 import com.mallease.pms.pojo.*;
@@ -36,6 +37,9 @@ public class PmsSkuServiceImpl implements PmsSkuService {
 
     @Autowired
     private PmsSkuStockService skuStockService;
+
+    @Autowired
+    private PmsSkuStockDao skuStockDao;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -119,20 +123,67 @@ public class PmsSkuServiceImpl implements PmsSkuService {
 
     @Override
     public int update(PmsSku sku) {
-        // TODO: 实现SKU更新逻辑
-        return 0;
+        String userName = LoginContextUtil.getUserName();
+
+        if (sku == null || sku.getId() == null) {
+            throw new ApiException("SKU ID不能为空");
+        }
+
+        PmsSku existingSku = skuDao.selectByPrimaryKey(sku.getId());
+        if (existingSku == null) {
+            throw new ApiException("SKU不存在");
+        }
+
+        // 防止跨 SPU 更新（上层若已设置 spuId，这里做一次兜底校验）
+        if (sku.getSpuId() != null && existingSku.getSpuId() != null
+                && !sku.getSpuId().equals(existingSku.getSpuId())) {
+            throw new ApiException("SKU不属于该商品");
+        }
+
+        sku.setUpdater(userName);
+        int count = skuDao.updateByPrimaryKeySelective(sku);
+        if (count == 0) {
+            throw new ApiException("SKU更新失败");
+        }
+        return count;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public int delete(Long id) {
-        // TODO: 实现SKU删除逻辑（级联删除关联数据）
-        return 0;
+        if (id == null) {
+            throw new ApiException("SKU ID不能为空");
+        }
+
+        PmsSku existingSku = skuDao.selectByPrimaryKey(id);
+        if (existingSku == null) {
+            throw new ApiException("SKU不存在");
+        }
+
+        deleteAssociatedDataBySkuId(id);
+        return skuDao.deleteBatch(List.of(id));
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public int deleteBySpuId(Long spuId) {
-        // TODO: 实现删除SPU下所有SKU的逻辑
-        return 0;
+        if (spuId == null) {
+            throw new ApiException("SPU ID不能为空");
+        }
+
+        List<PmsSku> skuList = skuDao.selectBySpuId(spuId);
+        if (skuList == null || skuList.isEmpty()) {
+            return 0;
+        }
+
+        for (PmsSku sku : skuList) {
+            if (sku == null || sku.getId() == null) {
+                continue;
+            }
+            deleteAssociatedDataBySkuId(sku.getId());
+        }
+
+        return skuDao.deleteBySpuId(spuId);
     }
 
     @Override
@@ -155,5 +206,15 @@ public class PmsSkuServiceImpl implements PmsSkuService {
     public int updateEnableStatus(List<Long> ids, Integer status) {
         // TODO: 实现批量更新状态逻辑
         return 0;
+    }
+
+    /**
+     * 级联删除SKU关联数据（不包含SKU主表）
+     */
+    private void deleteAssociatedDataBySkuId(Long skuId) {
+        ladderDao.deleteBySkuId(skuId);
+        memberPriceDao.deleteBySkuId(skuId);
+        promotionDao.deleteBySkuId(skuId);
+        skuStockDao.deleteBySkuId(skuId);
     }
 }

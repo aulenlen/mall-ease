@@ -107,8 +107,12 @@ public class UpdatePmsSpuCmd {
     private CreatePmsSpuCmd.SpuDetailCmd spuDetail;
 
     // ========================================================================
-    // 关联数据（全量替换）
+    // 关联数据（全量替换或增量更新）
     // ========================================================================
+
+    @Schema(description = "SKU列表（快照更新：传空数组=清空；不传=不更新；仅支持传已有SKU ID）")
+    @Valid
+    private List<UpdatePmsSkuCmd> skuList;
 
     @Schema(description = "SPU参数属性值列表（全量替换）")
     @Valid

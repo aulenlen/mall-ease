@@ -1,13 +1,17 @@
 package com.mallease.pms.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.mallease.common.api.R;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.LoginContextUtil;
 import com.mallease.pms.dao.*;
 import com.mallease.pms.dto.CmsPreferenceAreaProductRelationDTO;
 import com.mallease.pms.dto.CmsSubjectProductRelationDTO;
 import com.mallease.pms.dto.context.SkuCreateData;
+import com.mallease.pms.dto.context.SkuUpdateData;
 import com.mallease.pms.dto.context.SpuCreateContext;
+import com.mallease.pms.dto.context.SpuDetailData;
+import com.mallease.pms.dto.context.SpuUpdateContext;
 import com.mallease.pms.dto.query.PmsSpuQuery;
 import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
 import com.mallease.pms.feign.CmsSubjectFeignClient;
@@ -20,7 +24,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -40,6 +47,15 @@ public class PmsSpuServiceImpl implements PmsSpuService {
     private PmsSpuFullReductionDao fullReductionDao;
     @Autowired
     private PmsSkuService skuService;
+    @Autowired
+    private PmsSkuPromotionDao promotionDao;
+    @Autowired
+    private PmsSkuLadderDao ladderDao;
+    @Autowired
+    private PmsSkuMemberPriceDao memberPriceDao;
+
+    @Autowired
+    private PmsSkuStockDao skuStockDao;
 
     @Autowired
     private CmsSubjectFeignClient subjectFeignClient;
@@ -175,6 +191,375 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         return spuId;
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public int update(SpuUpdateContext context) {
+        String userName = LoginContextUtil.getUserName();
+
+        if (context == null || context.getSpuId() == null) {
+            throw new ApiException("商品ID不能为空");
+        }
+
+        Long spuId = context.getSpuId();
+
+        // 1. 验证 SPU 是否存在
+        PmsSpu existingSpu = spuDao.selectByPrimaryKey(spuId);
+        if (existingSpu == null) {
+            throw new ApiException("商品不存在");
+        }
+
+        // 2. 更新 SPU 基础信息（部分更新）
+        PmsSpu spu = context.getSpu();
+        if (spu != null) {
+            // 如果修改了品牌或分类，需要更新关联的名称字段
+            if (spu.getBrandId() != null && !spu.getBrandId().equals(existingSpu.getBrandId())) {
+                PmsBrand brand = brandDao.selectByPrimaryKey(spu.getBrandId());
+                if (brand == null) {
+                    throw new ApiException("品牌不存在");
+                }
+                spu.setBrandName(brand.getName());
+            }
+
+            if (spu.getCategoryId() != null && !spu.getCategoryId().equals(existingSpu.getCategoryId())) {
+                PmsCategory category = categoryDao.selectByPrimaryKey(spu.getCategoryId());
+                if (category == null) {
+                    throw new ApiException("分类不存在");
+                }
+                spu.setCategoryIds(category.getPath());
+                spu.setCategoryName(category.getName());
+            }
+
+            spu.setId(spuId);
+            spu.setUpdater(userName);
+
+            int spuCount = spuDao.updateByPrimaryKeySelective(spu);
+            if (spuCount == 0) {
+                log.warn("SPU 基础信息更新失败，SPU ID: {}", spuId);
+            }
+        }
+
+        // 3. 更新 SPU 详情（全量替换）
+        if (context.getSpuDetail() != null) {
+            PmsSpuDetail spuDetail = context.getSpuDetail();
+            spuDetail.setSpuId(spuId);
+            spuDetail.setUpdater(userName);
+
+            // 先查询是否已存在详情
+            PmsSpuDetail existingDetail = spuDetailDao.selectBySpuId(spuId);
+            if (existingDetail != null) {
+                spuDetail.setId(existingDetail.getId());
+                spuDetailDao.updateByPrimaryKeySelective(spuDetail);
+            } else {
+                spuDetail.setCreator(userName);
+                spuDetailDao.insert(spuDetail);
+            }
+        }
+
+        // 4. SKU 快照更新（传空数组=清空；不传=不更新；仅支持传已有SKU ID）
+        if (context.isUpdateSkus() && context.getSkuUpdateDataList() != null) {
+            // 获取现有 SKU 列表
+            List<PmsSku> existingSkus = skuService.listBySpuId(spuId);
+            Set<Long> existingSkuIds = existingSkus.stream()
+                    .map(PmsSku::getId)
+                    .collect(Collectors.toSet());
+
+            // 收集需要批量操作的数据
+            List<PmsSku> skusToUpdate = new ArrayList<>();
+            Set<Long> updatedSkuIds = new HashSet<>();
+
+            // 促销信息批量操作的数据收集
+            List<Long> skuIdsToQueryPromotion = new ArrayList<>();
+            List<PmsSkuPromotion> promotionsToInsert = new ArrayList<>();
+            List<PmsSkuPromotion> promotionsToUpdate = new ArrayList<>();
+            List<Long> promotionSkuIdsToDelete = new ArrayList<>();
+
+            // 阶梯价批量操作的数据收集
+            List<Long> ladderSkuIdsToDelete = new ArrayList<>();
+            List<PmsSkuLadder> laddersToInsert = new ArrayList<>();
+
+            // 会员价批量操作的数据收集
+            List<Long> memberPriceSkuIdsToDelete = new ArrayList<>();
+            List<PmsSkuMemberPrice> memberPricesToInsert = new ArrayList<>();
+
+            // 第一阶段：分类收集数据
+            for (SkuUpdateData skuData : context.getSkuUpdateDataList()) {
+                if (skuData == null || skuData.getSku() == null) {
+                    throw new ApiException("SKU数据不能为空");
+                }
+                PmsSku sku = skuData.getSku();
+                Long skuId = sku.getId();
+
+                if (skuId == null) {
+                    throw new ApiException("SKU ID不能为空");
+                }
+
+                if (skuId != null && existingSkuIds.contains(skuId)) {
+                    // 有 ID 且存在：收集更新数据
+                    sku.setSpuId(spuId);
+                    sku.setUpdater(userName);
+                    skusToUpdate.add(sku);
+                    if (!updatedSkuIds.add(skuId)) {
+                        throw new ApiException("SKU ID重复: " + skuId);
+                    }
+
+                    // 收集促销信息相关操作
+                    if (skuData.isUpdatePromotion()) {
+                        skuIdsToQueryPromotion.add(skuId);
+
+                        if (skuData.getPromotion() != null) {
+                            PmsSkuPromotion promotion = skuData.getPromotion();
+                            promotion.setSkuId(skuId);
+                            promotion.setUpdater(userName);
+                            promotion.setCreator(userName); // 后续会根据是否存在判断是插入还是更新
+                            promotionsToUpdate.add(promotion); // 暂存，等查询结果后再分类
+                        } else {
+                            promotionSkuIdsToDelete.add(skuId);
+                        }
+                    }
+
+                    // 收集阶梯价相关操作
+                    if (skuData.isUpdateLadders()) {
+                        ladderSkuIdsToDelete.add(skuId);
+
+                        if (skuData.getLadderList() != null && !skuData.getLadderList().isEmpty()) {
+                            skuData.getLadderList().forEach(ladder -> {
+                                ladder.setSkuId(skuId);
+                                ladder.setCreator(userName);
+                            });
+                            laddersToInsert.addAll(skuData.getLadderList());
+                        }
+                    }
+
+                    // 收集会员价相关操作
+                    if (skuData.isUpdateMemberPrices()) {
+                        memberPriceSkuIdsToDelete.add(skuId);
+
+                        if (skuData.getMemberPriceList() != null && !skuData.getMemberPriceList().isEmpty()) {
+                            skuData.getMemberPriceList().forEach(memberPrice -> {
+                                memberPrice.setSkuId(skuId);
+                                memberPrice.setCreator(userName);
+                            });
+                            memberPricesToInsert.addAll(skuData.getMemberPriceList());
+                        }
+                    }
+                } else if (skuId != null && !existingSkuIds.contains(skuId)) {
+                    throw new ApiException("SKU ID " + skuId + " 不属于 SPU " + spuId);
+                }
+            }
+
+            // 批量更新 SKU
+            if (!skusToUpdate.isEmpty()) {
+                for (PmsSku sku : skusToUpdate) {
+                    skuService.update(sku);
+                }
+            }
+
+            // 批量处理促销信息
+            if (!skuIdsToQueryPromotion.isEmpty()) {
+                // 批量查询现有促销信息
+                List<PmsSkuPromotion> existingPromotions = promotionDao.selectBySkuIds(skuIdsToQueryPromotion);
+                Set<Long> existingPromotionSkuIds = existingPromotions.stream()
+                        .map(PmsSkuPromotion::getSkuId)
+                        .collect(Collectors.toSet());
+
+                // 分类：插入还是更新
+                List<PmsSkuPromotion> finalPromotionsToInsert = new ArrayList<>();
+                List<PmsSkuPromotion> finalPromotionsToUpdate = new ArrayList<>();
+
+                for (PmsSkuPromotion promotion : promotionsToUpdate) {
+                    if (existingPromotionSkuIds.contains(promotion.getSkuId())) {
+                        // 存在：需要更新，设置 ID
+                        PmsSkuPromotion existing = existingPromotions.stream()
+                                .filter(p -> p.getSkuId().equals(promotion.getSkuId()))
+                                .findFirst()
+                                .orElse(null);
+                        if (existing != null) {
+                            promotion.setId(existing.getId());
+                            finalPromotionsToUpdate.add(promotion);
+                        }
+                    } else {
+                        // 不存在：需要插入
+                        finalPromotionsToInsert.add(promotion);
+                    }
+                }
+
+                // 批量插入促销信息
+                if (!finalPromotionsToInsert.isEmpty()) {
+                    promotionDao.insertBatch(finalPromotionsToInsert);
+                }
+
+                // 批量更新促销信息
+                if (!finalPromotionsToUpdate.isEmpty()) {
+                    for (PmsSkuPromotion promotion : finalPromotionsToUpdate) {
+                        promotionDao.updateByPrimaryKeySelective(promotion);
+                    }
+                }
+            }
+
+            // 批量删除促销信息（删除那些在已存在列表中但新数据为空的）
+            if (!promotionSkuIdsToDelete.isEmpty()) {
+                List<PmsSkuPromotion> promotionsToDeleteList = promotionDao.selectBySkuIds(promotionSkuIdsToDelete);
+                if (!promotionsToDeleteList.isEmpty()) {
+                    List<Long> promotionIdsToDelete = promotionsToDeleteList.stream()
+                            .map(PmsSkuPromotion::getId)
+                            .collect(Collectors.toList());
+                    promotionDao.deleteBatch(promotionIdsToDelete);
+                }
+            }
+
+            // 批量处理阶梯价：先删除，再插入
+            if (!ladderSkuIdsToDelete.isEmpty()) {
+                List<PmsSkuLadder> laddersToDeleteList = ladderDao.selectBySkuIds(ladderSkuIdsToDelete);
+                if (!laddersToDeleteList.isEmpty()) {
+                    List<Long> ladderIdsToDelete = laddersToDeleteList.stream()
+                            .map(PmsSkuLadder::getId)
+                            .collect(Collectors.toList());
+                    ladderDao.deleteBatch(ladderIdsToDelete);
+                }
+            }
+
+            if (!laddersToInsert.isEmpty()) {
+                ladderDao.insertBatch(laddersToInsert);
+            }
+
+            // 批量处理会员价：先删除，再插入
+            if (!memberPriceSkuIdsToDelete.isEmpty()) {
+                List<PmsSkuMemberPrice> memberPricesToDeleteList = memberPriceDao.selectBySkuIds(memberPriceSkuIdsToDelete);
+                if (!memberPricesToDeleteList.isEmpty()) {
+                    List<Long> memberPriceIdsToDelete = memberPricesToDeleteList.stream()
+                            .map(PmsSkuMemberPrice::getId)
+                            .collect(Collectors.toList());
+                    memberPriceDao.deleteBatch(memberPriceIdsToDelete);
+                }
+            }
+
+            if (!memberPricesToInsert.isEmpty()) {
+                memberPriceDao.insertBatch(memberPricesToInsert);
+            }
+
+            // 删除缺失的 SKU
+            Set<Long> skuIdsToDelete = existingSkuIds.stream()
+                    .filter(id -> !updatedSkuIds.contains(id))
+                    .collect(Collectors.toSet());
+
+            if (!skuIdsToDelete.isEmpty()) {
+                log.info("检测到需要删除的 SKU，SPU ID: {}, 删除 SKU IDs: {}", spuId, skuIdsToDelete);
+                for (Long skuIdToDelete : skuIdsToDelete) {
+                    skuService.delete(skuIdToDelete);
+                }
+            }
+
+            log.info("SKU 快照更新完成，SPU ID: {}, 更新数: {}, 删除数: {}",
+                    spuId, skusToUpdate.size(), skuIdsToDelete.size());
+
+            // SKU 发生变化后，同步更新 SPU 聚合字段（库存、价格区间）
+            List<PmsSku> remainingSkus = skuService.listBySpuId(spuId);
+            List<Long> remainingSkuIds = remainingSkus.stream()
+                    .map(PmsSku::getId)
+                    .collect(Collectors.toList());
+
+            int totalStock = 0;
+            if (!remainingSkuIds.isEmpty()) {
+                List<PmsSkuStock> skuStockList = skuStockDao.selectBySkuIds(remainingSkuIds);
+                totalStock = skuStockList.stream()
+                        .filter(s -> s != null && s.getStock() != null)
+                        .mapToInt(s -> s.getStock())
+                        .sum();
+            }
+
+            BigDecimal minPrice = remainingSkus.stream()
+                    .map(PmsSku::getPrice)
+                    .filter(p -> p != null)
+                    .min(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+            BigDecimal maxPrice = remainingSkus.stream()
+                    .map(PmsSku::getPrice)
+                    .filter(p -> p != null)
+                    .max(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+
+            PmsSpu aggregate = new PmsSpu();
+            aggregate.setId(spuId);
+            aggregate.setStock(totalStock);
+            aggregate.setMinPrice(minPrice);
+            aggregate.setMaxPrice(maxPrice);
+            aggregate.setUpdater(userName);
+            spuDao.updateByPrimaryKeySelective(aggregate);
+        }
+
+        // 5. 更新参数属性值（全量替换）
+        if (context.isUpdateAttributeValues()) {
+            // 先删除旧数据
+            attributeValueDao.deleteBySpuId(spuId);
+
+            // 插入新数据
+            if (context.getAttributeValueList() != null && !context.getAttributeValueList().isEmpty()) {
+                context.getAttributeValueList().forEach(attr -> attr.setSpuId(spuId));
+                attributeValueDao.insertBatch(context.getAttributeValueList());
+            }
+        }
+
+        // 6. 更新满减规则（全量替换）
+        if (context.isUpdateFullReductions()) {
+            // 先删除旧数据
+            fullReductionDao.deleteBySpuId(spuId);
+
+            // 插入新数据
+            if (context.getFullReductionList() != null && !context.getFullReductionList().isEmpty()) {
+                context.getFullReductionList().forEach(r -> {
+                    r.setSpuId(spuId);
+                    r.setCreator(userName);
+                });
+                fullReductionDao.insertBatch(context.getFullReductionList());
+            }
+        }
+
+        // 7. 更新专题关联（全量替换，通过 Feign 调用 CMS 服务）
+        if (context.isUpdateSubjects()) {
+            try {
+                // 先删除旧关联
+                subjectFeignClient.deleteRelationsByProductId(spuId);
+
+                // 添加新关联
+                if (context.getSubjectIds() != null && !context.getSubjectIds().isEmpty()) {
+                    List<CmsSubjectProductRelationDTO> subjectRelations = context.getSubjectIds().stream()
+                            .map(subjectId -> CmsSubjectProductRelationDTO.builder()
+                                    .productId(spuId)
+                                    .subjectId(subjectId)
+                                    .build())
+                            .collect(Collectors.toList());
+                    subjectFeignClient.batchAddProductRelation(subjectRelations);
+                }
+            } catch (Exception e) {
+                log.warn("专题关联更新失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
+            }
+        }
+
+        // 8. 更新优选专区关联（全量替换，通过 Feign 调用 CMS 服务）
+        if (context.isUpdatePreferenceAreas()) {
+            try {
+                // 先删除旧关联
+                preferenceAreaFeignClient.deleteRelationsByProductId(spuId);
+
+                // 添加新关联
+                if (context.getPreferenceAreaIds() != null && !context.getPreferenceAreaIds().isEmpty()) {
+                    List<CmsPreferenceAreaProductRelationDTO> areaRelations = context.getPreferenceAreaIds().stream()
+                            .map(areaId -> CmsPreferenceAreaProductRelationDTO.builder()
+                                    .productId(spuId)
+                                    .preferenceAreaId(areaId)
+                                    .build())
+                            .collect(Collectors.toList());
+                    preferenceAreaFeignClient.batchAddProductRelation(areaRelations);
+                }
+            } catch (Exception e) {
+                log.warn("优选专区关联更新失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
+            }
+        }
+
+        log.info("SPU 更新成功，SPU ID: {}, 操作人: {}", spuId, userName);
+        return 1;
+    }
+
     @Override
     public List<PmsSpu> list(PmsSpuQuery query) {
         return spuDao.selectByConditions(
@@ -187,4 +572,141 @@ public class PmsSpuServiceImpl implements PmsSpuService {
                 query.getRecommendStatus()
         );
     }
+
+
+    @Override
+    public SpuDetailData getUpdateInfo(Long id) {
+        if (id == null) {
+            throw new ApiException("商品ID不能为空");
+        }
+
+        // 1. 查询 SPU 基础信息
+        PmsSpu spu = spuDao.selectByPrimaryKey(id);
+        if (spu == null) {
+            throw new ApiException("商品不存在");
+        }
+
+        // 2. 查询 SPU 详情
+        PmsSpuDetail detail = spuDetailDao.selectBySpuId(id);
+
+        // 3. 查询 SKU 列表
+        List<PmsSku> skuList = skuService.listBySpuId(id);
+
+        // 4. 查询 SKU 库存列表
+        List<PmsSkuStock> skuStockList = new ArrayList<>();
+        List<PmsSkuPromotion> skuPromotionList = new ArrayList<>();
+        List<PmsSkuLadder> skuLadderList = new ArrayList<>();
+        List<PmsSkuMemberPrice> skuMemberPriceList = new ArrayList<>();
+        if (skuList != null && !skuList.isEmpty()) {
+            List<Long> skuIds = skuList.stream()
+                    .map(PmsSku::getId)
+                    .collect(Collectors.toList());
+            skuStockList = skuStockDao.selectBySkuIds(skuIds);
+
+            // 5. 查询 SKU 促销信息列表
+            skuPromotionList = promotionDao.selectBySkuIds(skuIds);
+
+            // 6. 查询 SKU 阶梯价列表
+            skuLadderList = ladderDao.selectBySkuIds(skuIds);
+
+            // 7. 查询 SKU 会员价列表
+            skuMemberPriceList = memberPriceDao.selectBySkuIds(skuIds);
+        }
+
+        // 8. 查询参数属性值列表
+        List<PmsSpuAttributeValue> attributeValueList = attributeValueDao.selectBySpuId(id);
+
+        // 9. 查询满减规则列表
+        List<PmsSpuFullReduction> fullReductionList = fullReductionDao.selectBySpuId(id);
+
+        // 10. 查询关联的专题ID列表（通过 Feign 调用 CMS 服务）
+        List<Long> subjectIds = new ArrayList<>();
+        try {
+            R<List<CmsSubjectProductRelationDTO>> subjectResult = subjectFeignClient.getRelationsByProductId(id);
+            if (subjectResult != null && subjectResult.getData() != null) {
+                subjectIds = subjectResult.getData().stream()
+                        .map(CmsSubjectProductRelationDTO::getSubjectId)
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.warn("获取专题关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
+        }
+
+        // 11. 查询关联的优选专区ID列表（通过 Feign 调用 CMS 服务）
+        List<Long> preferenceAreaIds = new ArrayList<>();
+        try {
+            R<List<CmsPreferenceAreaProductRelationDTO>> areaResult = preferenceAreaFeignClient.getRelationsByProductId(id);
+            if (areaResult != null && areaResult.getData() != null) {
+                preferenceAreaIds = areaResult.getData().stream()
+                        .map(CmsPreferenceAreaProductRelationDTO::getPreferenceAreaId)
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.warn("获取优选专区关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
+        }
+
+        return SpuDetailData.builder()
+                .spu(spu)
+                .detail(detail)
+                .skuList(skuList)
+                .skuStockList(skuStockList)
+                .skuPromotionList(skuPromotionList)
+                .skuLadderList(skuLadderList)
+                .skuMemberPriceList(skuMemberPriceList)
+                .attributeValueList(attributeValueList)
+                .fullReductionList(fullReductionList)
+                .subjectIds(subjectIds)
+                .preferenceAreaIds(preferenceAreaIds)
+                .build();
+    }
+
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public int delete(Long id) {
+        if (id == null) {
+            throw new ApiException("商品ID不能为空");
+        }
+
+        // 1. 验证 SPU 是否存在
+        PmsSpu existingSpu = spuDao.selectByPrimaryKey(id);
+        if (existingSpu == null) {
+            throw new ApiException("商品不存在");
+        }
+
+        log.info("开始删除商品，SPU ID: {}", id);
+
+        // 2. 删除关联的 SKU 及其子表数据（库存、促销、阶梯价、会员价）
+        skuService.deleteBySpuId(id);
+
+        // 3. 删除 SPU 详情
+        spuDetailDao.deleteBySpuId(id);
+
+        // 4. 删除 SPU 参数属性值
+        attributeValueDao.deleteBySpuId(id);
+
+        // 5. 删除 SPU 满减规则
+        fullReductionDao.deleteBySpuId(id);
+
+        // 6. 删除 CMS 专题关联（通过 Feign）
+        try {
+            subjectFeignClient.deleteRelationsByProductId(id);
+        } catch (Exception e) {
+            log.warn("删除专题关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
+        }
+
+        // 7. 删除 CMS 优选专区关联（通过 Feign）
+        try {
+            preferenceAreaFeignClient.deleteRelationsByProductId(id);
+        } catch (Exception e) {
+            log.warn("删除优选专区关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
+        }
+
+        // 8. 删除 SPU 本身
+        int count = spuDao.deleteBatch(List.of(id));
+
+        log.info("商品删除完成，SPU ID: {}", id);
+        return count;
+    }
+
 }
