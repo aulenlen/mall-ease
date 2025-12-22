@@ -11,8 +11,7 @@ import java.util.Set;
 
 /**
  * 缓存清理任务
- * <p>
- * 职责：扫描并修复未设置过期时间的异常缓存
+ * 扫描并修复未设置过期时间的异常缓存
  *
  * @author: Aulen
  * @create: 2025-11-25
@@ -33,7 +32,7 @@ public class CacheCleanupTask {
 
         try {
             // 扫描所有 sku:stock:* 的 key
-            Set<String> keys = redisService.scan(PmsRedisKeys.PRODUCT_SKU_STOCK_PREFIX + "*");
+            Set<String> keys = redisService.scan(PmsRedisKeys.SPU_SKU_STOCK_PREFIX + "*");
 
             int cleaned = 0;
             for (String key : keys) {
@@ -42,7 +41,7 @@ public class CacheCleanupTask {
                 // 发现未设置过期时间的异常数据
                 if (ttl != null && ttl == -1) {
                     // 补救设置过期时间（而非直接删除，避免误伤）
-                    redisService.expire(key, PmsRedisKeys.SKU_STOCK_DEFAULT_EXPIRE_SECONDS);
+                    redisService.expire(key, PmsRedisKeys.SKU_STOCK_CACHE_EXPIRE_SECONDS);
                     log.warn("修复未设置过期时间的缓存: {}", key);
                     cleaned++;
                 }

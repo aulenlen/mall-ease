@@ -21,12 +21,6 @@ public class PublishFailDetailVO {
     private String reason;
 
     /**
-     * 商品ID
-     */
-    @Deprecated
-    private Long productId;
-
-    /**
      *  SPUID
      */
     private Long spuId;
@@ -35,10 +29,4 @@ public class PublishFailDetailVO {
      * SPU名称
      */
     private String spuName;
-
-    /**
-     * 商品名称
-     */
-    @Deprecated
-    private String productName;
 }

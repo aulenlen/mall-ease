@@ -21,7 +21,6 @@ import com.mallease.pms.dto.query.PmsSpuQuery;
 import com.mallease.pms.dto.vo.PmsSpuDetailVO;
 import com.mallease.pms.dto.vo.PmsSpuPublishVO;
 import com.mallease.pms.dto.vo.PmsSpuVO;
-import com.mallease.pms.dto.vo.SmartPublishResultVO;
 import com.mallease.pms.pojo.PmsSpu;
 import com.mallease.pms.service.PmsSpuService;
 import io.swagger.v3.oas.annotations.Operation;

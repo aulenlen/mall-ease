@@ -5,34 +5,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 /**
- * 专题商品关系DTO（服务间传输对象）
+ * 专题商品关联 DTO（用于服务间传输）
  *
  * @author: Aulen
- * @create: 2025-11-15
+ * @create: 2025-12-23
  */
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class CmsSubjectProductRelationDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * 主键ID
-     */
+public class CmsSubjectProductRelationDTO {
     private Long id;
-
-    /**
-     * 专题ID
-     */
     private Long subjectId;
-
-    /**
-     * 产品ID
-     */
     private Long productId;
 }

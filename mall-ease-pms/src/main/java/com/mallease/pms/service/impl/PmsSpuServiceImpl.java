@@ -14,7 +14,6 @@ import com.mallease.pms.dto.context.SpuCreateContext;
 import com.mallease.pms.dto.context.SpuDetailData;
 import com.mallease.pms.dto.context.SpuUpdateContext;
 import com.mallease.pms.dto.query.PmsSpuQuery;
-import com.mallease.pms.dto.vo.PmsProductPublishVO;
 import com.mallease.pms.dto.vo.PmsSpuPublishVO;
 import com.mallease.pms.dto.vo.PublishFailDetailVO;
 import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
@@ -73,7 +72,7 @@ public class PmsSpuServiceImpl implements PmsSpuService {
     private SpuCacheService spuCacheService;
 
     @Autowired
-    private PmsProductPublishRecordDao productPublishRecordDao;
+    private PmsSpuPublishRecordDao spuPublishRecordDao;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -836,18 +835,18 @@ public class PmsSpuServiceImpl implements PmsSpuService {
      * @param failList      失败商品列表
      */
     private void savePublishRecords(List<Long> spuIds, Map<Long, PmsSpu> spuMap, Integer publishStatus, List<PublishFailDetailVO> failList) {
-        List<PmsProductPublishRecord> records = new ArrayList<>();
+        List<PmsSpuPublishRecord> records = new ArrayList<>();
         Map<Long, PublishFailDetailVO> failDetailMap =
                 failList.stream().collect(
-                        Collectors.toMap(PublishFailDetailVO::getProductId,
+                        Collectors.toMap(PublishFailDetailVO::getSpuId,
                                 item -> item));
 
         for (Long spuId : spuIds) {
             PmsSpu spu = spuMap.get(spuId);
             if (spu == null) continue;
-            PmsProductPublishRecord record = new PmsProductPublishRecord();
-            record.setProductId(spuId);
-            record.setProductName(spu.getName());
+            PmsSpuPublishRecord record = new PmsSpuPublishRecord();
+            record.setSpuId(spuId);
+            record.setSpuName(spu.getName());
             record.setOperatorId(LoginContextUtil.getUserId());
             record.setOperatorName(LoginContextUtil.getUserName());
             record.setAction(publishStatus == 1 ? 1 : 0);  // 1-上架, 0-下架
@@ -858,7 +857,7 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         }
 
         if (!records.isEmpty()) {
-            productPublishRecordDao.insertBatch(records);
+            spuPublishRecordDao.insertBatch(records);
             log.info("保存上架记录 {} 条", records.size());
         }
     }
