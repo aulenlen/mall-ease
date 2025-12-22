@@ -100,11 +100,6 @@ public class PmsSpuController {
     @Operation(summary = "SPU上下架，支持批量操作")
     @PutMapping("/publish")
     public R<PmsSpuPublishVO> publish(@Validated @RequestBody PublishSpuCmd cmd) {
-
-        if (cmd.getSpuIds().size() > 500) {
-            return R.failed("超过500条最大限制");
-        }
-
         PmsSpuPublishVO result = pmsSpuService.publish(cmd.getSpuIds(), cmd.getPublishStatus());
         return R.success(result);
     }

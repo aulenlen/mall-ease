@@ -8,23 +8,20 @@ import com.mallease.common.util.LoginContextUtil;
 import com.mallease.pms.dao.*;
 import com.mallease.pms.dto.CmsPreferenceAreaProductRelationDTO;
 import com.mallease.pms.dto.CmsSubjectProductRelationDTO;
-import com.mallease.pms.dto.context.SkuCreateData;
-import com.mallease.pms.dto.context.SkuUpdateData;
-import com.mallease.pms.dto.context.SpuCreateContext;
-import com.mallease.pms.dto.context.SpuDetailData;
-import com.mallease.pms.dto.context.SpuUpdateContext;
+import com.mallease.pms.dto.context.*;
 import com.mallease.pms.dto.query.PmsSpuQuery;
 import com.mallease.pms.dto.vo.PmsSpuPublishVO;
 import com.mallease.pms.dto.vo.PublishFailDetailVO;
+import com.mallease.pms.event.SpuPublishEvent;
 import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
 import com.mallease.pms.feign.CmsSubjectFeignClient;
 import com.mallease.pms.pojo.*;
 import com.mallease.pms.service.PmsSkuService;
 import com.mallease.pms.service.PmsSkuStockService;
 import com.mallease.pms.service.PmsSpuService;
-import com.mallease.pms.service.SpuCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,22 +52,16 @@ public class PmsSpuServiceImpl implements PmsSpuService {
     private PmsSkuLadderDao ladderDao;
     @Autowired
     private PmsSkuMemberPriceDao memberPriceDao;
-
     @Autowired
     private PmsSkuStockDao skuStockDao;
-
     @Autowired
     private PmsSkuStockService skuStockService;
-
     @Autowired
     private CmsSubjectFeignClient subjectFeignClient;
-
     @Autowired
     private CmsPreferenceAreaFeignClient preferenceAreaFeignClient;
-
     @Autowired
-    private SpuCacheService spuCacheService;
-
+    private ApplicationEventPublisher eventPublisher;
     @Autowired
     private PmsSpuPublishRecordDao spuPublishRecordDao;
 
@@ -786,24 +777,8 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         if (!successIds.isEmpty()) {
             int updatedCount = spuDao.updatePublishStatusBatch(successIds, publishStatus);
             log.info("成功更新{}个商品的上架状态", updatedCount);
-
-            // 处理缓存（缓存失败不影响业务结果）
-            try {
-                if (publishStatus == 1) {
-                    // 上架：预热缓存
-                    log.info("开始预热SPU缓存，商品数量: {}", successIds.size());
-                    spuCacheService.warmUpBatch(successIds);
-                    log.info("SPU缓存预热完成");
-                } else {
-                    // 下架：清除缓存
-                    spuCacheService.evictBatch(successIds);
-                    log.info("清除下架SPU缓存，数量: {}", successIds.size());
-                }
-            } catch (Exception e) {
-                log.error("缓存操作失败，spuIds: {}，操作类型: {}", successIds, publishStatus == 1 ? "预热" : "清除", e);
-            }
+            eventPublisher.publishEvent(new SpuPublishEvent(successIds, publishStatus));
         }
-
 
         // 记录操作日志（包括成功、失败和跳过的）
         savePublishRecords(spuIds, spuMap, publishStatus, failList);
