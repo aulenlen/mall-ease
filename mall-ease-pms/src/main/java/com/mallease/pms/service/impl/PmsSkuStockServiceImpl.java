@@ -5,6 +5,7 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.RedisService;
 import com.mallease.pms.dao.PmsSkuStockDao;
 import com.mallease.pms.pojo.PmsSkuStock;
+import com.mallease.pms.pojo.PmsSpu;
 import com.mallease.pms.service.PmsSkuStockService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,6 +121,10 @@ public class PmsSkuStockServiceImpl implements PmsSkuStockService {
         return false;
     }
 
+    @Override
+    public List<PmsSkuStock> listStockBySpuIds(List<Long> spuList) {
+        return skuStockDao.selectBySpuIds(spuList);
+    }
 //    @Scheduled(cron = "0 */5 * * * ?")  // 每5分钟
 //    public void syncStockToDatabase() {
 //        // 从Redis读取库存变化，批量更新数据库

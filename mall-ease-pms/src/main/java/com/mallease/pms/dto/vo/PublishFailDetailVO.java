@@ -23,10 +23,22 @@ public class PublishFailDetailVO {
     /**
      * 商品ID
      */
+    @Deprecated
     private Long productId;
+
+    /**
+     *  SPUID
+     */
+    private Long spuId;
+
+    /**
+     * SPU名称
+     */
+    private String spuName;
 
     /**
      * 商品名称
      */
+    @Deprecated
     private String productName;
 }

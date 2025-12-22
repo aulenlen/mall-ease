@@ -5,6 +5,7 @@
     <resultMap id="BaseResultMap" type="com.mallease.pms.pojo.PmsSkuStock">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
+        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
         <result column="stock" property="stock" jdbcType="INTEGER"/>
         <result column="lock_stock" property="lockStock" jdbcType="INTEGER"/>
         <result column="sale" property="sale" jdbcType="INTEGER"/>
@@ -34,7 +35,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, sku_id, stock, lock_stock, sale, low_stock, stock_status, version, create_time, update_time, creator, updater
+        id, sku_id, spu_id, stock, lock_stock, sale, low_stock, stock_status, version, create_time, update_time, creator, updater
     </sql>
 
     <!-- 遗留列列表（旧表结构） -->
@@ -140,6 +141,23 @@
         </foreach>
     </select>
 
+    <!-- 根据SPU ID查询库存 -->
+    <select id="selectBySpuId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_stock
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据SPU ID列表批量查询库存 -->
+    <select id="selectBySpuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM pms_sku_stock
+        WHERE spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+            #{spuId,jdbcType=BIGINT}
+        </foreach>
+    </select>
+
     <!-- 根据库存状态查询 -->
     <select id="selectByStockStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
@@ -165,9 +183,9 @@
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.pms.pojo.PmsSkuStock" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO pms_sku_stock (
-            sku_id, stock, lock_stock, sale, low_stock, stock_status, version, creator
+            sku_id, spu_id, stock, lock_stock, sale, low_stock, stock_status, version, creator
         ) VALUES (
-            #{skuId,jdbcType=BIGINT}, #{stock,jdbcType=INTEGER}, #{lockStock,jdbcType=INTEGER},
+            #{skuId,jdbcType=BIGINT}, #{spuId,jdbcType=BIGINT}, #{stock,jdbcType=INTEGER}, #{lockStock,jdbcType=INTEGER},
             #{sale,jdbcType=INTEGER}, #{lowStock,jdbcType=INTEGER}, #{stockStatus,jdbcType=TINYINT}, 0,
             #{creator,jdbcType=VARCHAR}
         )
@@ -178,6 +196,7 @@
         INSERT INTO pms_sku_stock
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="skuId != null">sku_id,</if>
+            <if test="spuId != null">spu_id,</if>
             <if test="stock != null">stock,</if>
             <if test="lockStock != null">lock_stock,</if>
             <if test="sale != null">sale,</if>
@@ -188,6 +207,7 @@
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
             <if test="skuId != null">#{skuId,jdbcType=BIGINT},</if>
+            <if test="spuId != null">#{spuId,jdbcType=BIGINT},</if>
             <if test="stock != null">#{stock,jdbcType=INTEGER},</if>
             <if test="lockStock != null">#{lockStock,jdbcType=INTEGER},</if>
             <if test="sale != null">#{sale,jdbcType=INTEGER},</if>
@@ -201,11 +221,11 @@
     <!-- 批量插入 -->
     <insert id="insertBatch" parameterType="java.util.List">
         INSERT INTO pms_sku_stock (
-            sku_id, stock, lock_stock, sale, low_stock, stock_status, version, creator
+            sku_id, spu_id, stock, lock_stock, sale, low_stock, stock_status, version, creator
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
-                #{item.skuId,jdbcType=BIGINT}, #{item.stock,jdbcType=INTEGER},
+                #{item.skuId,jdbcType=BIGINT}, #{item.spuId,jdbcType=BIGINT}, #{item.stock,jdbcType=INTEGER},
                 #{item.lockStock,jdbcType=INTEGER}, #{item.sale,jdbcType=INTEGER},
                 #{item.lowStock,jdbcType=INTEGER}, #{item.stockStatus,jdbcType=TINYINT}, 0,
                 #{item.creator,jdbcType=VARCHAR}

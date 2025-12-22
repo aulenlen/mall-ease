@@ -1,6 +1,7 @@
 package com.mallease.pms.service;
 
 import com.mallease.pms.pojo.PmsSkuStock;
+import com.mallease.pms.pojo.PmsSpu;
 
 import java.util.List;
 
@@ -45,4 +46,11 @@ public interface PmsSkuStockService {
      * @return true=扣减成功, false=库存不足
      */
     boolean deductStock(Long productId, Long skuId, Integer quantity);
+
+    /**
+     * 获取库存
+     * @param spuIdList spuId列表
+     * @return 库存列表
+     */
+    List<PmsSkuStock> listStockBySpuIds(List<Long> spuIdList);
 }

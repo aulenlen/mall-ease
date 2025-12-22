@@ -9,17 +9,14 @@ import java.util.List;
 
 /**
  * 商品批量上架结果视图对象
- *
  * @author: Aulen
- * @create: 2025-11-19
+ * @create: 2025-12-22
  */
-@Deprecated
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PmsProductPublishVO {
-
+public class PmsSpuPublishVO {
     /**
      * 成功数量
      */

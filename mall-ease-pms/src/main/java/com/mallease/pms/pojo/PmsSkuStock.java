@@ -24,6 +24,11 @@ public class PmsSkuStock {
     private Long skuId;
 
     /**
+     * SPU ID（冗余字段，便于按商品查询库存）
+     */
+    private Long spuId;
+
+    /**
      * 可用库存
      */
     private Integer stock;

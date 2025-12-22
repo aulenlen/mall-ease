@@ -3,8 +3,10 @@ package com.mallease.pms.service;
 import com.mallease.pms.dto.context.SkuCreateData;
 import com.mallease.pms.dto.query.PmsSkuQuery;
 import com.mallease.pms.pojo.PmsSku;
+import com.mallease.pms.pojo.PmsSkuStock;
 
 import java.util.List;
+import java.util.Map;
 
 public interface PmsSkuService {
 

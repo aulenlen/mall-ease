@@ -12,18 +12,24 @@ import com.mallease.pms.converter.PmsConverterHelper;
 import com.mallease.pms.converter.PmsSkuConverter;
 import com.mallease.pms.converter.PmsSpuConverter;
 import com.mallease.pms.dto.cmd.CreatePmsSpuCmd;
+import com.mallease.pms.dto.cmd.PublishSpuCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSpuCmd;
 import com.mallease.pms.dto.context.SpuCreateContext;
 import com.mallease.pms.dto.context.SpuDetailData;
 import com.mallease.pms.dto.context.SpuUpdateContext;
 import com.mallease.pms.dto.query.PmsSpuQuery;
 import com.mallease.pms.dto.vo.PmsSpuDetailVO;
+import com.mallease.pms.dto.vo.PmsSpuPublishVO;
 import com.mallease.pms.dto.vo.PmsSpuVO;
+import com.mallease.pms.dto.vo.SmartPublishResultVO;
 import com.mallease.pms.pojo.PmsSpu;
 import com.mallease.pms.service.PmsSpuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -46,12 +52,6 @@ public class PmsSpuController {
 
     @Autowired
     private PmsSpuUpdateAssembler spuUpdateAssembler;
-
-    @Autowired
-    private PmsConverterHelper converterHelper;
-
-    @Autowired
-    private PmsSkuConverter skuConverter;
 
     @Autowired
     private PmsSpuDetailAssembler spuDetailAssembler;
@@ -96,5 +96,17 @@ public class PmsSpuController {
     public R<Integer> delete(@Parameter(description = "SPU ID") @PathVariable Long id) {
         int count = pmsSpuService.delete(id);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
+    }
+
+    @Operation(summary = "SPU上下架，支持批量操作")
+    @PutMapping("/publish")
+    public R<PmsSpuPublishVO> publish(@Validated @RequestBody PublishSpuCmd cmd) {
+
+        if (cmd.getSpuIds().size() > 500) {
+            return R.failed("超过500条最大限制");
+        }
+
+        PmsSpuPublishVO result = pmsSpuService.publish(cmd.getSpuIds(), cmd.getPublishStatus());
+        return R.success(result);
     }
 }

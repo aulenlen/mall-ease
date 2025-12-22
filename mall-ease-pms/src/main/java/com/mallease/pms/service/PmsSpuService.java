@@ -4,6 +4,8 @@ import com.mallease.pms.dto.context.SpuCreateContext;
 import com.mallease.pms.dto.context.SpuDetailData;
 import com.mallease.pms.dto.context.SpuUpdateContext;
 import com.mallease.pms.dto.query.PmsSpuQuery;
+import com.mallease.pms.dto.vo.PmsSpuPublishVO;
+import com.mallease.pms.pojo.PmsSkuStock;
 import com.mallease.pms.pojo.PmsSpu;
 
 import java.util.List;
@@ -49,4 +51,13 @@ public interface PmsSpuService {
      * @return 删除影响的行数
      */
     int delete(Long id);
+
+    /**
+     * 删除商品（级联删除SKU、详情、属性值、满减规则及CMS关联）
+     *
+     * @param ids spuId列表
+     * @param publishStatus 上架状态
+     * @return 上架结果
+     */
+    PmsSpuPublishVO publish(List<Long> ids, Integer publishStatus);
 }

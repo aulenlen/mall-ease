@@ -122,6 +122,22 @@ public interface PmsSkuStockDao {
     List<PmsSkuStock> selectBySkuIds(@Param("skuIds") List<Long> skuIds);
 
     /**
+     * 根据SPU ID查询库存列表
+     *
+     * @param spuId SPU ID
+     * @return 库存列表
+     */
+    List<PmsSkuStock> selectBySpuId(@Param("spuId") Long spuId);
+
+    /**
+     * 根据SPU ID列表批量查询库存
+     *
+     * @param spuIds SPU ID列表
+     * @return 库存列表
+     */
+    List<PmsSkuStock> selectBySpuIds(@Param("spuIds") List<Long> spuIds);
+
+    /**
      * 根据库存状态查询
      *
      * @param stockStatus 库存状态：0-无货 1-有货 2-预售

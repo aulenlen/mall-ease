@@ -3,6 +3,7 @@ package com.mallease.pms.service.impl;
 import cn.hutool.core.util.IdUtil;
 import com.mallease.common.api.R;
 import com.mallease.common.exception.ApiException;
+import com.mallease.common.exception.Asserts;
 import com.mallease.common.util.LoginContextUtil;
 import com.mallease.pms.dao.*;
 import com.mallease.pms.dto.CmsPreferenceAreaProductRelationDTO;
@@ -13,21 +14,23 @@ import com.mallease.pms.dto.context.SpuCreateContext;
 import com.mallease.pms.dto.context.SpuDetailData;
 import com.mallease.pms.dto.context.SpuUpdateContext;
 import com.mallease.pms.dto.query.PmsSpuQuery;
+import com.mallease.pms.dto.vo.PmsProductPublishVO;
+import com.mallease.pms.dto.vo.PmsSpuPublishVO;
+import com.mallease.pms.dto.vo.PublishFailDetailVO;
 import com.mallease.pms.feign.CmsPreferenceAreaFeignClient;
 import com.mallease.pms.feign.CmsSubjectFeignClient;
 import com.mallease.pms.pojo.*;
 import com.mallease.pms.service.PmsSkuService;
+import com.mallease.pms.service.PmsSkuStockService;
 import com.mallease.pms.service.PmsSpuService;
+import com.mallease.pms.service.SpuCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -58,10 +61,19 @@ public class PmsSpuServiceImpl implements PmsSpuService {
     private PmsSkuStockDao skuStockDao;
 
     @Autowired
+    private PmsSkuStockService skuStockService;
+
+    @Autowired
     private CmsSubjectFeignClient subjectFeignClient;
 
     @Autowired
     private CmsPreferenceAreaFeignClient preferenceAreaFeignClient;
+
+    @Autowired
+    private SpuCacheService spuCacheService;
+
+    @Autowired
+    private PmsProductPublishRecordDao productPublishRecordDao;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -709,4 +721,216 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         return count;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PmsSpuPublishVO publish(List<Long> spuIds, Integer publishStatus) {
+        if (spuIds == null || spuIds.isEmpty()) {
+            Asserts.fail("商品ID列表不能为空");
+        }
+        if (publishStatus == null || (publishStatus != 0 && publishStatus != 1)) {
+            Asserts.fail("上架状态参数错误，只能为0或1");
+        }
+
+        log.info("开始批量{}商品，数量: {}", publishStatus == 1 ? "上架" : "下架", spuIds.size());
+
+        // 查询SPU基本信息
+        List<PmsSpu> spuList = spuDao.selectByIds(spuIds);
+        Map<Long, PmsSpu> spuMap = spuList.stream().collect(Collectors.toMap(PmsSpu::getId, spu -> spu));
+
+        // 查询库存
+        Map<Long, List<PmsSkuStock>> skuStockMap = new HashMap<>();
+        if (publishStatus == 1) {
+            List<Long> spuIdList = spuList.stream().map(PmsSpu::getId).toList();
+            List<PmsSkuStock> skuStockList = skuStockService.listStockBySpuIds(spuIdList);
+            skuStockMap = skuStockList.stream().collect(Collectors.groupingBy(PmsSkuStock::getSpuId));
+        }
+
+        // 分类处理：已处于目标状态、校验失败、校验成功
+        List<Long> successIds = new ArrayList<>();
+        List<PublishFailDetailVO> failList = new ArrayList<>();
+        List<Long> skippedIds = new ArrayList<>();
+
+        for (Long spuId : spuIds) {
+            PmsSpu spuEntity = spuMap.get(spuId);
+            if (spuEntity == null) {
+                failList.add(PublishFailDetailVO.builder()
+                        .spuId(spuId)
+                        .reason("商品不存在")
+                        .spuName("未知商品")
+                        .build());
+                continue;
+            }
+
+            // 检查商品是否已经处于目标状态
+            if (spuEntity.getPublishStatus() == publishStatus) {
+                skippedIds.add(spuId);
+                continue;
+            }
+
+            // 根据上下架类型选择不同的验证逻辑
+            String failReason = publishStatus == 1
+                    ? validateForPublish(spuEntity, skuStockMap.get(spuId))  // 上架验证
+                    : validateForUnpublish(spuEntity);  // 下架验证
+
+            if (failReason != null) {
+                failList.add(PublishFailDetailVO.builder()
+                        .spuId(spuId)
+                        .reason(failReason)
+                        .spuName(spuEntity.getName())
+                        .build());
+            } else {
+                successIds.add(spuId);
+            }
+        }
+
+        // 执行状态更新
+        if (!successIds.isEmpty()) {
+            int updatedCount = spuDao.updatePublishStatusBatch(successIds, publishStatus);
+            log.info("成功更新{}个商品的上架状态", updatedCount);
+
+            // 处理缓存（缓存失败不影响业务结果）
+            try {
+                if (publishStatus == 1) {
+                    // 上架：预热缓存
+                    log.info("开始预热SPU缓存，商品数量: {}", successIds.size());
+                    spuCacheService.warmUpBatch(successIds);
+                    log.info("SPU缓存预热完成");
+                } else {
+                    // 下架：清除缓存
+                    spuCacheService.evictBatch(successIds);
+                    log.info("清除下架SPU缓存，数量: {}", successIds.size());
+                }
+            } catch (Exception e) {
+                log.error("缓存操作失败，spuIds: {}，操作类型: {}", successIds, publishStatus == 1 ? "预热" : "清除", e);
+            }
+        }
+
+
+        // 记录操作日志（包括成功、失败和跳过的）
+        savePublishRecords(spuIds, spuMap, publishStatus, failList);
+
+        // 构造返回结果
+        PmsSpuPublishVO result = PmsSpuPublishVO.builder()
+                .failDetails(failList)
+                .failCount(failList.size())
+                .successCount(successIds.size())
+                .skippedCount(skippedIds.size())
+                .skippedIds(skippedIds)
+                .build();
+
+        log.info("批量{}完成，成功: {}, 失败: {}, 跳过: {}（已处于目标状态）",
+                publishStatus == 1 ? "上架" : "下架",
+                result.getSuccessCount(),
+                result.getFailCount(),
+                result.getSkippedCount());
+
+        return result;
+    }
+
+    /**
+     * 保存上/下架记录
+     *
+     * @param spuIds        SPU ID列表
+     * @param spuMap        SPU Map
+     * @param publishStatus 上架状态
+     * @param failList      失败商品列表
+     */
+    private void savePublishRecords(List<Long> spuIds, Map<Long, PmsSpu> spuMap, Integer publishStatus, List<PublishFailDetailVO> failList) {
+        List<PmsProductPublishRecord> records = new ArrayList<>();
+        Map<Long, PublishFailDetailVO> failDetailMap =
+                failList.stream().collect(
+                        Collectors.toMap(PublishFailDetailVO::getProductId,
+                                item -> item));
+
+        for (Long spuId : spuIds) {
+            PmsSpu spu = spuMap.get(spuId);
+            if (spu == null) continue;
+            PmsProductPublishRecord record = new PmsProductPublishRecord();
+            record.setProductId(spuId);
+            record.setProductName(spu.getName());
+            record.setOperatorId(LoginContextUtil.getUserId());
+            record.setOperatorName(LoginContextUtil.getUserName());
+            record.setAction(publishStatus == 1 ? 1 : 0);  // 1-上架, 0-下架
+            record.setFromStatus(spu.getPublishStatus());
+            record.setToStatus(publishStatus);
+            record.setReason(failDetailMap.get(spuId) == null ? "" : failDetailMap.get(spuId).getReason());
+            records.add(record);
+        }
+
+        if (!records.isEmpty()) {
+            productPublishRecordDao.insertBatch(records);
+            log.info("保存上架记录 {} 条", records.size());
+        }
+    }
+
+    /**
+     * 上架验证逻辑
+     *
+     * @param spu          商品信息
+     * @param skuStockList SKU库存列表
+     * @return 验证失败原因，null表示通过
+     */
+    private String validateForPublish(PmsSpu spu, List<PmsSkuStock> skuStockList) {
+        // 基础状态检查
+        if (spu.getDeleted() != null && spu.getDeleted() == 1) {
+            return "商品已删除";
+        }
+        if (spu.getVerifyStatus() != null && spu.getVerifyStatus() == 0) {
+            return "商品审核未通过";
+        }
+
+        // 必填信息检查
+        if (spu.getName() == null || spu.getName().trim().isEmpty()) {
+            return "商品名称不能为空";
+        }
+        if (spu.getSpuCode() == null || spu.getSpuCode().trim().isEmpty()) {
+            return "商品货号不能为空";
+        }
+
+        if (spu.getPic() == null || spu.getPic().trim().isEmpty()) {
+            return "商品主图不能为空";
+        }
+
+        if (spu.getBrandId() == null) {
+            return "商品品牌不能为空";
+        }
+
+        // SKU和库存检查
+        if (skuStockList == null || skuStockList.isEmpty()) {
+            return "商品至少需要一个SKU";
+        }
+
+        boolean hasStock = skuStockList.stream()
+                .anyMatch(sku -> sku.getStock() != null && sku.getStock() > 0);
+
+        if (!hasStock) {
+            return "商品库存不足，无法上架";
+        }
+
+        if (spu.getStock() == null || spu.getStock() <= 0) {
+            return "商品总库存不足";
+        }
+
+        return null;
+    }
+
+    /**
+     * 下架验证逻辑
+     *
+     * @param spu 商品信息
+     * @return 验证失败原因，null表示通过
+     */
+    private String validateForUnpublish(PmsSpu spu) {
+        // 下架只需要检查基本条件
+        if (spu.getDeleted() != null && spu.getDeleted() == 1) {
+            return "商品已删除，无需下架";
+        }
+        // 可以添加其他业务规则，比如：
+        // - 检查是否有进行中的订单
+        // - 检查是否参与活动中
+        // - 检查是否有预售状态
+        // 这里暂时只做基础检查
+
+        return null;
+    }
 }
