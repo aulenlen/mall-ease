@@ -1,12 +1,26 @@
 # =================================================================
-# Search TiDB Cloud / 生产环境配置
+# Search Cloud 生产环境配置
 # 敏感信息通过环境变量注入
 # =================================================================
 
 spring:
+  # Nacos 配置中心（从 .env 读取环境变量）
+  cloud:
+    nacos:
+      config:
+        server-addr: ${NACOS_SERVER_ADDR}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+
+  # Elasticsearch 配置（Spring Boot 3.x 路径）
   elasticsearch:
-    rest:
-      uris: ${ES_URIS}
+    uris: http://192.168.50.148:9200
+    connection-timeout: 5s
+    socket-timeout: 60s
 
 logging:
   level:

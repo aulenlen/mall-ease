@@ -40,12 +40,11 @@ spring:
           min-idle: 0
           max-wait: -1ms
 
-  # Elasticsearch 配置
+  # Elasticsearch 配置（Spring Boot 3.x 路径）
   elasticsearch:
-    rest:
-      uris: ${ES_URIS:http://localhost:9200}
-      connection-timeout: 5s
-      read-timeout: 60s
+    uris: ${ES_URIS:http://localhost:9200}
+    connection-timeout: 5s
+    socket-timeout: 60s
 
 mybatis:
   mapper-locations: classpath:mybatis/mapper/*.xml

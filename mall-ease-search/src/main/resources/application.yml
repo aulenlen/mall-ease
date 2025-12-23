@@ -8,8 +8,26 @@ spring:
   application:
     name: mall-ease-search
 
+  # Nacos
+  config:
+    import: optional:nacos:${spring.application.name}
+
+  # Nacos 配置中心
+  cloud:
+    nacos:
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+
+  # Elasticsearch 配置（Spring Boot 3.x 路径）
   elasticsearch:
-    rest:
-      uris: ${ES_URIS:http://localhost:9200}
-      connection-timeout: 5s
-      read-timeout: 60s
+    uris: ${ES_URIS:http://localhost:9200}
+    connection-timeout: 5s
+    socket-timeout: 60s
