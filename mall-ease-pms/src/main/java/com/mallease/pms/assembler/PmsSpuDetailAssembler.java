@@ -51,9 +51,9 @@ public class PmsSpuDetailAssembler {
         // 3. 组装 SKU 列表
         vo.setSkuList(assembleSkuList(data));
 
-        // 4. 转换参数属性值
-        vo.setAttributeValueList(
-            converterHelper.spuAttributeValueEntityListToVoList(data.getAttributeValueList()));
+        // 4. 转换参数值
+        vo.setParamValueList(
+            converterHelper.spuParamValueEntityListToVoList(data.getParamValueList()));
 
         // 5. 转换满减规则
         vo.setFullReductionList(

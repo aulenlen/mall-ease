@@ -116,7 +116,7 @@ public class UpdatePmsSpuCmd {
 
     @Schema(description = "SPU参数属性值列表（全量替换）")
     @Valid
-    private List<CreatePmsSpuCmd.SpuAttributeValueCmd> attributeValueList;
+    private List<CreatePmsSpuCmd.SpuParamValueCmd> paramValueList;
 
     @Schema(description = "满减规则列表（全量替换）")
     @Valid

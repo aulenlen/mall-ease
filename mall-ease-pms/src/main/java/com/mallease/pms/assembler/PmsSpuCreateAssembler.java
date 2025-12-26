@@ -48,10 +48,10 @@ public class PmsSpuCreateAssembler {
         }
 
         // 转换点3: 参数属性值列表（可选）
-        List<PmsSpuAttributeValue> attributeValueList = null;
-        if (cmd.getAttributeValueList() != null && !cmd.getAttributeValueList().isEmpty()) {
-            attributeValueList = spuConverter.attributeValueCmdListToEntityList(
-                cmd.getAttributeValueList()
+        List<PmsSpuParamValue> paramValueList = null;
+        if (cmd.getParamValueList() != null && !cmd.getParamValueList().isEmpty()) {
+            paramValueList = spuConverter.paramValueCmdListToEntityList(
+                cmd.getParamValueList()
             );
         }
 
@@ -69,7 +69,7 @@ public class PmsSpuCreateAssembler {
         return SpuCreateContext.builder()
                 .spu(spu)
                 .spuDetail(spuDetail)
-                .attributeValueList(attributeValueList)
+                .paramValueList(paramValueList)
                 .fullReductionList(fullReductionList)
                 .skuDataList(skuDataList)
                 .subjectIds(cmd.getSubjectIds())

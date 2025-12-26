@@ -43,7 +43,7 @@ public class SpuUpdateContext {
     /**
      * SPU参数属性值列表（可选，传入表示全量替换，null表示不更新）
      */
-    private List<PmsSpuAttributeValue> attributeValueList;
+    private List<PmsSpuParamValue> paramValueList;
 
     /**
      * 满减规则列表（可选，传入表示全量替换，null表示不更新）
@@ -66,9 +66,9 @@ public class SpuUpdateContext {
     private boolean updateSkus;
 
     /**
-     * 标记：是否更新属性值
+     * 标记：是否更新参数值
      */
-    private boolean updateAttributeValues;
+    private boolean updateParamValues;
 
     /**
      * 标记：是否更新满减规则

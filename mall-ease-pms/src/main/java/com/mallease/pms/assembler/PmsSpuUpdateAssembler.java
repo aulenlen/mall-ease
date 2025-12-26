@@ -65,14 +65,14 @@ public class PmsSpuUpdateAssembler {
             updateSkus = true;
         }
 
-        // 参数属性值列表
-        boolean updateAttributeValues = false;
-        if (cmd.getAttributeValueList() != null) {
-            List<PmsSpuAttributeValue> attributeValueList = spuConverter.attributeValueCmdListToEntityList(
-                cmd.getAttributeValueList()
+        // 参数值列表
+        boolean updateParamValues = false;
+        if (cmd.getParamValueList() != null) {
+            List<PmsSpuParamValue> paramValueList = spuConverter.paramValueCmdListToEntityList(
+                cmd.getParamValueList()
             );
-            builder.attributeValueList(attributeValueList);
-            updateAttributeValues = true;
+            builder.paramValueList(paramValueList);
+            updateParamValues = true;
         }
 
         // 满减规则列表
@@ -101,7 +101,7 @@ public class PmsSpuUpdateAssembler {
 
         return builder
             .updateSkus(updateSkus)
-            .updateAttributeValues(updateAttributeValues)
+            .updateParamValues(updateParamValues)
             .updateFullReductions(updateFullReductions)
             .updateSubjects(updateSubjects)
             .updatePreferenceAreas(updatePreferenceAreas)

@@ -162,7 +162,7 @@ public class PmsSpuDetailVO {
     private List<PmsSkuVO> skuList;
 
     @Schema(description = "参数属性值列表")
-    private List<SpuAttributeValueVO> attributeValueList;
+    private List<SpuParamValueVO> paramValueList;
 
     @Schema(description = "满减规则列表")
     private List<SpuFullReductionVO> fullReductionList;
@@ -185,7 +185,7 @@ public class PmsSpuDetailVO {
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(description = "SPU参数属性值")
-    public static class SpuAttributeValueVO {
+    public static class SpuParamValueVO {
 
         @Schema(description = "主键ID")
         private Long id;

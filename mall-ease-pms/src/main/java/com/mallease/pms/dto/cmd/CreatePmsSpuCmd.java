@@ -119,7 +119,7 @@ public class CreatePmsSpuCmd {
     // ========================================================================
 
     @Schema(description = "SPU参数属性值列表（可选）")
-    private List<SpuAttributeValueCmd> attributeValueList;
+    private List<SpuParamValueCmd> paramValueList;
 
     @Schema(description = "满减规则列表（可选）")
     private List<SpuFullReductionCmd> fullReductionList;
@@ -179,7 +179,7 @@ public class CreatePmsSpuCmd {
     @AllArgsConstructor
     @Builder
     @Schema(description = "SPU参数属性值")
-    public static class SpuAttributeValueCmd {
+    public static class SpuParamValueCmd {
 
         @Schema(description = "参数ID", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull(message = "参数ID不能为空")

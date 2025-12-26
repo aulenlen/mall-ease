@@ -6,7 +6,7 @@ import com.mallease.pms.dto.vo.PmsSpuDetailVO;
 import com.mallease.pms.dto.vo.PmsSpuListVO;
 import com.mallease.pms.dto.vo.PmsSpuVO;
 import com.mallease.pms.pojo.PmsSpu;
-import com.mallease.pms.pojo.PmsSpuAttributeValue;
+import com.mallease.pms.pojo.PmsSpuParamValue;
 import com.mallease.pms.pojo.PmsSpuDetail;
 import com.mallease.pms.pojo.PmsSpuFullReduction;
 import org.mapstruct.*;
@@ -56,7 +56,7 @@ public interface PmsSpuConverter {
     @Mapping(target = "packingList", ignore = true)      // 从 PmsSpuDetail 填充
     @Mapping(target = "afterSaleService", ignore = true) // 从 PmsSpuDetail 填充
     @Mapping(target = "skuList", ignore = true)          // 由 Service 层填充
-    @Mapping(target = "attributeValueList", ignore = true)    // 由 Service 层填充
+    @Mapping(target = "paramValueList", ignore = true)    // 由 Service 层填充
     @Mapping(target = "fullReductionList", ignore = true)     // 由 Service 层填充
     @Mapping(target = "subjectIds", ignore = true)            // 由 Service 层填充
     @Mapping(target = "preferenceAreaIds", ignore = true)     // 由 Service 层填充
@@ -150,16 +150,15 @@ public interface PmsSpuConverter {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "spuId", ignore = true)
-    @Mapping(source = "paramId", target = "productAttributeId")
     @Mapping(target = "deleted", constant = "0")
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
-    PmsSpuAttributeValue attributeValueCmdToEntity(CreatePmsSpuCmd.SpuAttributeValueCmd cmd);
+    PmsSpuParamValue paramValueCmdToEntity(CreatePmsSpuCmd.SpuParamValueCmd cmd);
 
     /**
      * 参数属性值 CmdList → EntityList
      */
-    List<PmsSpuAttributeValue> attributeValueCmdListToEntityList(List<CreatePmsSpuCmd.SpuAttributeValueCmd> cmdList);
+    List<PmsSpuParamValue> paramValueCmdListToEntityList(List<CreatePmsSpuCmd.SpuParamValueCmd> cmdList);
 
     /**
      * 满减规则 Cmd → Entity

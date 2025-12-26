@@ -1,14 +1,6 @@
 package com.mallease.pms.dto.context;
 
-import com.mallease.pms.pojo.PmsSku;
-import com.mallease.pms.pojo.PmsSkuLadder;
-import com.mallease.pms.pojo.PmsSkuMemberPrice;
-import com.mallease.pms.pojo.PmsSkuPromotion;
-import com.mallease.pms.pojo.PmsSkuStock;
-import com.mallease.pms.pojo.PmsSpu;
-import com.mallease.pms.pojo.PmsSpuAttributeValue;
-import com.mallease.pms.pojo.PmsSpuDetail;
-import com.mallease.pms.pojo.PmsSpuFullReduction;
+import com.mallease.pms.pojo.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -65,7 +57,7 @@ public class SpuDetailData {
     /**
      * 参数属性值列表
      */
-    private List<PmsSpuAttributeValue> attributeValueList;
+    private List<PmsSpuParamValue> paramValueList;
 
     /**
      * 满减规则列表

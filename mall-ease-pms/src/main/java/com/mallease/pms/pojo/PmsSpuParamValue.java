@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * @create: 2025-12-10
  */
 @Data
-public class PmsSpuAttributeValue {
+public class PmsSpuParamValue {
     /**
      * 主键ID
      */
@@ -25,9 +25,9 @@ public class PmsSpuAttributeValue {
     private Long spuId;
 
     /**
-     * 属性ID（pms_product_attribute.id，type=1 的参数属性）
+     * 属性ID
      */
-    private Long productAttributeId;
+    private Long paramId;
 
     /**
      * 属性值

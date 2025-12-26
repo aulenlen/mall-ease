@@ -1,10 +1,15 @@
 package com.mallease.pms.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.common.api.R;
+import com.mallease.common.dto.SpuIndexDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.exception.Asserts;
 import com.mallease.common.util.LoginContextUtil;
+import com.mallease.pms.converter.SpuIndexConverter;
 import com.mallease.pms.dao.*;
 import com.mallease.pms.dto.CmsPreferenceAreaProductRelationDTO;
 import com.mallease.pms.dto.CmsSubjectProductRelationDTO;
@@ -18,12 +23,14 @@ import com.mallease.pms.feign.CmsSubjectFeignClient;
 import com.mallease.pms.pojo.*;
 import com.mallease.pms.service.PmsSkuService;
 import com.mallease.pms.service.PmsSkuStockService;
+import com.mallease.pms.service.PmsSpecService;
 import com.mallease.pms.service.PmsSpuService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -41,7 +48,7 @@ public class PmsSpuServiceImpl implements PmsSpuService {
     @Autowired
     private PmsSpuDetailDao spuDetailDao;
     @Autowired
-    private PmsSpuAttributeValueDao attributeValueDao;
+    private PmsSpuParamValueDao spuParamValueDao;
     @Autowired
     private PmsSpuFullReductionDao fullReductionDao;
     @Autowired
@@ -64,6 +71,12 @@ public class PmsSpuServiceImpl implements PmsSpuService {
     private ApplicationEventPublisher eventPublisher;
     @Autowired
     private PmsSpuPublishRecordDao spuPublishRecordDao;
+    @Autowired
+    private SpuIndexConverter spuIndexConverter;
+    @Autowired
+    private PmsSpecService pmsSpecService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -146,9 +159,9 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         skuService.createBatch(spuId, context.getSkuDataList());
 
         // 保存参数属性值
-        if (context.getAttributeValueList() != null && !context.getAttributeValueList().isEmpty()) {
-            context.getAttributeValueList().forEach(attr -> attr.setSpuId(spuId));
-            attributeValueDao.insertBatch(context.getAttributeValueList());
+        if (context.getParamValueList() != null && !context.getParamValueList().isEmpty()) {
+            context.getParamValueList().forEach(param -> param.setSpuId(spuId));
+            spuParamValueDao.insertBatch(context.getParamValueList());
         }
 
         // 保存满减规则
@@ -490,14 +503,14 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         }
 
         // 5. 更新参数属性值（全量替换）
-        if (context.isUpdateAttributeValues()) {
+        if (context.isUpdateParamValues()) {
             // 先删除旧数据
-            attributeValueDao.deleteBySpuId(spuId);
+            spuParamValueDao.deleteBySpuId(spuId);
 
             // 插入新数据
-            if (context.getAttributeValueList() != null && !context.getAttributeValueList().isEmpty()) {
-                context.getAttributeValueList().forEach(attr -> attr.setSpuId(spuId));
-                attributeValueDao.insertBatch(context.getAttributeValueList());
+            if (context.getParamValueList() != null && !context.getParamValueList().isEmpty()) {
+                context.getParamValueList().forEach(param -> param.setSpuId(spuId));
+                spuParamValueDao.insertBatch(context.getParamValueList());
             }
         }
 
@@ -616,7 +629,7 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         }
 
         // 8. 查询参数属性值列表
-        List<PmsSpuAttributeValue> attributeValueList = attributeValueDao.selectBySpuId(id);
+        List<PmsSpuParamValue> paramValueList = spuParamValueDao.selectBySpuId(id);
 
         // 9. 查询满减规则列表
         List<PmsSpuFullReduction> fullReductionList = fullReductionDao.selectBySpuId(id);
@@ -655,7 +668,7 @@ public class PmsSpuServiceImpl implements PmsSpuService {
                 .skuPromotionList(skuPromotionList)
                 .skuLadderList(skuLadderList)
                 .skuMemberPriceList(skuMemberPriceList)
-                .attributeValueList(attributeValueList)
+                .paramValueList(paramValueList)
                 .fullReductionList(fullReductionList)
                 .subjectIds(subjectIds)
                 .preferenceAreaIds(preferenceAreaIds)
@@ -685,7 +698,7 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         spuDetailDao.deleteBySpuId(id);
 
         // 4. 删除 SPU 参数属性值
-        attributeValueDao.deleteBySpuId(id);
+        spuParamValueDao.deleteBySpuId(id);
 
         // 5. 删除 SPU 满减规则
         fullReductionDao.deleteBySpuId(id);
@@ -778,6 +791,7 @@ public class PmsSpuServiceImpl implements PmsSpuService {
             int updatedCount = spuDao.updatePublishStatusBatch(successIds, publishStatus);
             log.info("成功更新{}个商品的上架状态", updatedCount);
             eventPublisher.publishEvent(new SpuPublishEvent(successIds, publishStatus));
+            List<SpuIndexDTO> spuIndexDTOList = buildIndex(successIds);
         }
 
         // 记录操作日志（包括成功、失败和跳过的）
@@ -799,6 +813,95 @@ public class PmsSpuServiceImpl implements PmsSpuService {
                 result.getSkippedCount());
 
         return result;
+    }
+
+    /**
+     * 构建ElasticsearchDTO对象列表
+     *
+     * @param successIds 商品ID列表
+     * @return ES索引DTO列表
+     */
+    private List<SpuIndexDTO> buildIndex(List<Long> successIds) {
+
+        List<PmsSpu> pmsSpuList = spuDao.selectByIds(successIds);
+        if (pmsSpuList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<SpuIndexDTO> spuIndexDTOList = spuIndexConverter.spuEntityListToDtoList(pmsSpuList);
+        Map<Long, SpuIndexDTO> indexMap = spuIndexDTOList.stream().collect(Collectors.toMap(SpuIndexDTO::getSpuId, c -> c));
+
+        List<Long> categoryIds = pmsSpuList.stream().map(PmsSpu::getCategoryId).toList();
+        List<PmsCategory> categoryList = categoryDao.selectByIds(categoryIds);
+        Map<Long, String> categoryPathMap = categoryList.stream().collect(Collectors.toMap(PmsCategory::getId, PmsCategory::getPath));
+
+        List<PmsSku> skuList = skuService.selectBySpuIds(successIds);
+        Map<Long, List<PmsSku>> skuGroupMap = skuList.stream().collect(Collectors.groupingBy(PmsSku::getSpuId));
+
+        pmsSpuList.forEach(spu -> {
+            SpuIndexDTO dto = indexMap.get(spu.getId());
+
+            SpuIndexDTO spuIndexDTO = indexMap.get(spu.getId());
+            spuIndexDTO.setInStock(spu.getStock() == 1);
+            spuIndexDTO.setCategoryPath(categoryPathMap.get(spu.getId()));
+
+            List<PmsSku> spuSkuList = skuGroupMap.getOrDefault(spu.getId(), Collections.emptyList());
+
+            List<SpuIndexDTO.Sku> dtoSkuList = spuSkuList.stream().map(
+                    sku -> SpuIndexDTO.Sku.builder()
+                            .skuId(sku.getId())
+                            .skuCode(sku.getSkuCode())
+                            .price(sku.getPrice())
+                            .build()
+            ).toList();
+
+            Set<String> seenSpecs = new HashSet<>();
+            List<SpuIndexDTO.SpecValue> allSpecValues = new ArrayList<>();
+
+            for (PmsSku sku : spuSkuList) {
+                String jsonString = sku.getSpecValues();
+                if (!StringUtils.hasText(jsonString)) {
+                    continue;
+                }
+
+                try {
+                    Map<String, String> specMap = objectMapper.readValue(
+                            jsonString,
+                            new TypeReference<>() {}
+                    );
+
+                    if (specMap == null) {
+                        continue;
+                    }
+
+                    for (Map.Entry<String, String> entry : specMap.entrySet()) {
+                        String specName = entry.getKey();
+                        String specValue = entry.getValue();
+
+                        String uniqueKey = specName + ":" + specValue;
+                        if (seenSpecs.contains(uniqueKey)) {
+                            continue;
+                        }
+                        seenSpecs.add(uniqueKey);
+
+                        allSpecValues.add(SpuIndexDTO.SpecValue.builder()
+                                .specId(null)
+                                .specName(specName)
+                                .specValue(specValue)
+                                .build());
+                    }
+                } catch (JsonProcessingException e) {
+                    log.warn("解析 SKU 规格值失败，skuId={}, json={}", sku.getId(), jsonString, e);
+                }
+            }
+
+            dto.setSpecValueList(allSpecValues);
+
+            dto.setSkuList(dtoSkuList);
+
+        });
+
+        return spuIndexDTOList;
     }
 
     /**

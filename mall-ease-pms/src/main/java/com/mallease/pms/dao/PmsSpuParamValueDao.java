@@ -1,6 +1,6 @@
 package com.mallease.pms.dao;
 
-import com.mallease.pms.pojo.PmsSpuAttributeValue;
+import com.mallease.pms.pojo.PmsSpuParamValue;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -14,7 +14,7 @@ import java.util.List;
  * @create: 2025-12-11
  */
 @Mapper
-public interface PmsSpuAttributeValueDao {
+public interface PmsSpuParamValueDao {
 
     /**
      * 根据主键查询
@@ -22,7 +22,7 @@ public interface PmsSpuAttributeValueDao {
      * @param id 主键ID
      * @return 参数值记录
      */
-    PmsSpuAttributeValue selectByPrimaryKey(Long id);
+    PmsSpuParamValue selectByPrimaryKey(Long id);
 
     /**
      * 根据SPU ID查询所有参数值
@@ -30,7 +30,7 @@ public interface PmsSpuAttributeValueDao {
      * @param spuId SPU ID
      * @return 参数值列表
      */
-    List<PmsSpuAttributeValue> selectBySpuId(@Param("spuId") Long spuId);
+    List<PmsSpuParamValue> selectBySpuId(@Param("spuId") Long spuId);
 
     /**
      * 根据SPU ID列表批量查询
@@ -38,15 +38,15 @@ public interface PmsSpuAttributeValueDao {
      * @param spuIds SPU ID列表
      * @return 参数值列表
      */
-    List<PmsSpuAttributeValue> selectBySpuIds(@Param("spuIds") List<Long> spuIds);
+    List<PmsSpuParamValue> selectBySpuIds(@Param("spuIds") List<Long> spuIds);
 
     /**
-     * 根据属性ID查询
+     * 根据参数ID查询
      *
-     * @param productAttributeId 属性ID
+     * @param paramId 参数ID
      * @return 参数值列表
      */
-    List<PmsSpuAttributeValue> selectByAttributeId(@Param("productAttributeId") Long productAttributeId);
+    List<PmsSpuParamValue> selectByParamId(@Param("paramId") Long paramId);
 
     /**
      * 插入记录
@@ -54,7 +54,7 @@ public interface PmsSpuAttributeValueDao {
      * @param record 参数值记录
      * @return 影响行数
      */
-    int insert(PmsSpuAttributeValue record);
+    int insert(PmsSpuParamValue record);
 
     /**
      * 选择性插入记录
@@ -62,7 +62,7 @@ public interface PmsSpuAttributeValueDao {
      * @param record 参数值记录
      * @return 影响行数
      */
-    int insertSelective(PmsSpuAttributeValue record);
+    int insertSelective(PmsSpuParamValue record);
 
     /**
      * 批量插入
@@ -70,7 +70,7 @@ public interface PmsSpuAttributeValueDao {
      * @param list 参数值列表
      * @return 影响行数
      */
-    int insertBatch(@Param("list") List<PmsSpuAttributeValue> list);
+    int insertBatch(@Param("list") List<PmsSpuParamValue> list);
 
     /**
      * 根据主键更新
@@ -78,7 +78,7 @@ public interface PmsSpuAttributeValueDao {
      * @param record 参数值记录
      * @return 影响行数
      */
-    int updateByPrimaryKey(PmsSpuAttributeValue record);
+    int updateByPrimaryKey(PmsSpuParamValue record);
 
     /**
      * 根据主键选择性更新
@@ -86,7 +86,7 @@ public interface PmsSpuAttributeValueDao {
      * @param record 参数值记录
      * @return 影响行数
      */
-    int updateByPrimaryKeySelective(PmsSpuAttributeValue record);
+    int updateByPrimaryKeySelective(PmsSpuParamValue record);
 
     /**
      * 根据SPU ID逻辑删除

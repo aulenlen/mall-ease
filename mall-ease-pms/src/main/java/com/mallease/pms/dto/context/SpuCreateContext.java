@@ -35,7 +35,7 @@ public class SpuCreateContext {
     /**
      * SPU参数属性值列表（可选）
      */
-    private List<PmsSpuAttributeValue> attributeValueList;
+    private List<PmsSpuParamValue> paramValueList;
 
     /**
      * 满减规则列表（可选，已过滤无效数据）

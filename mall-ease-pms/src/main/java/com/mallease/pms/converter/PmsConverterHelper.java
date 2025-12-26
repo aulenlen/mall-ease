@@ -27,29 +27,29 @@ public interface PmsConverterHelper {
     // ========================================================================
 
     /**
-     * SpuAttributeValueCmd → PmsSpuAttributeValue Entity
+     * SpuParamValueCmd → PmsSpuParamValue Entity
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "spuId", ignore = true)  // 由 Service 层设置
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
-    PmsSpuAttributeValue spuAttributeValueCmdToEntity(CreatePmsSpuCmd.SpuAttributeValueCmd cmd);
+    PmsSpuParamValue spuParamValueCmdToEntity(CreatePmsSpuCmd.SpuParamValueCmd cmd);
 
     /**
-     * PmsSpuAttributeValue Entity → SpuAttributeValueVO
+     * PmsSpuParamValue Entity → SpuParamValueVO
      */
     @Mapping(target = "paramName", ignore = true)  // 由 Service 层填充
-    PmsSpuDetailVO.SpuAttributeValueVO spuAttributeValueEntityToVo(PmsSpuAttributeValue entity);
+    PmsSpuDetailVO.SpuParamValueVO spuParamValueEntityToVo(PmsSpuParamValue entity);
 
     /**
      * 批量转换：Cmd List → Entity List
      */
-    List<PmsSpuAttributeValue> spuAttributeValueCmdListToEntityList(List<CreatePmsSpuCmd.SpuAttributeValueCmd> cmdList);
+    List<PmsSpuParamValue> spuParamValueCmdListToEntityList(List<CreatePmsSpuCmd.SpuParamValueCmd> cmdList);
 
     /**
      * 批量转换：Entity List → VO List
      */
-    List<PmsSpuDetailVO.SpuAttributeValueVO> spuAttributeValueEntityListToVoList(List<PmsSpuAttributeValue> entityList);
+    List<PmsSpuDetailVO.SpuParamValueVO> spuParamValueEntityListToVoList(List<PmsSpuParamValue> entityList);
 
     /**
      * SpuFullReductionCmd → PmsSpuFullReduction Entity
