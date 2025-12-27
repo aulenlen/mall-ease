@@ -24,7 +24,7 @@ public class UpdateCmsSubjectCmd {
     @Size(max = 500, message = "专题图片URL长度不能超过500个字符")
     private String pic;
 
-    private Integer productCount;
+    private Integer spuCount;
 
     @Min(value = 0, message = "推荐状态值必须为0或1")
     @Max(value = 1, message = "推荐状态值必须为0或1")

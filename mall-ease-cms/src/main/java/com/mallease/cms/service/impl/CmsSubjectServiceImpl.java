@@ -1,10 +1,9 @@
 package com.mallease.cms.service.impl;
 
-import com.github.pagehelper.PageHelper;
 import com.mallease.cms.dao.CmsSubjectDao;
-import com.mallease.cms.dao.CmsSubjectProductRelationDao;
+import com.mallease.cms.dao.CmsSubjectSpuRelationDao;
 import com.mallease.cms.pojo.CmsSubject;
-import com.mallease.cms.pojo.CmsSubjectProductRelation;
+import com.mallease.cms.pojo.CmsSubjectSpuRelation;
 import com.mallease.cms.service.CmsSubjectService;
 import com.mallease.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,7 @@ public class CmsSubjectServiceImpl implements CmsSubjectService {
     private CmsSubjectDao subjectDao;
 
     @Autowired
-    private CmsSubjectProductRelationDao subjectProductRelationDao;
+    private CmsSubjectSpuRelationDao subjectSpuRelationDao;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -127,36 +126,36 @@ public class CmsSubjectServiceImpl implements CmsSubjectService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchAddProductRelation(List<CmsSubjectProductRelation> relationList) {
+    public int batchAddSpuRelation(List<CmsSubjectSpuRelation> relationList) {
         if (relationList == null || relationList.isEmpty()) {
             throw new ApiException("关联列表不能为空");
         }
         // 验证每条关联数据
-        for (CmsSubjectProductRelation relation : relationList) {
+        for (CmsSubjectSpuRelation relation : relationList) {
             if (relation.getSubjectId() == null) {
                 throw new ApiException("专题ID不能为空");
             }
-            if (relation.getProductId() == null) {
+            if (relation.getSpuId() == null) {
                 throw new ApiException("商品ID不能为空");
             }
         }
-        return subjectProductRelationDao.insertBatch(relationList);
+        return subjectSpuRelationDao.insertBatch(relationList);
     }
 
     @Override
-    public List<CmsSubjectProductRelation> getRelationsByProductId(Long productId) {
-        if (productId == null) {
+    public List<CmsSubjectSpuRelation> getRelationsBySpuId(Long spuId) {
+        if (spuId == null) {
             throw new ApiException("商品ID不能为空");
         }
-        return subjectProductRelationDao.selectByProductId(productId);
+        return subjectSpuRelationDao.selectBySpuId(spuId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int deleteRelationsByProductId(Long productId) {
-        if (productId == null) {
+    public int deleteRelationsBySpuId(Long spuId) {
+        if (spuId == null) {
             throw new ApiException("商品ID不能为空");
         }
-        return subjectProductRelationDao.deleteByProductId(productId);
+        return subjectSpuRelationDao.deleteBySpuId(spuId);
     }
 }

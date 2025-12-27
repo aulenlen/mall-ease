@@ -16,11 +16,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CmsPreferenceAreaProductRelationDTO {
+public class CmsPreferenceAreaSpuRelationDTO {
     @Schema(description = "主键ID")
     private Long id;
     @Schema(description = "优选专区ID")
     private Long preferenceAreaId;
     @Schema(description = "产品ID")
-    private Long productId;
+    private Long spuId;
 }

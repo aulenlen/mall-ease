@@ -6,8 +6,6 @@ import java.time.LocalDateTime;
 
 /**
  * 规格定义表
- * 说明：定义具体的规格项，如"颜色"、"内存"、"尺码"
- * 规格影响 SKU 生成和价格，用户选择不同规格值会对应不同的 SKU
  *
  * @author: Aulen
  * @create: 2025-12-11

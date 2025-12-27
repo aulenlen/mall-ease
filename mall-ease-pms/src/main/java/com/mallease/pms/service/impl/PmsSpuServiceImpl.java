@@ -6,8 +6,8 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.common.exception.Asserts;
 import com.mallease.common.util.LoginContextUtil;
 import com.mallease.pms.dao.*;
-import com.mallease.pms.dto.CmsPreferenceAreaProductRelationDTO;
-import com.mallease.pms.dto.CmsSubjectProductRelationDTO;
+import com.mallease.pms.dto.CmsPreferenceAreaSpuRelationDTO;
+import com.mallease.pms.dto.CmsSubjectSpuRelationDTO;
 import com.mallease.pms.dto.context.*;
 import com.mallease.pms.dto.query.PmsSpuQuery;
 import com.mallease.pms.dto.vo.PmsSpuPublishVO;
@@ -163,13 +163,13 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         // 专题关联（Feign）
         if (context.getSubjectIds() != null && !context.getSubjectIds().isEmpty()) {
             try {
-                List<CmsSubjectProductRelationDTO> subjectRelations = context.getSubjectIds().stream()
-                        .map(subjectId -> CmsSubjectProductRelationDTO.builder()
-                                .productId(spuId)
+                List<CmsSubjectSpuRelationDTO> subjectRelations = context.getSubjectIds().stream()
+                        .map(subjectId -> CmsSubjectSpuRelationDTO.builder()
+                                .spuId(spuId)
                                 .subjectId(subjectId)
                                 .build())
                         .collect(Collectors.toList());
-                subjectFeignClient.batchAddProductRelation(subjectRelations);
+                subjectFeignClient.batchAddSpuRelation(subjectRelations);
             } catch (Exception e) {
                 log.warn("专题关联失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
             }
@@ -178,13 +178,13 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         // 优选专区关联（Feign）
         if (context.getPreferenceAreaIds() != null && !context.getPreferenceAreaIds().isEmpty()) {
             try {
-                List<CmsPreferenceAreaProductRelationDTO> areaRelations = context.getPreferenceAreaIds().stream()
-                        .map(areaId -> CmsPreferenceAreaProductRelationDTO.builder()
-                                .productId(spuId)
+                List<CmsPreferenceAreaSpuRelationDTO> areaRelations = context.getPreferenceAreaIds().stream()
+                        .map(areaId -> CmsPreferenceAreaSpuRelationDTO.builder()
+                                .spuId(spuId)
                                 .preferenceAreaId(areaId)
                                 .build())
                         .collect(Collectors.toList());
-                preferenceAreaFeignClient.batchAddProductRelation(areaRelations);
+                preferenceAreaFeignClient.batchAddSpuRelation(areaRelations);
             } catch (Exception e) {
                 log.warn("优选专区关联失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
             }
@@ -345,6 +345,7 @@ public class PmsSpuServiceImpl implements PmsSpuService {
                         }
                     }
                 } else if (skuId != null && !existingSkuIds.contains(skuId)) {
+                    log.error("SKU ID " + skuId + " 不属于 SPU " + spuId);
                     throw new ApiException("SKU ID " + skuId + " 不属于 SPU " + spuId);
                 }
             }
@@ -520,17 +521,17 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         if (context.isUpdateSubjects()) {
             try {
                 // 先删除旧关联
-                subjectFeignClient.deleteRelationsByProductId(spuId);
+                subjectFeignClient.deleteRelationsBySpuId(spuId);
 
                 // 添加新关联
                 if (context.getSubjectIds() != null && !context.getSubjectIds().isEmpty()) {
-                    List<CmsSubjectProductRelationDTO> subjectRelations = context.getSubjectIds().stream()
-                            .map(subjectId -> CmsSubjectProductRelationDTO.builder()
-                                    .productId(spuId)
+                    List<CmsSubjectSpuRelationDTO> subjectRelations = context.getSubjectIds().stream()
+                            .map(subjectId -> CmsSubjectSpuRelationDTO.builder()
+                                    .spuId(spuId)
                                     .subjectId(subjectId)
                                     .build())
                             .collect(Collectors.toList());
-                    subjectFeignClient.batchAddProductRelation(subjectRelations);
+                    subjectFeignClient.batchAddSpuRelation(subjectRelations);
                 }
             } catch (Exception e) {
                 log.warn("专题关联更新失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
@@ -541,17 +542,17 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         if (context.isUpdatePreferenceAreas()) {
             try {
                 // 先删除旧关联
-                preferenceAreaFeignClient.deleteRelationsByProductId(spuId);
+                preferenceAreaFeignClient.deleteRelationsBySpuId(spuId);
 
                 // 添加新关联
                 if (context.getPreferenceAreaIds() != null && !context.getPreferenceAreaIds().isEmpty()) {
-                    List<CmsPreferenceAreaProductRelationDTO> areaRelations = context.getPreferenceAreaIds().stream()
-                            .map(areaId -> CmsPreferenceAreaProductRelationDTO.builder()
-                                    .productId(spuId)
+                    List<CmsPreferenceAreaSpuRelationDTO> areaRelations = context.getPreferenceAreaIds().stream()
+                            .map(areaId -> CmsPreferenceAreaSpuRelationDTO.builder()
+                                    .spuId(spuId)
                                     .preferenceAreaId(areaId)
                                     .build())
                             .collect(Collectors.toList());
-                    preferenceAreaFeignClient.batchAddProductRelation(areaRelations);
+                    preferenceAreaFeignClient.batchAddSpuRelation(areaRelations);
                 }
             } catch (Exception e) {
                 log.warn("优选专区关联更新失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
@@ -624,10 +625,10 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         // 10. 查询关联的专题ID列表（通过 Feign 调用 CMS 服务）
         List<Long> subjectIds = new ArrayList<>();
         try {
-            R<List<CmsSubjectProductRelationDTO>> subjectResult = subjectFeignClient.getRelationsByProductId(id);
+            R<List<CmsSubjectSpuRelationDTO>> subjectResult = subjectFeignClient.getRelationsBySpuId(id);
             if (subjectResult != null && subjectResult.getData() != null) {
                 subjectIds = subjectResult.getData().stream()
-                        .map(CmsSubjectProductRelationDTO::getSubjectId)
+                        .map(CmsSubjectSpuRelationDTO::getSubjectId)
                         .collect(Collectors.toList());
             }
         } catch (Exception e) {
@@ -637,10 +638,10 @@ public class PmsSpuServiceImpl implements PmsSpuService {
         // 11. 查询关联的优选专区ID列表（通过 Feign 调用 CMS 服务）
         List<Long> preferenceAreaIds = new ArrayList<>();
         try {
-            R<List<CmsPreferenceAreaProductRelationDTO>> areaResult = preferenceAreaFeignClient.getRelationsByProductId(id);
+            R<List<CmsPreferenceAreaSpuRelationDTO>> areaResult = preferenceAreaFeignClient.getRelationsBySpuId(id);
             if (areaResult != null && areaResult.getData() != null) {
                 preferenceAreaIds = areaResult.getData().stream()
-                        .map(CmsPreferenceAreaProductRelationDTO::getPreferenceAreaId)
+                        .map(CmsPreferenceAreaSpuRelationDTO::getPreferenceAreaId)
                         .collect(Collectors.toList());
             }
         } catch (Exception e) {
@@ -692,14 +693,14 @@ public class PmsSpuServiceImpl implements PmsSpuService {
 
         // 6. 删除 CMS 专题关联（通过 Feign）
         try {
-            subjectFeignClient.deleteRelationsByProductId(id);
+            subjectFeignClient.deleteRelationsBySpuId(id);
         } catch (Exception e) {
             log.warn("删除专题关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
         }
 
         // 7. 删除 CMS 优选专区关联（通过 Feign）
         try {
-            preferenceAreaFeignClient.deleteRelationsByProductId(id);
+            preferenceAreaFeignClient.deleteRelationsBySpuId(id);
         } catch (Exception e) {
             log.warn("删除优选专区关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
         }

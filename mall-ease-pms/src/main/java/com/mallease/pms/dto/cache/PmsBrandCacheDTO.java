@@ -42,11 +42,11 @@ public class PmsBrandCacheDTO implements Serializable {
     @Schema(description = "显示状态(0:不显示 1:显示)")
     private Integer showStatus;
 
-    @Schema(description = "产品数量")
-    private Integer productCount;
+    @Schema(description = "SPU数量")
+    private Integer spuCount;
 
-    @Schema(description = "产品评论数量")
-    private Integer productCommentCount;
+    @Schema(description = "SPU评论数量")
+    private Integer spuCommentCount;
 
     @Schema(description = "品牌logo")
     private String logo;

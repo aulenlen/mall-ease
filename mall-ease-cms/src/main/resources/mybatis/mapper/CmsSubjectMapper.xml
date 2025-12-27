@@ -6,7 +6,7 @@
         <result column="category_id" property="categoryId" jdbcType="BIGINT"/>
         <result column="title" property="title" jdbcType="VARCHAR"/>
         <result column="pic" property="pic" jdbcType="VARCHAR"/>
-        <result column="product_count" property="productCount" jdbcType="INTEGER"/>
+        <result column="spu_count" property="spuCount" jdbcType="INTEGER"/>
         <result column="recommend_status" property="recommendStatus" jdbcType="INTEGER"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="collect_count" property="collectCount" jdbcType="INTEGER"/>
@@ -21,7 +21,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, category_id, title, pic, product_count, recommend_status, create_time,
+        id, category_id, title, pic, spu_count, recommend_status, create_time,
         collect_count, read_count, comment_count, album_pics, description, show_status,
         content, forward_count, category_name
     </sql>
@@ -96,13 +96,13 @@
 
     <insert id="insert" parameterType="com.mallease.cms.pojo.CmsSubject">
         insert into cms_subject (id, category_id, title,
-                                 pic, product_count, recommend_status,
+                                 pic, spu_count, recommend_status,
                                  create_time, collect_count, read_count,
                                  comment_count, album_pics, description,
                                  show_status, content, forward_count,
                                  category_name)
         values (#{id,jdbcType=BIGINT}, #{categoryId,jdbcType=BIGINT}, #{title,jdbcType=VARCHAR},
-                #{pic,jdbcType=VARCHAR}, #{productCount,jdbcType=INTEGER}, #{recommendStatus,jdbcType=INTEGER},
+                #{pic,jdbcType=VARCHAR}, #{spuCount,jdbcType=INTEGER}, #{recommendStatus,jdbcType=INTEGER},
                 #{createTime,jdbcType=TIMESTAMP}, #{collectCount,jdbcType=INTEGER}, #{readCount,jdbcType=INTEGER},
                 #{commentCount,jdbcType=INTEGER}, #{albumPics,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR},
                 #{showStatus,jdbcType=INTEGER}, #{content,jdbcType=LONGVARCHAR}, #{forwardCount,jdbcType=INTEGER},
@@ -124,8 +124,8 @@
             <if test="pic != null">
                 pic,
             </if>
-            <if test="productCount != null">
-                product_count,
+            <if test="spuCount != null">
+                spu_count,
             </if>
             <if test="recommendStatus != null">
                 recommend_status,
@@ -174,8 +174,8 @@
             <if test="pic != null">
                 #{pic,jdbcType=VARCHAR},
             </if>
-            <if test="productCount != null">
-                #{productCount,jdbcType=INTEGER},
+            <if test="spuCount != null">
+                #{spuCount,jdbcType=INTEGER},
             </if>
             <if test="recommendStatus != null">
                 #{recommendStatus,jdbcType=INTEGER},
@@ -225,8 +225,8 @@
             <if test="pic != null">
                 pic = #{pic,jdbcType=VARCHAR},
             </if>
-            <if test="productCount != null">
-                product_count = #{productCount,jdbcType=INTEGER},
+            <if test="spuCount != null">
+                spu_count = #{spuCount,jdbcType=INTEGER},
             </if>
             <if test="recommendStatus != null">
                 recommend_status = #{recommendStatus,jdbcType=INTEGER},
@@ -270,7 +270,7 @@
         set category_id = #{categoryId,jdbcType=BIGINT},
             title = #{title,jdbcType=VARCHAR},
             pic = #{pic,jdbcType=VARCHAR},
-            product_count = #{productCount,jdbcType=INTEGER},
+            spu_count = #{spuCount,jdbcType=INTEGER},
             recommend_status = #{recommendStatus,jdbcType=INTEGER},
             create_time = #{createTime,jdbcType=TIMESTAMP},
             collect_count = #{collectCount,jdbcType=INTEGER},

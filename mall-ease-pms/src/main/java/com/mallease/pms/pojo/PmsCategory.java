@@ -6,10 +6,6 @@ import java.time.LocalDateTime;
 
 /**
  * 商品分类表
- * 说明：使用物化路径（Materialized Path）优化树形结构查询
- * path 字段格式：/1/7/8/，支持高效查询子树和祖先
- *
- * 替代旧表：pms_product_category
  *
  * @author: Aulen
  * @create: 2025-12-11

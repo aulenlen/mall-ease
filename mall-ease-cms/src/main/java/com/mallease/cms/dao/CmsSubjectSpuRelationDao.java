@@ -1,6 +1,6 @@
 package com.mallease.cms.dao;
 
-import com.mallease.cms.pojo.CmsSubjectProductRelation;
+import com.mallease.cms.pojo.CmsSubjectSpuRelation;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -13,7 +13,7 @@ import java.util.List;
  * @create: 2025-11-13
  */
 @Mapper
-public interface CmsSubjectProductRelationDao {
+public interface CmsSubjectSpuRelationDao {
     /**
      * 根据主键删除
      *
@@ -28,7 +28,7 @@ public interface CmsSubjectProductRelationDao {
      * @param record 记录
      * @return 影响行数
      */
-    int insert(CmsSubjectProductRelation record);
+    int insert(CmsSubjectSpuRelation record);
 
     /**
      * 选择性插入记录
@@ -36,7 +36,7 @@ public interface CmsSubjectProductRelationDao {
      * @param record 记录
      * @return 影响行数
      */
-    int insertSelective(CmsSubjectProductRelation record);
+    int insertSelective(CmsSubjectSpuRelation record);
 
     /**
      * 根据主键查询
@@ -44,7 +44,7 @@ public interface CmsSubjectProductRelationDao {
      * @param id 主键ID
      * @return 记录
      */
-    CmsSubjectProductRelation selectByPrimaryKey(Long id);
+    CmsSubjectSpuRelation selectByPrimaryKey(Long id);
 
     /**
      * 根据主键选择性更新
@@ -52,7 +52,7 @@ public interface CmsSubjectProductRelationDao {
      * @param record 记录
      * @return 影响行数
      */
-    int updateByPrimaryKeySelective(CmsSubjectProductRelation record);
+    int updateByPrimaryKeySelective(CmsSubjectSpuRelation record);
 
     /**
      * 根据主键更新
@@ -60,7 +60,7 @@ public interface CmsSubjectProductRelationDao {
      * @param record 记录
      * @return 影响行数
      */
-    int updateByPrimaryKey(CmsSubjectProductRelation record);
+    int updateByPrimaryKey(CmsSubjectSpuRelation record);
 
     /**
      * 根据专题ID查询
@@ -68,15 +68,15 @@ public interface CmsSubjectProductRelationDao {
      * @param subjectId 专题ID
      * @return 记录列表
      */
-    List<CmsSubjectProductRelation> selectBySubjectId(@Param("subjectId") Long subjectId);
+    List<CmsSubjectSpuRelation> selectBySubjectId(@Param("subjectId") Long subjectId);
 
     /**
      * 根据产品ID查询
      *
-     * @param productId 产品ID
+     * @param spuId 产品ID
      * @return 记录列表
      */
-    List<CmsSubjectProductRelation> selectByProductId(@Param("productId") Long productId);
+    List<CmsSubjectSpuRelation> selectBySpuId(@Param("spuId") Long spuId);
 
     /**
      * 根据专题ID删除
@@ -89,10 +89,10 @@ public interface CmsSubjectProductRelationDao {
     /**
      * 根据产品ID删除
      *
-     * @param productId 产品ID
+     * @param spuId 产品ID
      * @return 影响行数
      */
-    int deleteByProductId(@Param("productId") Long productId);
+    int deleteBySpuId(@Param("spuId") Long spuId);
 
     /**
      * 批量插入记录
@@ -100,5 +100,5 @@ public interface CmsSubjectProductRelationDao {
      * @param list 记录列表
      * @return 影响行数
      */
-    int insertBatch(@Param("list") List<CmsSubjectProductRelation> list);
+    int insertBatch(@Param("list") List<CmsSubjectSpuRelation> list);
 }

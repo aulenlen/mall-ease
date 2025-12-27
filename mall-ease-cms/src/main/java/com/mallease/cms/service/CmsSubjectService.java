@@ -1,7 +1,7 @@
 package com.mallease.cms.service;
 
 import com.mallease.cms.pojo.CmsSubject;
-import com.mallease.cms.pojo.CmsSubjectProductRelation;
+import com.mallease.cms.pojo.CmsSubjectSpuRelation;
 
 import java.util.List;
 
@@ -99,21 +99,21 @@ public interface CmsSubjectService {
      * @param relationList 关联列表
      * @return 添加的记录数
      */
-    int batchAddProductRelation(List<CmsSubjectProductRelation> relationList);
+    int batchAddSpuRelation(List<CmsSubjectSpuRelation> relationList);
 
     /**
      * 根据商品ID查询专题商品关联列表
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 关联列表
      */
-    List<CmsSubjectProductRelation> getRelationsByProductId(Long productId);
+    List<CmsSubjectSpuRelation> getRelationsBySpuId(Long spuId);
 
     /**
      * 根据商品ID删除专题商品关联
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 删除的记录数
      */
-    int deleteRelationsByProductId(Long productId);
+    int deleteRelationsBySpuId(Long spuId);
 }

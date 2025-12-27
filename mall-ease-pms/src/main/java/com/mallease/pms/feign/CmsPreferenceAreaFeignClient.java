@@ -1,7 +1,7 @@
 package com.mallease.pms.feign;
 
 import com.mallease.common.api.R;
-import com.mallease.pms.dto.CmsPreferenceAreaProductRelationDTO;
+import com.mallease.pms.dto.CmsPreferenceAreaSpuRelationDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,24 +21,24 @@ public interface CmsPreferenceAreaFeignClient {
      * @param relationList 关联列表（DTO用于服务间传输）
      * @return 添加结果
      */
-    @PostMapping("/cms/preferenceArea/product/relation/batch")
-    R<Integer> batchAddProductRelation(@RequestBody List<CmsPreferenceAreaProductRelationDTO> relationList);
+    @PostMapping("/cms/preferenceArea/spu/relation/batch")
+    R<Integer> batchAddSpuRelation(@RequestBody List<CmsPreferenceAreaSpuRelationDTO> relationList);
 
     /**
      * 根据商品ID查询优选专区商品关联列表
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 关联列表（DTO用于服务间传输）
      */
-    @GetMapping("/cms/preferenceArea/product/relation/product/{productId}")
-    R<List<CmsPreferenceAreaProductRelationDTO>> getRelationsByProductId(@PathVariable("productId") Long productId);
+    @GetMapping("/cms/preferenceArea/spu/relation/spu/{spuId}")
+    R<List<CmsPreferenceAreaSpuRelationDTO>> getRelationsBySpuId(@PathVariable("spuId") Long spuId);
 
     /**
      * 根据商品ID删除优选专区商品关联
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 删除结果
      */
-    @DeleteMapping("/cms/preferenceArea/product/relation/product/{productId}")
-    R<Integer> deleteRelationsByProductId(@PathVariable("productId") Long productId);
+    @DeleteMapping("/cms/preferenceArea/spu/relation/spu/{spuId}")
+    R<Integer> deleteRelationsBySpuId(@PathVariable("spuId") Long spuId);
 }

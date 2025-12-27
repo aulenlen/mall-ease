@@ -6,8 +6,6 @@ import java.time.LocalDateTime;
 
 /**
  * 规格值表
- * 说明：存储规格的具体可选值，如"黑色"、"128GB"、"XL"
- * 支持颜色代码和图片，用于前端展示颜色块或图片选择器
  *
  * @author: Aulen
  * @create: 2025-12-11

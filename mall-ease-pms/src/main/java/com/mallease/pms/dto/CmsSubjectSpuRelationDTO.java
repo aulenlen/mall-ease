@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CmsSubjectProductRelationDTO {
+public class CmsSubjectSpuRelationDTO {
     private Long id;
     private Long subjectId;
-    private Long productId;
+    private Long spuId;
 }

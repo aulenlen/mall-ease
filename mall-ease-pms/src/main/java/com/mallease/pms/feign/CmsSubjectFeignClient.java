@@ -1,7 +1,7 @@
 package com.mallease.pms.feign;
 
 import com.mallease.common.api.R;
-import com.mallease.pms.dto.CmsSubjectProductRelationDTO;
+import com.mallease.pms.dto.CmsSubjectSpuRelationDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,24 +21,24 @@ public interface CmsSubjectFeignClient {
      * @param relationList 关联列表（DTO用于服务间传输）
      * @return 添加结果
      */
-    @PostMapping("/cms/subject/product/relation/batch")
-    R<Integer> batchAddProductRelation(@RequestBody List<CmsSubjectProductRelationDTO> relationList);
+    @PostMapping("/cms/subject/spu/relation/batch")
+    R<Integer> batchAddSpuRelation(@RequestBody List<CmsSubjectSpuRelationDTO> relationList);
 
     /**
      * 根据商品ID查询专题商品关联列表
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 关联列表（DTO用于服务间传输）
      */
-    @GetMapping("/cms/subject/product/relation/product/{productId}")
-    R<List<CmsSubjectProductRelationDTO>> getRelationsByProductId(@PathVariable("productId") Long productId);
+    @GetMapping("/cms/subject/spu/relation/spu/{spuId}")
+    R<List<CmsSubjectSpuRelationDTO>> getRelationsBySpuId(@PathVariable("spuId") Long spuId);
 
     /**
      * 根据商品ID删除专题商品关联
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 删除结果
      */
-    @DeleteMapping("/cms/subject/product/relation/product/{productId}")
-    R<Integer> deleteRelationsByProductId(@PathVariable("productId") Long productId);
+    @DeleteMapping("/cms/subject/spu/relation/spu/{spuId}")
+    R<Integer> deleteRelationsBySpuId(@PathVariable("spuId") Long spuId);
 }

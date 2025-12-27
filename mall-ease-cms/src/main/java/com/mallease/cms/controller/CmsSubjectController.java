@@ -8,7 +8,7 @@ import com.mallease.cms.dto.vo.CmsSubjectDetailVO;
 import com.mallease.cms.dto.vo.CmsSubjectListVO;
 import com.mallease.cms.dto.vo.CmsSubjectVO;
 import com.mallease.cms.pojo.CmsSubject;
-import com.mallease.cms.pojo.CmsSubjectProductRelation;
+import com.mallease.cms.pojo.CmsSubjectSpuRelation;
 import com.mallease.cms.service.CmsSubjectService;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
@@ -236,9 +236,9 @@ public class CmsSubjectController {
      * @return 添加结果
      */
     @Operation(summary = "批量添加专题商品关联")
-    @PostMapping("/product/relation/batch")
-    public R<Integer> batchAddProductRelation(@RequestBody List<CmsSubjectProductRelation> relationList) {
-        int count = subjectService.batchAddProductRelation(relationList);
+    @PostMapping("/spu/relation/batch")
+    public R<Integer> batchAddSpuRelation(@RequestBody List<CmsSubjectSpuRelation> relationList) {
+        int count = subjectService.batchAddSpuRelation(relationList);
         if (count > 0) {
             return R.success(count);
         }
@@ -248,28 +248,28 @@ public class CmsSubjectController {
     /**
      * 根据商品ID查询专题商品关联列表
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 关联列表
      */
     @Operation(summary = "根据商品ID查询专题商品关联")
-    @GetMapping("/product/relation/product/{productId}")
-    public R<List<CmsSubjectProductRelation>> getRelationsByProductId(
-            @Parameter(description = "商品ID") @PathVariable("productId") Long productId) {
-        List<CmsSubjectProductRelation> list = subjectService.getRelationsByProductId(productId);
+    @GetMapping("/spu/relation/spu/{spuId}")
+    public R<List<CmsSubjectSpuRelation>> getRelationsBySpuId(
+            @Parameter(description = "商品ID") @PathVariable("spuId") Long spuId) {
+        List<CmsSubjectSpuRelation> list = subjectService.getRelationsBySpuId(spuId);
         return R.success(list);
     }
 
     /**
      * 根据商品ID删除专题商品关联
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 删除结果
      */
     @Operation(summary = "根据商品ID删除专题商品关联")
-    @DeleteMapping("/product/relation/product/{productId}")
-    public R<Integer> deleteRelationsByProductId(
-            @Parameter(description = "商品ID") @PathVariable("productId") Long productId) {
-        int count = subjectService.deleteRelationsByProductId(productId);
+    @DeleteMapping("/spu/relation/spu/{spuId}")
+    public R<Integer> deleteRelationsBySpuId(
+            @Parameter(description = "商品ID") @PathVariable("spuId") Long spuId) {
+        int count = subjectService.deleteRelationsBySpuId(spuId);
         return R.success(count);
     }
 }

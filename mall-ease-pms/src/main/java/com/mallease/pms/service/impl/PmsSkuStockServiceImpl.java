@@ -32,8 +32,8 @@ public class PmsSkuStockServiceImpl implements PmsSkuStockService {
     }
 
     @Override
-    public boolean deductStock(Long productId, Long skuId, Integer quantity) {
-        String stockKey = PmsRedisKeys.SPU_SKU_STOCK_PREFIX + productId;
+    public boolean deductStock(Long spuId, Long skuId, Integer quantity) {
+        String stockKey = PmsRedisKeys.SPU_SKU_STOCK_PREFIX + spuId;
         String skuField = String.valueOf(skuId);
 
         // Lua 脚本保证原子性（适配 Hash 结构）
@@ -54,21 +54,21 @@ public class PmsSkuStockServiceImpl implements PmsSkuStockService {
         );
 
         if (result == 1) {
-            log.info("扣减SKU库存成功，productId={}, skuId={}, quantity={}",
-                    productId, skuId, quantity);
+            log.info("扣减SKU库存成功，spuId={}, skuId={}, quantity={}",
+                    spuId, skuId, quantity);
 
             // 检查是否售罄
             Object remainStockObj = redisService.hGet(stockKey, skuField);
             if (remainStockObj != null && Integer.parseInt(remainStockObj.toString()) == 0) {
-                log.warn("SKU已售罄，productId={}, skuId={}", productId, skuId);
+                log.warn("SKU已售罄，spuId={}, skuId={}", spuId, skuId);
                 // TODO: 通知ES更新商品库存状态（如果所有SKU都售罄）
             }
 
             return true;
         }
 
-        log.warn("SKU库存不足，productId={}, skuId={}, 尝试扣减={}",
-                productId, skuId, quantity);
+        log.warn("SKU库存不足，spuId={}, skuId={}, 尝试扣减={}",
+                spuId, skuId, quantity);
         return false;
     }
 

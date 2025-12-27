@@ -8,7 +8,6 @@ import java.util.List;
 
 /**
  * SKU库存 Mapper 接口
- * 重构说明：新表结构关联 sku_id 而非 product_id，支持乐观锁
  *
  * @author: Aulen
  * @create: 2025-12-11

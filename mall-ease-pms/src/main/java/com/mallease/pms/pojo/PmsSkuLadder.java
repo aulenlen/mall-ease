@@ -7,8 +7,6 @@ import java.time.LocalDateTime;
 
 /**
  * SKU阶梯价格表
- * 说明：存储 SKU 的阶梯价格（买得越多越便宜）
- * 替代旧表：pms_product_ladder（改为关联 sku_id）
  *
  * @author: Aulen
  * @create: 2025-12-11

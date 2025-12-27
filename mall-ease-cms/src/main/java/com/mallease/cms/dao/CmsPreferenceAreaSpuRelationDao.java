@@ -1,6 +1,6 @@
 package com.mallease.cms.dao;
 
-import com.mallease.cms.pojo.CmsPreferenceAreaProductRelation;
+import com.mallease.cms.pojo.CmsPreferenceAreaSpuRelation;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -13,7 +13,7 @@ import java.util.List;
  * @create: 2025-11-13
  */
 @Mapper
-public interface CmsPreferenceAreaProductRelationDao {
+public interface CmsPreferenceAreaSpuRelationDao {
     /**
      * 根据主键删除
      *
@@ -28,7 +28,7 @@ public interface CmsPreferenceAreaProductRelationDao {
      * @param record 记录
      * @return 影响行数
      */
-    int insert(CmsPreferenceAreaProductRelation record);
+    int insert(CmsPreferenceAreaSpuRelation record);
 
     /**
      * 选择性插入记录
@@ -36,7 +36,7 @@ public interface CmsPreferenceAreaProductRelationDao {
      * @param record 记录
      * @return 影响行数
      */
-    int insertSelective(CmsPreferenceAreaProductRelation record);
+    int insertSelective(CmsPreferenceAreaSpuRelation record);
 
     /**
      * 根据主键查询
@@ -44,7 +44,7 @@ public interface CmsPreferenceAreaProductRelationDao {
      * @param id 主键ID
      * @return 记录
      */
-    CmsPreferenceAreaProductRelation selectByPrimaryKey(Long id);
+    CmsPreferenceAreaSpuRelation selectByPrimaryKey(Long id);
 
     /**
      * 根据主键选择性更新
@@ -52,7 +52,7 @@ public interface CmsPreferenceAreaProductRelationDao {
      * @param record 记录
      * @return 影响行数
      */
-    int updateByPrimaryKeySelective(CmsPreferenceAreaProductRelation record);
+    int updateByPrimaryKeySelective(CmsPreferenceAreaSpuRelation record);
 
     /**
      * 根据主键更新
@@ -60,7 +60,7 @@ public interface CmsPreferenceAreaProductRelationDao {
      * @param record 记录
      * @return 影响行数
      */
-    int updateByPrimaryKey(CmsPreferenceAreaProductRelation record);
+    int updateByPrimaryKey(CmsPreferenceAreaSpuRelation record);
 
     /**
      * 根据优选专区ID查询
@@ -68,15 +68,15 @@ public interface CmsPreferenceAreaProductRelationDao {
      * @param prefrenceAreaId 优选专区ID
      * @return 记录列表
      */
-    List<CmsPreferenceAreaProductRelation> selectByPreferenceAreaId(@Param("prefrenceAreaId") Long prefrenceAreaId);
+    List<CmsPreferenceAreaSpuRelation> selectByPreferenceAreaId(@Param("prefrenceAreaId") Long prefrenceAreaId);
 
     /**
      * 根据产品ID查询
      *
-     * @param productId 产品ID
+     * @param spuId 产品ID
      * @return 记录列表
      */
-    List<CmsPreferenceAreaProductRelation> selectByProductId(@Param("productId") Long productId);
+    List<CmsPreferenceAreaSpuRelation> selectBySpuId(@Param("spuId") Long spuId);
 
     /**
      * 根据优选专区ID删除
@@ -89,10 +89,10 @@ public interface CmsPreferenceAreaProductRelationDao {
     /**
      * 根据产品ID删除
      *
-     * @param productId 产品ID
+     * @param spuId 产品ID
      * @return 影响行数
      */
-    int deleteByProductId(@Param("productId") Long productId);
+    int deleteBySpuId(@Param("spuId") Long spuId);
 
     /**
      * 批量插入记录
@@ -100,5 +100,5 @@ public interface CmsPreferenceAreaProductRelationDao {
      * @param list 记录列表
      * @return 影响行数
      */
-    int insertBatch(@Param("list") List<CmsPreferenceAreaProductRelation> list);
+    int insertBatch(@Param("list") List<CmsPreferenceAreaSpuRelation> list);
 }

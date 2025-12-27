@@ -6,9 +6,9 @@ import com.mallease.pms.dto.vo.PmsSpuDetailVO;
 import com.mallease.pms.dto.vo.PmsSpuListVO;
 import com.mallease.pms.dto.vo.PmsSpuVO;
 import com.mallease.pms.pojo.PmsSpu;
-import com.mallease.pms.pojo.PmsSpuParamValue;
 import com.mallease.pms.pojo.PmsSpuDetail;
 import com.mallease.pms.pojo.PmsSpuFullReduction;
+import com.mallease.pms.pojo.PmsSpuParamValue;
 import org.mapstruct.*;
 
 import java.math.BigDecimal;
@@ -18,171 +18,114 @@ import java.util.stream.Collectors;
 
 /**
  * SPU转换器
- * <p>
- * 负责SPU实体与DTO之间的转换，包括状态码到中文名称的映射
- *
  * @author: Aulen
  * @create: 2025-12-12
  */
 @Mapper(componentModel = "spring")
 public interface PmsSpuConverter {
 
-    // ========================================================================
-    // Entity → VO
-    // ========================================================================
-
-    /**
-     * Entity → VO（通用）
-     */
     PmsSpuVO entityToVo(PmsSpu entity);
 
-    /**
-     * Entity → ListVO（列表场景）
-     */
     @Mapping(target = "priceRange", expression = "java(formatPriceRange(entity.getMinPrice(), entity.getMaxPrice()))")
-    @Mapping(target = "skuCount", ignore = true) // 由 Service 层填充
+    @Mapping(target = "skuCount", ignore = true)
     PmsSpuListVO entityToListVo(PmsSpu entity);
 
     /**
-     * Entity → DetailVO（详情场景）
+     * Entity → DetailVO
+     * 详情字段由 mergeSpuDetailToVo 填充，关联数据由 Service 层填充
      */
+    @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     @Mapping(source = "albumPics", target = "albumPicList", qualifiedByName = "splitAlbumPics")
-    @Mapping(target = "detailTitle", ignore = true)      // 从 PmsSpuDetail 填充
-    @Mapping(target = "detailDesc", ignore = true)       // 从 PmsSpuDetail 填充
-    @Mapping(target = "detailHtml", ignore = true)       // 从 PmsSpuDetail 填充
-    @Mapping(target = "detailMobileHtml", ignore = true) // 从 PmsSpuDetail 填充
-    @Mapping(target = "serviceIds", ignore = true)       // 从 PmsSpuDetail 填充
-    @Mapping(target = "serviceList", ignore = true)      // 从 PmsSpuDetail 填充
-    @Mapping(target = "packingList", ignore = true)      // 从 PmsSpuDetail 填充
-    @Mapping(target = "afterSaleService", ignore = true) // 从 PmsSpuDetail 填充
-    @Mapping(target = "skuList", ignore = true)          // 由 Service 层填充
-    @Mapping(target = "paramValueList", ignore = true)    // 由 Service 层填充
-    @Mapping(target = "fullReductionList", ignore = true)     // 由 Service 层填充
-    @Mapping(target = "subjectIds", ignore = true)            // 由 Service 层填充
-    @Mapping(target = "preferenceAreaIds", ignore = true)     // 由 Service 层填充
     PmsSpuDetailVO entityToDetailVo(PmsSpu entity);
-
-    // ========================================================================
-    // 列表转换
-    // ========================================================================
 
     List<PmsSpuVO> entityListToVoList(List<PmsSpu> entities);
 
     List<PmsSpuListVO> entityListToListVoList(List<PmsSpu> entities);
 
     List<PmsSpuDetailVO> entityListToDetailVoList(List<PmsSpu> entities);
-
-    // ========================================================================
-    // Command → Entity
-    // ========================================================================
-
+    
     /**
      * CreateCmd → Entity
+     * 显式列出需要映射的业务字段，其他全部忽略
      */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "spuCode", ignore = true)        // 由 Service 层生成
-    @Mapping(target = "categoryIds", ignore = true)    // 由 Service 层填充
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(source = "brandId", target = "brandId")
+    @Mapping(source = "categoryId", target = "categoryId")
+    @Mapping(source = "freightTemplateId", target = "freightTemplateId")
+    @Mapping(source = "name", target = "name")
+    @Mapping(source = "subTitle", target = "subTitle")
+    @Mapping(source = "description", target = "description")
+    @Mapping(source = "keywords", target = "keywords")
+    @Mapping(source = "note", target = "note")
+    @Mapping(source = "pic", target = "pic")
+    @Mapping(source = "albumPics", target = "albumPics")
+    @Mapping(source = "unit", target = "unit")
+    @Mapping(source = "weight", target = "weight")
+    @Mapping(source = "newStatus", target = "newStatus")
+    @Mapping(source = "recommendStatus", target = "recommendStatus")
+    @Mapping(source = "sort", target = "sort")
     @Mapping(target = "deleted", constant = "0")
-    @Mapping(target = "publishStatus", constant = "0") // 默认下架
-    @Mapping(target = "verifyStatus", constant = "0")  // 默认未审核
+    @Mapping(target = "publishStatus", constant = "0")
+    @Mapping(target = "verifyStatus", constant = "0")
     @Mapping(target = "sale", constant = "0")
-    @Mapping(target = "minPrice", ignore = true)       // 由 Service 层计算
-    @Mapping(target = "maxPrice", ignore = true)       // 由 Service 层计算
-    @Mapping(target = "stock", ignore = true)          // 由 Service 层计算
-    @Mapping(target = "brandName", ignore = true)      // 由 Service 层填充
-    @Mapping(target = "categoryName", ignore = true)   // 由 Service 层填充
-    @Mapping(target = "createTime", ignore = true)
-    @Mapping(target = "updateTime", ignore = true)
-    @Mapping(target = "creator", ignore = true)
-    @Mapping(target = "updater", ignore = true)
-    @Mapping(target = "version", ignore = true)
     PmsSpu createCmdToEntity(CreatePmsSpuCmd cmd);
 
     /**
      * UpdateCmd → Entity（部分更新）
      */
+    @BeanMapping(
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+    )
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "spuCode", ignore = true)        // 不允许修改编码
-    @Mapping(target = "deleted", ignore = true)
-    @Mapping(target = "sale", ignore = true)           // 销量不允许直接修改
-    @Mapping(target = "minPrice", ignore = true)       // 由 Service 层计算
-    @Mapping(target = "maxPrice", ignore = true)       // 由 Service 层计算
-    @Mapping(target = "stock", ignore = true)          // 由 Service 层计算
-    @Mapping(target = "brandName", ignore = true)      // 由 Service 层填充
-    @Mapping(target = "categoryName", ignore = true)   // 由 Service 层填充
-    @Mapping(target = "categoryIds", ignore = true)    // 由 Service 层填充
-    @Mapping(target = "createTime", ignore = true)
-    @Mapping(target = "updateTime", ignore = true)
-    @Mapping(target = "creator", ignore = true)
-    @Mapping(target = "updater", ignore = true)
-    @Mapping(target = "version", ignore = true)
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "spuCode", ignore = true)
     void updateEntityFromCmd(@MappingTarget PmsSpu entity, UpdatePmsSpuCmd cmd);
-
-    // ========================================================================
-    // SPU 详情转换
-    // ========================================================================
-
+    
     /**
-     * SpuDetailCmd → PmsSpuDetail Entity
+     * SpuDetailCmd → Entity
      */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "spuId", ignore = true)  // 由 Service 层设置
-    @Mapping(target = "createTime", ignore = true)
-    @Mapping(target = "updateTime", ignore = true)
-    @Mapping(target = "creator", ignore = true)
-    @Mapping(target = "updater", ignore = true)
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(source = "detailTitle", target = "detailTitle")
+    @Mapping(source = "detailDesc", target = "detailDesc")
+    @Mapping(source = "detailHtml", target = "detailHtml")
+    @Mapping(source = "detailMobileHtml", target = "detailMobileHtml")
+    @Mapping(source = "serviceIds", target = "serviceIds")
+    @Mapping(source = "packingList", target = "packingList")
+    @Mapping(source = "afterSaleService", target = "afterSaleService")
     PmsSpuDetail spuDetailCmdToEntity(CreatePmsSpuCmd.SpuDetailCmd cmd);
 
     /**
-     * PmsSpuDetail Entity → DetailVO（合并到 SPU DetailVO）
+     * 合并 SPU 详情到 VO
      */
+    @BeanMapping(
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+    )
+    @Mapping(target = "id", ignore = true)
     @Mapping(source = "serviceIds", target = "serviceList", qualifiedByName = "splitServiceIds")
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void mergeSpuDetailToVo(@MappingTarget PmsSpuDetailVO vo, PmsSpuDetail detail);
-
-    // ========================================================================
-    // 关联数据转换（spuId 由 Service 层设置）
-    // ========================================================================
-
+    
     /**
      * 参数属性值 Cmd → Entity
      */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "spuId", ignore = true)
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(source = "paramId", target = "paramId")
+    @Mapping(source = "value", target = "value")
     @Mapping(target = "deleted", constant = "0")
-    @Mapping(target = "createTime", ignore = true)
-    @Mapping(target = "updateTime", ignore = true)
     PmsSpuParamValue paramValueCmdToEntity(CreatePmsSpuCmd.SpuParamValueCmd cmd);
 
-    /**
-     * 参数属性值 CmdList → EntityList
-     */
     List<PmsSpuParamValue> paramValueCmdListToEntityList(List<CreatePmsSpuCmd.SpuParamValueCmd> cmdList);
 
     /**
      * 满减规则 Cmd → Entity
      */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "spuId", ignore = true)
-    @Mapping(target = "creator", ignore = true)
-    @Mapping(target = "updater", ignore = true)
-    @Mapping(target = "createTime", ignore = true)
-    @Mapping(target = "updateTime", ignore = true)
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(source = "fullPrice", target = "fullPrice")
+    @Mapping(source = "reducePrice", target = "reducePrice")
     PmsSpuFullReduction fullReductionCmdToEntity(CreatePmsSpuCmd.SpuFullReductionCmd cmd);
 
-    /**
-     * 满减规则 CmdList → EntityList
-     */
     List<PmsSpuFullReduction> fullReductionCmdListToEntityList(List<CreatePmsSpuCmd.SpuFullReductionCmd> cmdList);
 
-    // ========================================================================
-    // 自定义映射方法
-    // ========================================================================
-
-    /**
-     * 格式化价格区间
-     */
     default String formatPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
         if (minPrice == null || maxPrice == null) {
             return "-";
@@ -193,9 +136,6 @@ public interface PmsSpuConverter {
         return "¥" + minPrice + " - ¥" + maxPrice;
     }
 
-    /**
-     * 分割画册图片（逗号分隔字符串 → List）
-     */
     @Named("splitAlbumPics")
     default List<String> splitAlbumPics(String albumPics) {
         if (albumPics == null || albumPics.trim().isEmpty()) {
@@ -207,9 +147,6 @@ public interface PmsSpuConverter {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 分割服务ID（逗号分隔字符串 → List）
-     */
     @Named("splitServiceIds")
     default List<String> splitServiceIds(String serviceIds) {
         if (serviceIds == null || serviceIds.trim().isEmpty()) {

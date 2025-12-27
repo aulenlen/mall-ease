@@ -1,9 +1,9 @@
 package com.mallease.cms.service.impl;
 
 import com.mallease.cms.dao.CmsPreferenceAreaDao;
-import com.mallease.cms.dao.CmsPreferenceAreaProductRelationDao;
+import com.mallease.cms.dao.CmsPreferenceAreaSpuRelationDao;
 import com.mallease.cms.pojo.CmsPreferenceArea;
-import com.mallease.cms.pojo.CmsPreferenceAreaProductRelation;
+import com.mallease.cms.pojo.CmsPreferenceAreaSpuRelation;
 import com.mallease.cms.service.CmsPreferenceAreaService;
 import com.mallease.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -24,94 +24,94 @@ import java.util.List;
 public class CmsPreferenceAreaServiceImpl implements CmsPreferenceAreaService {
 
     @Autowired
-    private CmsPreferenceAreaDao prefrenceAreaDao;
+    private CmsPreferenceAreaDao preferenceAreaDao;
 
     @Autowired
-    private CmsPreferenceAreaProductRelationDao prefrenceAreaProductRelationDao;
+    private CmsPreferenceAreaSpuRelationDao preferenceAreaSpuRelationDao;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int create(CmsPreferenceArea prefrenceArea) {
-        return prefrenceAreaDao.insertSelective(prefrenceArea);
+    public int create(CmsPreferenceArea preferenceArea) {
+        return preferenceAreaDao.insertSelective(preferenceArea);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int update(Long id, CmsPreferenceArea prefrenceArea) {
-        prefrenceArea.setId(id);
-        return prefrenceAreaDao.updateByPrimaryKeySelective(prefrenceArea);
+    public int update(Long id, CmsPreferenceArea preferenceArea) {
+        preferenceArea.setId(id);
+        return preferenceAreaDao.updateByPrimaryKeySelective(preferenceArea);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int delete(Long id) {
-        return prefrenceAreaDao.deleteByPrimaryKey(id);
+        return preferenceAreaDao.deleteByPrimaryKey(id);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteBatch(List<Long> ids) {
-        return prefrenceAreaDao.deleteBatch(ids);
+        return preferenceAreaDao.deleteBatch(ids);
     }
 
     @Override
     public CmsPreferenceArea getById(Long id) {
-        return prefrenceAreaDao.selectByPrimaryKey(id);
+        return preferenceAreaDao.selectByPrimaryKey(id);
     }
 
     @Override
     public List<CmsPreferenceArea> listAll() {
-        return prefrenceAreaDao.selectAll();
+        return preferenceAreaDao.selectAll();
     }
 
     @Override
     public List<CmsPreferenceArea> listByName(String name) {
-        return prefrenceAreaDao.selectByName(name);
+        return preferenceAreaDao.selectByName(name);
     }
 
     @Override
     public List<CmsPreferenceArea> listByShowStatus(Integer showStatus) {
-        return prefrenceAreaDao.selectByShowStatus(showStatus);
+        return preferenceAreaDao.selectByShowStatus(showStatus);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateShowStatusBatch(List<Long> ids, Integer showStatus) {
-        return prefrenceAreaDao.updateShowStatusBatch(ids, showStatus);
+        return preferenceAreaDao.updateShowStatusBatch(ids, showStatus);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchAddProductRelation(List<CmsPreferenceAreaProductRelation> relationList) {
+    public int batchAddSpuRelation(List<CmsPreferenceAreaSpuRelation> relationList) {
         if (relationList == null || relationList.isEmpty()) {
             throw new ApiException("关联列表不能为空");
         }
         // 验证每条关联数据
-        for (CmsPreferenceAreaProductRelation relation : relationList) {
+        for (CmsPreferenceAreaSpuRelation relation : relationList) {
             if (relation.getPreferenceAreaId() == null) {
                 throw new ApiException("优选专区ID不能为空");
             }
-            if (relation.getProductId() == null) {
+            if (relation.getSpuId() == null) {
                 throw new ApiException("商品ID不能为空");
             }
         }
-        return prefrenceAreaProductRelationDao.insertBatch(relationList);
+        return preferenceAreaSpuRelationDao.insertBatch(relationList);
     }
 
     @Override
-    public List<CmsPreferenceAreaProductRelation> getRelationsByProductId(Long productId) {
-        if (productId == null) {
+    public List<CmsPreferenceAreaSpuRelation> getRelationsBySpuId(Long spuId) {
+        if (spuId == null) {
             throw new ApiException("商品ID不能为空");
         }
-        return prefrenceAreaProductRelationDao.selectByProductId(productId);
+        return preferenceAreaSpuRelationDao.selectBySpuId(spuId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int deleteRelationsByProductId(Long productId) {
-        if (productId == null) {
+    public int deleteRelationsBySpuId(Long spuId) {
+        if (spuId == null) {
             throw new ApiException("商品ID不能为空");
         }
-        return prefrenceAreaProductRelationDao.deleteByProductId(productId);
+        return preferenceAreaSpuRelationDao.deleteBySpuId(spuId);
     }
 }

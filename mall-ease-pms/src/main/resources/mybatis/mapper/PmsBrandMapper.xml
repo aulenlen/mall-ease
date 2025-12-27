@@ -8,8 +8,8 @@
         <result column="sort" property="sort" jdbcType="INTEGER"/>
         <result column="factory_status" property="factoryStatus" jdbcType="INTEGER"/>
         <result column="show_status" property="showStatus" jdbcType="INTEGER"/>
-        <result column="product_count" property="productCount" jdbcType="INTEGER"/>
-        <result column="product_comment_count" property="productCommentCount" jdbcType="INTEGER"/>
+        <result column="spu_count" property="spuCount" jdbcType="INTEGER"/>
+        <result column="spu_comment_count" property="spuCommentCount" jdbcType="INTEGER"/>
         <result column="logo" property="logo" jdbcType="VARCHAR"/>
         <result column="big_pic" property="bigPic" jdbcType="VARCHAR"/>
         <result column="brand_story" property="brandStory" jdbcType="LONGVARCHAR"/>
@@ -20,7 +20,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, first_letter, sort, factory_status, show_status, product_count, product_comment_count, logo, big_pic, brand_story, create_time, update_time, creator, updater
+        id, name, first_letter, sort, factory_status, show_status, spu_count, spu_comment_count, logo, big_pic, brand_story, create_time, update_time, creator, updater
     </sql>
 
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
@@ -75,11 +75,11 @@
     <insert id="insert" parameterType="com.mallease.pms.pojo.PmsBrand" useGeneratedKeys="true" keyProperty="id">
         insert into pms_brand (id, name, first_letter,
                                sort, factory_status, show_status,
-                               product_count, product_comment_count, logo,
+                               spu_count, spu_comment_count, logo,
                                big_pic, brand_story, create_time, creator)
         values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{firstLetter,jdbcType=VARCHAR},
                 #{sort,jdbcType=INTEGER}, #{factoryStatus,jdbcType=INTEGER}, #{showStatus,jdbcType=INTEGER},
-                #{productCount,jdbcType=INTEGER}, #{productCommentCount,jdbcType=INTEGER}, #{logo,jdbcType=VARCHAR},
+                #{spuCount,jdbcType=INTEGER}, #{spuCommentCount,jdbcType=INTEGER}, #{logo,jdbcType=VARCHAR},
                 #{bigPic,jdbcType=VARCHAR}, #{brandStory,jdbcType=LONGVARCHAR}, #{createTime,jdbcType=TIMESTAMP}, #{creator,jdbcType=VARCHAR})
     </insert>
 
@@ -104,11 +104,11 @@
             <if test="showStatus != null">
                 show_status,
             </if>
-            <if test="productCount != null">
-                product_count,
+            <if test="spuCount != null">
+                spu_count,
             </if>
-            <if test="productCommentCount != null">
-                product_comment_count,
+            <if test="spuCommentCount != null">
+                spu_comment_count,
             </if>
             <if test="logo != null">
                 logo,
@@ -145,11 +145,11 @@
             <if test="showStatus != null">
                 #{showStatus,jdbcType=INTEGER},
             </if>
-            <if test="productCount != null">
-                #{productCount,jdbcType=INTEGER},
+            <if test="spuCount != null">
+                #{spuCount,jdbcType=INTEGER},
             </if>
-            <if test="productCommentCount != null">
-                #{productCommentCount,jdbcType=INTEGER},
+            <if test="spuCommentCount != null">
+                #{spuCommentCount,jdbcType=INTEGER},
             </if>
             <if test="logo != null">
                 #{logo,jdbcType=VARCHAR},
@@ -187,11 +187,11 @@
             <if test="showStatus != null">
                 show_status = #{showStatus,jdbcType=INTEGER},
             </if>
-            <if test="productCount != null">
-                product_count = #{productCount,jdbcType=INTEGER},
+            <if test="spuCount != null">
+                spu_count = #{spuCount,jdbcType=INTEGER},
             </if>
-            <if test="productCommentCount != null">
-                product_comment_count = #{productCommentCount,jdbcType=INTEGER},
+            <if test="spuCommentCount != null">
+                spu_comment_count = #{spuCommentCount,jdbcType=INTEGER},
             </if>
             <if test="logo != null">
                 logo = #{logo,jdbcType=VARCHAR},
@@ -216,8 +216,8 @@
             sort = #{sort,jdbcType=INTEGER},
             factory_status = #{factoryStatus,jdbcType=INTEGER},
             show_status = #{showStatus,jdbcType=INTEGER},
-            product_count = #{productCount,jdbcType=INTEGER},
-            product_comment_count = #{productCommentCount,jdbcType=INTEGER},
+            spu_count = #{spuCount,jdbcType=INTEGER},
+            spu_comment_count = #{spuCommentCount,jdbcType=INTEGER},
             logo = #{logo,jdbcType=VARCHAR},
             big_pic = #{bigPic,jdbcType=VARCHAR},
             brand_story = #{brandStory,jdbcType=LONGVARCHAR},

@@ -65,14 +65,14 @@ public class PmsBrandDetailVO {
     private Integer showStatus;
 
     /**
-     * 产品数量
+     * SPU数量
      */
-    private Integer productCount;
+    private Integer spuCount;
 
     /**
-     * 产品评论数量
+     * SPU评论数量
      */
-    private Integer productCommentCount;
+    private Integer spuCommentCount;
 
     /**
      * 创建时间

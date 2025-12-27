@@ -8,39 +8,39 @@ import java.util.List;
  * @author: Aulen
  * @create: 2025-12-20
  */
-public interface CmsProductRelationService {
+public interface CmsSpuRelationService {
 
     /**
      * 批量绑定商品到专题
      *
-     * @param productId  商品ID（SPU ID）
+     * @param spuId  商品ID（SPU ID）
      * @param subjectIds 专题ID列表
      * @return 绑定数量
      */
-    int bindSubjects(Long productId, List<Long> subjectIds);
+    int bindSubjects(Long spuId, List<Long> subjectIds);
 
     /**
      * 批量绑定商品到优选专区
      *
-     * @param productId          商品ID（SPU ID）
+     * @param spuId          商品ID（SPU ID）
      * @param preferenceAreaIds  优选专区ID列表
      * @return 绑定数量
      */
-    int bindPreferenceAreas(Long productId, List<Long> preferenceAreaIds);
+    int bindPreferenceAreas(Long spuId, List<Long> preferenceAreaIds);
 
     /**
      * 解绑商品的所有专题关联
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 解绑数量
      */
-    int unbindSubjects(Long productId);
+    int unbindSubjects(Long spuId);
 
     /**
      * 解绑商品的所有优选专区关联
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 解绑数量
      */
-    int unbindPreferenceAreas(Long productId);
+    int unbindPreferenceAreas(Long spuId);
 }

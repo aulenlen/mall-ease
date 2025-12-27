@@ -6,8 +6,6 @@ import java.time.LocalDateTime;
 
 /**
  * SPU参数值表（存储 SPU 级别的参数属性值，非规格属性）
- * 说明：规格属性存储在 SKU.spec_values，参数属性存储在此表
- * 示例：CPU型号、屏幕尺寸、电池容量等
  *
  * @author: Aulen
  * @create: 2025-12-10

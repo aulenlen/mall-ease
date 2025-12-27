@@ -8,7 +8,7 @@ import com.mallease.cms.dto.vo.CmsPreferenceAreaDetailVO;
 import com.mallease.cms.dto.vo.CmsPreferenceAreaListVO;
 import com.mallease.cms.dto.vo.CmsPreferenceAreaVO;
 import com.mallease.cms.pojo.CmsPreferenceArea;
-import com.mallease.cms.pojo.CmsPreferenceAreaProductRelation;
+import com.mallease.cms.pojo.CmsPreferenceAreaSpuRelation;
 import com.mallease.cms.service.CmsPreferenceAreaService;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
@@ -215,9 +215,9 @@ public class CmsPreferenceAreaController {
      * @return 添加结果
      */
     @Operation(summary = "批量添加优选专区商品关联")
-    @PostMapping("/product/relation/batch")
-    public R<Integer> batchAddProductRelation(@RequestBody List<CmsPreferenceAreaProductRelation> relationList) {
-        int count = preferenceAreaService.batchAddProductRelation(relationList);
+    @PostMapping("/spu/relation/batch")
+    public R<Integer> batchAddSpuRelation(@RequestBody List<CmsPreferenceAreaSpuRelation> relationList) {
+        int count = preferenceAreaService.batchAddSpuRelation(relationList);
         if (count > 0) {
             return R.success(count);
         }
@@ -227,28 +227,28 @@ public class CmsPreferenceAreaController {
     /**
      * 根据商品ID查询优选专区商品关联列表
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 关联列表
      */
     @Operation(summary = "根据商品ID查询优选专区商品关联")
-    @GetMapping("/product/relation/product/{productId}")
-    public R<List<CmsPreferenceAreaProductRelation>> getRelationsByProductId(
-            @Parameter(description = "商品ID") @PathVariable("productId") Long productId) {
-        List<CmsPreferenceAreaProductRelation> list = preferenceAreaService.getRelationsByProductId(productId);
+    @GetMapping("/spu/relation/spu/{spuId}")
+    public R<List<CmsPreferenceAreaSpuRelation>> getRelationsBySpuId(
+            @Parameter(description = "商品ID") @PathVariable("spuId") Long spuId) {
+        List<CmsPreferenceAreaSpuRelation> list = preferenceAreaService.getRelationsBySpuId(spuId);
         return R.success(list);
     }
 
     /**
      * 根据商品ID删除优选专区商品关联
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 删除结果
      */
     @Operation(summary = "根据商品ID删除优选专区商品关联")
-    @DeleteMapping("/product/relation/product/{productId}")
-    public R<Integer> deleteRelationsByProductId(
-            @Parameter(description = "商品ID") @PathVariable("productId") Long productId) {
-        int count = preferenceAreaService.deleteRelationsByProductId(productId);
+    @DeleteMapping("/spu/relation/spu/{spuId}")
+    public R<Integer> deleteRelationsBySpuId(
+            @Parameter(description = "商品ID") @PathVariable("spuId") Long spuId) {
+        int count = preferenceAreaService.deleteRelationsBySpuId(spuId);
         return R.success(count);
     }
 }

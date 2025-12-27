@@ -21,14 +21,9 @@ import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface PmsSkuConverter {
-
-    // ========================================================================
-    // Entity → VO
-    // ========================================================================
-
+    
     /**
      * Entity → VO（基础映射）
-     * <p>
      * 库存、促销等字段由 Service 层通过 merge 方法填充
      */
     @Mapping(source = "specValues", target = "specValuesObj", qualifiedByName = "parseSpecValues")
@@ -42,17 +37,16 @@ public interface PmsSkuConverter {
     /**
      * 合并库存信息到 VO
      */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "spuId", ignore = true)
     void mergeSkuStockToVo(@MappingTarget PmsSkuVO vo, PmsSkuStock stock);
 
     /**
      * 合并促销信息到 VO
      */
+    @Mapping(target = "id", ignore = true)
     void mergeSkuPromotionToVo(@MappingTarget PmsSkuVO vo, PmsSkuPromotion promotion);
-
-    // ========================================================================
-    // Entity → VO（关联数据）
-    // ========================================================================
-
+    
     /**
      * 阶梯价 Entity → VO
      */
@@ -72,11 +66,7 @@ public interface PmsSkuConverter {
      * 会员价 EntityList → VOList
      */
     List<PmsSkuVO.SkuMemberPriceVO> memberPriceEntityListToVoList(List<PmsSkuMemberPrice> entities);
-
-    // ========================================================================
-    // Command → Entity
-    // ========================================================================
-
+    
     /**
      * CreateCmd → PmsSku Entity
      */
@@ -96,10 +86,6 @@ public interface PmsSkuConverter {
      */
     @Mapping(source = "specValues", target = "specValues", qualifiedByName = "serializeSpecValues")
     void updateEntityFromCmd(@MappingTarget PmsSku entity, UpdatePmsSkuCmd cmd);
-
-    // ========================================================================
-    // SKU 关联数据转换（skuId 由 Service 层设置）
-    // ========================================================================
 
     /**
      * 库存 Cmd → Entity
@@ -139,10 +125,6 @@ public interface PmsSkuConverter {
      */
 
     List<PmsSkuLadder> ladderCmdListToEntityList(List<CreatePmsSkuCmd.SkuLadderCmd> cmdList);
-
-    // ========================================================================
-    // 自定义映射方法
-    // ========================================================================
 
     /**
      * 解析 JSON 格式的规格值（数据库 → VO）

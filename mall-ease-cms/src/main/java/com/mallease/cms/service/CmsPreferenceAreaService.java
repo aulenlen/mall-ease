@@ -1,7 +1,7 @@
 package com.mallease.cms.service;
 
 import com.mallease.cms.pojo.CmsPreferenceArea;
-import com.mallease.cms.pojo.CmsPreferenceAreaProductRelation;
+import com.mallease.cms.pojo.CmsPreferenceAreaSpuRelation;
 
 import java.util.List;
 
@@ -91,21 +91,21 @@ public interface CmsPreferenceAreaService {
      * @param relationList 关联列表
      * @return 添加的记录数
      */
-    int batchAddProductRelation(List<CmsPreferenceAreaProductRelation> relationList);
+    int batchAddSpuRelation(List<CmsPreferenceAreaSpuRelation> relationList);
 
     /**
      * 根据商品ID查询优选专区商品关联列表
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 关联列表
      */
-    List<CmsPreferenceAreaProductRelation> getRelationsByProductId(Long productId);
+    List<CmsPreferenceAreaSpuRelation> getRelationsBySpuId(Long spuId);
 
     /**
      * 根据商品ID删除优选专区商品关联
      *
-     * @param productId 商品ID
+     * @param spuId 商品ID
      * @return 删除的记录数
      */
-    int deleteRelationsByProductId(Long productId);
+    int deleteRelationsBySpuId(Long spuId);
 }

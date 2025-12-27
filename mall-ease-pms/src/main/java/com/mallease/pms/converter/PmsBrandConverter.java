@@ -50,16 +50,16 @@ public interface PmsBrandConverter {
      * CreateCmd → Entity
      */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "productCount", ignore = true)
-    @Mapping(target = "productCommentCount", ignore = true)
+    @Mapping(target = "spuCount", ignore = true)
+    @Mapping(target = "spuCommentCount", ignore = true)
     PmsBrand createCmdToEntity(CreateBrandCmd cmd);
 
     /**
      * UpdateCmd → Entity（用于更新现有实体）
      */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "productCount", ignore = true)
-    @Mapping(target = "productCommentCount", ignore = true)
+    @Mapping(target = "spuCount", ignore = true)
+    @Mapping(target = "spuCommentCount", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromCmd(@MappingTarget PmsBrand entity, UpdateBrandCmd cmd);
 }

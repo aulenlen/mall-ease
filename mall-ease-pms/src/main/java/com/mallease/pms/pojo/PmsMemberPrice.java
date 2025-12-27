@@ -18,9 +18,9 @@ public class PmsMemberPrice {
     private Long id;
 
     /**
-     * 产品ID
+     * SPU ID
      */
-    private Long productId;
+    private Long spuId;
 
     /**
      * 会员等级ID

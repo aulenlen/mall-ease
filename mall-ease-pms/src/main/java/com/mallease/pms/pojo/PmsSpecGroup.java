@@ -6,8 +6,6 @@ import java.time.LocalDateTime;
 
 /**
  * 规格组表
- * 说明：规格组用于组织规格定义，如"手机规格"包含颜色、内存等规格
- * 规格影响 SKU 生成，用户选择后决定具体的商品变体
  *
  * @author: Aulen
  * @create: 2025-12-11

@@ -3,15 +3,14 @@
 <mapper namespace="com.mallease.pms.dao.PmsMemberPriceDao">
     <resultMap id="BaseResultMap" type="com.mallease.pms.pojo.PmsMemberPrice">
         <id column="id" property="id" jdbcType="BIGINT"/>
-        <result column="product_id" property="productId" jdbcType="BIGINT"/>
+        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
         <result column="member_level_id" property="memberLevelId" jdbcType="BIGINT"/>
         <result column="member_price" property="memberPrice" jdbcType="DECIMAL"/>
         <result column="member_level_name" property="memberLevelName" jdbcType="VARCHAR"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id
-        , product_id, member_level_id, member_price, member_level_name
+        id, spu_id, member_level_id, member_price, member_level_name
     </sql>
 
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
@@ -25,7 +24,7 @@
         select
         <include refid="Base_Column_List"/>
         from pms_member_price
-        where product_id = #{productId,jdbcType=BIGINT}
+        where spu_id = #{spuId,jdbcType=BIGINT}
     </select>
 
     <select id="selectByMemberLevelId" parameterType="java.lang.Long" resultMap="BaseResultMap">
@@ -40,9 +39,9 @@
         <include refid="Base_Column_List"/>
         from pms_member_price
         <where>
-            product_id in
-            <foreach collection="productIds" item="productId" open="(" separator="," close=")">
-                #{productId}
+            spu_id in
+            <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+                #{spuId}
             </foreach>
         </where>
     </select>
@@ -56,13 +55,13 @@
     <delete id="deleteByProductId" parameterType="java.lang.Long">
         delete
         from pms_member_price
-        where product_id = #{productId,jdbcType=BIGINT}
+        where spu_id = #{spuId,jdbcType=BIGINT}
     </delete>
 
     <insert id="insert" parameterType="com.mallease.pms.pojo.PmsMemberPrice" useGeneratedKeys="true" keyProperty="id">
-        insert into pms_member_price (id, product_id, member_level_id,
+        insert into pms_member_price (id, spu_id, member_level_id,
                                       member_price, member_level_name)
-        values (#{id,jdbcType=BIGINT}, #{productId,jdbcType=BIGINT}, #{memberLevelId,jdbcType=BIGINT},
+        values (#{id,jdbcType=BIGINT}, #{spuId,jdbcType=BIGINT}, #{memberLevelId,jdbcType=BIGINT},
                 #{memberPrice,jdbcType=DECIMAL}, #{memberLevelName,jdbcType=VARCHAR})
     </insert>
 
@@ -73,8 +72,8 @@
             <if test="id != null">
                 id,
             </if>
-            <if test="productId != null">
-                product_id,
+            <if test="spuId != null">
+                spu_id,
             </if>
             <if test="memberLevelId != null">
                 member_level_id,
@@ -90,8 +89,8 @@
             <if test="id != null">
                 #{id,jdbcType=BIGINT},
             </if>
-            <if test="productId != null">
-                #{productId,jdbcType=BIGINT},
+            <if test="spuId != null">
+                #{spuId,jdbcType=BIGINT},
             </if>
             <if test="memberLevelId != null">
                 #{memberLevelId,jdbcType=BIGINT},
@@ -108,8 +107,8 @@
     <update id="updateByPrimaryKeySelective" parameterType="com.mallease.pms.pojo.PmsMemberPrice">
         update pms_member_price
         <set>
-            <if test="productId != null">
-                product_id = #{productId,jdbcType=BIGINT},
+            <if test="spuId != null">
+                spu_id = #{spuId,jdbcType=BIGINT},
             </if>
             <if test="memberLevelId != null">
                 member_level_id = #{memberLevelId,jdbcType=BIGINT},
@@ -126,7 +125,7 @@
 
     <update id="updateByPrimaryKey" parameterType="com.mallease.pms.pojo.PmsMemberPrice">
         update pms_member_price
-        set product_id        = #{productId,jdbcType=BIGINT},
+        set spu_id            = #{spuId,jdbcType=BIGINT},
             member_level_id   = #{memberLevelId,jdbcType=BIGINT},
             member_price      = #{memberPrice,jdbcType=DECIMAL},
             member_level_name = #{memberLevelName,jdbcType=VARCHAR}
@@ -134,10 +133,10 @@
     </update>
 
     <insert id="insertBatch" parameterType="java.util.List">
-        insert into pms_member_price (product_id, member_level_id, member_price, member_level_name)
+        insert into pms_member_price (spu_id, member_level_id, member_price, member_level_name)
         values
         <foreach collection="list" item="item" separator=",">
-            (#{item.productId,jdbcType=BIGINT}, #{item.memberLevelId,jdbcType=BIGINT},
+            (#{item.spuId,jdbcType=BIGINT}, #{item.memberLevelId,jdbcType=BIGINT},
             #{item.memberPrice,jdbcType=DECIMAL}, #{item.memberLevelName,jdbcType=VARCHAR})
         </foreach>
     </insert>

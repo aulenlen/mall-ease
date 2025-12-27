@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 
 /**
  * SKU促销信息表
- * 说明：促销价格统一在此表管理，避免多处存储导致不一致
  *
  * @author: Aulen
  * @create: 2025-12-10

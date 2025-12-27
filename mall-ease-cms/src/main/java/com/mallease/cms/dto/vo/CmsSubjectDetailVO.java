@@ -47,7 +47,7 @@ public class CmsSubjectDetailVO {
     /**
      * 关联产品数量
      */
-    private Integer productCount;
+    private Integer spuCount;
 
     /**
      * 推荐状态：0-不推荐 1-推荐
