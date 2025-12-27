@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * @create: 2025-12-13
  */
 @Mapper(componentModel = "spring")
-public interface PmsAttributeConverter {
+public interface PmsSpecConverter {
 
     // ========================================================================
     // 规格组（SpecGroup）转换

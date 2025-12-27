@@ -30,6 +30,12 @@ public class PmsSpecValueVO {
     @Schema(description = "所属规格名称（由Service层填充）")
     private String specName;
 
+    @Schema(description = "所属规格组ID（由Service层填充）")
+    private Long groupId;
+
+    @Schema(description = "所属规格组名称（由Service层填充）")
+    private String groupName;
+
     @Schema(description = "规格值")
     private String value;
 

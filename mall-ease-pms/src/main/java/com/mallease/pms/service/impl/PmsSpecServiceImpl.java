@@ -1,14 +1,13 @@
 package com.mallease.pms.service.impl;
 
 import com.mallease.common.exception.ApiException;
-import com.mallease.pms.converter.PmsAttributeConverter;
+import com.mallease.pms.converter.PmsSpecConverter;
 import com.mallease.pms.dao.PmsSpecDao;
 import com.mallease.pms.dao.PmsSpecGroupDao;
 import com.mallease.pms.dao.PmsSpecValueDao;
 import com.mallease.pms.dto.cmd.CreatePmsSpecCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSpecCmd;
 import com.mallease.pms.dto.vo.PmsSpecVO;
-import com.mallease.pms.dto.vo.PmsSpecValueVO;
 import com.mallease.pms.pojo.PmsSpec;
 import com.mallease.pms.pojo.PmsSpecGroup;
 import com.mallease.pms.pojo.PmsSpecValue;
@@ -27,12 +26,6 @@ import java.util.stream.Collectors;
 
 /**
  * 规格服务实现类
- * <p>
- * 核心功能：
- * 1. 规格定义 CRUD
- * 2. 规格值管理
- * 3. 批量填充规格值（避免 N+1 查询）
- *
  * @author: Aulen
  * @create: 2025-12-16
  */
@@ -50,7 +43,7 @@ public class PmsSpecServiceImpl implements PmsSpecService {
     private PmsSpecValueDao specValueDao;
 
     @Autowired
-    private PmsAttributeConverter attributeConverter;
+    private PmsSpecConverter specConverter;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -70,14 +63,14 @@ public class PmsSpecServiceImpl implements PmsSpecService {
         }
 
         // 创建规格
-        PmsSpec entity = attributeConverter.createSpecCmdToEntity(cmd);
+        PmsSpec entity = specConverter.createSpecCmdToEntity(cmd);
         specDao.insertSelective(entity);
 
         // 创建规格值（如果有）
         if (!CollectionUtils.isEmpty(cmd.getValueList())) {
             List<PmsSpecValue> specValues = cmd.getValueList().stream()
                     .map(valueCmd -> {
-                        PmsSpecValue value = attributeConverter.specValueCmdToEntity(valueCmd);
+                        PmsSpecValue value = specConverter.specValueCmdToEntity(valueCmd);
                         value.setSpecId(entity.getId());
                         return value;
                     })
@@ -108,7 +101,7 @@ public class PmsSpecServiceImpl implements PmsSpecService {
             }
         }
 
-        attributeConverter.updateSpecFromCmd(original, cmd);
+        specConverter.updateSpecFromCmd(original, cmd);
         return specDao.updateByPrimaryKeySelective(original);
     }
 
@@ -146,11 +139,11 @@ public class PmsSpecServiceImpl implements PmsSpecService {
             return null;
         }
 
-        PmsSpecVO vo = attributeConverter.specToVo(spec);
+        PmsSpecVO vo = specConverter.specToVo(spec);
 
         // 填充规格值列表
         List<PmsSpecValue> specValues = specValueDao.selectBySpecId(id);
-        vo.setValueList(attributeConverter.specValueListToVoList(specValues));
+        vo.setValueList(specConverter.specValueListToVoList(specValues));
 
         // 填充规格组名称
         PmsSpecGroup specGroup = specGroupDao.selectByPrimaryKey(spec.getGroupId());
@@ -193,7 +186,7 @@ public class PmsSpecServiceImpl implements PmsSpecService {
             throw new ApiException("该规格下已存在相同的规格值: " + valueCmd.getValue());
         }
 
-        PmsSpecValue entity = attributeConverter.specValueCmdToEntity(valueCmd);
+        PmsSpecValue entity = specConverter.specValueCmdToEntity(valueCmd);
         entity.setSpecId(specId);
         specValueDao.insertSelective(entity);
 
@@ -214,7 +207,7 @@ public class PmsSpecServiceImpl implements PmsSpecService {
 
         List<PmsSpecValue> specValues = valueCmds.stream()
                 .map(valueCmd -> {
-                    PmsSpecValue value = attributeConverter.specValueCmdToEntity(valueCmd);
+                    PmsSpecValue value = specConverter.specValueCmdToEntity(valueCmd);
                     value.setSpecId(specId);
                     return value;
                 })
@@ -237,22 +230,19 @@ public class PmsSpecServiceImpl implements PmsSpecService {
     }
 
     @Override
-    public List<PmsSpecValueVO> listSpecValuesBySpecId(Long specId) {
-        List<PmsSpecValue> specValues = specValueDao.selectBySpecId(specId);
-        return attributeConverter.specValueListToVoList(specValues);
+    public List<PmsSpecValue> listSpecValuesBySpecId(Long specId) {
+        return specValueDao.selectBySpecId(specId);
     }
 
     /**
      * 批量填充规格值列表
-     * <p>
-     * 避免 N+1 查询问题，一次性查询所有规格的规格值
      */
     private List<PmsSpecVO> fillSpecValues(List<PmsSpec> specs) {
         if (CollectionUtils.isEmpty(specs)) {
             return new ArrayList<>();
         }
 
-        List<PmsSpecVO> voList = attributeConverter.specListToVoList(specs);
+        List<PmsSpecVO> voList = specConverter.specListToVoList(specs);
 
         // 批量查询所有规格值
         List<Long> specIds = specs.stream()
@@ -268,7 +258,7 @@ public class PmsSpecServiceImpl implements PmsSpecService {
         // 填充规格值列表
         for (PmsSpecVO vo : voList) {
             List<PmsSpecValue> values = valueMap.getOrDefault(vo.getId(), new ArrayList<>());
-            vo.setValueList(attributeConverter.specValueListToVoList(values));
+            vo.setValueList(specConverter.specValueListToVoList(values));
         }
 
         return voList;

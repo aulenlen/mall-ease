@@ -4,6 +4,7 @@ import com.mallease.pms.dto.cmd.CreatePmsSpecCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSpecCmd;
 import com.mallease.pms.dto.vo.PmsSpecVO;
 import com.mallease.pms.dto.vo.PmsSpecValueVO;
+import com.mallease.pms.pojo.PmsSpecValue;
 
 import java.util.List;
 
@@ -125,5 +126,5 @@ public interface PmsSpecService {
      * @param specId 规格ID
      * @return 规格值列表
      */
-    List<PmsSpecValueVO> listSpecValuesBySpecId(Long specId);
+    List<PmsSpecValue> listSpecValuesBySpecId(Long specId);
 }

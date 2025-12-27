@@ -5,7 +5,7 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
-import com.mallease.pms.converter.PmsAttributeConverter;
+import com.mallease.pms.converter.PmsSpecConverter;
 import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
 import com.mallease.pms.dto.cmd.CreatePmsSpecCmd;
 import com.mallease.pms.dto.cmd.CreatePmsSpecGroupCmd;
@@ -17,6 +17,7 @@ import com.mallease.pms.dto.vo.PmsSpecVO;
 import com.mallease.pms.dto.vo.PmsSpecValueVO;
 import com.mallease.pms.pojo.PmsSpec;
 import com.mallease.pms.pojo.PmsSpecGroup;
+import com.mallease.pms.pojo.PmsSpecValue;
 import com.mallease.pms.service.PmsSpecGroupService;
 import com.mallease.pms.service.PmsSpecService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,14 +54,14 @@ public class PmsSpecController {
     private PmsSpecService specService;
 
     @Autowired
-    private PmsAttributeConverter attributeConverter;
+    private PmsSpecConverter specConverter;
 
     // ==================== 规格组管理 ====================
 
     @Operation(summary = "创建规格组")
     @PostMapping("/group/create")
     public R<Long> createGroup(@Validated @RequestBody CreatePmsSpecGroupCmd cmd) {
-        PmsSpecGroup entity = attributeConverter.createSpecGroupCmdToEntity(cmd);
+        PmsSpecGroup entity = specConverter.createSpecGroupCmdToEntity(cmd);
         Long id = specGroupService.create(entity, cmd.getCategoryId());
         return R.success(id);
     }
@@ -72,7 +73,7 @@ public class PmsSpecController {
         if (entity == null) {
             return R.failed(ResultCode.FAILED, "规格组不存在");
         }
-        attributeConverter.updateSpecGroupFromCmd(entity, cmd);
+        specConverter.updateSpecGroupFromCmd(entity, cmd);
         int count = specGroupService.update(entity);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
@@ -100,10 +101,10 @@ public class PmsSpecController {
         if (entity == null) {
             return R.success(null);
         }
-        PmsSpecGroupVO vo = attributeConverter.specGroupToVo(entity);
+        PmsSpecGroupVO vo = specConverter.specGroupToVo(entity);
         Map<Long, List<PmsSpec>> specMap = specGroupService.getSpecsByGroupIds(List.of(id));
         List<PmsSpec> specs = specMap.getOrDefault(id, new ArrayList<>());
-        vo.setSpecList(attributeConverter.specListToVoList(specs));
+        vo.setSpecList(specConverter.specListToVoList(specs));
         vo.setSpecCount(specs.size());
         return R.success(vo);
     }
@@ -113,9 +114,9 @@ public class PmsSpecController {
     public R<Page<PmsSpecGroupVO>> listGroups(@Validated @ModelAttribute PmsSpecGroupQuery query) {
         PageHelper.startPage(query.getPageNum(), query.getPageSize());
         List<PmsSpecGroup> entityList = specGroupService.listEntities(query.getKeyword());
-        
+
         List<PmsSpecGroupVO> voList = toVoListWithSpecs(entityList);
-        
+
         Page<PmsSpecGroupVO> result = PageUtils.buildPage(entityList, voList);
         return R.success(result);
     }
@@ -251,11 +252,49 @@ public class PmsSpecController {
     }
 
     @Operation(summary = "查询规格值列表")
-    @GetMapping("/value/list/{specId}")
+    @GetMapping("/value/list")
     public R<List<PmsSpecValueVO>> listSpecValues(
             @Parameter(description = "规格ID") @PathVariable Long specId) {
-        List<PmsSpecValueVO> list = specService.listSpecValuesBySpecId(specId);
-        return R.success(list);
+        List<PmsSpecValue> specValues = specService.listSpecValuesBySpecId(specId);
+        List<PmsSpecValueVO> vos = specConverter.specValueListToVoList(specValues);
+        return R.success(vos);
+    }
+
+    @Operation(summary = "按分类查询规格值列表")
+    @GetMapping("/value/list/category/{categoryId}")
+    public R<List<PmsSpecValueVO>> listSpecValuesByCategoryId(
+            @Parameter(description = "分类ID") @PathVariable Long categoryId) {
+        // 1. 获取规格组
+        List<PmsSpecGroup> specGroups = specGroupService.listByCategoryId(categoryId);
+        if (specGroups.isEmpty()) {
+            return R.success(new ArrayList<>());
+        }
+
+        // 2. 获取规格（按组ID分组）
+        List<Long> groupIds = specGroups.stream().map(PmsSpecGroup::getId).toList();
+        Map<Long, String> groupNameMap = specGroups.stream()
+                .collect(Collectors.toMap(PmsSpecGroup::getId, PmsSpecGroup::getName));
+        Map<Long, List<PmsSpec>> specsByGroup = specGroupService.getSpecsByGroupIds(groupIds);
+        Map<Long, PmsSpec> specMap = specsByGroup.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toMap(PmsSpec::getId, spec -> spec));
+
+        // 3. 获取规格值
+        List<PmsSpecValue> specValues = specGroupService.listSpecValuesByCategoryId(categoryId);
+
+        // 4. 组装VO
+        List<PmsSpecValueVO> vos = specValues.stream().map(value -> {
+            PmsSpec spec = specMap.get(value.getSpecId());
+            PmsSpecValueVO vo = specConverter.specValueToVo(value);
+            if (spec != null) {
+                vo.setSpecName(spec.getName());
+                vo.setGroupId(spec.getGroupId());
+                vo.setGroupName(groupNameMap.get(spec.getGroupId()));
+            }
+            return vo;
+        }).toList();
+
+        return R.success(vos);
     }
 
     /**
@@ -265,17 +304,17 @@ public class PmsSpecController {
         if (entityList == null || entityList.isEmpty()) {
             return new ArrayList<>();
         }
-        
-        List<PmsSpecGroupVO> voList = attributeConverter.specGroupListToVoList(entityList);
-        
+
+        List<PmsSpecGroupVO> voList = specConverter.specGroupListToVoList(entityList);
+
         List<Long> groupIds = entityList.stream()
                 .map(PmsSpecGroup::getId)
                 .collect(Collectors.toList());
         Map<Long, List<PmsSpec>> specMap = specGroupService.getSpecsByGroupIds(groupIds);
-        
+
         for (PmsSpecGroupVO vo : voList) {
             List<PmsSpec> specs = specMap.getOrDefault(vo.getId(), new ArrayList<>());
-            vo.setSpecList(attributeConverter.specListToVoList(specs));
+            vo.setSpecList(specConverter.specListToVoList(specs));
             vo.setSpecCount(specs.size());
         }
 

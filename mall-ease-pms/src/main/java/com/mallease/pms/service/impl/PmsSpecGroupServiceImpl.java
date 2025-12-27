@@ -6,6 +6,7 @@ import com.mallease.pms.dao.PmsSpecDao;
 import com.mallease.pms.dao.PmsSpecGroupDao;
 import com.mallease.pms.dao.PmsSpecValueDao;
 import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
+import com.mallease.pms.dto.vo.PmsSpecValueVO;
 import com.mallease.pms.pojo.PmsCategorySpecGroup;
 import com.mallease.pms.pojo.PmsSpec;
 import com.mallease.pms.pojo.PmsSpecGroup;
@@ -315,5 +316,28 @@ public class PmsSpecGroupServiceImpl implements PmsSpecGroupService {
 
         log.info("克隆规格组成功，原ID: {}, 新ID: {}, 分类ID: {}", sourceGroupId, newGroupId, categoryId);
         return newGroupId;
+    }
+
+    @Override
+    public List<PmsSpecValue> listSpecValuesByCategoryId(Long categoryId) {
+        // 1. 查询分类关联的规格组ID
+        List<PmsCategorySpecGroup> relations = categorySpecGroupDao.selectByCategoryId(categoryId);
+        if (CollectionUtils.isEmpty(relations)) {
+            return new ArrayList<>();
+        }
+
+        List<Long> specGroupIds = relations.stream()
+                .map(PmsCategorySpecGroup::getSpecGroupId)
+                .collect(Collectors.toList());
+
+        // 2. 根据规格组ID查询规格
+        List<PmsSpec> specList = specDao.selectByGroupIds(specGroupIds);
+        if (CollectionUtils.isEmpty(specList)) {
+            return new ArrayList<>();
+        }
+
+        // 3. 根据规格ID查询规格值
+        List<Long> specIds = specList.stream().map(PmsSpec::getId).toList();
+        return specValueDao.selectBySpecIds(specIds);
     }
 }

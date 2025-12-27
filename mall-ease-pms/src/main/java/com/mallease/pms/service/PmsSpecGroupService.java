@@ -1,8 +1,10 @@
 package com.mallease.pms.service;
 
 import com.mallease.pms.dto.cmd.ClonePmsSpecGroupCmd;
+import com.mallease.pms.dto.vo.PmsSpecValueVO;
 import com.mallease.pms.pojo.PmsSpec;
 import com.mallease.pms.pojo.PmsSpecGroup;
+import com.mallease.pms.pojo.PmsSpecValue;
 
 import java.util.List;
 import java.util.Map;
@@ -120,4 +122,11 @@ public interface PmsSpecGroupService {
      * @return 新规格组ID
      */
     Long cloneToCategory(ClonePmsSpecGroupCmd cmd);
+
+    /**
+     * 通过分类id查询规格值列表
+     * @param categoryId 分类id
+     * @return 规格值列表
+     */
+    List<PmsSpecValue> listSpecValuesByCategoryId(Long categoryId);
 }
