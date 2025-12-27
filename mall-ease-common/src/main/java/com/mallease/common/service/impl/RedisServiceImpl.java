@@ -4,9 +4,11 @@ import com.mallease.common.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.DataType;
+import org.springframework.data.redis.connection.RedisStringCommands;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.serializer.RedisSerializer;
@@ -420,40 +422,26 @@ public class RedisServiceImpl implements RedisService {
             return;
         }
 
-        try {
-            // 获取序列化器
-            RedisSerializer<String> keySerializer = redisTemplate.getStringSerializer();
-            RedisSerializer<Object> valueSerializer = (RedisSerializer<Object>) redisTemplate.getValueSerializer();
+        RedisSerializer<String> keySerializer = redisTemplate.getStringSerializer();
+        RedisSerializer<Object> valueSerializer =
+                (RedisSerializer<Object>) redisTemplate.getValueSerializer();
 
-            // 统计变量
-            final int[] successCount = {0};
-            final int[] failCount = {0};
-
-            // 使用 Pipeline 批量设置并设置过期时间（原子操作）
-            redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
-                map.forEach((key, value) -> {
-                    try {
-                        // 序列化 key 和 value
-                        byte[] keyBytes = keySerializer.serialize(key);
-                        byte[] valueBytes = valueSerializer.serialize(value);
-
-                        if (keyBytes != null && valueBytes != null) {
-                            // 使用 SETEX 命令保证原子性：一次性设置值和过期时间
-                            // 避免 SET 成功但 EXPIRE 失败导致的内存泄漏
-                            connection.setEx(keyBytes, time, valueBytes);
-                            successCount[0]++;
-                        } else {
-                            failCount[0]++;
-                        }
-                    } catch (Exception e) {
-                        failCount[0]++;
-                    }
-                });
-                return null;
+        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            map.forEach((key, value) -> {
+                byte[] keyBytes = keySerializer.serialize(key);
+                byte[] valueBytes = valueSerializer.serialize(value);
+                if (keyBytes != null && valueBytes != null) {
+                    // 使用新 API：set() + Expiration 替代已废弃的 setEx()
+                    connection.stringCommands().set(
+                            keyBytes,
+                            valueBytes,
+                            Expiration.seconds(time),
+                            RedisStringCommands.SetOption.UPSERT
+                    );
+                }
             });
-        } catch (Exception e) {
-            throw new RuntimeException("Redis批量操作失败", e);
-        }
+            return null;
+        });
     }
 
     @Override
