@@ -252,7 +252,7 @@ public class PmsSpecController {
     }
 
     @Operation(summary = "查询规格值列表")
-    @GetMapping("/value/list")
+    @GetMapping("/value/list/{specId}")
     public R<List<PmsSpecValueVO>> listSpecValues(
             @Parameter(description = "规格ID") @PathVariable Long specId) {
         List<PmsSpecValue> specValues = specService.listSpecValuesBySpecId(specId);

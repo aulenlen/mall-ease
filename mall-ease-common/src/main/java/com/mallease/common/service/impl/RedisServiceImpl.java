@@ -431,7 +431,6 @@ public class RedisServiceImpl implements RedisService {
                 byte[] keyBytes = keySerializer.serialize(key);
                 byte[] valueBytes = valueSerializer.serialize(value);
                 if (keyBytes != null && valueBytes != null) {
-                    // 使用新 API：set() + Expiration 替代已废弃的 setEx()
                     connection.stringCommands().set(
                             keyBytes,
                             valueBytes,
