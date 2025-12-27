@@ -1,7 +1,7 @@
 package com.mallease.pms.service.impl;
 
 import com.mallease.common.exception.ApiException;
-import com.mallease.pms.converter.PmsAttributeConverter;
+import com.mallease.pms.converter.PmsSpecConverter;
 import com.mallease.pms.dao.PmsParamDao;
 import com.mallease.pms.dao.PmsParamGroupDao;
 import com.mallease.pms.dto.cmd.CreatePmsParamCmd;
@@ -40,7 +40,7 @@ public class PmsParamServiceImpl implements PmsParamService {
     private PmsParamGroupDao paramGroupDao;
 
     @Autowired
-    private PmsAttributeConverter attributeConverter;
+    private PmsSpecConverter specConverter;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -60,7 +60,7 @@ public class PmsParamServiceImpl implements PmsParamService {
         }
 
         // 创建参数
-        PmsParam entity = attributeConverter.createParamCmdToEntity(cmd);
+        PmsParam entity = specConverter.createParamCmdToEntity(cmd);
         paramDao.insertSelective(entity);
 
         log.info("创建参数成功，ID: {}, 名称: {}, 参数组: {}", entity.getId(), entity.getName(), paramGroup.getName());
@@ -86,7 +86,7 @@ public class PmsParamServiceImpl implements PmsParamService {
             }
         }
 
-        attributeConverter.updateParamFromCmd(original, cmd);
+        specConverter.updateParamFromCmd(original, cmd);
         return paramDao.updateByPrimaryKeySelective(original);
     }
 
@@ -118,7 +118,7 @@ public class PmsParamServiceImpl implements PmsParamService {
             return null;
         }
 
-        PmsParamVO vo = attributeConverter.paramToVo(param);
+        PmsParamVO vo = specConverter.paramToVo(param);
 
         // 填充参数组名称
         PmsParamGroup paramGroup = paramGroupDao.selectByPrimaryKey(param.getGroupId());
@@ -132,24 +132,24 @@ public class PmsParamServiceImpl implements PmsParamService {
     @Override
     public List<PmsParamVO> listByGroupId(Long groupId) {
         List<PmsParam> params = paramDao.selectByGroupId(groupId);
-        return attributeConverter.paramListToVoList(params);
+        return specConverter.paramListToVoList(params);
     }
 
     @Override
     public List<PmsParamVO> listSearchable() {
         List<PmsParam> params = paramDao.selectSearchable();
-        return attributeConverter.paramListToVoList(params);
+        return specConverter.paramListToVoList(params);
     }
 
     @Override
     public List<PmsParamVO> listHighlight() {
         List<PmsParam> params = paramDao.selectHighlight();
-        return attributeConverter.paramListToVoList(params);
+        return specConverter.paramListToVoList(params);
     }
 
     @Override
     public List<PmsParamVO> listComparable() {
         List<PmsParam> params = paramDao.selectComparable();
-        return attributeConverter.paramListToVoList(params);
+        return specConverter.paramListToVoList(params);
     }
 }
