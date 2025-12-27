@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * 商品搜索文档
- * 对应 Elasticsearch 索引：mall_product_v1
+ * 对应 Elasticsearch 索引：mall_spu_v1
  *
  * @author: Aulen
  * @create: 2025-11-24
@@ -32,7 +32,7 @@ public class SpuDocument implements Serializable {
     private Long spuId;
 
     @Field(type = FieldType.Keyword)
-    private Long spuCode;
+    private String spuCode;
 
     /**
      * SPU 名称 - 主搜索字段
@@ -165,104 +165,23 @@ public class SpuDocument implements Serializable {
      * SKU 列表 - 价格区间展示
      */
     @Field(type = FieldType.Nested)
-    private List<Sku> skuList;
+    private List<SpuSkuDocument> skuList;
 
     /**
      * 规格列表 - 聚合筛选用
      */
     @Field(type = FieldType.Nested)
-    private List<SpecValue>  specValueList;;
+    private List<SpuSpecValueDocument> specValueList;
 
     /**
      * 参数属性列表 - 搜索展示用
      */
     @Field(type = FieldType.Nested)
-    private List<ParamValue> paramValueList;
+    private List<SpuParamValueDocument> paramValueList;
 
     @Field(type = FieldType.Date, format = DateFormat.date_time)
     private Date createTime;
 
     @Field(type = FieldType.Date, format = DateFormat.date_time)
     private Date updateTime;
-
-    /**
-     * SKU信息（嵌套对象）
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Sku implements Serializable {
-        /**
-         * SKU ID
-         */
-        @Field(type = FieldType.Long)
-        private Long skuId;
-
-        /**
-         * SKU 编码
-         */
-        @Field(type = FieldType.Keyword)
-        private String skuCode;
-
-        /**
-         * SKU 价格
-         */
-        @Field(type = FieldType.Double)
-        private BigDecimal price;
-    }
-
-    /**
-     * 规格值（嵌套对象）
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SpecValue implements Serializable {
-        /**
-         * 规格ID（pms_spec.id）
-         */
-        @Field(type = FieldType.Long)
-        private Long specId;
-
-        /**
-         * 规格名称，如 "颜色"、"内存"
-         */
-        @Field(type = FieldType.Keyword)
-        private String specName;
-
-        /**
-         * 规格值，如 "黑色"、"128G"
-         */
-        @Field(type = FieldType.Keyword)
-        private String specValue;
-    }
-
-    /**
-     * 属性值（嵌套对象）
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ParamValue implements Serializable {
-        /**
-         * 参数ID（pms_param.id）
-         */
-        @Field(type = FieldType.Long)
-        private Long paramId;
-
-        /**
-         * 参数名称，如 "CPU型号"、"屏幕尺寸"
-         */
-        @Field(type = FieldType.Keyword)
-        private String paramName;
-
-        /**
-         * 参数值，如 "骁龙8 Gen3"、"6.82英寸"
-         */
-        @Field(type = FieldType.Keyword)
-        private String paramValue;
-    }
 }
