@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.mallease.pms.dto.SkuSpecValue;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,27 +16,24 @@ import java.util.stream.Collectors;
 
 /**
  * 创建SKU命令对象
- * <p>
- * 包含SKU基础信息、库存、促销、会员价、阶梯价等复合数据。
- * 可作为CreatePmsSpuCmd的子命令，也可独立使用。
- *
  * @author: Aulen
  * @create: 2025-12-12
  */
+
 @Schema(description = "创建SKU命令")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class CreatePmsSkuCmd {
-
     // ========================================================================
     // SKU 基础信息
     // ========================================================================
 
-    @Schema(description = "SKU规格值（JSON格式，如：{颜色:红色,尺码:XL}）", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "SKU规格值不能为空")
-    private String specValues;
+    @Schema(description = "SKU规格值列表", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotEmpty(message = "SKU规格值不能为空")
+    @Valid
+    private List<SkuSpecValue> specValues;
 
     @Schema(description = "SKU图片URL")
     @Size(max = 255, message = "图片URL长度不能超过255个字符")
@@ -184,8 +182,7 @@ public class CreatePmsSkuCmd {
          * 判断是否为有效的会员价格配置
          */
         public boolean isValid() {
-            return memberLevelId != null && memberPrice != null 
-                && memberPrice.compareTo(BigDecimal.ZERO) > 0;
+            return memberLevelId != null && memberPrice != null && memberPrice.compareTo(BigDecimal.ZERO) > 0;
         }
     }
 
@@ -217,8 +214,7 @@ public class CreatePmsSkuCmd {
          * 判断是否为有效的阶梯价格配置
          */
         public boolean isValid() {
-            return count != null && count > 0 && discount != null
-                && discount.compareTo(BigDecimal.ZERO) > 0;
+            return count != null && count > 0 && discount != null && discount.compareTo(BigDecimal.ZERO) > 0;
         }
     }
 
@@ -236,8 +232,7 @@ public class CreatePmsSkuCmd {
             return null;
         }
         // 促销价格无效时，视为无促销信息
-        if (promotion.getPromotionPrice() == null
-            || promotion.getPromotionPrice().compareTo(BigDecimal.ZERO) <= 0) {
+        if (promotion.getPromotionPrice() == null || promotion.getPromotionPrice().compareTo(BigDecimal.ZERO) <= 0) {
             return null;
         }
         return promotion;
@@ -252,9 +247,7 @@ public class CreatePmsSkuCmd {
         if (memberPriceList == null || memberPriceList.isEmpty()) {
             return null;
         }
-        List<SkuMemberPriceCmd> validList = memberPriceList.stream()
-            .filter(SkuMemberPriceCmd::isValid)
-            .collect(Collectors.toList());
+        List<SkuMemberPriceCmd> validList = memberPriceList.stream().filter(SkuMemberPriceCmd::isValid).collect(Collectors.toList());
         return validList.isEmpty() ? null : validList;
     }
 
@@ -267,9 +260,7 @@ public class CreatePmsSkuCmd {
         if (ladderList == null || ladderList.isEmpty()) {
             return null;
         }
-        List<SkuLadderCmd> validList = ladderList.stream()
-            .filter(SkuLadderCmd::isValid)
-            .collect(Collectors.toList());
+        List<SkuLadderCmd> validList = ladderList.stream().filter(SkuLadderCmd::isValid).collect(Collectors.toList());
         return validList.isEmpty() ? null : validList;
     }
 }

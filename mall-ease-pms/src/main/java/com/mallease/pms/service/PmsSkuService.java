@@ -76,4 +76,10 @@ public interface PmsSkuService {
      */
     int updateEnableStatus(List<Long> ids, Integer status);
 
+    /**
+     * 批量获取SKU
+     * @param spuIds spuId列表
+     * @return sku列表
+     */
+    List<PmsSku> selectBySpuIds(List<Long> spuIds);
 }

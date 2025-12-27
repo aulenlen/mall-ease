@@ -1,28 +1,25 @@
 package com.mallease.pms.converter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mallease.pms.dto.SkuSpecValue;
 import com.mallease.pms.dto.cmd.CreatePmsSkuCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsSkuCmd;
 import com.mallease.pms.dto.vo.PmsSkuVO;
 import com.mallease.pms.pojo.*;
-import jakarta.validation.Valid;
 import org.mapstruct.*;
 
 import java.util.List;
 
 /**
  * SKU转换器
- * 负责SKU实体与DTO之间的转换，整合库存、促销等复合数据
  *
  * @author: Aulen
  * @create: 2025-12-12
  */
-@Mapper(
-        componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE,
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
-)
+
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface PmsSkuConverter {
 
     // ========================================================================
@@ -31,6 +28,7 @@ public interface PmsSkuConverter {
 
     /**
      * Entity → VO（基础映射）
+     * <p>
      * 库存、促销等字段由 Service 层通过 merge 方法填充
      */
     @Mapping(source = "specValues", target = "specValuesObj", qualifiedByName = "parseSpecValues")
@@ -83,17 +81,20 @@ public interface PmsSkuConverter {
      * CreateCmd → PmsSku Entity
      */
     @Mapping(target = "deleted", constant = "0")
+    @Mapping(source = "specValues", target = "specValues", qualifiedByName = "serializeSpecValues")
     PmsSku createCmdToEntity(CreatePmsSkuCmd cmd);
 
     /**
      * CreateCmd → PmsSku Entity
      */
     @Mapping(target = "deleted", constant = "0")
+    @Mapping(source = "specValues", target = "specValues", qualifiedByName = "serializeSpecValues")
     List<PmsSku> createCmdListToEntityList(List<CreatePmsSkuCmd> cmdList);
 
     /**
      * UpdateCmd → Entity（部分更新）
      */
+    @Mapping(source = "specValues", target = "specValues", qualifiedByName = "serializeSpecValues")
     void updateEntityFromCmd(@MappingTarget PmsSku entity, UpdatePmsSkuCmd cmd);
 
     // ========================================================================
@@ -119,19 +120,24 @@ public interface PmsSkuConverter {
      * 会员价 Cmd → Entity
      */
     PmsSkuMemberPrice memberPriceCmdToEntity(CreatePmsSkuCmd.SkuMemberPriceCmd cmd);
+
     /**
      * 会员价 CmdList → EntityList
      */
     List<PmsSkuMemberPrice> memberPriceCmdListToEntityList(List<CreatePmsSkuCmd.SkuMemberPriceCmd> cmdList);
 
+
     /**
      * 阶梯价 Cmd → Entity
      */
+
     PmsSkuLadder ladderCmdToEntity(CreatePmsSkuCmd.SkuLadderCmd cmd);
+
 
     /**
      * 阶梯价 CmdList → EntityList
      */
+
     List<PmsSkuLadder> ladderCmdListToEntityList(List<CreatePmsSkuCmd.SkuLadderCmd> cmdList);
 
     // ========================================================================
@@ -139,18 +145,35 @@ public interface PmsSkuConverter {
     // ========================================================================
 
     /**
-     * 解析 JSON 格式的规格值
+     * 解析 JSON 格式的规格值（数据库 → VO）
      */
     @Named("parseSpecValues")
-    default Object parseSpecValues(String specValues) {
+    default List<SkuSpecValue> parseSpecValues(String specValues) {
         if (specValues == null || specValues.trim().isEmpty()) {
             return null;
         }
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(specValues, Object.class);
+            return objectMapper.readValue(specValues, new TypeReference<List<SkuSpecValue>>() {
+            });
         } catch (JsonProcessingException e) {
-            return specValues;
+            return null;
+        }
+    }
+
+    /**
+     * 序列化规格值列表为 JSON（Cmd → 数据库）
+     */
+    @Named("serializeSpecValues")
+    default String serializeSpecValues(List<SkuSpecValue> specValues) {
+        if (specValues == null || specValues.isEmpty()) {
+            return null;
+        }
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.writeValueAsString(specValues);
+        } catch (JsonProcessingException e) {
+            return null;
         }
     }
 }

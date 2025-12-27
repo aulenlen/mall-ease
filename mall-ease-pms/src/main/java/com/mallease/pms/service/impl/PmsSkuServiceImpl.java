@@ -211,6 +211,11 @@ public class PmsSkuServiceImpl implements PmsSkuService {
         return 0;
     }
 
+    @Override
+    public List<PmsSku> selectBySpuIds(List<Long> spuIds) {
+        return skuDao.selectBySpuIds(spuIds);
+    }
+
     /**
      * 级联删除SKU关联数据（不包含SKU主表）
      */

@@ -1,51 +1,98 @@
 package com.mallease.pms.dto.vo;
 
+import com.mallease.pms.dto.SkuSpecValue;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.AllArgsConstructor;
+
 import lombok.Builder;
+
 import lombok.Data;
+
 import lombok.NoArgsConstructor;
 
+
+
 import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
+
 import java.util.List;
 
+
+
 /**
+
  * SKU视图对象
+
  * <p>
+
  * 包含SKU基础信息、库存、促销、价格策略等完整数据
+
  *
+
  * @author: Aulen
+
  * @create: 2025-12-12
+
  */
+
 @Schema(description = "SKU视图对象")
+
 @Data
+
 @Builder
+
 @NoArgsConstructor
+
 @AllArgsConstructor
+
 public class PmsSkuVO {
 
+
+
     // ========================================================================
+
     // SKU 基础信息
+
     // ========================================================================
+
+
 
     @Schema(description = "SKU ID")
+
     private Long id;
 
+
+
     @Schema(description = "SPU ID")
+
     private Long spuId;
 
+
+
     @Schema(description = "SPU名称")
+
     private String spuName;
 
+
+
     @Schema(description = "SKU编码")
+
     private String skuCode;
 
+
+
     @Schema(description = "SKU规格值（JSON格式）")
+
     private String specValues;
 
-    @Schema(description = "规格值解析对象（前端展示用）")
-    private Object specValuesObj;
+
+
+    @Schema(description = "规格值列表（前端展示用）")
+
+    private List<SkuSpecValue> specValuesObj;
 
     @Schema(description = "SKU图片URL")
     private String pic;
