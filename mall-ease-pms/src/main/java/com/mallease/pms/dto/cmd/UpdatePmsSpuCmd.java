@@ -13,9 +13,6 @@ import java.util.List;
 
 /**
  * 更新SPU命令对象
- * <p>
- * 支持部分更新，只更新传入的非空字段。
- * 对于关联数据（SKU、属性值等），采用全量替换策略。
  *
  * @author: Aulen
  * @create: 2025-12-12
@@ -27,17 +24,13 @@ import java.util.List;
 @Builder
 public class UpdatePmsSpuCmd {
 
-    // ========================================================================
     // 必填字段
-    // ========================================================================
 
     @Schema(description = "SPU ID", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "SPU ID不能为空")
     private Long id;
 
-    // ========================================================================
     // SPU 基础信息（可选更新）
-    // ========================================================================
 
     @Schema(description = "品牌ID")
     private Long brandId;
@@ -98,17 +91,13 @@ public class UpdatePmsSpuCmd {
     @Min(value = 0, message = "排序值不能小于0")
     private Integer sort;
 
-    // ========================================================================
-    // SPU 详情（可选更新）
-    // ========================================================================
+     // SPU 详情（可选更新）
 
     @Schema(description = "SPU详情信息")
     @Valid
     private CreatePmsSpuCmd.SpuDetailCmd spuDetail;
 
-    // ========================================================================
     // 关联数据（全量替换或增量更新）
-    // ========================================================================
 
     @Schema(description = "SKU列表（快照更新：传空数组=清空；不传=不更新；仅支持传已有SKU ID）")
     @Valid
@@ -127,4 +116,17 @@ public class UpdatePmsSpuCmd {
 
     @Schema(description = "优选专区关联ID列表（全量替换）")
     private List<Long> preferenceAreaIds;
+
+    /**
+     * 获取满减规则列表（自动过滤无效数据）
+     */
+    public List<CreatePmsSpuCmd.SpuFullReductionCmd> getFullReductionList() {
+        if (fullReductionList == null || fullReductionList.isEmpty()) {
+            return null;
+        }
+        List<CreatePmsSpuCmd.SpuFullReductionCmd> validList = fullReductionList.stream()
+            .filter(CreatePmsSpuCmd.SpuFullReductionCmd::isValid)
+            .collect(java.util.stream.Collectors.toList());
+        return validList.isEmpty() ? null : validList;
+    }
 }
