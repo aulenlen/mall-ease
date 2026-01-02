@@ -1,6 +1,8 @@
 package com.mallease.pms.service.impl;
 
+import com.mallease.common.constant.PmsRedisKeys;
 import com.mallease.common.exception.ApiException;
+import com.mallease.common.service.RedisService;
 import com.mallease.pms.dao.PmsCategoryDao;
 import com.mallease.pms.dto.query.PmsCategoryQuery;
 import com.mallease.pms.pojo.PmsCategory;
@@ -32,6 +34,9 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
      * 最大分类层级（0-2，共3级）
      */
     private static final int MAX_LEVEL = 2;
+
+    @Autowired
+    private RedisService redisService;
 
     @Autowired
     private PmsCategoryDao categoryDao;
@@ -127,8 +132,7 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
         int levelDiff = newLevel - category.getLevel();
 
         int updatedCount = categoryDao.updatePathBatch(oldPath, newPath, levelDiff);
-        log.info("移动分类，ID: {}, 旧路径: {}, 新路径: {}, 更新子孙数: {}",
-                category.getId(), oldPath, newPath, updatedCount);
+        log.info("移动分类，ID: {}, 旧路径: {}, 新路径: {}, 更新子孙数: {}", category.getId(), oldPath, newPath, updatedCount);
 
         category.setPath(newPath);
         category.setLevel(newLevel);
@@ -176,10 +180,7 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
         // 如果存在子分类，抛出异常
         if (!CollectionUtils.isEmpty(children)) {
             Long parentId = children.get(0).getParentId();
-            PmsCategory parent = categories.stream()
-                    .filter(c -> c.getId().equals(parentId))
-                    .findFirst()
-                    .orElse(null);
+            PmsCategory parent = categories.stream().filter(c -> c.getId().equals(parentId)).findFirst().orElse(null);
             String parentName = parent != null ? parent.getName() : "未知";
             throw new ApiException("分类「" + parentName + "」下存在子分类，请先删除子分类");
         }
@@ -203,8 +204,7 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
             return Map.of();
         }
         List<PmsCategory> allChildren = categoryDao.selectByParentIds(parentIds);
-        return allChildren.stream()
-                .collect(Collectors.groupingBy(PmsCategory::getParentId, Collectors.counting()));
+        return allChildren.stream().collect(Collectors.groupingBy(PmsCategory::getParentId, Collectors.counting()));
     }
 
     @Override
@@ -217,9 +217,7 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
         List<PmsCategory> descendants = categoryDao.selectByPathPrefix(category.getPath());
 
         // 过滤掉自身
-        return descendants.stream()
-                .filter(c -> !c.getId().equals(id))
-                .collect(Collectors.toList());
+        return descendants.stream().filter(c -> !c.getId().equals(id)).collect(Collectors.toList());
     }
 
     @Override
@@ -248,7 +246,17 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
 
     @Override
     public List<PmsCategory> listNavCategories() {
-        return categoryDao.selectNavCategories();
+
+        Object cache = redisService.get(PmsRedisKeys.categoryNav());
+        if (cache instanceof List) {
+            return (List<PmsCategory>) cache;
+        }
+
+        List<PmsCategory> categoryList = categoryDao.selectNavCategories();
+        if (!categoryList.isEmpty()) {
+            redisService.set(PmsRedisKeys.categoryNav(), categoryList, PmsRedisKeys.getCategoryNavExpireSeconds());
+        }
+        return categoryList;
     }
 
     @Override
@@ -259,10 +267,7 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
         }
 
         // 解析路径中的所有ID："/1/8/100/" -> [1, 8, 100]
-        List<Long> ancestorIds = Arrays.stream(category.getPath().split("/"))
-                .filter(StringUtils::hasText)
-                .map(Long::parseLong)
-                .collect(Collectors.toList());
+        List<Long> ancestorIds = Arrays.stream(category.getPath().split("/")).filter(StringUtils::hasText).map(Long::parseLong).collect(Collectors.toList());
 
         if (CollectionUtils.isEmpty(ancestorIds)) {
             return new ArrayList<>();
@@ -272,9 +277,7 @@ public class PmsCategoryServiceImpl implements PmsCategoryService {
         List<PmsCategory> ancestors = categoryDao.selectByIds(ancestorIds);
 
         // 按层级排序
-        return ancestors.stream()
-                .sorted(Comparator.comparing(PmsCategory::getLevel))
-                .collect(Collectors.toList());
+        return ancestors.stream().sorted(Comparator.comparing(PmsCategory::getLevel)).collect(Collectors.toList());
     }
 
     @Override

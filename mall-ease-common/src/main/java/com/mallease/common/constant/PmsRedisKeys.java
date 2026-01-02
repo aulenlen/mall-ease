@@ -10,6 +10,11 @@ public final class PmsRedisKeys {
     }
 
     /**
+     * 金刚区专用key
+     */
+    public static final String CATEGORY_NAV = "category:nav";
+
+    /**
      * SPU详情缓存前缀
      */
     public static final String SPU_DETAIL_PREFIX = "spu:detail:";
@@ -40,10 +45,23 @@ public final class PmsRedisKeys {
     public static final long SKU_STOCK_CACHE_EXPIRE_SECONDS = 3600L;
 
     /**
+     * 金刚区key缓存过期时间
+     */
+    private static final long CATEGORY_NAV_EXPIRE_SECONDS = 24 * 60 * 60;
+
+    /**
      * 构建SPU详情缓存Key
      */
     public static String spuDetailKey(Long spuId) {
         return SPU_DETAIL_PREFIX + spuId;
+    }
+
+    public static String categoryNav() {
+        return CATEGORY_NAV;
+    }
+
+    public static long getCategoryNavExpireSeconds() {
+        return CATEGORY_NAV_EXPIRE_SECONDS;
     }
 
     /**

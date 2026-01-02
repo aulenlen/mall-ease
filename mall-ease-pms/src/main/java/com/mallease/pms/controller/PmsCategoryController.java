@@ -2,6 +2,8 @@ package com.mallease.pms.controller;
 
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.common.constant.PmsRedisKeys;
+import com.mallease.common.service.RedisService;
 import com.mallease.pms.converter.PmsCategoryConverter;
 import com.mallease.pms.dto.cmd.CreatePmsCategoryCmd;
 import com.mallease.pms.dto.cmd.UpdatePmsCategoryCmd;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * 商品分类
+ *
  * @author: Aulen
  * @create: 2025-12-13
  */
@@ -82,16 +85,16 @@ public class PmsCategoryController {
         if (category == null) {
             return R.success(null);
         }
-        
+
         PmsCategoryDetailVO vo = categoryConverter.entityToDetailVo(category);
-        
+
         if (category.getParentId() != null && category.getParentId() > 0) {
             PmsCategory parent = categoryService.getById(category.getParentId());
             if (parent != null) {
                 vo.setParentName(parent.getName());
             }
         }
-        
+
         vo.setBreadcrumb(toBreadcrumbItems(categoryService.listAncestors(id)));
 
         return R.success(vo);
@@ -138,6 +141,13 @@ public class PmsCategoryController {
         List<PmsCategory> categories = categoryService.listByQuery(query);
         List<PmsCategoryTreeVO> tree = categoryConverter.buildTree(categories);
         return R.success(tree);
+    }
+
+    @Operation(summary = "金刚区分类")
+    @GetMapping("/nav")
+    public R<List<PmsCategoryListVO>> listNavCategories() {
+        List<PmsCategory> categoryList = categoryService.listNavCategories();
+        return R.success(categoryConverter.entityListToListVoList(categoryList));
     }
 
     @Operation(summary = "获取导航分类树")
