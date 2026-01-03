@@ -13,17 +13,31 @@
     <artifactId>mall-ease-monitor</artifactId>
     <packaging>jar</packaging>
     <name>mall-ease-monitor</name>
-    <description>监控模块</description>
+    <description>监控服务模块</description>
 
     <dependencies>
+        <!-- 基础 Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <!-- 微服务基础设施 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
+
+        <!-- 监控相关 -->
+        <!--
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>de.codecentric</groupId>
+            <artifactId>spring-boot-admin-starter-server</artifactId>
+        </dependency>
+        -->
     </dependencies>
 </project>
-

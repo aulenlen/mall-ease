@@ -8,16 +8,16 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: mall-ease-pms
-          uri: lb://mall-ease-pms
+        - id: mall-ease-product
+          uri: lb://mall-ease-product
           predicates:
-            - Path=/mall-ease-pms/**
+            - Path=/mall-ease-product/**
           filters:
             - StripPrefix=1
-        - id: mall-ease-cms
-          uri: lb://mall-ease-cms
+        - id: mall-ease-content
+          uri: lb://mall-ease-content
           predicates:
-            - Path=/mall-ease-cms/**
+            - Path=/mall-ease-content/**
           filters:
             - StripPrefix=1
         - id: mall-ease-auth
@@ -26,10 +26,10 @@ spring:
             - Path=/mall-ease-auth/**
           filters:
             - StripPrefix=1
-        - id: mall-ease-ums
-          uri: lb://mall-ease-ums
+        - id: mall-ease-user
+          uri: lb://mall-ease-user
           predicates:
-            - Path=/mall-ease-ums/**
+            - Path=/mall-ease-user/**
           filters:
             - StripPrefix=1
 

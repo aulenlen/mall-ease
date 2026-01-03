@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dao.BrandDao">
+    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.Brand">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="first_letter" property="firstLetter" jdbcType="VARCHAR"/>
+        <result column="sort" property="sort" jdbcType="INTEGER"/>
+        <result column="factory_status" property="factoryStatus" jdbcType="INTEGER"/>
+        <result column="show_status" property="showStatus" jdbcType="INTEGER"/>
+        <result column="spu_count" property="spuCount" jdbcType="INTEGER"/>
+        <result column="spu_comment_count" property="spuCommentCount" jdbcType="INTEGER"/>
+        <result column="logo" property="logo" jdbcType="VARCHAR"/>
+        <result column="big_pic" property="bigPic" jdbcType="VARCHAR"/>
+        <result column="brand_story" property="brandStory" jdbcType="LONGVARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, first_letter, sort, factory_status, show_status, spu_count, spu_comment_count, logo, big_pic, brand_story, create_time, update_time, creator, updater
+    </sql>
+
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from product_brand
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from product_brand
+    </select>
+
+    <select id="selectByShowStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from product_brand
+        where show_status = #{showStatus,jdbcType=INTEGER}
+    </select>
+
+    <select id="list" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from product_brand
+        <where>
+            <if test="keyword != null and keyword != ''">
+                name like concat('%', #{keyword,jdbcType=VARCHAR}, '%')
+            </if>
+        </where>
+        order by sort asc
+    </select>
+
+    <select id="selectByIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from product_brand
+        <where>
+            id in
+            <foreach collection="brandIds" item="brandId" open="(" separator="," close=")">
+                #{brandId}
+            </foreach>
+        </where>
+    </select>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        delete from product_brand
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+
+    <insert id="insert" parameterType="com.mallease.product.model.data.entity.Brand" useGeneratedKeys="true" keyProperty="id">
+        insert into product_brand (id, name, first_letter,
+                               sort, factory_status, show_status,
+                               spu_count, spu_comment_count, logo,
+                               big_pic, brand_story, create_time, creator)
+        values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{firstLetter,jdbcType=VARCHAR},
+                #{sort,jdbcType=INTEGER}, #{factoryStatus,jdbcType=INTEGER}, #{showStatus,jdbcType=INTEGER},
+                #{spuCount,jdbcType=INTEGER}, #{spuCommentCount,jdbcType=INTEGER}, #{logo,jdbcType=VARCHAR},
+                #{bigPic,jdbcType=VARCHAR}, #{brandStory,jdbcType=LONGVARCHAR}, #{createTime,jdbcType=TIMESTAMP}, #{creator,jdbcType=VARCHAR})
+    </insert>
+
+    <insert id="insertSelective" parameterType="com.mallease.product.model.data.entity.Brand" useGeneratedKeys="true" keyProperty="id">
+        insert into product_brand
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                id,
+            </if>
+            <if test="name != null">
+                name,
+            </if>
+            <if test="firstLetter != null">
+                first_letter,
+            </if>
+            <if test="sort != null">
+                sort,
+            </if>
+            <if test="factoryStatus != null">
+                factory_status,
+            </if>
+            <if test="showStatus != null">
+                show_status,
+            </if>
+            <if test="spuCount != null">
+                spu_count,
+            </if>
+            <if test="spuCommentCount != null">
+                spu_comment_count,
+            </if>
+            <if test="logo != null">
+                logo,
+            </if>
+            <if test="bigPic != null">
+                big_pic,
+            </if>
+            <if test="brandStory != null">
+                brand_story,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="creator != null">
+                creator,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="name != null">
+                #{name,jdbcType=VARCHAR},
+            </if>
+            <if test="firstLetter != null">
+                #{firstLetter,jdbcType=VARCHAR},
+            </if>
+            <if test="sort != null">
+                #{sort,jdbcType=INTEGER},
+            </if>
+            <if test="factoryStatus != null">
+                #{factoryStatus,jdbcType=INTEGER},
+            </if>
+            <if test="showStatus != null">
+                #{showStatus,jdbcType=INTEGER},
+            </if>
+            <if test="spuCount != null">
+                #{spuCount,jdbcType=INTEGER},
+            </if>
+            <if test="spuCommentCount != null">
+                #{spuCommentCount,jdbcType=INTEGER},
+            </if>
+            <if test="logo != null">
+                #{logo,jdbcType=VARCHAR},
+            </if>
+            <if test="bigPic != null">
+                #{bigPic,jdbcType=VARCHAR},
+            </if>
+            <if test="brandStory != null">
+                #{brandStory,jdbcType=LONGVARCHAR},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="creator != null">
+                #{creator,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.model.data.entity.Brand">
+        update product_brand
+        <set>
+            <if test="name != null">
+                name = #{name,jdbcType=VARCHAR},
+            </if>
+            <if test="firstLetter != null">
+                first_letter = #{firstLetter,jdbcType=VARCHAR},
+            </if>
+            <if test="sort != null">
+                sort = #{sort,jdbcType=INTEGER},
+            </if>
+            <if test="factoryStatus != null">
+                factory_status = #{factoryStatus,jdbcType=INTEGER},
+            </if>
+            <if test="showStatus != null">
+                show_status = #{showStatus,jdbcType=INTEGER},
+            </if>
+            <if test="spuCount != null">
+                spu_count = #{spuCount,jdbcType=INTEGER},
+            </if>
+            <if test="spuCommentCount != null">
+                spu_comment_count = #{spuCommentCount,jdbcType=INTEGER},
+            </if>
+            <if test="logo != null">
+                logo = #{logo,jdbcType=VARCHAR},
+            </if>
+            <if test="bigPic != null">
+                big_pic = #{bigPic,jdbcType=VARCHAR},
+            </if>
+            <if test="brandStory != null">
+                brand_story = #{brandStory,jdbcType=LONGVARCHAR},
+            </if>
+            <if test="updater != null">
+                updater = #{updater,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.model.data.entity.Brand">
+        update product_brand
+        set name = #{name,jdbcType=VARCHAR},
+            first_letter = #{firstLetter,jdbcType=VARCHAR},
+            sort = #{sort,jdbcType=INTEGER},
+            factory_status = #{factoryStatus,jdbcType=INTEGER},
+            show_status = #{showStatus,jdbcType=INTEGER},
+            spu_count = #{spuCount,jdbcType=INTEGER},
+            spu_comment_count = #{spuCommentCount,jdbcType=INTEGER},
+            logo = #{logo,jdbcType=VARCHAR},
+            big_pic = #{bigPic,jdbcType=VARCHAR},
+            brand_story = #{brandStory,jdbcType=LONGVARCHAR},
+            updater = #{updater,jdbcType=VARCHAR}
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <update id="updateShowStatusBatch">
+        update product_brand
+        set show_status = #{showStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <update id="updateFactoryStatusBatch">
+        update product_brand
+        set factory_status = #{factoryStatus,jdbcType=INTEGER}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+</mapper>
+

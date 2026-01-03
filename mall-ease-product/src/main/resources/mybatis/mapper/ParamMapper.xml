@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dao.ParamDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.Param">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="group_id" property="groupId" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="unit" property="unit" jdbcType="VARCHAR"/>
+        <result column="input_type" property="inputType" jdbcType="TINYINT"/>
+        <result column="input_list" property="inputList" jdbcType="VARCHAR"/>
+        <result column="is_required" property="isRequired" jdbcType="TINYINT"/>
+        <result column="is_searchable" property="isSearchable" jdbcType="TINYINT"/>
+        <result column="is_highlight" property="isHighlight" jdbcType="TINYINT"/>
+        <result column="is_comparable" property="isComparable" jdbcType="TINYINT"/>
+        <result column="sort" property="sort" jdbcType="INTEGER"/>
+        <result column="deleted" property="deleted" jdbcType="TINYINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, group_id, name, unit, input_type, input_list, is_required, is_searchable,
+        is_highlight, is_comparable, sort, deleted, create_time, update_time, creator, updater
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_param
+        WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
+    </select>
+
+    <!-- 根据ID列表批量查询 -->
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_param
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+        ORDER BY group_id, sort, id
+    </select>
+
+    <!-- 根据参数组ID查询 -->
+    <select id="selectByGroupId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_param
+        WHERE group_id = #{groupId,jdbcType=BIGINT} AND deleted = 0
+        ORDER BY sort, id
+    </select>
+
+    <!-- 根据参数组ID列表批量查询 -->
+    <select id="selectByGroupIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_param
+        WHERE deleted = 0 AND group_id IN
+        <foreach collection="groupIds" item="groupId" open="(" separator="," close=")">
+            #{groupId,jdbcType=BIGINT}
+        </foreach>
+        ORDER BY group_id, sort, id
+    </select>
+
+    <!-- 根据名称查询 -->
+    <select id="selectByName" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_param
+        WHERE name = #{name,jdbcType=VARCHAR} AND deleted = 0
+    </select>
+
+    <!-- 查询可搜索的参数 -->
+    <select id="selectSearchable" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_param
+        WHERE is_searchable = 1 AND deleted = 0
+        ORDER BY group_id, sort, id
+    </select>
+
+    <!-- 查询亮点参数 -->
+    <select id="selectHighlight" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_param
+        WHERE is_highlight = 1 AND deleted = 0
+        ORDER BY group_id, sort, id
+    </select>
+
+    <!-- 查询可对比参数 -->
+    <select id="selectComparable" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_param
+        WHERE is_comparable = 1 AND deleted = 0
+        ORDER BY group_id, sort, id
+    </select>
+
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_param
+        WHERE deleted = 0
+        ORDER BY group_id, sort, id
+    </select>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.mallease.product.model.data.entity.Param" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_param (
+            group_id, name, unit, input_type, input_list, is_required, is_searchable,
+            is_highlight, is_comparable, sort, deleted, creator, updater
+        ) VALUES (
+            #{groupId,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{unit,jdbcType=VARCHAR},
+            #{inputType,jdbcType=TINYINT}, #{inputList,jdbcType=VARCHAR}, #{isRequired,jdbcType=TINYINT},
+            #{isSearchable,jdbcType=TINYINT}, #{isHighlight,jdbcType=TINYINT}, #{isComparable,jdbcType=TINYINT},
+            #{sort,jdbcType=INTEGER}, 0, #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 选择性插入 -->
+    <insert id="insertSelective" parameterType="com.mallease.product.model.data.entity.Param" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_param
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="groupId != null">group_id,</if>
+            <if test="name != null">name,</if>
+            <if test="unit != null">unit,</if>
+            <if test="inputType != null">input_type,</if>
+            <if test="inputList != null">input_list,</if>
+            <if test="isRequired != null">is_required,</if>
+            <if test="isSearchable != null">is_searchable,</if>
+            <if test="isHighlight != null">is_highlight,</if>
+            <if test="isComparable != null">is_comparable,</if>
+            <if test="sort != null">sort,</if>
+            <if test="creator != null">creator,</if>
+            deleted,
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="groupId != null">#{groupId,jdbcType=BIGINT},</if>
+            <if test="name != null">#{name,jdbcType=VARCHAR},</if>
+            <if test="unit != null">#{unit,jdbcType=VARCHAR},</if>
+            <if test="inputType != null">#{inputType,jdbcType=TINYINT},</if>
+            <if test="inputList != null">#{inputList,jdbcType=VARCHAR},</if>
+            <if test="isRequired != null">#{isRequired,jdbcType=TINYINT},</if>
+            <if test="isSearchable != null">#{isSearchable,jdbcType=TINYINT},</if>
+            <if test="isHighlight != null">#{isHighlight,jdbcType=TINYINT},</if>
+            <if test="isComparable != null">#{isComparable,jdbcType=TINYINT},</if>
+            <if test="sort != null">#{sort,jdbcType=INTEGER},</if>
+            <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
+            0,
+        </trim>
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_param (
+            group_id, name, unit, input_type, input_list, is_required, is_searchable,
+            is_highlight, is_comparable, sort, deleted, creator
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.groupId,jdbcType=BIGINT}, #{item.name,jdbcType=VARCHAR}, #{item.unit,jdbcType=VARCHAR},
+                #{item.inputType,jdbcType=TINYINT}, #{item.inputList,jdbcType=VARCHAR},
+                #{item.isRequired,jdbcType=TINYINT}, #{item.isSearchable,jdbcType=TINYINT},
+                #{item.isHighlight,jdbcType=TINYINT}, #{item.isComparable,jdbcType=TINYINT},
+                #{item.sort,jdbcType=INTEGER}, 0, #{item.creator,jdbcType=VARCHAR}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据主键更新 -->
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.model.data.entity.Param">
+        UPDATE product_param
+        SET group_id = #{groupId,jdbcType=BIGINT},
+            name = #{name,jdbcType=VARCHAR},
+            unit = #{unit,jdbcType=VARCHAR},
+            input_type = #{inputType,jdbcType=TINYINT},
+            input_list = #{inputList,jdbcType=VARCHAR},
+            is_required = #{isRequired,jdbcType=TINYINT},
+            is_searchable = #{isSearchable,jdbcType=TINYINT},
+            is_highlight = #{isHighlight,jdbcType=TINYINT},
+            is_comparable = #{isComparable,jdbcType=TINYINT},
+            sort = #{sort,jdbcType=INTEGER},
+            updater = #{updater,jdbcType=VARCHAR}
+        WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
+    </update>
+
+    <!-- 根据主键选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.model.data.entity.Param">
+        UPDATE product_param
+        <set>
+            <if test="groupId != null">group_id = #{groupId,jdbcType=BIGINT},</if>
+            <if test="name != null">name = #{name,jdbcType=VARCHAR},</if>
+            <if test="unit != null">unit = #{unit,jdbcType=VARCHAR},</if>
+            <if test="inputType != null">input_type = #{inputType,jdbcType=TINYINT},</if>
+            <if test="inputList != null">input_list = #{inputList,jdbcType=VARCHAR},</if>
+            <if test="isRequired != null">is_required = #{isRequired,jdbcType=TINYINT},</if>
+            <if test="isSearchable != null">is_searchable = #{isSearchable,jdbcType=TINYINT},</if>
+            <if test="isHighlight != null">is_highlight = #{isHighlight,jdbcType=TINYINT},</if>
+            <if test="isComparable != null">is_comparable = #{isComparable,jdbcType=TINYINT},</if>
+            <if test="sort != null">sort = #{sort,jdbcType=INTEGER},</if>
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
+    </update>
+
+    <!-- 逻辑删除 -->
+    <update id="deleteById" parameterType="java.lang.Long">
+        UPDATE product_param
+        SET deleted = 1
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据参数组ID逻辑删除 -->
+    <update id="deleteByGroupId" parameterType="java.lang.Long">
+        UPDATE product_param
+        SET deleted = 1
+        WHERE group_id = #{groupId,jdbcType=BIGINT}
+    </update>
+
+    <!-- 批量逻辑删除 -->
+    <update id="deleteBatch">
+        UPDATE product_param
+        SET deleted = 1
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+</mapper>

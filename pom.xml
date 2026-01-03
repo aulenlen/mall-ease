@@ -19,16 +19,16 @@
 
     <modules>
         <module>mall-ease-auth</module>
-        <module>mall-ease-portal</module>
+        <module>mall-ease-app</module>
         <module>mall-ease-common</module>
         <module>mall-ease-gateway</module>
         <module>mall-ease-monitor</module>
-        <module>mall-ease-oms</module>
-        <module>mall-ease-pms</module>
-        <module>mall-ease-cms</module>
+        <module>mall-ease-order</module>
+        <module>mall-ease-product</module>
+        <module>mall-ease-content</module>
         <module>mall-ease-search</module>
-        <module>mall-ease-sms</module>
-        <module>mall-ease-ums</module>
+        <module>mall-ease-promotion</module>
+        <module>mall-ease-user</module>
     </modules>
 
     <properties>

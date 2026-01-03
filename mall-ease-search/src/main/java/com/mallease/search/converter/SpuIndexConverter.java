@@ -1,6 +1,6 @@
 package com.mallease.search.converter;
 
-import com.mallease.common.dto.SpuIndexDTO;
+import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.search.document.SpuDocument;
 import com.mallease.search.document.SpuParamValueDocument;
 import com.mallease.search.document.SpuSkuDocument;

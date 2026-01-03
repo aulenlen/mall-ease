@@ -461,11 +461,11 @@ public class RedisServiceImpl implements RedisService {
         // 修复 Lua 脚本语法：使用换行符和分号分隔语句
         String luaScript =
                 "redis.call('HMSET', KEYS[1], unpack(ARGV, 1, #ARGV-1)); " +
-                "local ttl = tonumber(ARGV[#ARGV]); " +
-                "if ttl and ttl > 0 then " +
-                "  redis.call('EXPIRE', KEYS[1], ttl); " +
-                "end; " +
-                "return 1";
+                        "local ttl = tonumber(ARGV[#ARGV]); " +
+                        "if ttl and ttl > 0 then " +
+                        "  redis.call('EXPIRE', KEYS[1], ttl); " +
+                        "end; " +
+                        "return 1";
 
         List<String> args = new ArrayList<>();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -576,6 +576,31 @@ public class RedisServiceImpl implements RedisService {
         } catch (Exception e) {
             log.error("Redis批量Hash操作失败，size: {}", dataMap.size(), e);
             throw new RuntimeException("Redis操作失败: multi set hash with expire", e);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> List<T> getList(String key, Class<T> clazz) {
+        try {
+            Object value = redisTemplate.opsForValue().get(key);
+            if (value == null) {
+                return null;
+            }
+
+            if (value instanceof List<?> list) {
+                if (!list.isEmpty() && !clazz.isInstance(list.get(0))) {
+                    log.warn("缓存类型不匹配，期望: {}, 实际: {}", clazz.getName(), list.get(0).getClass().getName());
+                    return null;
+                }
+                return (List<T>) list;
+            }
+
+            log.warn("缓存值不是List类型，key: {}, 实际类型: {}", key, value.getClass().getName());
+            return null;
+        } catch (Exception e) {
+            log.error("获取List缓存失败，key: {}", key, e);
+            return null;
         }
     }
 

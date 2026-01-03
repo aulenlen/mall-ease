@@ -69,9 +69,6 @@ hs_err_pid*
 CLAUDE.md
 .claude/
 
-# 临时SQL脚本（仅本地使用）
-document/sql/spu-sku-refactor/09-rename-category-fields.sql
-
 # =================================================================
 # 敏感配置文件 - 绝不提交到版本控制
 # =================================================================
@@ -90,5 +87,8 @@ document/sql/spu-sku-refactor/09-rename-category-fields.sql
 **/credentials/
 **/*-secret.yml
 **/*-secret.yaml
-
+.mvn
+.serena
+document
+AGENTS.md
 nul

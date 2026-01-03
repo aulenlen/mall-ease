@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dao.SpuDetailDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.SpuDetail">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
+        <result column="detail_title" property="detailTitle" jdbcType="VARCHAR"/>
+        <result column="detail_desc" property="detailDesc" jdbcType="VARCHAR"/>
+        <result column="detail_html" property="detailHtml" jdbcType="LONGVARCHAR"/>
+        <result column="detail_mobile_html" property="detailMobileHtml" jdbcType="LONGVARCHAR"/>
+        <result column="service_ids" property="serviceIds" jdbcType="VARCHAR"/>
+        <result column="packing_list" property="packingList" jdbcType="VARCHAR"/>
+        <result column="after_sale_service" property="afterSaleService" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, spu_id, detail_title, detail_desc, detail_html, detail_mobile_html,
+        service_ids, packing_list, after_sale_service, create_time, update_time, creator, updater
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_spu_detail
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据SPU ID查询（一对一关系） -->
+    <select id="selectBySpuId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_spu_detail
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据SPU ID列表批量查询 -->
+    <select id="selectBySpuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_spu_detail
+        WHERE spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+            #{spuId,jdbcType=BIGINT}
+        </foreach>
+    </select>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.mallease.product.model.data.entity.SpuDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_spu_detail (
+            spu_id, detail_title, detail_desc, detail_html, detail_mobile_html,
+            service_ids, packing_list, after_sale_service, creator, updater
+        ) VALUES (
+            #{spuId,jdbcType=BIGINT}, #{detailTitle,jdbcType=VARCHAR}, #{detailDesc,jdbcType=VARCHAR},
+            #{detailHtml,jdbcType=LONGVARCHAR}, #{detailMobileHtml,jdbcType=LONGVARCHAR},
+            #{serviceIds,jdbcType=VARCHAR}, #{packingList,jdbcType=VARCHAR},
+            #{afterSaleService,jdbcType=VARCHAR}, #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 选择性插入 -->
+    <insert id="insertSelective" parameterType="com.mallease.product.model.data.entity.SpuDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_spu_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="spuId != null">spu_id,</if>
+            <if test="detailTitle != null">detail_title,</if>
+            <if test="detailDesc != null">detail_desc,</if>
+            <if test="detailHtml != null">detail_html,</if>
+            <if test="detailMobileHtml != null">detail_mobile_html,</if>
+            <if test="serviceIds != null">service_ids,</if>
+            <if test="packingList != null">packing_list,</if>
+            <if test="afterSaleService != null">after_sale_service,</if>
+            <if test="creator != null">creator,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="spuId != null">#{spuId,jdbcType=BIGINT},</if>
+            <if test="detailTitle != null">#{detailTitle,jdbcType=VARCHAR},</if>
+            <if test="detailDesc != null">#{detailDesc,jdbcType=VARCHAR},</if>
+            <if test="detailHtml != null">#{detailHtml,jdbcType=LONGVARCHAR},</if>
+            <if test="detailMobileHtml != null">#{detailMobileHtml,jdbcType=LONGVARCHAR},</if>
+            <if test="serviceIds != null">#{serviceIds,jdbcType=VARCHAR},</if>
+            <if test="packingList != null">#{packingList,jdbcType=VARCHAR},</if>
+            <if test="afterSaleService != null">#{afterSaleService,jdbcType=VARCHAR},</if>
+            <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
+        </trim>
+    </insert>
+
+    <!-- 根据主键更新 -->
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.model.data.entity.SpuDetail">
+        UPDATE product_spu_detail
+        SET spu_id = #{spuId,jdbcType=BIGINT},
+            detail_title = #{detailTitle,jdbcType=VARCHAR},
+            detail_desc = #{detailDesc,jdbcType=VARCHAR},
+            detail_html = #{detailHtml,jdbcType=LONGVARCHAR},
+            detail_mobile_html = #{detailMobileHtml,jdbcType=LONGVARCHAR},
+            service_ids = #{serviceIds,jdbcType=VARCHAR},
+            packing_list = #{packingList,jdbcType=VARCHAR},
+            after_sale_service = #{afterSaleService,jdbcType=VARCHAR},
+            updater = #{updater,jdbcType=VARCHAR}
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据主键选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.model.data.entity.SpuDetail">
+        UPDATE product_spu_detail
+        <set>
+            <if test="spuId != null">spu_id = #{spuId,jdbcType=BIGINT},</if>
+            <if test="detailTitle != null">detail_title = #{detailTitle,jdbcType=VARCHAR},</if>
+            <if test="detailDesc != null">detail_desc = #{detailDesc,jdbcType=VARCHAR},</if>
+            <if test="detailHtml != null">detail_html = #{detailHtml,jdbcType=LONGVARCHAR},</if>
+            <if test="detailMobileHtml != null">detail_mobile_html = #{detailMobileHtml,jdbcType=LONGVARCHAR},</if>
+            <if test="serviceIds != null">service_ids = #{serviceIds,jdbcType=VARCHAR},</if>
+            <if test="packingList != null">packing_list = #{packingList,jdbcType=VARCHAR},</if>
+            <if test="afterSaleService != null">after_sale_service = #{afterSaleService,jdbcType=VARCHAR},</if>
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据SPU ID更新 -->
+    <update id="updateBySpuId" parameterType="com.mallease.product.model.data.entity.SpuDetail">
+        UPDATE product_spu_detail
+        <set>
+            <if test="detailTitle != null">detail_title = #{detailTitle,jdbcType=VARCHAR},</if>
+            <if test="detailDesc != null">detail_desc = #{detailDesc,jdbcType=VARCHAR},</if>
+            <if test="detailHtml != null">detail_html = #{detailHtml,jdbcType=LONGVARCHAR},</if>
+            <if test="detailMobileHtml != null">detail_mobile_html = #{detailMobileHtml,jdbcType=LONGVARCHAR},</if>
+            <if test="serviceIds != null">service_ids = #{serviceIds,jdbcType=VARCHAR},</if>
+            <if test="packingList != null">packing_list = #{packingList,jdbcType=VARCHAR},</if>
+            <if test="afterSaleService != null">after_sale_service = #{afterSaleService,jdbcType=VARCHAR},</if>
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+        </set>
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据SPU ID删除 -->
+    <delete id="deleteBySpuId" parameterType="java.lang.Long">
+        DELETE FROM product_spu_detail
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+    </delete>
+
+</mapper>

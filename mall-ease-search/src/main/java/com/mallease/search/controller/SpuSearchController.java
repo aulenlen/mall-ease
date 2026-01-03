@@ -1,7 +1,7 @@
 package com.mallease.search.controller;
 
 import com.mallease.common.api.R;
-import com.mallease.common.dto.SpuIndexDTO;
+import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.search.converter.SpuIndexConverter;
 import com.mallease.search.document.SpuDocument;
 import com.mallease.search.dto.query.SpuSearchQuery;

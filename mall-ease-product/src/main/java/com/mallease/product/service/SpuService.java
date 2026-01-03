@@ -1,0 +1,87 @@
+package com.mallease.product.service;
+
+import com.mallease.product.model.aggregate.SpuAggregate;
+import com.mallease.product.model.client.query.SpuQuery;
+import com.mallease.product.model.client.vo.SpuPublishVO;
+import com.mallease.product.model.data.entity.Spu;
+import com.mallease.product.model.data.entity.SpuDetail;
+
+import com.mallease.product.model.data.entity.SpuFullReduction;
+
+import java.util.List;
+
+public interface SpuService {
+
+    /**
+     * 创建商品
+     *
+     * @param aggregate SPU聚合对象
+     * @return SPU ID
+     */
+    Long create(SpuAggregate aggregate);
+
+    /**
+     * 更新商品
+     *
+     * @param aggregate SPU聚合对象
+     * @return 更新影响的行数
+     */
+    int update(SpuAggregate aggregate);
+
+    /**
+     * 根据条件查询商品列表（支持分页）
+     *
+     * @param query 查询条件
+     * @return SPU列表
+     */
+    List<Spu> list(SpuQuery query);
+
+    /**
+     * 获取商品更新信息（用于编辑页面数据回显）
+     *
+     * @param id SPU ID
+     * @return SPU聚合对象（包含详情、SKU列表、属性值、满减规则等）
+     */
+    SpuAggregate getUpdateInfo(Long id);
+
+    /**
+     * 删除商品（级联删除SKU、详情、属性值、满减规则及CMS关联）
+     *
+     * @param id SPU ID
+     * @return 删除影响的行数
+     */
+    int delete(Long id);
+
+    /**
+     * 删除商品（级联删除SKU、详情、属性值、满减规则及CMS关联）
+     *
+     * @param ids           spuId列表
+     * @param publishStatus 上架状态
+     * @return 上架结果
+     */
+    SpuPublishVO publish(List<Long> ids, Integer publishStatus);
+
+    /**
+     * 根据ID列表批量获取SPU
+     *
+     * @param ids SPU ID列表
+     * @return SPU列表
+     */
+    List<Spu> listByIds(List<Long> ids);
+
+    /**
+     * 根据SPU ID列表批量获取SPU详情
+     *
+     * @param spuIds SPU ID列表
+     * @return SPU详情列表
+     */
+    List<SpuDetail> listDetailBySpuIds(List<Long> spuIds);
+
+    /**
+     * 根据SPU ID列表批量获取满减规则
+     *
+     * @param spuIds SPU ID列表
+     * @return 满减规则列表
+     */
+    List<SpuFullReduction> listFullReductionBySpuIds(List<Long> spuIds);
+}

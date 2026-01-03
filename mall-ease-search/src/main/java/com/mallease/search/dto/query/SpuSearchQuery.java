@@ -1,6 +1,6 @@
 package com.mallease.search.dto.query;
 
-import com.mallease.common.dto.query.BaseQuery;
+import com.mallease.common.dto.client.BaseQuery;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

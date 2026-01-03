@@ -16,32 +16,35 @@
     <description>网关模块</description>
 
     <dependencies>
+        <!-- ==================== 公共模块 ==================== -->
+        <!-- Gateway 使用 WebFlux，需要排除 Servlet Web -->
         <dependency>
             <groupId>com.mallease</groupId>
             <artifactId>mall-ease-common</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <exclusions>
-                <!-- Gateway 是 WebFlux 响应式框架，不需要 Servlet Web -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-web</artifactId>
                 </exclusion>
-                <!-- Gateway 使用 Reactor 版本的 Sa-Token，排除 Servlet 版本 -->
-                <exclusion>
-                    <groupId>cn.dev33</groupId>
-                    <artifactId>sa-token-spring-boot3-starter</artifactId>
-                </exclusion>
-                <!-- Gateway 不需要 Servlet API -->
                 <exclusion>
                     <groupId>jakarta.servlet</groupId>
                     <artifactId>jakarta.servlet-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!-- 网关核心 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
+
+        <!-- 微服务基础设施 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
@@ -52,16 +55,14 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-gateway</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
+
+        <!-- 认证授权（Reactor 响应式版本） -->
         <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-reactor-spring-boot3-starter</artifactId>
@@ -70,6 +71,8 @@
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-redis-jackson</artifactId>
         </dependency>
+
+        <!-- Redis 连接池 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>

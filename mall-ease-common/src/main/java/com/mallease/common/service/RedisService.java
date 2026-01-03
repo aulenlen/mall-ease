@@ -301,11 +301,19 @@ public interface RedisService {
 
     /**
      * 批量设置 Hash 结构（使用 Pipeline + HMSET）
-     * <p>
-     * 适用于商品多 SKU 库存等场景，所有 Redis 命令在一次网络往返中完成。
      *
      * @param dataMap       数据映射（完整key -> Hash字段映射）
      * @param expireSeconds 过期时间（秒），0表示永久有效
      */
     void multiSetHashWithExpire(Map<String, Map<String, Object>> dataMap, long expireSeconds);
+
+    /**
+     * 获取缓存的列表数据并反序列化为指定类型
+     * @param key   Redis 键
+     * @param clazz 列表元素的类型
+     * @param <T>   元素类型泛型
+     * @return 反序列化后的列表，如果 key 不存在或类型不匹配则返回 null
+     */
+    @Nullable
+    <T> List<T> getList(String key, Class<T> clazz);
 }

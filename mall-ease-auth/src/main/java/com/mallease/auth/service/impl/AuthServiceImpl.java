@@ -5,10 +5,10 @@ import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mallease.auth.dto.request.LoginRequest;
-import com.mallease.auth.dto.UmsAdminDto;
-import com.mallease.auth.dto.UmsMemberDto;
-import com.mallease.auth.dto.UmsResourceDto;
-import com.mallease.auth.feign.UmsServiceFeignClient;
+import com.mallease.auth.dto.UserAdminDto;
+import com.mallease.auth.dto.UserMemberDto;
+import com.mallease.auth.dto.UserResourceDto;
+import com.mallease.auth.feign.UserServiceFeignClient;
 import com.mallease.auth.service.AuthService;
 import com.mallease.common.api.R;
 import com.mallease.common.constant.AuthConstant;
@@ -29,7 +29,7 @@ import java.util.List;
 @Service
 public class AuthServiceImpl implements AuthService {
     @Autowired
-    private UmsServiceFeignClient umsServiceFeignClient;
+    private UserServiceFeignClient umsServiceFeignClient;
 
     @Override
     public SaTokenInfo login(LoginRequest request) {
@@ -53,12 +53,12 @@ public class AuthServiceImpl implements AuthService {
      * 管理员登录
      */
     private SaTokenInfo loginAdmin(LoginRequest request) {
-        R<UmsAdminDto> result = umsServiceFeignClient.getAdminByUsername(request.getUsername());
+        R<UserAdminDto> result = umsServiceFeignClient.getAdminByUsername(request.getUsername());
         if (result == null || result.getData() == null) {
             Asserts.fail("用户不存在！");
         }
 
-        UmsAdminDto admin = result.getData();
+        UserAdminDto admin = result.getData();
         validateUser(admin.getPassword(), admin.getStatus(), request.getPassword());
 
         StpUtil.login(admin.getId());
@@ -72,12 +72,12 @@ public class AuthServiceImpl implements AuthService {
      * 会员登录
      */
     private SaTokenInfo loginMember(LoginRequest request) {
-        R<UmsMemberDto> result = umsServiceFeignClient.getMemberByUsername(request.getUsername());
+        R<UserMemberDto> result = umsServiceFeignClient.getMemberByUsername(request.getUsername());
         if (result == null || result.getData() == null) {
             Asserts.fail("用户不存在！");
         }
 
-        UmsMemberDto member = result.getData();
+        UserMemberDto member = result.getData();
         validateUser(member.getPassword(), member.getStatus(), request.getPassword());
 
         StpUtil.login(member.getId());
@@ -116,7 +116,7 @@ public class AuthServiceImpl implements AuthService {
         List<String> permissionList = new ArrayList<>();
         // 如果是管理员，可以获取权限列表（如果需要）
         if (userType == UserType.ADMIN) {
-            List<UmsResourceDto> resourceDtoList = umsServiceFeignClient.getResourceList(id).getData();
+            List<UserResourceDto> resourceDtoList = umsServiceFeignClient.getResourceList(id).getData();
             permissionList = resourceDtoList.stream().map(res -> res.getId() + ":" + res.getName()).toList();
         }
 
