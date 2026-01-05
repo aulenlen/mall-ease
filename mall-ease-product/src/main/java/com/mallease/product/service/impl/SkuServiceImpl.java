@@ -38,6 +38,64 @@ public class SkuServiceImpl implements SkuService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
+    public Long create(Long spuId, SpuAggregate.SkuData skuData) {
+        String userName = LoginContextUtil.getUserName();
+        if (skuData == null || skuData.getSku() == null) {
+            throw new ApiException("SKU数据不能为空");
+        }
+        if (spuId == null) {
+            throw new ApiException("SPU ID不能为空");
+        }
+
+        Sku sku = skuData.getSku();
+        sku.setSpuId(spuId);
+        sku.setSkuCode(sku.getSkuCode() == null ? IdUtil.getSnowflakeNextIdStr() : sku.getSkuCode());
+        sku.setCreator(userName);
+        skuDao.insertSelective(sku);
+
+        Long skuId = sku.getId();
+
+        // 库存（必需）
+        SkuStock stock = skuData.getStock();
+        if (stock == null) {
+            throw new ApiException("SKU库存信息不能为空");
+        }
+        stock.setSkuId(skuId);
+        stock.setSpuId(spuId);
+        stock.setCreator(userName);
+        skuStockService.createBatch(List.of(stock));
+
+        // 促销（可选）
+        if (skuData.getPromotion() != null) {
+            SkuPromotion promotion = skuData.getPromotion();
+            promotion.setSkuId(skuId);
+            promotion.setCreator(userName);
+            promotionDao.insertSelective(promotion);
+        }
+
+        // 阶梯价（可选）
+        if (skuData.getLadderList() != null && !skuData.getLadderList().isEmpty()) {
+            skuData.getLadderList().forEach(ladder -> {
+                ladder.setSkuId(skuId);
+                ladder.setCreator(userName);
+            });
+            ladderDao.insertBatch(skuData.getLadderList());
+        }
+
+        // 会员价（可选）
+        if (skuData.getMemberPriceList() != null && !skuData.getMemberPriceList().isEmpty()) {
+            skuData.getMemberPriceList().forEach(memberPrice -> {
+                memberPrice.setSkuId(skuId);
+                memberPrice.setCreator(userName);
+            });
+            memberPriceDao.insertBatch(skuData.getMemberPriceList());
+        }
+
+        return skuId;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
     public int createBatch(Long spuId, List<SpuAggregate.SkuData> skuDataList) {
         String userName = LoginContextUtil.getUserName();
         if (skuDataList == null || skuDataList.isEmpty()) {
@@ -191,18 +249,25 @@ public class SkuServiceImpl implements SkuService {
 
     @Override
     public List<Sku> list(SkuQuery query) {
-        // TODO: 实现分页查询逻辑
-        return List.of();
+        return skuDao.selectByQuery(query);
     }
 
     @Override
     public int updateEnableStatus(List<Long> ids, Integer status) {
-        // TODO: 实现批量更新状态逻辑
-        return 0;
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        if (status == null || (status != 0 && status != 1)) {
+            throw new ApiException("状态值必须为0或1");
+        }
+        return skuDao.updateEnableStatusBatch(ids, status);
     }
 
     @Override
     public List<Sku> selectBySpuIds(List<Long> spuIds) {
+        if (spuIds == null || spuIds.isEmpty()) {
+            return List.of();
+        }
         return skuDao.selectBySpuIds(spuIds);
     }
 

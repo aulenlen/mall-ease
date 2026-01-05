@@ -4,7 +4,7 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.product.converter.SpecConverter;
 import com.mallease.product.dao.ParamDao;
 import com.mallease.product.dao.ParamGroupDao;
-import com.mallease.product.model.client.cmd.SaveParamCmd;
+import com.mallease.product.model.client.cmd.ParamCmd;
 import com.mallease.product.model.client.vo.ParamVO;
 import com.mallease.product.model.data.entity.Param;
 import com.mallease.product.model.data.entity.ParamGroup;
@@ -37,7 +37,7 @@ public class ParamServiceImpl implements ParamService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(SaveParamCmd cmd) {
+    public Long create(ParamCmd cmd) {
         // 检查参数组是否存在
         ParamGroup paramGroup = paramGroupDao.selectByPrimaryKey(cmd.getGroupId());
         if (paramGroup == null) {
@@ -61,7 +61,7 @@ public class ParamServiceImpl implements ParamService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int update(SaveParamCmd cmd) {
+    public int update(ParamCmd cmd) {
         Param original = paramDao.selectByPrimaryKey(cmd.getId());
         if (original == null) {
             throw new ApiException("参数不存在，ID: " + cmd.getId());

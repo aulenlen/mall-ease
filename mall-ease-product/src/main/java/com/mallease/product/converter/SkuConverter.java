@@ -3,7 +3,8 @@ package com.mallease.product.converter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mallease.product.model.client.cmd.SaveSkuCmd;
+import com.mallease.product.model.aggregate.SpuAggregate;
+import com.mallease.product.model.client.cmd.SkuCmd;
 import com.mallease.product.model.client.vo.SkuVO;
 import com.mallease.product.model.data.entity.*;
 import org.mapstruct.Mapper;
@@ -27,6 +28,8 @@ public interface SkuConverter {
     @Mapping(source = "specValues", target = "specValuesObj", qualifiedByName = "parseSpecValues")
     SkuVO entityToVo(Sku entity);
 
+    List<SkuVO> entityListToVoList(List<Sku> entities);
+
     // 合并关联数据到 VO
 
     @Mapping(target = "id", ignore = true)
@@ -44,23 +47,41 @@ public interface SkuConverter {
 
     @Mapping(target = "deleted", constant = "0")
     @Mapping(source = "specValues", target = "specValues", qualifiedByName = "serializeSpecValues")
-    Sku saveCmdToEntity(SaveSkuCmd cmd);
+    Sku saveCmdToEntity(SkuCmd cmd);
 
     @Mapping(source = "specValues", target = "specValues", qualifiedByName = "serializeSpecValues")
-    void updateEntityFromCmd(@MappingTarget Sku entity, SaveSkuCmd cmd);
+    void updateEntityFromCmd(@MappingTarget Sku entity, SkuCmd cmd);
 
     @Mapping(target = "lockStock", constant = "0")
     @Mapping(target = "sale", constant = "0")
     @Mapping(target = "version", constant = "1")
-    SkuStock stockCmdToEntity(SaveSkuCmd.SkuStockCmd cmd);
+    SkuStock stockCmdToEntity(SkuCmd.SkuStockCmd cmd);
 
     @Mapping(target = "version", constant = "1")
     @Mapping(target = "previewStatus", constant = "0")
-    SkuPromotion promotionCmdToEntity(SaveSkuCmd.SkuPromotionCmd cmd);
-    SkuMemberPrice memberPriceCmdToEntity(SaveSkuCmd.SkuMemberPriceCmd cmd);
-    List<SkuMemberPrice> memberPriceCmdListToEntityList(List<SaveSkuCmd.SkuMemberPriceCmd> cmdList);
-    SkuLadder ladderCmdToEntity(SaveSkuCmd.SkuLadderCmd cmd);
-    List<SkuLadder> ladderCmdListToEntityList(List<SaveSkuCmd.SkuLadderCmd> cmdList);
+    SkuPromotion promotionCmdToEntity(SkuCmd.SkuPromotionCmd cmd);
+    SkuMemberPrice memberPriceCmdToEntity(SkuCmd.SkuMemberPriceCmd cmd);
+    List<SkuMemberPrice> memberPriceCmdListToEntityList(List<SkuCmd.SkuMemberPriceCmd> cmdList);
+    SkuLadder ladderCmdToEntity(SkuCmd.SkuLadderCmd cmd);
+    List<SkuLadder> ladderCmdListToEntityList(List<SkuCmd.SkuLadderCmd> cmdList);
+
+    // Cmd → SkuData（聚合对象）
+
+    /**
+     * 将 SkuCmd 转换为 SpuAggregate.SkuData
+     */
+    default SpuAggregate.SkuData saveCmdToSkuData(SkuCmd cmd) {
+        if (cmd == null) {
+            return null;
+        }
+        return SpuAggregate.SkuData.builder()
+                .sku(saveCmdToEntity(cmd))
+                .stock(cmd.getStock() != null ? stockCmdToEntity(cmd.getStock()) : null)
+                .promotion(cmd.getPromotion() != null ? promotionCmdToEntity(cmd.getPromotion()) : null)
+                .ladderList(cmd.getLadderList() != null ? ladderCmdListToEntityList(cmd.getLadderList()) : null)
+                .memberPriceList(cmd.getMemberPriceList() != null ? memberPriceCmdListToEntityList(cmd.getMemberPriceList()) : null)
+                .build();
+    }
 
     // 工具方法
 
@@ -78,7 +99,7 @@ public interface SkuConverter {
     }
 
     @Named("serializeSpecValues")
-    default String serializeSpecValues(List<SaveSkuCmd.SkuSpecValue> specValues) {
+    default String serializeSpecValues(List<SkuCmd.SkuSpecValue> specValues) {
         if (specValues == null || specValues.isEmpty()) {
             return null;
         }

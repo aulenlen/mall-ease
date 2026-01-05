@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SaveParamCmd {
+public class ParamCmd {
 
     /**
      * 创建时的校验组

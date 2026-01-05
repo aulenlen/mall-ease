@@ -4,7 +4,7 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.product.dao.CategoryParamGroupDao;
 import com.mallease.product.dao.ParamDao;
 import com.mallease.product.dao.ParamGroupDao;
-import com.mallease.product.model.client.cmd.SaveParamGroupCmd;
+import com.mallease.product.model.client.cmd.ParamGroupCmd;
 import com.mallease.product.model.data.entity.CategoryParamGroup;
 import com.mallease.product.model.data.entity.Param;
 import com.mallease.product.model.data.entity.ParamGroup;
@@ -211,7 +211,7 @@ public class ParamGroupServiceImpl implements ParamGroupService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long cloneToCategory(SaveParamGroupCmd cmd) {
+    public Long cloneToCategory(ParamGroupCmd cmd) {
         Long sourceGroupId = cmd.getId();
         Long categoryId = cmd.getCategoryId();
 

@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SaveSkuCmd {
+public class SkuCmd {
 
     /**
      * 创建时的校验组
@@ -40,6 +40,7 @@ public class SaveSkuCmd {
     }
 
     @Schema(description = "SKU ID（有ID表示更新现有SKU，无ID表示新增SKU）")
+    @NotNull(groups = Update.class, message = "更新时SKU ID不能为空")
     private Long id;
 
     @Schema(description = "SKU规格值列表", requiredMode = Schema.RequiredMode.REQUIRED)

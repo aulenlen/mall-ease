@@ -1,5 +1,6 @@
 package com.mallease.product.dao;
 
+import com.mallease.product.model.client.query.SkuQuery;
 import com.mallease.product.model.data.entity.Sku;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -136,4 +137,12 @@ public interface SkuDao {
      * @return SKU列表
      */
     List<Sku> selectAll();
+
+    /**
+     * 根据查询对象查询SKU列表
+     *
+     * @param query 查询条件
+     * @return SKU列表
+     */
+    List<Sku> selectByQuery(@Param("query") SkuQuery query);
 }

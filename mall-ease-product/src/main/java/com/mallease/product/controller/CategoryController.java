@@ -3,7 +3,7 @@ package com.mallease.product.controller;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.product.converter.CategoryConverter;
-import com.mallease.product.model.client.cmd.SaveCategoryCmd;
+import com.mallease.product.model.client.cmd.CategoryCmd;
 import com.mallease.product.model.client.query.CategoryQuery;
 import com.mallease.product.model.client.vo.CategoryDetailVO;
 
@@ -43,7 +43,7 @@ public class CategoryController {
 
     @Operation(summary = "创建分类")
     @PostMapping("/create")
-    public R<Long> create(@Validated(SaveCategoryCmd.Create.class) @RequestBody SaveCategoryCmd cmd) {
+    public R<Long> create(@Validated(CategoryCmd.Create.class) @RequestBody CategoryCmd cmd) {
         Category entity = categoryConverter.saveCmdToEntity(cmd);
         Long id = categoryService.create(entity, cmd.getParentId());
         return R.success(id);
@@ -51,7 +51,7 @@ public class CategoryController {
 
     @Operation(summary = "更新分类")
     @PostMapping("/update")
-    public R<Integer> update(@Validated(SaveCategoryCmd.Update.class) @RequestBody SaveCategoryCmd cmd) {
+    public R<Integer> update(@Validated(CategoryCmd.Update.class) @RequestBody CategoryCmd cmd) {
         Category entity = categoryService.getById(cmd.getId());
         if (entity == null) {
             return R.failed(ResultCode.FAILED, "分类不存在");

@@ -1,6 +1,6 @@
 package com.mallease.product.service;
 
-import com.mallease.product.model.client.cmd.SaveSpecCmd;
+import com.mallease.product.model.client.cmd.SpecCmd;
 import com.mallease.product.model.client.vo.SpecVO;
 import com.mallease.product.model.data.entity.SpecValue;
 
@@ -23,7 +23,7 @@ public interface SpecService {
      * @param cmd 保存命令（创建场景，可包含规格值列表）
      * @return 新规格ID
      */
-    Long create(SaveSpecCmd cmd);
+    Long create(SpecCmd cmd);
 
     /**
      * 更新规格
@@ -31,7 +31,7 @@ public interface SpecService {
      * @param cmd 保存命令（更新场景）
      * @return 影响行数
      */
-    int update(SaveSpecCmd cmd);
+    int update(SpecCmd cmd);
 
     /**
      * 删除规格
@@ -88,7 +88,7 @@ public interface SpecService {
      * @param valueCmd 规格值命令
      * @return 新规格值ID
      */
-    Long addSpecValue(Long specId, SaveSpecCmd.SpecValueCmd valueCmd);
+    Long addSpecValue(Long specId, SpecCmd.SpecValueCmd valueCmd);
 
     /**
      * 批量添加规格值
@@ -97,7 +97,7 @@ public interface SpecService {
      * @param valueCmds 规格值命令列表
      * @return 影响行数
      */
-    int addSpecValueBatch(Long specId, List<SaveSpecCmd.SpecValueCmd> valueCmds);
+    int addSpecValueBatch(Long specId, List<SpecCmd.SpecValueCmd> valueCmds);
 
     /**
      * 删除规格值

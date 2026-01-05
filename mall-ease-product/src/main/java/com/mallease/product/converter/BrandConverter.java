@@ -1,6 +1,6 @@
 package com.mallease.product.converter;
 
-import com.mallease.product.model.client.cmd.SaveBrandCmd;
+import com.mallease.product.model.client.cmd.BrandCmd;
 import com.mallease.product.model.client.vo.BrandDetailVO;
 
 import com.mallease.product.model.client.vo.BrandListVO;
@@ -33,10 +33,10 @@ public interface BrandConverter {
     /**
      * SaveCmd → Entity
      */
-    Brand saveCmdToEntity(SaveBrandCmd cmd);
+    Brand saveCmdToEntity(BrandCmd cmd);
 
     /**
      * SaveCmd → Entity
      */
-    void updateEntityFromCmd(@MappingTarget Brand entity, SaveBrandCmd cmd);
+    void updateEntityFromCmd(@MappingTarget Brand entity, BrandCmd cmd);
 }

@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "保存品牌命令")
-public class SaveBrandCmd {
+public class BrandCmd {
 
     /**
      * 创建时的校验组

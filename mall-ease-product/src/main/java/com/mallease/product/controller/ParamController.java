@@ -6,8 +6,8 @@ import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.product.converter.SpecConverter;
-import com.mallease.product.model.client.cmd.SaveParamCmd;
-import com.mallease.product.model.client.cmd.SaveParamGroupCmd;
+import com.mallease.product.model.client.cmd.ParamCmd;
+import com.mallease.product.model.client.cmd.ParamGroupCmd;
 import com.mallease.product.model.client.query.ParamGroupQuery;
 import com.mallease.product.model.client.vo.ParamGroupVO;
 
@@ -52,7 +52,7 @@ public class ParamController {
 
     @Operation(summary = "创建参数组")
     @PostMapping("/group/create")
-    public R<Long> createGroup(@Validated(SaveParamGroupCmd.Create.class) @RequestBody SaveParamGroupCmd cmd) {
+    public R<Long> createGroup(@Validated(ParamGroupCmd.Create.class) @RequestBody ParamGroupCmd cmd) {
         // Controller负责DTO转换
         ParamGroup entity = specConverter.saveParamGroupCmdToEntity(cmd);
         Long id = paramGroupService.create(entity, cmd.getCategoryId());
@@ -61,7 +61,7 @@ public class ParamController {
 
     @Operation(summary = "更新参数组")
     @PostMapping("/group/update")
-    public R<Integer> updateGroup(@Validated(SaveParamGroupCmd.Update.class) @RequestBody SaveParamGroupCmd cmd) {
+    public R<Integer> updateGroup(@Validated(ParamGroupCmd.Update.class) @RequestBody ParamGroupCmd cmd) {
         // 先查询原实体
         ParamGroup entity = paramGroupService.getById(cmd.getId());
         if (entity == null) {
@@ -151,7 +151,7 @@ public class ParamController {
 
     @Operation(summary = "克隆参数组到分类", description = "复制参数组及其参数定义，解除原关联并绑定到目标分类")
     @PostMapping("/group/clone")
-    public R<Long> cloneGroupToCategory(@Validated(SaveParamGroupCmd.Clone.class) @RequestBody SaveParamGroupCmd cmd) {
+    public R<Long> cloneGroupToCategory(@Validated(ParamGroupCmd.Clone.class) @RequestBody ParamGroupCmd cmd) {
         Long newGroupId = paramGroupService.cloneToCategory(cmd);
         return R.success(newGroupId);
     }
@@ -160,14 +160,14 @@ public class ParamController {
 
     @Operation(summary = "创建参数")
     @PostMapping("/create")
-    public R<Long> createParam(@Validated(SaveParamCmd.Create.class) @RequestBody SaveParamCmd cmd) {
+    public R<Long> createParam(@Validated(ParamCmd.Create.class) @RequestBody ParamCmd cmd) {
         Long id = paramService.create(cmd);
         return R.success(id);
     }
 
     @Operation(summary = "更新参数")
     @PostMapping("/update")
-    public R<Integer> updateParam(@Validated(SaveParamCmd.Update.class) @RequestBody SaveParamCmd cmd) {
+    public R<Integer> updateParam(@Validated(ParamCmd.Update.class) @RequestBody ParamCmd cmd) {
         int count = paramService.update(cmd);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }

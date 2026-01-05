@@ -11,11 +11,38 @@ import java.util.List;
  * @create: 2025-11-14
  */
 public interface SkuStockService {
+
+    /**
+     * 创建单个库存记录
+     *
+     * @param stock 库存实体
+     * @return 库存ID
+     */
+    Long create(SkuStock stock);
+
     /**
      * 批量创建 sku库存
+     *
+     * @param stockList 库存列表
      * @return 创建的记录数
      */
     Integer createBatch(List<SkuStock> stockList);
+
+    /**
+     * 更新库存信息
+     *
+     * @param stock 库存实体
+     * @return 影响行数
+     */
+    int update(SkuStock stock);
+
+    /**
+     * 根据SKU ID获取库存
+     *
+     * @param skuId SKU ID
+     * @return 库存实体
+     */
+    SkuStock getBySkuId(Long skuId);
 
     /**
      * 扣减库存（原子操作）
@@ -28,7 +55,17 @@ public interface SkuStockService {
     boolean deductStock(Long productId, Long skuId, Integer quantity);
 
     /**
+     * 手动调整库存（入库/出库）
+     *
+     * @param skuId SKU ID
+     * @param quantity 调整数量（正数入库，负数出库）
+     * @return 影响行数
+     */
+    int adjustStock(Long skuId, Integer quantity);
+
+    /**
      * 获取库存
+     *
      * @param spuIdList spuId列表
      * @return 库存列表
      */
@@ -36,8 +73,25 @@ public interface SkuStockService {
 
     /**
      * 根据SKU ID列表获取库存
+     *
      * @param skuIds SKU ID列表
      * @return 库存列表
      */
     List<SkuStock> listStockBySkuIds(List<Long> skuIds);
+
+    /**
+     * 查询库存预警列表
+     *
+     * @return 库存预警列表
+     */
+    List<SkuStock> listLowStockWarning();
+
+    /**
+     * 批量更新库存状态
+     *
+     * @param skuIds SKU ID列表
+     * @param stockStatus 库存状态
+     * @return 影响行数
+     */
+    int updateStockStatusBatch(List<Long> skuIds, Integer stockStatus);
 }

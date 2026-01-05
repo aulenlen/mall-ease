@@ -3,8 +3,8 @@ package com.mallease.product.assembler;
 import com.mallease.product.converter.SkuConverter;
 import com.mallease.product.converter.SpuConverter;
 import com.mallease.product.dao.SpecDao;
-import com.mallease.product.model.client.cmd.SaveSkuCmd;
-import com.mallease.product.model.client.cmd.SaveSpuCmd;
+import com.mallease.product.model.client.cmd.SkuCmd;
+import com.mallease.product.model.client.cmd.SpuCmd;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.data.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +39,7 @@ public class SpuSaveAssembler {
      * @param cmd 保存 SPU 命令
      * @return SPU 聚合对象
      */
-    public SpuAggregate assembleForCreate(SaveSpuCmd cmd) {
+    public SpuAggregate assembleForCreate(SpuCmd cmd) {
         // SPU主表
         Spu spu = spuConverter.saveCmdToEntity(cmd);
 
@@ -71,7 +71,7 @@ public class SpuSaveAssembler {
      * @param cmd 保存 SPU 命令
      * @return SPU 聚合对象
      */
-    public SpuAggregate assembleForUpdate(SaveSpuCmd cmd) {
+    public SpuAggregate assembleForUpdate(SpuCmd cmd) {
         SpuAggregate.SpuAggregateBuilder builder = SpuAggregate.builder();
 
         // SPU Entity（部分更新）
@@ -133,21 +133,21 @@ public class SpuSaveAssembler {
     // 共享的转换方法
     // ========================================================================
 
-    private SpuDetail convertSpuDetail(SaveSpuCmd cmd) {
+    private SpuDetail convertSpuDetail(SpuCmd cmd) {
         if (cmd.getSpuDetail() == null) {
             return null;
         }
         return spuConverter.spuDetailCmdToEntity(cmd.getSpuDetail());
     }
 
-    private List<SpuParamValue> convertParamValues(SaveSpuCmd cmd) {
+    private List<SpuParamValue> convertParamValues(SpuCmd cmd) {
         if (cmd.getParamValueList() == null || cmd.getParamValueList().isEmpty()) {
             return null;
         }
         return spuConverter.paramValueCmdListToEntityList(cmd.getParamValueList());
     }
 
-    private List<SpuFullReduction> convertFullReductions(SaveSpuCmd cmd) {
+    private List<SpuFullReduction> convertFullReductions(SpuCmd cmd) {
         if (cmd.getFullReductionList() == null) {
             return null;
         }
@@ -158,7 +158,7 @@ public class SpuSaveAssembler {
     // 创建场景的 SKU 转换（包含库存和规格名补充）
     // ========================================================================
 
-    private List<SpuAggregate.SkuData> convertSkuListForCreate(List<SaveSkuCmd> cmdList) {
+    private List<SpuAggregate.SkuData> convertSkuListForCreate(List<SkuCmd> cmdList) {
         if (cmdList == null || cmdList.isEmpty()) {
             return List.of();
         }
@@ -170,10 +170,10 @@ public class SpuSaveAssembler {
                 .collect(Collectors.toList());
     }
 
-    private Map<Long, String> querySpecNameMap(List<SaveSkuCmd> cmdList) {
+    private Map<Long, String> querySpecNameMap(List<SkuCmd> cmdList) {
         Set<Long> specIds = cmdList.stream()
                 .flatMap(cmd -> cmd.getSpecValues().stream())
-                .map(SaveSkuCmd.SkuSpecValue::getSpecId)
+                .map(SkuCmd.SkuSpecValue::getSpecId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
         if (specIds.isEmpty()) {
@@ -184,7 +184,7 @@ public class SpuSaveAssembler {
         return specList.stream().collect(Collectors.toMap(Spec::getId, Spec::getName));
     }
 
-    private SpuAggregate.SkuData convertSkuForCreate(SaveSkuCmd cmd, Map<Long, String> specNameMap) {
+    private SpuAggregate.SkuData convertSkuForCreate(SkuCmd cmd, Map<Long, String> specNameMap) {
         // 补充 specName
         cmd.getSpecValues().forEach(spec -> {
             if (spec.getSpecId() != null && spec.getSpecName() == null) {
@@ -223,7 +223,7 @@ public class SpuSaveAssembler {
 
     // 更新场景的 SKU 转换（不包含库存，设置更新标记）
 
-    private List<SpuAggregate.SkuData> convertSkuListForUpdate(List<SaveSkuCmd> cmdList) {
+    private List<SpuAggregate.SkuData> convertSkuListForUpdate(List<SkuCmd> cmdList) {
         if (cmdList == null || cmdList.isEmpty()) {
             return List.of();
         }
@@ -233,7 +233,7 @@ public class SpuSaveAssembler {
                 .collect(Collectors.toList());
     }
 
-    private SpuAggregate.SkuData convertSkuForUpdate(SaveSkuCmd cmd) {
+    private SpuAggregate.SkuData convertSkuForUpdate(SkuCmd cmd) {
         // SKU主表（部分更新）
         Sku sku = new Sku();
         sku.setId(cmd.getId());

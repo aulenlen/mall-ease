@@ -1,6 +1,6 @@
 package com.mallease.product.converter;
 
-import com.mallease.product.model.client.cmd.SaveCategoryCmd;
+import com.mallease.product.model.client.cmd.CategoryCmd;
 import com.mallease.product.model.client.vo.CategoryDetailVO;
 
 import com.mallease.product.model.client.vo.CategoryListVO;
@@ -50,12 +50,12 @@ public interface CategoryConverter {
      * SaveCmd → Entity（创建场景，path/level 由 Service 层计算）
      */
     @Mapping(target = "deleted", constant = "0")
-    Category saveCmdToEntity(SaveCategoryCmd cmd);
+    Category saveCmdToEntity(CategoryCmd cmd);
 
     /**
      * SaveCmd → Entity（更新场景，parentId 修改需 Service 层特殊处理）
      */
-    void updateEntityFromCmd(@MappingTarget Category entity, SaveCategoryCmd cmd);
+    void updateEntityFromCmd(@MappingTarget Category entity, CategoryCmd cmd);
 
     /**
      * 将扁平列表构建为树形结构

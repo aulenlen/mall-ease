@@ -6,8 +6,8 @@ import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.product.converter.SpecConverter;
-import com.mallease.product.model.client.cmd.SaveSpecCmd;
-import com.mallease.product.model.client.cmd.SaveSpecGroupCmd;
+import com.mallease.product.model.client.cmd.SpecCmd;
+import com.mallease.product.model.client.cmd.SpecGroupCmd;
 import com.mallease.product.model.client.query.SpecGroupQuery;
 import com.mallease.product.model.client.vo.SpecGroupVO;
 
@@ -54,7 +54,7 @@ public class SpecController {
 
     @Operation(summary = "创建规格组")
     @PostMapping("/group/create")
-    public R<Long> createGroup(@Validated(SaveSpecGroupCmd.Create.class) @RequestBody SaveSpecGroupCmd cmd) {
+    public R<Long> createGroup(@Validated(SpecGroupCmd.Create.class) @RequestBody SpecGroupCmd cmd) {
         SpecGroup entity = specConverter.saveSpecGroupCmdToEntity(cmd);
         Long id = specGroupService.create(entity, cmd.getCategoryId());
         return R.success(id);
@@ -62,7 +62,7 @@ public class SpecController {
 
     @Operation(summary = "更新规格组")
     @PostMapping("/group/update")
-    public R<Integer> updateGroup(@Validated(SaveSpecGroupCmd.Update.class) @RequestBody SaveSpecGroupCmd cmd) {
+    public R<Integer> updateGroup(@Validated(SpecGroupCmd.Update.class) @RequestBody SpecGroupCmd cmd) {
         SpecGroup entity = specGroupService.getById(cmd.getId());
         if (entity == null) {
             return R.failed(ResultCode.FAILED, "规格组不存在");
@@ -146,7 +146,7 @@ public class SpecController {
 
     @Operation(summary = "克隆规格组到分类", description = "复制规格组及其规格/规格值，解除原关联并绑定到目标分类")
     @PostMapping("/group/clone")
-    public R<Long> cloneGroupToCategory(@Validated(SaveSpecGroupCmd.Clone.class) @RequestBody SaveSpecGroupCmd cmd) {
+    public R<Long> cloneGroupToCategory(@Validated(SpecGroupCmd.Clone.class) @RequestBody SpecGroupCmd cmd) {
         Long newGroupId = specGroupService.cloneToCategory(cmd);
         return R.success(newGroupId);
     }
@@ -155,14 +155,14 @@ public class SpecController {
 
     @Operation(summary = "创建规格")
     @PostMapping("/create")
-    public R<Long> createSpec(@Validated(SaveSpecCmd.Create.class) @RequestBody SaveSpecCmd cmd) {
+    public R<Long> createSpec(@Validated(SpecCmd.Create.class) @RequestBody SpecCmd cmd) {
         Long id = specService.create(cmd);
         return R.success(id);
     }
 
     @Operation(summary = "更新规格")
     @PostMapping("/update")
-    public R<Integer> updateSpec(@Validated(SaveSpecCmd.Update.class) @RequestBody SaveSpecCmd cmd) {
+    public R<Integer> updateSpec(@Validated(SpecCmd.Update.class) @RequestBody SpecCmd cmd) {
         int count = specService.update(cmd);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
@@ -218,7 +218,7 @@ public class SpecController {
     @PostMapping("/value/add/{specId}")
     public R<Long> addSpecValue(
             @Parameter(description = "规格ID") @PathVariable Long specId,
-            @Validated @RequestBody SaveSpecCmd.SpecValueCmd valueCmd) {
+            @Validated @RequestBody SpecCmd.SpecValueCmd valueCmd) {
         Long id = specService.addSpecValue(specId, valueCmd);
         return R.success(id);
     }
@@ -227,7 +227,7 @@ public class SpecController {
     @PostMapping("/value/add/batch/{specId}")
     public R<Integer> addSpecValueBatch(
             @Parameter(description = "规格ID") @PathVariable Long specId,
-            @RequestBody List<SaveSpecCmd.SpecValueCmd> valueCmds) {
+            @RequestBody List<SpecCmd.SpecValueCmd> valueCmds) {
         int count = specService.addSpecValueBatch(specId, valueCmds);
         return R.success(count);
     }

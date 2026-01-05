@@ -1,7 +1,7 @@
 package com.mallease.product.converter;
 
 import com.mallease.common.dto.remote.SpuIndexDTO;
-import com.mallease.product.model.client.cmd.SaveSpuCmd;
+import com.mallease.product.model.client.cmd.SpuCmd;
 import com.mallease.product.model.client.vo.SpuDetailVO;
 
 import com.mallease.product.model.client.vo.SpuVO;
@@ -62,11 +62,11 @@ public interface SpuConverter {
     @Mapping(target = "publishStatus", constant = "0")
     @Mapping(target = "verifyStatus", constant = "0")
     @Mapping(target = "sale", constant = "0")
-    Spu saveCmdToEntity(SaveSpuCmd cmd);
+    Spu saveCmdToEntity(SpuCmd cmd);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "spuCode", ignore = true)
-    void updateEntityFromCmd(@MappingTarget Spu entity, SaveSpuCmd cmd);
+    void updateEntityFromCmd(@MappingTarget Spu entity, SpuCmd cmd);
 
     @BeanMapping(ignoreByDefault = true)
     @Mapping(source = "detailTitle", target = "detailTitle")
@@ -76,7 +76,7 @@ public interface SpuConverter {
     @Mapping(source = "serviceIds", target = "serviceIds")
     @Mapping(source = "packingList", target = "packingList")
     @Mapping(source = "afterSaleService", target = "afterSaleService")
-    SpuDetail spuDetailCmdToEntity(SaveSpuCmd.SpuDetailCmd cmd);
+    SpuDetail spuDetailCmdToEntity(SpuCmd.SpuDetailCmd cmd);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(source = "serviceIds", target = "serviceList", qualifiedByName = "splitServiceIds")
@@ -88,8 +88,8 @@ public interface SpuConverter {
     @Mapping(source = "paramId", target = "paramId")
     @Mapping(source = "value", target = "value")
     @Mapping(target = "deleted", constant = "0")
-    SpuParamValue paramValueCmdToEntity(SaveSpuCmd.SpuParamValueCmd cmd);
-    List<SpuParamValue> paramValueCmdListToEntityList(List<SaveSpuCmd.SpuParamValueCmd> cmdList);
+    SpuParamValue paramValueCmdToEntity(SpuCmd.SpuParamValueCmd cmd);
+    List<SpuParamValue> paramValueCmdListToEntityList(List<SpuCmd.SpuParamValueCmd> cmdList);
     SpuDetailVO.SpuParamValueVO paramValueEntityToVo(SpuParamValue entity);
     List<SpuDetailVO.SpuParamValueVO> paramValueEntityListToVoList(List<SpuParamValue> entityList);
 
@@ -98,8 +98,8 @@ public interface SpuConverter {
     @BeanMapping(ignoreByDefault = true)
     @Mapping(source = "fullPrice", target = "fullPrice")
     @Mapping(source = "reducePrice", target = "reducePrice")
-    SpuFullReduction fullReductionCmdToEntity(SaveSpuCmd.SpuFullReductionCmd cmd);
-    List<SpuFullReduction> fullReductionCmdListToEntityList(List<SaveSpuCmd.SpuFullReductionCmd> cmdList);
+    SpuFullReduction fullReductionCmdToEntity(SpuCmd.SpuFullReductionCmd cmd);
+    List<SpuFullReduction> fullReductionCmdListToEntityList(List<SpuCmd.SpuFullReductionCmd> cmdList);
     default SpuDetailVO.SpuFullReductionVO fullReductionEntityToVo(SpuFullReduction entity) {
         if (entity == null) {
             return null;

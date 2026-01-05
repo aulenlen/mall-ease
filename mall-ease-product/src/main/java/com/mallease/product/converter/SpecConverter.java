@@ -1,9 +1,9 @@
 package com.mallease.product.converter;
 
-import com.mallease.product.model.client.cmd.SaveParamCmd;
-import com.mallease.product.model.client.cmd.SaveParamGroupCmd;
-import com.mallease.product.model.client.cmd.SaveSpecCmd;
-import com.mallease.product.model.client.cmd.SaveSpecGroupCmd;
+import com.mallease.product.model.client.cmd.ParamCmd;
+import com.mallease.product.model.client.cmd.ParamGroupCmd;
+import com.mallease.product.model.client.cmd.SpecCmd;
+import com.mallease.product.model.client.cmd.SpecGroupCmd;
 import com.mallease.product.model.client.vo.*;
 import com.mallease.product.model.data.entity.*;
 import org.mapstruct.Mapper;
@@ -29,32 +29,32 @@ public interface SpecConverter {
     List<SpecGroupVO> specGroupListToVoList(List<SpecGroup> entities);
 
     @Mapping(target = "deleted", constant = "0")
-    SpecGroup saveSpecGroupCmdToEntity(SaveSpecGroupCmd cmd);
-    void updateSpecGroupFromCmd(@MappingTarget SpecGroup entity, SaveSpecGroupCmd cmd);
+    SpecGroup saveSpecGroupCmdToEntity(SpecGroupCmd cmd);
+    void updateSpecGroupFromCmd(@MappingTarget SpecGroup entity, SpecGroupCmd cmd);
 
     // 规格定义（Spec）
     SpecVO specToVo(Spec entity);
     List<SpecVO> specListToVoList(List<Spec> entities);
 
     @Mapping(target = "deleted", constant = "0")
-    Spec saveSpecCmdToEntity(SaveSpecCmd cmd);
-    void updateSpecFromCmd(@MappingTarget Spec entity, SaveSpecCmd cmd);
+    Spec saveSpecCmdToEntity(SpecCmd cmd);
+    void updateSpecFromCmd(@MappingTarget Spec entity, SpecCmd cmd);
 
     // 规格值（SpecValue）
     SpecValueVO specValueToVo(SpecValue entity);
     List<SpecValueVO> specValueListToVoList(List<SpecValue> entities);
 
     @Mapping(target = "deleted", constant = "0")
-    SpecValue specValueCmdToEntity(SaveSpecCmd.SpecValueCmd cmd);
-    List<SpecValue> specValueCmdListToEntityList(List<SaveSpecCmd.SpecValueCmd> cmdList);
+    SpecValue specValueCmdToEntity(SpecCmd.SpecValueCmd cmd);
+    List<SpecValue> specValueCmdListToEntityList(List<SpecCmd.SpecValueCmd> cmdList);
 
     // 参数组（ParamGroup）
     ParamGroupVO paramGroupToVo(ParamGroup entity);
     List<ParamGroupVO> paramGroupListToVoList(List<ParamGroup> entities);
 
     @Mapping(target = "deleted", constant = "0")
-    ParamGroup saveParamGroupCmdToEntity(SaveParamGroupCmd cmd);
-    void updateParamGroupFromCmd(@MappingTarget ParamGroup entity, SaveParamGroupCmd cmd);
+    ParamGroup saveParamGroupCmdToEntity(ParamGroupCmd cmd);
+    void updateParamGroupFromCmd(@MappingTarget ParamGroup entity, ParamGroupCmd cmd);
 
     // 参数定义（Param）
 
@@ -63,8 +63,8 @@ public interface SpecConverter {
     List<ParamVO> paramListToVoList(List<Param> entities);
 
     @Mapping(target = "deleted", constant = "0")
-    Param saveParamCmdToEntity(SaveParamCmd cmd);
-    void updateParamFromCmd(@MappingTarget Param entity, SaveParamCmd cmd);
+    Param saveParamCmdToEntity(ParamCmd cmd);
+    void updateParamFromCmd(@MappingTarget Param entity, ParamCmd cmd);
 
     // 工具方法
 

@@ -5,7 +5,7 @@ import com.mallease.product.dao.CategorySpecGroupDao;
 import com.mallease.product.dao.SpecDao;
 import com.mallease.product.dao.SpecGroupDao;
 import com.mallease.product.dao.SpecValueDao;
-import com.mallease.product.model.client.cmd.SaveSpecGroupCmd;
+import com.mallease.product.model.client.cmd.SpecGroupCmd;
 import com.mallease.product.model.data.entity.CategorySpecGroup;
 import com.mallease.product.model.data.entity.Spec;
 import com.mallease.product.model.data.entity.SpecGroup;
@@ -219,7 +219,7 @@ public class SpecGroupServiceImpl implements SpecGroupService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long cloneToCategory(SaveSpecGroupCmd cmd) {
+    public Long cloneToCategory(SpecGroupCmd cmd) {
         Long sourceGroupId = cmd.getId();
         Long categoryId = cmd.getCategoryId();
 

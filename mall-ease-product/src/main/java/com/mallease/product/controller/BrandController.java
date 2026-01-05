@@ -6,7 +6,7 @@ import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.product.converter.BrandConverter;
-import com.mallease.product.model.client.cmd.SaveBrandCmd;
+import com.mallease.product.model.client.cmd.BrandCmd;
 import com.mallease.product.model.client.query.BrandQuery;
 import com.mallease.product.model.client.vo.BrandDetailVO;
 
@@ -58,7 +58,7 @@ public class BrandController {
 
     @Operation(summary = "创建品牌")
     @PostMapping("/create")
-    public R<Long> create(@Validated(SaveBrandCmd.Create.class) @RequestBody SaveBrandCmd cmd) {
+    public R<Long> create(@Validated(BrandCmd.Create.class) @RequestBody BrandCmd cmd) {
         Brand brand = brandConverter.saveCmdToEntity(cmd);
         Long brandId = brandService.create(brand);
         return R.success(brandId);
@@ -85,7 +85,7 @@ public class BrandController {
     @Operation(summary = "更新品牌")
     @PostMapping("/update/{id}")
     public R<Integer> update(@Parameter(description = "品牌ID") @PathVariable Long id,
-                             @Validated(SaveBrandCmd.Update.class) @RequestBody SaveBrandCmd cmd) {
+                             @Validated(BrandCmd.Update.class) @RequestBody BrandCmd cmd) {
         Brand brand = brandService.getById(id);
         if (brand == null) {
             return R.failed(ResultCode.FAILED);

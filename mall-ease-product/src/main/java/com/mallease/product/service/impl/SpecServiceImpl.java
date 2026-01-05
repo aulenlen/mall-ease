@@ -5,7 +5,7 @@ import com.mallease.product.converter.SpecConverter;
 import com.mallease.product.dao.SpecDao;
 import com.mallease.product.dao.SpecGroupDao;
 import com.mallease.product.dao.SpecValueDao;
-import com.mallease.product.model.client.cmd.SaveSpecCmd;
+import com.mallease.product.model.client.cmd.SpecCmd;
 import com.mallease.product.model.client.vo.SpecVO;
 import com.mallease.product.model.data.entity.Spec;
 import com.mallease.product.model.data.entity.SpecGroup;
@@ -45,7 +45,7 @@ public class SpecServiceImpl implements SpecService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(SaveSpecCmd cmd) {
+    public Long create(SpecCmd cmd) {
         // 检查规格组是否存在
         SpecGroup specGroup = specGroupDao.selectByPrimaryKey(cmd.getGroupId());
         if (specGroup == null) {
@@ -82,7 +82,7 @@ public class SpecServiceImpl implements SpecService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int update(SaveSpecCmd cmd) {
+    public int update(SpecCmd cmd) {
         Spec original = specDao.selectByPrimaryKey(cmd.getId());
         if (original == null) {
             throw new ApiException("规格不存在，ID: " + cmd.getId());
@@ -170,7 +170,7 @@ public class SpecServiceImpl implements SpecService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long addSpecValue(Long specId, SaveSpecCmd.SpecValueCmd valueCmd) {
+    public Long addSpecValue(Long specId, SpecCmd.SpecValueCmd valueCmd) {
         Spec spec = specDao.selectByPrimaryKey(specId);
         if (spec == null) {
             throw new ApiException("规格不存在，ID: " + specId);
@@ -190,7 +190,7 @@ public class SpecServiceImpl implements SpecService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int addSpecValueBatch(Long specId, List<SaveSpecCmd.SpecValueCmd> valueCmds) {
+    public int addSpecValueBatch(Long specId, List<SpecCmd.SpecValueCmd> valueCmds) {
         if (CollectionUtils.isEmpty(valueCmds)) {
             return 0;
         }

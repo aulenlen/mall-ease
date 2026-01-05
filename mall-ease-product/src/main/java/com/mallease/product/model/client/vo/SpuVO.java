@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * SPU基础视图对象
@@ -101,4 +102,7 @@ public class SpuVO {
 
     @Schema(description = "更新时间")
     private LocalDateTime updateTime;
+
+    @Schema(description = "sku列表")
+    List<SkuVO> skuVOList;
 }

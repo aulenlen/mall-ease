@@ -1,6 +1,6 @@
 package com.mallease.product.service;
 
-import com.mallease.product.model.client.cmd.SaveParamCmd;
+import com.mallease.product.model.client.cmd.ParamCmd;
 import com.mallease.product.model.client.vo.ParamVO;
 
 import java.util.List;
@@ -21,7 +21,7 @@ public interface ParamService {
      * @param cmd 保存命令（创建场景）
      * @return 新参数ID
      */
-    Long create(SaveParamCmd cmd);
+    Long create(ParamCmd cmd);
 
     /**
      * 更新参数
@@ -29,7 +29,7 @@ public interface ParamService {
      * @param cmd 保存命令（更新场景）
      * @return 影响行数
      */
-    int update(SaveParamCmd cmd);
+    int update(ParamCmd cmd);
 
     /**
      * 删除参数

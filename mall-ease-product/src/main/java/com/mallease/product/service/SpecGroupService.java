@@ -1,6 +1,6 @@
 package com.mallease.product.service;
 
-import com.mallease.product.model.client.cmd.SaveSpecGroupCmd;
+import com.mallease.product.model.client.cmd.SpecGroupCmd;
 import com.mallease.product.model.data.entity.Spec;
 import com.mallease.product.model.data.entity.SpecGroup;
 
@@ -124,7 +124,7 @@ public interface SpecGroupService {
      * @param cmd 保存命令（Clone校验组）
      * @return 新规格组ID
      */
-    Long cloneToCategory(SaveSpecGroupCmd cmd);
+    Long cloneToCategory(SpecGroupCmd cmd);
 
     /**
      * 通过分类id查询规格值列表

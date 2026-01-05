@@ -105,5 +105,5 @@ springdoc:
   swagger-ui:
     enabled: true
   group-configs:
-    - group: 'PMS商品管理'
-      paths-to-match: '/pms/**'
+    - group: '商品管理'
+      paths-to-match: '/product/**'

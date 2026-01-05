@@ -60,10 +60,16 @@
     <select id="selectBySpuIds" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM product_sku
-        WHERE deleted = 0 AND spu_id IN
-        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
-            #{spuId,jdbcType=BIGINT}
-        </foreach>
+        WHERE deleted = 0
+        <if test="spuIds != null and spuIds.size() > 0">
+            AND spu_id IN
+            <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+                #{spuId,jdbcType=BIGINT}
+            </foreach>
+        </if>
+        <if test="spuIds == null or spuIds.size() == 0">
+            AND 1 = 0
+        </if>
         ORDER BY spu_id, id
     </select>
 
@@ -204,5 +210,33 @@
         SET deleted = 1, version = version + 1
         WHERE spu_id = #{spuId,jdbcType=BIGINT}
     </update>
+
+    <!-- 根据查询对象查询 -->
+    <select id="selectByQuery" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_sku
+        <where>
+            AND deleted = 0
+            <if test="query.spuId != null">
+                AND spu_id = #{query.spuId,jdbcType=BIGINT}
+            </if>
+            <if test="query.skuCode != null and query.skuCode != ''">
+                AND sku_code = #{query.skuCode,jdbcType=VARCHAR}
+            </if>
+            <if test="query.enableStatus != null">
+                AND enable_status = #{query.enableStatus,jdbcType=TINYINT}
+            </if>
+            <if test="query.priceStart != null">
+                AND price &gt;= #{query.priceStart,jdbcType=DECIMAL}
+            </if>
+            <if test="query.priceEnd != null">
+                AND price &lt;= #{query.priceEnd,jdbcType=DECIMAL}
+            </if>
+            <if test="query.specKeyword != null and query.specKeyword != ''">
+                AND spec_values LIKE CONCAT('%', #{query.specKeyword,jdbcType=VARCHAR}, '%')
+            </if>
+        </where>
+        ORDER BY id DESC
+    </select>
 
 </mapper>

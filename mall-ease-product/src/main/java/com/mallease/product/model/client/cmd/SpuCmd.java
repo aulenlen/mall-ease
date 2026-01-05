@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SaveSpuCmd {
+public class SpuCmd {
 
     /**
      * 创建时的校验组
@@ -114,7 +114,7 @@ public class SaveSpuCmd {
     @NotNull(groups = Create.class, message = "创建时SKU列表不能为空")
     @Size(min = 1, groups = Create.class, message = "至少需要一个SKU")
     @Valid
-    private List<SaveSkuCmd> skuList;
+    private List<SkuCmd> skuList;
 
     @Schema(description = "SPU参数属性值列表（可选）")
     @Valid

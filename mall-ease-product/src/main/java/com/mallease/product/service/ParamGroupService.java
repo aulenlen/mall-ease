@@ -1,6 +1,6 @@
 package com.mallease.product.service;
 
-import com.mallease.product.model.client.cmd.SaveParamGroupCmd;
+import com.mallease.product.model.client.cmd.ParamGroupCmd;
 import com.mallease.product.model.data.entity.Param;
 import com.mallease.product.model.data.entity.ParamGroup;
 
@@ -122,5 +122,5 @@ public interface ParamGroupService {
      * @param cmd 保存命令（Clone校验组）
      * @return 新参数组ID
      */
-    Long cloneToCategory(SaveParamGroupCmd cmd);
+    Long cloneToCategory(ParamGroupCmd cmd);
 }

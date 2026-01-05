@@ -8,17 +8,17 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 保存参数组命令（创建/更新/克隆统一）
+ * 保存规格组命令（创建/更新/克隆统一）
  *
  * @author: Aulen
  * @create: 2025-12-13
  */
-@Schema(description = "保存参数组命令")
+@Schema(description = "保存规格组命令")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SaveParamGroupCmd {
+public class SpecGroupCmd {
 
     public interface Create {
     }
@@ -29,13 +29,13 @@ public class SaveParamGroupCmd {
     public interface Clone {
     }
 
-    @Schema(description = "参数组ID（更新时必传，克隆时表示源参数组ID）")
-    @NotNull(groups = { Update.class, Clone.class }, message = "参数组ID不能为空")
+    @Schema(description = "规格组ID（更新时必传，克隆时表示源规格组ID）")
+    @NotNull(groups = { Update.class, Clone.class }, message = "规格组ID不能为空")
     private Long id;
 
-    @Schema(description = "参数组名称")
-    @NotBlank(groups = Create.class, message = "创建时参数组名称不能为空")
-    @Size(max = 64, message = "参数组名称长度不能超过64个字符")
+    @Schema(description = "规格组名称")
+    @NotBlank(groups = Create.class, message = "创建时规格组名称不能为空")
+    @Size(max = 64, message = "规格组名称长度不能超过64个字符")
     private String name;
 
     @Schema(description = "排序值，越小越靠前")

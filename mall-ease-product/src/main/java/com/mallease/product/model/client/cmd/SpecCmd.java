@@ -21,7 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SaveSpecCmd {
+public class SpecCmd {
 
     /**
      * 创建时的校验组

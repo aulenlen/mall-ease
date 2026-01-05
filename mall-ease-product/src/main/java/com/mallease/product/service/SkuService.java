@@ -13,6 +13,15 @@ import java.util.List;
 public interface SkuService {
 
     /**
+     * 创建单个SKU（含库存、促销、价格策略）
+     *
+     * @param spuId   SPU ID
+     * @param skuData SKU聚合数据（已转换的Entity）
+     * @return SKU ID
+     */
+    Long create(Long spuId, SpuAggregate.SkuData skuData);
+
+    /**
      * 批量创建SKU（含库存、促销、价格策略）
      *
      * @param spuId   SPU ID
