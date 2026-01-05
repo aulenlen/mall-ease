@@ -71,6 +71,12 @@ public class FlashActivityController {
         return R.success(PageUtils.convertPage(list, flashConverter::activityListToVoList));
     }
 
+    @Operation(summary = "批量修改活动状态")
+    @PutMapping("/activity/status")
+    public R<Integer> updateActivityStatusBatch(@RequestBody List<Long> ids, @RequestParam Integer status) {
+        return R.success(flashActivityService.updateActivityStatusBatch(ids, status));
+    }
+
     // 场次管理
 
     @Operation(summary = "创建场次")
@@ -99,6 +105,12 @@ public class FlashActivityController {
     public R<List<FlashSessionVO>> listSession(@PathVariable Long activityId) {
         List<FlashSession> list = flashActivityService.listFlashSessionByActivityId(activityId);
         return R.success(flashConverter.sessionListToVoList(list));
+    }
+
+    @Operation(summary = "批量修改场次状态")
+    @PutMapping("/session/status")
+    public R<Integer> updateSessionStatusBatch(@RequestBody List<Long> ids, @RequestParam Integer status) {
+        return R.success(flashActivityService.updateSessionStatusBatch(ids, status));
     }
 
     // 商品管理

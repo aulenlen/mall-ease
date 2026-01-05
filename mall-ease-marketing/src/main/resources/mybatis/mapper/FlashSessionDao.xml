@@ -139,4 +139,14 @@
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
 
+    <!-- 批量更新状态 -->
+    <update id="updateStatusBatch">
+        UPDATE marketing_flash_session
+        SET status = #{status,jdbcType=TINYINT}, update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
 </mapper>

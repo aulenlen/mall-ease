@@ -96,4 +96,13 @@ public interface FlashSessionDao {
      * @return 影响行数
      */
     int deleteBatch(@Param("ids") List<Long> ids);
+
+    /**
+     * 批量更新状态
+     *
+     * @param ids    场次ID列表
+     * @param status 目标状态
+     * @return 影响行数
+     */
+    int updateStatusBatch(@Param("ids") List<Long> ids, @Param("status") Integer status);
 }

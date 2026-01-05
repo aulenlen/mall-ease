@@ -42,6 +42,24 @@ public interface FlashActivityService {
      */
     List<FlashProduct> listFlashProductByActivityId(Long activityId);
 
+    /**
+     * 批量更新活动状态
+     *
+     * @param ids    活动ID列表
+     * @param status 目标状态
+     * @return 影响行数
+     */
+    int updateActivityStatusBatch(List<Long> ids, Integer status);
+
+    /**
+     * 批量更新场次状态
+     *
+     * @param ids    场次ID列表
+     * @param status 目标状态
+     * @return 影响行数
+     */
+    int updateSessionStatusBatch(List<Long> ids, Integer status);
+
     //前台查询
     //  FlashActivityVO getCurrentActivity();
 

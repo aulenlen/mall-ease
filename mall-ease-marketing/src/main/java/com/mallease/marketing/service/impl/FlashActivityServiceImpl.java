@@ -85,7 +85,7 @@ public class FlashActivityServiceImpl implements FlashActivityService {
 
     @Override
     public int deleteFlashProduct(Long id) {
-        return flashProductDao.deleteByFlashActivityId(id);
+        return flashProductDao.deleteByPrimaryKey(id);
     }
 
     @Override
@@ -96,6 +96,16 @@ public class FlashActivityServiceImpl implements FlashActivityService {
     @Override
     public List<FlashProduct> listFlashProductByActivityId(Long activityId) {
         return flashProductDao.selectByFlashActivityId(activityId);
+    }
+
+    @Override
+    public int updateActivityStatusBatch(List<Long> ids, Integer status) {
+        return flashActivityDao.updateStatusBatch(ids, status);
+    }
+
+    @Override
+    public int updateSessionStatusBatch(List<Long> ids, Integer status) {
+        return flashSessionDao.updateStatusBatch(ids, status);
     }
 
 }
