@@ -1,5 +1,8 @@
 package com.mallease.product.converter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.product.model.client.cmd.SkuStockCmd;
 import com.mallease.product.model.client.vo.SkuStockVO;
 import com.mallease.product.model.data.entity.SkuStock;
@@ -22,6 +25,9 @@ public interface SkuStockConverter {
     // Entity → VO
 
     @Mapping(target = "lowStockWarning", source = ".", qualifiedByName = "calcLowStockWarning")
+    @Mapping(target = "spuName", ignore = true)
+    @Mapping(target = "specValues", ignore = true)
+    @Mapping(target = "specValuesObj", ignore = true)
     SkuStockVO entityToVo(SkuStock entity);
 
     List<SkuStockVO> entityListToVoList(List<SkuStock> entities);
@@ -43,5 +49,21 @@ public interface SkuStockConverter {
             return false;
         }
         return stock.getStock() != null && stock.getStock() <= stock.getLowStock();
+    }
+
+    /**
+     * 解析规格值 JSON 字符串为对象列表
+     */
+    @Named("parseSpecValues")
+    default List<SkuStockVO.SkuSpecValue> parseSpecValues(String specValues) {
+        if (specValues == null || specValues.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(specValues, new TypeReference<>() {});
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 }

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * SKU库存视图对象
@@ -56,4 +57,33 @@ public class SkuStockVO {
 
     @Schema(description = "是否库存预警（库存低于预警值）")
     private Boolean lowStockWarning;
+
+    @Schema(description = "SPU名称（商品名称）")
+    private String spuName;
+
+    @Schema(description = "SKU规格值（JSON格式）")
+    private String specValues;
+
+    @Schema(description = "规格值列表（前端展示用）")
+    private List<SkuSpecValue> specValuesObj;
+
+    /**
+     * SKU规格值
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "SKU规格值")
+    public static class SkuSpecValue {
+
+        @Schema(description = "规格ID")
+        private Long specId;
+
+        @Schema(description = "规格名称")
+        private String specName;
+
+        @Schema(description = "规格值")
+        private String value;
+    }
 }

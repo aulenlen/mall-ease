@@ -5,8 +5,12 @@ import com.mallease.common.api.ResultCode;
 import com.mallease.product.converter.SkuStockConverter;
 import com.mallease.product.model.client.cmd.SkuStockCmd;
 import com.mallease.product.model.client.vo.SkuStockVO;
+import com.mallease.product.model.data.entity.Sku;
 import com.mallease.product.model.data.entity.SkuStock;
+import com.mallease.product.model.data.entity.Spu;
+import com.mallease.product.service.SkuService;
 import com.mallease.product.service.SkuStockService;
+import com.mallease.product.service.SpuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +20,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * SKU库存管理Controller
@@ -33,6 +39,10 @@ public class SkuStockController {
     private SkuStockService skuStockService;
     @Autowired
     private SkuStockConverter skuStockConverter;
+    @Autowired
+    private SpuService spuService;
+    @Autowired
+    private SkuService skuService;
 
     @Operation(summary = "创建库存记录", description = "为指定SKU创建库存记录")
     @PostMapping("/create")
@@ -61,11 +71,30 @@ public class SkuStockController {
         return R.success(vo);
     }
 
-    @Operation(summary = "根据SPU获取库存列表", description = "查询某个SPU下所有SKU的库存")
+    @Operation(summary = "根据SPU获取库存列表", description = "查询某个SPU下所有SKU的库存，包含商品名称和规格信息")
     @GetMapping("/spu/{spuId}")
     public R<List<SkuStockVO>> listBySpuId(@Parameter(description = "SPU ID") @PathVariable Long spuId) {
+
         List<SkuStock> stockList = skuStockService.listStockBySpuIds(List.of(spuId));
+        if (stockList.isEmpty()) {
+            return R.success(List.of());
+        }
+
+        List<Spu> spuList = spuService.listByIds(List.of(spuId));
+        String spuName = spuList.isEmpty() ? null : spuList.get(0).getName();
+
+        List<Sku> skuList = skuService.listBySpuId(spuId);
+        Map<Long, String> skuSpecMap = skuList.stream()
+                .collect(Collectors.toMap(Sku::getId, Sku::getSpecValues, (a, b) -> a));
+        
         List<SkuStockVO> voList = skuStockConverter.entityListToVoList(stockList);
+        for (SkuStockVO vo : voList) {
+            vo.setSpuName(spuName);
+            String specValuesJson = skuSpecMap.get(vo.getSkuId());
+            vo.setSpecValues(specValuesJson);
+            vo.setSpecValuesObj(skuStockConverter.parseSpecValues(specValuesJson));
+        }
+
         return R.success(voList);
     }
 
