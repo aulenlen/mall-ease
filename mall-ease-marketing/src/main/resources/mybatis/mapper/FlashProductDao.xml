@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.marketing.dao.FlashProductDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.marketing.model.data.entity.FlashProduct">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="flash_activity_id" property="flashActivityId" jdbcType="BIGINT"/>
+        <result column="flash_session_id" property="flashSessionId" jdbcType="BIGINT"/>
+        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
+        <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
+        <result column="flash_price" property="flashPrice" jdbcType="DECIMAL"/>
+        <result column="flash_stock" property="flashStock" jdbcType="INTEGER"/>
+        <result column="flash_limit" property="flashLimit" jdbcType="INTEGER"/>
+        <result column="sort" property="sort" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, flash_activity_id, flash_session_id, spu_id, sku_id,
+        flash_price, flash_stock, flash_limit, sort,
+        create_time, update_time, creator, updater
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_product
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据场次ID查询商品列表 -->
+    <select id="selectBySessionId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_product
+        WHERE flash_session_id = #{flashSessionId,jdbcType=BIGINT}
+        ORDER BY sort ASC
+    </select>
+
+    <!-- 根据活动ID查询商品列表 -->
+    <select id="selectByFlashActivityId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_product
+        WHERE flash_activity_id = #{flashActivityId,jdbcType=BIGINT}
+        ORDER BY sort ASC
+    </select>
+
+    <!-- 根据活动ID和场次ID查询商品列表 -->
+    <select id="selectByActivityAndSession" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_product
+        WHERE flash_activity_id = #{flashActivityId,jdbcType=BIGINT}
+          AND flash_session_id = #{flashSessionId,jdbcType=BIGINT}
+        ORDER BY sort ASC
+    </select>
+
+    <!-- 检查SKU是否已存在于指定场次 -->
+    <select id="selectBySessionAndSku" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_product
+        WHERE flash_session_id = #{flashSessionId,jdbcType=BIGINT}
+          AND sku_id = #{skuId,jdbcType=BIGINT}
+        LIMIT 1
+    </select>
+
+    <!-- 删除 -->
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        DELETE FROM marketing_flash_product
+        WHERE id = #{id,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 根据场次ID删除 -->
+    <delete id="deleteBySessionId">
+        DELETE FROM marketing_flash_product
+        WHERE flash_session_id = #{flashSessionId,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 根据活动ID删除 -->
+    <delete id="deleteByFlashActivityId">
+        DELETE FROM marketing_flash_product
+        WHERE flash_activity_id = #{flashActivityId,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBatch">
+        DELETE FROM marketing_flash_product
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </delete>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.mallease.marketing.model.data.entity.FlashProduct" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO marketing_flash_product
+            (flash_activity_id, flash_session_id, spu_id, sku_id,
+             flash_price, flash_stock, flash_limit, sort,
+             create_time, update_time, creator, updater)
+        VALUES (#{flashActivityId,jdbcType=BIGINT}, #{flashSessionId,jdbcType=BIGINT},
+                #{spuId,jdbcType=BIGINT}, #{skuId,jdbcType=BIGINT},
+                #{flashPrice,jdbcType=DECIMAL}, #{flashStock,jdbcType=INTEGER},
+                #{flashLimit,jdbcType=INTEGER}, #{sort,jdbcType=INTEGER},
+                #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP},
+                #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR})
+    </insert>
+
+    <!-- 选择性插入 -->
+    <insert id="insertSelective" parameterType="com.mallease.marketing.model.data.entity.FlashProduct" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO marketing_flash_product
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="flashActivityId != null">flash_activity_id,</if>
+            <if test="flashSessionId != null">flash_session_id,</if>
+            <if test="spuId != null">spu_id,</if>
+            <if test="skuId != null">sku_id,</if>
+            <if test="flashPrice != null">flash_price,</if>
+            <if test="flashStock != null">flash_stock,</if>
+            <if test="flashLimit != null">flash_limit,</if>
+            <if test="sort != null">sort,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="creator != null">creator,</if>
+            <if test="updater != null">updater,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="flashActivityId != null">#{flashActivityId,jdbcType=BIGINT},</if>
+            <if test="flashSessionId != null">#{flashSessionId,jdbcType=BIGINT},</if>
+            <if test="spuId != null">#{spuId,jdbcType=BIGINT},</if>
+            <if test="skuId != null">#{skuId,jdbcType=BIGINT},</if>
+            <if test="flashPrice != null">#{flashPrice,jdbcType=DECIMAL},</if>
+            <if test="flashStock != null">#{flashStock,jdbcType=INTEGER},</if>
+            <if test="flashLimit != null">#{flashLimit,jdbcType=INTEGER},</if>
+            <if test="sort != null">#{sort,jdbcType=INTEGER},</if>
+            <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+            <if test="updateTime != null">#{updateTime,jdbcType=TIMESTAMP},</if>
+            <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
+            <if test="updater != null">#{updater,jdbcType=VARCHAR},</if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO marketing_flash_product
+            (flash_activity_id, flash_session_id, spu_id, sku_id,
+             flash_price, flash_stock, flash_limit, sort,
+             create_time, update_time, creator, updater)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.flashActivityId,jdbcType=BIGINT}, #{item.flashSessionId,jdbcType=BIGINT},
+             #{item.spuId,jdbcType=BIGINT}, #{item.skuId,jdbcType=BIGINT},
+             #{item.flashPrice,jdbcType=DECIMAL}, #{item.flashStock,jdbcType=INTEGER},
+             #{item.flashLimit,jdbcType=INTEGER}, #{item.sort,jdbcType=INTEGER},
+             #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP},
+             #{item.creator,jdbcType=VARCHAR}, #{item.updater,jdbcType=VARCHAR})
+        </foreach>
+    </insert>
+
+    <!-- 选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.marketing.model.data.entity.FlashProduct">
+        UPDATE marketing_flash_product
+        <set>
+            <if test="flashActivityId != null">flash_activity_id = #{flashActivityId,jdbcType=BIGINT},</if>
+            <if test="flashSessionId != null">flash_session_id = #{flashSessionId,jdbcType=BIGINT},</if>
+            <if test="spuId != null">spu_id = #{spuId,jdbcType=BIGINT},</if>
+            <if test="skuId != null">sku_id = #{skuId,jdbcType=BIGINT},</if>
+            <if test="flashPrice != null">flash_price = #{flashPrice,jdbcType=DECIMAL},</if>
+            <if test="flashStock != null">flash_stock = #{flashStock,jdbcType=INTEGER},</if>
+            <if test="flashLimit != null">flash_limit = #{flashLimit,jdbcType=INTEGER},</if>
+            <if test="sort != null">sort = #{sort,jdbcType=INTEGER},</if>
+            update_time = NOW(),
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 扣减秒杀库存（乐观锁方式，库存不足时返回0） -->
+    <update id="decreaseStock">
+        UPDATE marketing_flash_product
+        SET flash_stock = flash_stock - #{quantity,jdbcType=INTEGER},
+            update_time = NOW()
+        WHERE id = #{id,jdbcType=BIGINT}
+          AND flash_stock >= #{quantity,jdbcType=INTEGER}
+    </update>
+
+</mapper>

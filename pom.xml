@@ -27,7 +27,7 @@
         <module>mall-ease-product</module>
         <module>mall-ease-content</module>
         <module>mall-ease-search</module>
-        <module>mall-ease-promotion</module>
+        <module>mall-ease-marketing</module>
         <module>mall-ease-user</module>
     </modules>
 

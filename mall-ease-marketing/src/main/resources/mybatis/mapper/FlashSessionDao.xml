@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.marketing.dao.FlashSessionDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.marketing.model.data.entity.FlashSession">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="flash_activity_id" property="flashActivityId" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="start_time" property="startTime" jdbcType="TIMESTAMP"/>
+        <result column="end_time" property="endTime" jdbcType="TIMESTAMP"/>
+        <result column="status" property="status" jdbcType="TINYINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, flash_activity_id, name, start_time, end_time, status,
+        create_time, update_time, creator, updater
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_session
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_session
+        ORDER BY start_time ASC
+    </select>
+
+    <!-- 根据活动ID查询场次 -->
+    <select id="selectByFlashActivityId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_session
+        WHERE flash_activity_id = #{flashActivityId,jdbcType=BIGINT}
+        ORDER BY start_time ASC
+    </select>
+
+    <!-- 根据活动ID和状态查询场次 -->
+    <select id="selectByFlashActivityIdAndStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_session
+        WHERE flash_activity_id = #{flashActivityId,jdbcType=BIGINT}
+          AND status = #{status,jdbcType=TINYINT}
+        ORDER BY start_time ASC
+    </select>
+
+    <!-- 查询当前进行中的场次 -->
+    <select id="selectCurrentSession" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_session
+        WHERE flash_activity_id = #{flashActivityId,jdbcType=BIGINT}
+          AND status = 1
+          AND start_time &lt;= #{currentTime,jdbcType=TIMESTAMP}
+          AND end_time &gt;= #{currentTime,jdbcType=TIMESTAMP}
+        LIMIT 1
+    </select>
+
+    <!-- 根据时间范围查询场次 -->
+    <select id="selectByTimeRange" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_session
+        WHERE flash_activity_id = #{flashActivityId,jdbcType=BIGINT}
+          AND start_time &gt;= #{startTime,jdbcType=TIMESTAMP}
+          AND end_time &lt;= #{endTime,jdbcType=TIMESTAMP}
+        ORDER BY start_time ASC
+    </select>
+
+    <!-- 删除 -->
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        DELETE FROM marketing_flash_session
+        WHERE id = #{id,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBatch">
+        DELETE FROM marketing_flash_session
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </delete>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.mallease.marketing.model.data.entity.FlashSession" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO marketing_flash_session (flash_activity_id, name, start_time, end_time, status,
+                                                       create_time, update_time, creator, updater)
+        VALUES (#{flashActivityId,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR},
+                #{startTime,jdbcType=TIMESTAMP}, #{endTime,jdbcType=TIMESTAMP}, #{status,jdbcType=TINYINT},
+                #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP},
+                #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR})
+    </insert>
+
+    <!-- 选择性插入 -->
+    <insert id="insertSelective" parameterType="com.mallease.marketing.model.data.entity.FlashSession" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO marketing_flash_session
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="flashActivityId != null">flash_activity_id,</if>
+            <if test="name != null">name,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="status != null">status,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="creator != null">creator,</if>
+            <if test="updater != null">updater,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="flashActivityId != null">#{flashActivityId,jdbcType=BIGINT},</if>
+            <if test="name != null">#{name,jdbcType=VARCHAR},</if>
+            <if test="startTime != null">#{startTime,jdbcType=TIMESTAMP},</if>
+            <if test="endTime != null">#{endTime,jdbcType=TIMESTAMP},</if>
+            <if test="status != null">#{status,jdbcType=TINYINT},</if>
+            <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+            <if test="updateTime != null">#{updateTime,jdbcType=TIMESTAMP},</if>
+            <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
+            <if test="updater != null">#{updater,jdbcType=VARCHAR},</if>
+        </trim>
+    </insert>
+
+    <!-- 选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.marketing.model.data.entity.FlashSession">
+        UPDATE marketing_flash_session
+        <set>
+            <if test="flashActivityId != null">flash_activity_id = #{flashActivityId,jdbcType=BIGINT},</if>
+            <if test="name != null">name = #{name,jdbcType=VARCHAR},</if>
+            <if test="startTime != null">start_time = #{startTime,jdbcType=TIMESTAMP},</if>
+            <if test="endTime != null">end_time = #{endTime,jdbcType=TIMESTAMP},</if>
+            <if test="status != null">status = #{status,jdbcType=TINYINT},</if>
+            update_time = NOW(),
+            <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+</mapper>

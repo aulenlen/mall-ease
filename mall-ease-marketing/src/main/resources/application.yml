@@ -1,0 +1,89 @@
+server:
+  port: 9052
+
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}  # 默认使用 local 配置
+
+  # 数据源配置 - 敏感信息由 profile 文件提供
+  datasource:
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
+    url: ${DB_URL:}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    # Druid 连接池通用配置
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  # Elasticsearch 配置（Spring Boot 3.x 路径）
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+    connection-timeout: 5s
+    socket-timeout: 60s
+
+mybatis:
+  mapper-locations: classpath:mybatis/mapper/*.xml
+
+# Sa-Token 配置
+sa-token:
+  token-name: Authorization
+  timeout: 604800
+  active-timeout: -1
+  is-concurrent: true
+  is-share: false
+  token-style: uuid
+  is-log: false
+  is-read-cookie: false
+  is-read-header: true
+  token-prefix: Bearer
+  jwt-secret-key: ${SA_TOKEN_SECRET:sa-secret-key-default}
+  is-print: false
+
+# PageHelper 分页插件配置
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+
+# Knife4j API文档配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# SpringDoc OpenAPI配置
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+  group-configs:
+    - group: '营销管理'
+      paths-to-match: '/marketing/**'
+
