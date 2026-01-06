@@ -34,9 +34,29 @@ public class FlashProduct {
     private Long spuId;
 
     /**
+     * SPU 名称
+     */
+    private String spuName;
+
+    /**
+     * SPU 图片
+     */
+    private String spuPic;
+
+    /**
      * SKU ID
      */
     private Long skuId;
+
+    /**
+     * SKU 图片
+     */
+    private String skuPic;
+
+    /**
+     * 市场价
+     */
+    private BigDecimal originalPrice;
 
     /**
      * 秒杀价格

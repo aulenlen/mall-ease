@@ -24,14 +24,29 @@ public class FlashProductVO {
     @Schema(description = "主键ID")
     private Long id;
 
+    @Schema(description = "秒杀活动ID")
+    private Long flashActivityId;
+
     @Schema(description = "秒杀场次ID")
     private Long flashSessionId;
 
     @Schema(description = "SPU ID")
     private Long spuId;
 
+    @Schema(description = "SPU 名称")
+    private String spuName;
+
+    @Schema(description = "SPU 图片")
+    private String spuPic;
+
     @Schema(description = "SKU ID")
     private Long skuId;
+
+    @Schema(description = "SKU 图片")
+    private String skuPic;
+
+    @Schema(description = "市场价（原价）")
+    private BigDecimal originalPrice;
 
     @Schema(description = "秒杀价格")
     private BigDecimal flashPrice;

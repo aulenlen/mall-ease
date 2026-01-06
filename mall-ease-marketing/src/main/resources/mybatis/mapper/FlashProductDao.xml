@@ -7,7 +7,11 @@
         <result column="flash_activity_id" property="flashActivityId" jdbcType="BIGINT"/>
         <result column="flash_session_id" property="flashSessionId" jdbcType="BIGINT"/>
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
+        <result column="spu_name" property="spuName" jdbcType="VARCHAR"/>
+        <result column="spu_pic" property="spuPic" jdbcType="VARCHAR"/>
         <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
+        <result column="sku_pic" property="skuPic" jdbcType="VARCHAR"/>
+        <result column="original_price" property="originalPrice" jdbcType="DECIMAL"/>
         <result column="flash_price" property="flashPrice" jdbcType="DECIMAL"/>
         <result column="flash_stock" property="flashStock" jdbcType="INTEGER"/>
         <result column="flash_limit" property="flashLimit" jdbcType="INTEGER"/>
@@ -19,7 +23,8 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, flash_activity_id, flash_session_id, spu_id, sku_id,
+        id, flash_activity_id, flash_session_id, spu_id, spu_name, spu_pic,
+        sku_id, sku_pic, original_price,
         flash_price, flash_stock, flash_limit, sort,
         create_time, update_time, creator, updater
     </sql>
@@ -95,11 +100,13 @@
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.marketing.model.data.entity.FlashProduct" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO marketing_flash_product
-            (flash_activity_id, flash_session_id, spu_id, sku_id,
+            (flash_activity_id, flash_session_id, spu_id, spu_name, spu_pic,
+             sku_id, sku_pic, original_price,
              flash_price, flash_stock, flash_limit, sort,
              create_time, update_time, creator, updater)
         VALUES (#{flashActivityId,jdbcType=BIGINT}, #{flashSessionId,jdbcType=BIGINT},
-                #{spuId,jdbcType=BIGINT}, #{skuId,jdbcType=BIGINT},
+                #{spuId,jdbcType=BIGINT}, #{spuName,jdbcType=VARCHAR}, #{spuPic,jdbcType=VARCHAR},
+                #{skuId,jdbcType=BIGINT}, #{skuPic,jdbcType=VARCHAR}, #{originalPrice,jdbcType=DECIMAL},
                 #{flashPrice,jdbcType=DECIMAL}, #{flashStock,jdbcType=INTEGER},
                 #{flashLimit,jdbcType=INTEGER}, #{sort,jdbcType=INTEGER},
                 #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP},
@@ -113,7 +120,11 @@
             <if test="flashActivityId != null">flash_activity_id,</if>
             <if test="flashSessionId != null">flash_session_id,</if>
             <if test="spuId != null">spu_id,</if>
+            <if test="spuName != null">spu_name,</if>
+            <if test="spuPic != null">spu_pic,</if>
             <if test="skuId != null">sku_id,</if>
+            <if test="skuPic != null">sku_pic,</if>
+            <if test="originalPrice != null">original_price,</if>
             <if test="flashPrice != null">flash_price,</if>
             <if test="flashStock != null">flash_stock,</if>
             <if test="flashLimit != null">flash_limit,</if>
@@ -127,7 +138,11 @@
             <if test="flashActivityId != null">#{flashActivityId,jdbcType=BIGINT},</if>
             <if test="flashSessionId != null">#{flashSessionId,jdbcType=BIGINT},</if>
             <if test="spuId != null">#{spuId,jdbcType=BIGINT},</if>
+            <if test="spuName != null">#{spuName,jdbcType=VARCHAR},</if>
+            <if test="spuPic != null">#{spuPic,jdbcType=VARCHAR},</if>
             <if test="skuId != null">#{skuId,jdbcType=BIGINT},</if>
+            <if test="skuPic != null">#{skuPic,jdbcType=VARCHAR},</if>
+            <if test="originalPrice != null">#{originalPrice,jdbcType=DECIMAL},</if>
             <if test="flashPrice != null">#{flashPrice,jdbcType=DECIMAL},</if>
             <if test="flashStock != null">#{flashStock,jdbcType=INTEGER},</if>
             <if test="flashLimit != null">#{flashLimit,jdbcType=INTEGER},</if>
@@ -142,13 +157,15 @@
     <!-- 批量插入 -->
     <insert id="insertBatch" parameterType="java.util.List">
         INSERT INTO marketing_flash_product
-            (flash_activity_id, flash_session_id, spu_id, sku_id,
+            (flash_activity_id, flash_session_id, spu_id, spu_name, spu_pic,
+             sku_id, sku_pic, original_price,
              flash_price, flash_stock, flash_limit, sort,
              create_time, update_time, creator, updater)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (#{item.flashActivityId,jdbcType=BIGINT}, #{item.flashSessionId,jdbcType=BIGINT},
-             #{item.spuId,jdbcType=BIGINT}, #{item.skuId,jdbcType=BIGINT},
+             #{item.spuId,jdbcType=BIGINT}, #{item.spuName,jdbcType=VARCHAR}, #{item.spuPic,jdbcType=VARCHAR},
+             #{item.skuId,jdbcType=BIGINT}, #{item.skuPic,jdbcType=VARCHAR}, #{item.originalPrice,jdbcType=DECIMAL},
              #{item.flashPrice,jdbcType=DECIMAL}, #{item.flashStock,jdbcType=INTEGER},
              #{item.flashLimit,jdbcType=INTEGER}, #{item.sort,jdbcType=INTEGER},
              #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP},
