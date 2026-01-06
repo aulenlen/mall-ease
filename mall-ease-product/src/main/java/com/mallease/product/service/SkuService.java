@@ -1,5 +1,6 @@
 package com.mallease.product.service;
 
+import com.mallease.common.dto.remote.SkuSimpleDTO;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.query.SkuQuery;
 import com.mallease.product.model.data.entity.Sku;
@@ -11,6 +12,14 @@ import com.mallease.product.model.data.entity.SkuPromotion;
 import java.util.List;
 
 public interface SkuService {
+
+    /**
+     * 根据SKU ID列表批量获取简要信息（内部服务调用）
+     *
+     * @param skuIds SKU ID列表
+     * @return SKU简要信息列表
+     */
+    List<SkuSimpleDTO> listSimpleByIds(List<Long> skuIds);
 
     /**
      * 创建单个SKU（含库存、促销、价格策略）

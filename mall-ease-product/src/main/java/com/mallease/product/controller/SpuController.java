@@ -16,8 +16,10 @@ import com.mallease.product.model.client.query.SpuQuery;
 import com.mallease.product.model.client.vo.*;
 
 import com.mallease.product.model.data.entity.Sku;
+import com.mallease.product.model.data.entity.SkuStock;
 import com.mallease.product.model.data.entity.Spu;
 import com.mallease.product.service.SkuService;
+import com.mallease.product.service.SkuStockService;
 import com.mallease.product.service.SpuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -48,6 +50,8 @@ public class SpuController {
     private SkuService skuService;
     @Autowired
     private SkuConverter skuConverter;
+    @Autowired
+    private SkuStockService skuStockService;
 
     @Operation(summary = "创建商品")
     @PostMapping("/create")
@@ -108,10 +112,20 @@ public class SpuController {
 
         List<Sku> skuList = skuService.selectBySpuIds(spuIds);
         List<SkuVO> skuVOList = skuConverter.entityListToVoList(skuList);
+        Map<Long, SkuVO> skuVOMap = skuVOList.stream()
+                .collect(Collectors.toMap(SkuVO::getId, v -> v, (a, b) -> a));
+
+        List<SkuStock> stockList = skuStockService.listStockBySpuIds(spuIds);
+        for (SkuStock stock : stockList) {
+            SkuVO skuVO = skuVOMap.get(stock.getSkuId());
+            if (skuVO != null) {
+                skuConverter.mergeSkuStockToVo(skuVO, stock);
+            }
+        }
+
         Map<Long, List<SkuVO>> listMap = skuVOList.stream().collect(Collectors.groupingBy(SkuVO::getSpuId));
-        spuVOS.forEach(spuVo -> {
-            spuVo.setSkuVOList(listMap.get(spuVo.getId()));
-        });
+        spuVOS.forEach(spuVo -> spuVo.setSkuVOList(listMap.get(spuVo.getId())));
+
         Page<SpuVO> result = PageUtils.buildPage(spuList, spuVOS);
         return R.success(result);
     }

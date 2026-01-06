@@ -1,6 +1,7 @@
 package com.mallease.product.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.mallease.common.dto.remote.SkuSimpleDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.LoginContextUtil;
 import com.mallease.product.dao.SkuDao;
@@ -8,6 +9,7 @@ import com.mallease.product.dao.SkuLadderDao;
 import com.mallease.product.dao.SkuMemberPriceDao;
 import com.mallease.product.dao.SkuPromotionDao;
 import com.mallease.product.dao.SkuStockDao;
+import com.mallease.product.dao.SpuDao;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.query.SkuQuery;
 import com.mallease.product.model.data.entity.*;
@@ -19,12 +21,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class SkuServiceImpl implements SkuService {
     @Autowired
     private SkuDao skuDao;
+    @Autowired
+    private SpuDao spuDao;
     @Autowired
     private SkuLadderDao ladderDao;
     @Autowired
@@ -35,6 +40,39 @@ public class SkuServiceImpl implements SkuService {
     private SkuStockService skuStockService;
     @Autowired
     private SkuStockDao skuStockDao;
+
+    @Override
+    public List<SkuSimpleDTO> listSimpleByIds(List<Long> skuIds) {
+        if (skuIds == null || skuIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Sku> skuList = skuDao.selectByIds(skuIds);
+        if (skuList.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> spuIds = skuList.stream()
+                .map(Sku::getSpuId)
+                .distinct()
+                .toList();
+        List<Spu> spuList = spuDao.selectByIds(spuIds);
+        Map<Long, Spu> spuMap = spuList.stream()
+                .collect(Collectors.toMap(Spu::getId, spu -> spu, (a, b) -> a));
+
+        return skuList.stream().map(sku -> {
+            Spu spu = spuMap.get(sku.getSpuId());
+            return SkuSimpleDTO.builder()
+                    .id(sku.getId())
+                    .spuId(sku.getSpuId())
+                    .spuName(spu != null ? spu.getName() : null)
+                    .spuPic(spu != null ? spu.getPic() : null)
+                    .skuPic(sku.getPic())
+                    .originalPrice(sku.getOriginalPrice())
+                    .specValues(sku.getSpecValues())
+                    .build();
+        }).toList();
+    }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
