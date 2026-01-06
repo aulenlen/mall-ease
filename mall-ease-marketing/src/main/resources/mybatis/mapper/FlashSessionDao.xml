@@ -72,6 +72,21 @@
         ORDER BY start_time ASC
     </select>
 
+    <select id="getCurrentSession" resultType="com.mallease.marketing.model.data.entity.FlashSession">
+        select
+        <include refid="Base_Column_List"/>
+        FROM
+        marketing_flash_session fs
+        LEFT JOIN marketing_flash_activity fa on fs.flash_activity_id = fa.id
+        WHERE
+        fs.`status` = 1
+        AND fa.`status` = 1
+        AND #{nowDate} BETWEEN fa.start_date
+        AND fa.end_date
+        AND #{nowDateTime} BETWEEN fs.start_time
+        AND fs.end_time
+    </select>
+
     <!-- 删除 -->
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         DELETE FROM marketing_flash_session

@@ -4,6 +4,7 @@ import com.mallease.marketing.model.data.entity.FlashSession;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -105,4 +106,13 @@ public interface FlashSessionDao {
      * @return 影响行数
      */
     int updateStatusBatch(@Param("ids") List<Long> ids, @Param("status") Integer status);
+
+    /**
+     * 获取当前生效的场次
+     *
+     * @param nowDateTime
+     * @param nowDate
+     * @return
+     */
+    FlashSession getCurrentSession(@Param("nowDateTime") LocalDateTime nowDateTime, @Param("nowDate") LocalDate nowDate);
 }

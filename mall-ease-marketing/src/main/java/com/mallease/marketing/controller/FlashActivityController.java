@@ -4,6 +4,7 @@ import com.github.pagehelper.PageHelper;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.FlashCurrentDTO;
 import com.mallease.marketing.converter.FlashConverter;
 import com.mallease.marketing.model.client.cmd.FlashActivityCmd;
 import com.mallease.marketing.model.client.cmd.FlashProductCmd;
@@ -145,5 +146,13 @@ public class FlashActivityController {
         PageHelper.startPage(pageNum, pageSize);
         List<FlashProduct> list = flashActivityService.listFlashProductBySessionId(sessionId);
         return R.success(PageUtils.convertPage(list, flashConverter::productListToVoList));
+    }
+
+    // 内部调用
+
+    @Operation(summary = "获取当前秒杀数据", description = "返回当前生效场次及商品列表，供 App 模块 Feign 调用")
+    @GetMapping("/internal/current")
+    public R<FlashCurrentDTO> getCurrentFlashData() {
+        return R.success(flashActivityService.getCurrentFlashData());
     }
 }

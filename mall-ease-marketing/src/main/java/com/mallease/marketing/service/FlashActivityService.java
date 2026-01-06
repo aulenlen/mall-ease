@@ -1,5 +1,6 @@
 package com.mallease.marketing.service;
 
+import com.mallease.common.dto.remote.FlashCurrentDTO;
 import com.mallease.marketing.model.client.query.FlashActivityQuery;
 import com.mallease.marketing.model.data.entity.FlashActivity;
 import com.mallease.marketing.model.data.entity.FlashProduct;
@@ -31,6 +32,14 @@ public interface FlashActivityService {
     //商品
     int addFlashProduct(FlashProduct flashProduct);
 
+    /**
+     * 批量添加秒杀商品
+     *
+     * @param flashProducts 秒杀商品列表
+     * @return 影响行数
+     */
+    int addFlashProductBatch(List<FlashProduct> flashProducts);
+
     int updateFlashProduct(FlashProduct flashProduct);
 
     int deleteFlashProduct(Long id);
@@ -59,6 +68,18 @@ public interface FlashActivityService {
      * @return 影响行数
      */
     int updateSessionStatusBatch(List<Long> ids, Integer status);
+
+    /**
+     * 获取当前生效场次的秒杀商品
+     */
+    List<FlashProduct> getCurrentFlashProducts();
+
+    /**
+     * 获取当前生效的秒杀数据（供 App 模块 Feign 调用）
+     *
+     * @return 包含场次信息和商品列表的 DTO
+     */
+    FlashCurrentDTO getCurrentFlashData();
 
     //前台查询
     //  FlashActivityVO getCurrentActivity();
