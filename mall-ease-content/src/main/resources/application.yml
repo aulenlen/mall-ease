@@ -40,5 +40,5 @@ springdoc:
   swagger-ui:
     enabled: true
   group-configs:
-    - group: 'CMS内容管理'
-      paths-to-match: '/cms/**'
+    - group: '内容管理'
+      paths-to-match: '/content/**'
