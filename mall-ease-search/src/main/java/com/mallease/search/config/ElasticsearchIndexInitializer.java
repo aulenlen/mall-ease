@@ -1,6 +1,6 @@
 package com.mallease.search.config;
 
-import com.mallease.search.document.SpuDocument;
+import com.mallease.search.model.data.doc.SpuDocument;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;

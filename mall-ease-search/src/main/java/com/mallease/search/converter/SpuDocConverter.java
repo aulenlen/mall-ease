@@ -1,7 +1,7 @@
-package com.mallease.search.dto.converter;
+package com.mallease.search.converter;
 
-import com.mallease.search.document.SpuDocument;
-import com.mallease.search.dto.vo.SpuSearchResultVO;
+import com.mallease.search.model.data.doc.SpuDocument;
+import com.mallease.search.model.client.vo.SpuSearchResultVO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

@@ -1,9 +1,9 @@
 package com.mallease.search.service;
 
-import com.mallease.search.document.SpuDocument;
-import com.mallease.search.dto.query.SpuSearchQuery;
-import com.mallease.search.dto.vo.SearchPageVO;
-import com.mallease.search.dto.vo.SpuSearchResultVO;
+import com.mallease.search.model.data.doc.SpuDocument;
+import com.mallease.search.model.client.query.SpuSearchQuery;
+import com.mallease.search.model.client.vo.SearchPageVO;
+import com.mallease.search.model.client.vo.SpuSearchResultVO;
 
 import java.util.List;
 

@@ -1,10 +1,10 @@
 package com.mallease.search.converter;
 
 import com.mallease.common.dto.remote.SpuIndexDTO;
-import com.mallease.search.document.SpuDocument;
-import com.mallease.search.document.SpuParamValueDocument;
-import com.mallease.search.document.SpuSkuDocument;
-import com.mallease.search.document.SpuSpecValueDocument;
+import com.mallease.search.model.data.doc.SpuDocument;
+import com.mallease.search.model.data.doc.SpuParamValueDocument;
+import com.mallease.search.model.data.doc.SpuSkuDocument;
+import com.mallease.search.model.data.doc.SpuSpecValueDocument;
 import org.mapstruct.Mapper;
 
 import java.util.List;

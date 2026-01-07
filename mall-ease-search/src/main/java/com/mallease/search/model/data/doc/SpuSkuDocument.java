@@ -1,4 +1,4 @@
-package com.mallease.search.document;
+package com.mallease.search.model.data.doc;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

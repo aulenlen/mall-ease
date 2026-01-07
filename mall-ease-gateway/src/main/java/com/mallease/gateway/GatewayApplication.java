@@ -11,10 +11,10 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @ComponentScan(basePackages = {"com.mallease.gateway", "com.mallease.common"})
-public class MallEaseGatewayApplication {
+public class GatewayApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(MallEaseGatewayApplication.class, args);
+        SpringApplication.run(GatewayApplication.class, args);
     }
 }
 

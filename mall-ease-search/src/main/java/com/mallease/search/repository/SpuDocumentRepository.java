@@ -1,6 +1,6 @@
 package com.mallease.search.repository;
 
-import com.mallease.search.document.SpuDocument;
+import com.mallease.search.model.data.doc.SpuDocument;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
