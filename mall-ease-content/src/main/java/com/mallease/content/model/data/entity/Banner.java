@@ -48,7 +48,7 @@ public class Banner {
     private String position;
 
     /**
-     * 排序值，越小越靠前
+     * 排序值
      */
     private Integer sort;
 

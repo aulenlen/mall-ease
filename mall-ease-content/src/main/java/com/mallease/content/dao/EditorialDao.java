@@ -80,4 +80,12 @@ public interface EditorialDao {
      * @return 影响行数
      */
     int logicDeleteBatch(@Param("ids") List<Long> ids);
+
+    /**
+     * 查询已发布的编辑精选列表
+     *
+     * @param limit 返回数量
+     * @return 编辑精选列表
+     */
+    List<Editorial> listPublished(@Param("limit") Integer limit);
 }

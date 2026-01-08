@@ -5,11 +5,13 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.common.dto.remote.EditorialDTO;
 import com.mallease.content.converter.EditorialConverter;
 import com.mallease.content.model.client.cmd.EditorialCmd;
 import com.mallease.content.model.client.query.EditorialQuery;
 import com.mallease.content.model.client.vo.EditorialVO;
 import com.mallease.content.model.data.entity.Editorial;
+import com.mallease.content.model.data.entity.EditorialSpuRelation;
 import com.mallease.content.service.EditorialService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,7 +21,10 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 编辑精选管理
@@ -75,7 +80,6 @@ public class EditorialController {
             return R.failed("编辑精选不存在");
         }
         EditorialVO vo = editorialConverter.entityToVo(editorial);
-        // 查询关联的商品ID
         vo.setSpuIds(editorialService.getSpuIdsByEditorialId(id));
         return R.success(vo);
     }
@@ -117,5 +121,26 @@ public class EditorialController {
             @Parameter(description = "商品ID列表") @RequestParam("spuIds") List<Long> spuIds) {
         int count = editorialService.unbindSpuIds(editorialId, spuIds);
         return R.success(count);
+    }
+
+    @Operation(summary = "获取已发布编辑精选", description = "内部调用，返回已发布状态的精选列表")
+    @GetMapping("/internal/published")
+    public R<List<EditorialDTO>> listPublished(
+            @Parameter(description = "返回数量，默认10") @RequestParam(defaultValue = "10") Integer limit) {
+        List<Editorial> editorials = editorialService.listPublished(limit);
+        if (editorials.isEmpty()) {
+            return R.success(Collections.emptyList());
+        }
+        List<EditorialDTO> dtoList = editorialConverter.entityListToDTOList(editorials);
+
+        List<Long> editorialIds = editorials.stream().map(Editorial::getId).toList();
+        Map<Long, List<Long>> spuIdsMap = editorialService.getSpuRelationsByEditorialIds(editorialIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        EditorialSpuRelation::getEditorialId,
+                        Collectors.mapping(EditorialSpuRelation::getSpuId, Collectors.toList())
+                ));
+        dtoList.forEach(dto -> dto.setSpuIds(spuIdsMap.getOrDefault(dto.getId(), Collections.emptyList())));
+        return R.success(dtoList);
     }
 }

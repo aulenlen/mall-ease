@@ -50,6 +50,7 @@ public class SaTokenConfig {
     public SaReactorFilter getSaReactorFilter() {
         List<String> list = new ArrayList<>();
         list.add("/mall-ease-auth/auth/admin/login");
+        list.add("/mall-ease-app/**");  // App端由自身处理鉴权
         return new SaReactorFilter()
                 // 拦截地址
                 .addInclude("/**")    /* 拦截全部path */

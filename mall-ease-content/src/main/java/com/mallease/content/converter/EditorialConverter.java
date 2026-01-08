@@ -1,5 +1,6 @@
 package com.mallease.content.converter;
 
+import com.mallease.common.dto.remote.EditorialDTO;
 import com.mallease.content.model.client.cmd.EditorialCmd;
 import com.mallease.content.model.client.vo.EditorialVO;
 import com.mallease.content.model.data.entity.Editorial;
@@ -35,4 +36,14 @@ public interface EditorialConverter {
      * Entity 列表转 VO 列表
      */
     List<EditorialVO> entityListToVoList(List<Editorial> entityList);
+
+    /**
+     * Entity 转 DTO（内部调用）
+     */
+    EditorialDTO entityToDTO(Editorial entity);
+
+    /**
+     * Entity 列表转 DTO 列表（内部调用）
+     */
+    List<EditorialDTO> entityListToDTOList(List<Editorial> entityList);
 }

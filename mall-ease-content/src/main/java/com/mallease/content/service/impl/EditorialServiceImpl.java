@@ -89,6 +89,14 @@ public class EditorialServiceImpl implements EditorialService {
     }
 
     @Override
+    public List<EditorialSpuRelation> getSpuRelationsByEditorialIds(List<Long> editorialIds) {
+        if (CollectionUtils.isEmpty(editorialIds)) {
+            return new ArrayList<>();
+        }
+        return editorialSpuRelationDao.selectByEditorialIds(editorialIds);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int delete(Long id) {
         // 删除商品关联
@@ -169,6 +177,11 @@ public class EditorialServiceImpl implements EditorialService {
             return 0;
         }
         return editorialSpuRelationDao.deleteByEditorialIdAndSpuIds(editorialId, spuIds);
+    }
+
+    @Override
+    public List<Editorial> listPublished(Integer limit) {
+        return editorialDao.listPublished(limit);
     }
 
     /**

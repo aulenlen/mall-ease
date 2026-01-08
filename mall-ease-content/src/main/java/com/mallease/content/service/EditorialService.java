@@ -2,8 +2,10 @@ package com.mallease.content.service;
 
 import com.mallease.content.model.client.query.EditorialQuery;
 import com.mallease.content.model.data.entity.Editorial;
+import com.mallease.content.model.data.entity.EditorialSpuRelation;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 编辑精选服务接口
@@ -46,6 +48,14 @@ public interface EditorialService {
      * @return 商品ID列表
      */
     List<Long> getSpuIdsByEditorialId(Long editorialId);
+
+    /**
+     * 批量查询关联关系
+     *
+     * @param editorialIds 编辑精选ID列表
+     * @return 关联关系列表
+     */
+    List<EditorialSpuRelation> getSpuRelationsByEditorialIds(List<Long> editorialIds);
 
     /**
      * 逻辑删除
@@ -97,4 +107,13 @@ public interface EditorialService {
      * @return 影响行数
      */
     int unbindSpuIds(Long editorialId, List<Long> spuIds);
+
+    /**
+     * 获取已发布的编辑精选列表
+     * 筛选条件：status=1（已发布），按sort ASC + publishTime DESC排序
+     *
+     * @param limit 返回数量
+     * @return 编辑精选列表
+     */
+    List<Editorial> listPublished(Integer limit);
 }

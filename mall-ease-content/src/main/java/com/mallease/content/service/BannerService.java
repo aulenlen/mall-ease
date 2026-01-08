@@ -52,4 +52,13 @@ public interface BannerService {
      * @return 更新的记录数
      */
     int updateStatusBatch(List<Long> ids, Integer status);
+
+    /**
+     * 获取指定位置的已发布轮播图
+     * 筛选条件：status=1，当前时间在生效期内，按sort排序
+     *
+     * @param position 投放位置
+     * @return 轮播图列表
+     */
+    List<Banner> listPublishedByPosition(String position);
 }

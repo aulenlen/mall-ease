@@ -1,6 +1,6 @@
 package com.mallease.content.converter;
 
-import com.mallease.content.model.client.cmd.ContentPreferenceAreaCmd;
+import com.mallease.content.model.client.cmd.PreferenceAreaCmd;
 import com.mallease.content.model.client.cmd.UpdateContentPreferenceAreaCmd;
 import com.mallease.content.model.client.vo.PreferenceAreaDetailVO;
 import com.mallease.content.model.client.vo.PreferenceAreaListVO;
@@ -51,7 +51,7 @@ public interface PreferenceAreaConverter {
     /**
      * CreateCmd → Entity
      */
-    PreferenceArea createCmdToEntity(ContentPreferenceAreaCmd cmd);
+    PreferenceArea createCmdToEntity(PreferenceAreaCmd cmd);
 
     /**
      * UpdateCmd → Entity(用于更新)

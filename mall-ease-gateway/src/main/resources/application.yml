@@ -38,6 +38,12 @@ spring:
             - Path=/mall-ease-marketing/**
           filters:
             - StripPrefix=1
+        - id: mall-ease-app
+          uri: lb://mall-ease-app
+          predicates:
+            - Path=/mall-ease-app/**
+          filters:
+            - StripPrefix=1
 
   data:
     redis:

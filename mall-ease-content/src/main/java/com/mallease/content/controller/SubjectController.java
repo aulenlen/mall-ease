@@ -2,7 +2,7 @@ package com.mallease.content.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.mallease.content.converter.SubjectConverter;
-import com.mallease.content.model.client.cmd.ContentSubjectCmd;
+import com.mallease.content.model.client.cmd.SubjectCmd;
 import com.mallease.content.model.client.cmd.UpdateContentSubjectCmd;
 import com.mallease.content.model.client.vo.SubjectDetailVO;
 import com.mallease.content.model.client.vo.SubjectListVO;
@@ -50,7 +50,7 @@ public class SubjectController {
      */
     @Operation(summary = "创建专题")
     @PostMapping("/create")
-    public R<Integer> create(@Validated @RequestBody ContentSubjectCmd cmd) {
+    public R<Integer> create(@Validated @RequestBody SubjectCmd cmd) {
         Subject subject = subjectConverter.createCmdToEntity(cmd);
         int count = subjectService.create(subject);
         if (count > 0) {

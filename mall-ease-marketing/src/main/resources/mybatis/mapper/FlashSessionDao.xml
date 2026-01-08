@@ -74,7 +74,8 @@
 
     <select id="getCurrentSession" resultType="com.mallease.marketing.model.data.entity.FlashSession">
         select
-        <include refid="Base_Column_List"/>
+        fs.id, fs.flash_activity_id, fs.name, fs.start_time, fs.end_time, fs.status,
+        fs.create_time, fs.update_time, fs.creator, fs.updater
         FROM
         marketing_flash_session fs
         LEFT JOIN marketing_flash_activity fa on fs.flash_activity_id = fa.id

@@ -146,4 +146,14 @@
         </set>
         where id = #{id,jdbcType=BIGINT} and deleted = 0
     </update>
+
+    <!-- 查询已发布的编辑精选列表 -->
+    <select id="listPublished" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from content_editorial
+        where deleted = 0 and status = 1
+        order by sort asc, publish_time desc
+        limit #{limit}
+    </select>
 </mapper>

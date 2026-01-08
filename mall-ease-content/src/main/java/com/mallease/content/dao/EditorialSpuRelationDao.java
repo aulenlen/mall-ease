@@ -71,6 +71,14 @@ public interface EditorialSpuRelationDao {
     List<EditorialSpuRelation> selectByEditorialId(@Param("editorialId") Long editorialId);
 
     /**
+     * 根据多个文章ID批量查询
+     *
+     * @param editorialIds 文章ID列表
+     * @return 记录列表
+     */
+    List<EditorialSpuRelation> selectByEditorialIds(@Param("editorialIds") List<Long> editorialIds);
+
+    /**
      * 根据产品ID查询
      *
      * @param spuId 产品ID

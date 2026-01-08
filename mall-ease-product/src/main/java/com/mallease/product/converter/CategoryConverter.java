@@ -1,5 +1,6 @@
 package com.mallease.product.converter;
 
+import com.mallease.common.dto.remote.CategoryDTO;
 import com.mallease.product.model.client.cmd.CategoryCmd;
 import com.mallease.product.model.client.vo.CategoryDetailVO;
 
@@ -45,6 +46,17 @@ public interface CategoryConverter {
      */
     List<CategoryTreeVO> entityListToTreeVoList(List<Category> entities);
     List<CategoryListVO> entityListToListVoList(List<Category> entities);
+
+
+    /**
+     * Entity → DTO（内部调用）
+     */
+    CategoryDTO entityToDTO(Category entity);
+
+    /**
+     * Entity 列表 → DTO 列表（内部调用）
+     */
+    List<CategoryDTO> entityListToDTOList(List<Category> entities);
 
     /**
      * SaveCmd → Entity（创建场景，path/level 由 Service 层计算）

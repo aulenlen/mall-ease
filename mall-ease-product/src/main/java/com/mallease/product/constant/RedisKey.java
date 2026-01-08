@@ -16,34 +16,34 @@ public enum RedisKey {
 
     /**
      * SPU详情缓存（String结构）
-     * Key格式: pms:spu:detail:{spuId}
+     * Key格式: product:spu:detail:{spuId}
      */
-    SPU_DETAIL("pms:spu:detail:", 3600L, "SPU详情缓存"),
+    SPU_DETAIL("product:spu:detail:", 3600L, "SPU详情缓存"),
 
     /**
      * SKU库存缓存（Hash结构）
      * Key格式: pms:spu:sku:stock:{spuId}
      * HashKey: skuId
      */
-    SPU_SKU_STOCK("pms:spu:sku:stock:", 3600L, "SKU库存缓存"),
+    SPU_SKU_STOCK("product:spu:sku:stock:", 3600L, "SKU库存缓存"),
 
     /**
      * 金刚区导航分类（String结构，存储 List）
      * Key格式: pms:category:nav（固定Key）
      */
-    CATEGORY_NAV("pms:category:nav", 86400L, "金刚区导航分类"),
+    CATEGORY_NAV("product:category:nav", 86400L, "金刚区导航分类"),
 
     /**
      * 分类商品列表缓存
      * Key格式: pms:category:list:{categoryId}
      */
-    CATEGORY_LIST("pms:category:list:", 7200L, "分类商品列表"),
+    CATEGORY_LIST("product:category:list:", 7200L, "分类商品列表"),
 
     /**
      * 品牌商品列表缓存
      * Key格式: pms:brand:list:{brandId}
      */
-    BRAND_LIST("pms:brand:list:", 7200L, "品牌商品列表"),
+    BRAND_LIST("product:brand:list:", 7200L, "品牌商品列表"),
     ;
 
     /**

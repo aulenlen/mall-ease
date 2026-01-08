@@ -28,6 +28,17 @@
         order by sort asc
     </select>
 
+    <select id="selectByEditorialIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from content_editorial_spu_relation
+        where editorial_id in
+        <foreach collection="editorialIds" item="editorialId" open="(" separator="," close=")">
+            #{editorialId,jdbcType=BIGINT}
+        </foreach>
+        order by editorial_id, sort asc
+    </select>
+
     <select id="selectBySpuId" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>

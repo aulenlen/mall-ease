@@ -2,7 +2,7 @@ package com.mallease.content.controller;
 
 import com.github.pagehelper.PageHelper;
 import com.mallease.content.converter.PreferenceAreaConverter;
-import com.mallease.content.model.client.cmd.ContentPreferenceAreaCmd;
+import com.mallease.content.model.client.cmd.PreferenceAreaCmd;
 import com.mallease.content.model.client.cmd.UpdateContentPreferenceAreaCmd;
 import com.mallease.content.model.client.vo.PreferenceAreaDetailVO;
 import com.mallease.content.model.client.vo.PreferenceAreaListVO;
@@ -50,7 +50,7 @@ public class PreferenceAreaController {
      */
     @Operation(summary = "创建优选专区")
     @PostMapping("/create")
-    public R<Integer> create(@Validated @RequestBody ContentPreferenceAreaCmd cmd) {
+    public R<Integer> create(@Validated @RequestBody PreferenceAreaCmd cmd) {
         PreferenceArea prefrenceArea = preferenceAreaConverter.createCmdToEntity(cmd);
         int count = preferenceAreaService.create(prefrenceArea);
         if (count > 0) {

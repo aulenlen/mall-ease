@@ -1,21 +1,24 @@
 package com.mallease.search.controller;
 
+import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SpuIndexDTO;
+import com.mallease.common.dto.remote.SpuRecommendDTO;
+import com.mallease.search.converter.SpuDocConverter;
 import com.mallease.search.converter.SpuIndexConverter;
 import com.mallease.search.model.data.doc.SpuDocument;
 import com.mallease.search.model.client.query.SpuSearchQuery;
-import com.mallease.search.model.client.vo.SearchPageVO;
 import com.mallease.search.model.client.vo.SpuSearchResultVO;
 import com.mallease.search.service.SpuSearchService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 商品搜索 Controller
@@ -28,15 +31,17 @@ import java.util.List;
 @RequestMapping("/search")
 @RequiredArgsConstructor
 public class SpuSearchController {
-    @Autowired
-    private SpuSearchService spuSearchService;
-    @Autowired
-    private SpuIndexConverter spuIndexConverter;
+
+    private final SpuSearchService spuSearchService;
+    private final SpuIndexConverter spuIndexConverter;
+    private final SpuDocConverter spuDocConverter;
 
     @Operation(summary = "商品搜索")
     @PostMapping("/spu")
-    public R<SearchPageVO<SpuSearchResultVO>> search(@Validated @RequestBody SpuSearchQuery query) {
-        return R.success(spuSearchService.search(query));
+    public R<Page<SpuSearchResultVO>> search(@Validated @RequestBody SpuSearchQuery query) {
+        List<SpuDocument> docs = spuSearchService.search(query);
+        List<SpuSearchResultVO> voList = spuDocConverter.docListToVoList(docs);
+        return R.success(Page.restPage(docs, voList));
     }
 
     @Operation(summary = "搜索建议")
@@ -59,5 +64,21 @@ public class SpuSearchController {
         List<SpuDocument> spuDocumentList = spuIndexConverter.spuIndexDTOListToDocList(spuIndexDTOList);
         spuSearchService.indexBatch(spuDocumentList);
         return R.success(true);
+    }
+
+    // 内部接口
+
+    @Operation(summary = "获取推荐商品", description = "内部调用，返回推荐商品列表（按销量排序、有货）")
+    @GetMapping("/internal/recommend")
+    public R<List<SpuRecommendDTO>> listRecommend(
+            @Parameter(description = "返回数量，默认20") @RequestParam(defaultValue = "20") Integer limit) {
+        SpuSearchQuery query = new SpuSearchQuery();
+        query.setInStock(true);
+        query.setSortType(1);
+        query.setPageNum(1);
+        query.setPageSize(limit);
+
+        List<SpuDocument> docs = spuSearchService.search(query);
+        return R.success(spuDocConverter.docListToDTOList(docs));
     }
 }

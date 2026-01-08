@@ -42,4 +42,9 @@ public class BannerServiceImpl implements BannerService {
     public int updateStatusBatch(List<Long> ids, Integer status) {
         return bannerDao.updateStatusBatch(ids, status);
     }
+
+    @Override
+    public List<Banner> listPublishedByPosition(String position) {
+        return bannerDao.selectValidByPosition(position);
+    }
 }

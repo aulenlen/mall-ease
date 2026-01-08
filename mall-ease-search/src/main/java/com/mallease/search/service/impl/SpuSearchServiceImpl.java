@@ -4,20 +4,17 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.json.JsonData;
 import com.mallease.search.model.data.doc.SpuDocument;
-import com.mallease.search.converter.SpuDocConverter;
 import com.mallease.search.model.client.query.SpuSearchQuery;
-import com.mallease.search.model.client.vo.SearchPageVO;
-import com.mallease.search.model.client.vo.SpuSearchResultVO;
 import com.mallease.search.model.enums.SpuSortType;
 import com.mallease.search.repository.SpuDocumentRepository;
 import com.mallease.search.service.SpuSearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -40,11 +37,9 @@ public class SpuSearchServiceImpl implements SpuSearchService {
 
     private final ElasticsearchOperations elasticsearchOperations;
     private final SpuDocumentRepository spuDocumentRepository;
-    @Autowired
-    private SpuDocConverter spuDocConverter;
 
     @Override
-    public SearchPageVO<SpuSearchResultVO> search(SpuSearchQuery query) {
+    public List<SpuDocument> search(SpuSearchQuery query) {
         log.info("【搜索开始】关键词={}, 品牌IDs={}, 分类ID={}, 分类路径={}, " +
                         "价格区间=[{}-{}], 是否有货={}, 新品={}, 推荐={}, " +
                         "规格={}, 排序类型={}, 需要聚合={}, 页码={}, 每页={}",
@@ -134,34 +129,15 @@ public class SpuSearchServiceImpl implements SpuSearchService {
         // 执行搜索
         SearchHits<SpuDocument> searchHits = elasticsearchOperations.search(nativeQuery, SpuDocument.class);
 
-        List<SpuSearchResultVO> list = searchHits.getSearchHits().stream()
-                .map(hit -> {
-                    SpuDocument doc = hit.getContent();
-                    SpuSearchResultVO vo = spuDocConverter.docToVo(doc);
-                    vo.setScore(hit.getScore());
-                    List<String> highlightName = hit.getHighlightField("name");
-                    if (!CollectionUtils.isEmpty(highlightName)) {
-                        vo.setHighlightName(highlightName.get(0));
-                    } else {
-                        vo.setHighlightName(doc.getName());
-                    }
-                    return vo;
-                })
+        List<SpuDocument> list = searchHits.getSearchHits().stream()
+                .map(SearchHit::getContent)
                 .collect(Collectors.toList());
 
         long total = searchHits.getTotalHits();
-        int totalPage = (int) Math.ceil((double) total / query.getPageSize());
 
-        log.info("【搜索完成】命中总数={}, 返回数量={}, 排序类型={}, 有关键词={}",
-                total, list.size(), sortType.getDesc(), hasKeyword);
+        log.info("【搜索完成】命中总数={}, 返回数量={}", total, list.size());
 
-        return SearchPageVO.<SpuSearchResultVO>builder()
-                .pageNum(query.getPageNum())
-                .pageSize(query.getPageSize())
-                .total(total)
-                .totalPage(totalPage)
-                .list(list)
-                .build();
+        return list;
     }
 
     @Override

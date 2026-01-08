@@ -1,6 +1,6 @@
 package com.mallease.content.converter;
 
-import com.mallease.content.model.client.cmd.ContentSubjectCmd;
+import com.mallease.content.model.client.cmd.SubjectCmd;
 import com.mallease.content.model.client.cmd.UpdateContentSubjectCmd;
 import com.mallease.content.model.client.vo.SubjectDetailVO;
 import com.mallease.content.model.client.vo.SubjectListVO;
@@ -55,7 +55,7 @@ public interface SubjectConverter {
     /**
      * CreateCmd → Entity
      */
-    Subject createCmdToEntity(ContentSubjectCmd cmd);
+    Subject createCmdToEntity(SubjectCmd cmd);
 
     /**
      * UpdateCmd → Entity(用于更新)

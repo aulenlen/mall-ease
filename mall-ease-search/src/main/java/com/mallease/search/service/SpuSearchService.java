@@ -2,8 +2,6 @@ package com.mallease.search.service;
 
 import com.mallease.search.model.data.doc.SpuDocument;
 import com.mallease.search.model.client.query.SpuSearchQuery;
-import com.mallease.search.model.client.vo.SearchPageVO;
-import com.mallease.search.model.client.vo.SpuSearchResultVO;
 
 import java.util.List;
 
@@ -19,9 +17,9 @@ public interface SpuSearchService {
      * 综合搜索
      *
      * @param query 搜索查询条件
-     * @return 分页搜索结果
+     * @return Document 列表
      */
-    SearchPageVO<SpuSearchResultVO> search(SpuSearchQuery query);
+    List<SpuDocument> search(SpuSearchQuery query);
 
     /**
      * 搜索建议

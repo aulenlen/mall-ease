@@ -46,9 +46,6 @@ public class FlashCurrentDTO {
 
         private BigDecimal flashPrice;
 
-        /**
-         * 折扣百分比（如 33 表示 -33%）
-         */
         private Integer discountPercent;
     }
 }
