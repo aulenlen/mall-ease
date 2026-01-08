@@ -2,27 +2,47 @@ package com.mallease.content.model.client.cmd;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 /**
- * 创建Banner命令对象
+ * Banner命令对象（创建/更新统一）
  *
  * @author: Aulen
  * @create: 2025-01-01
  */
 @Data
-@Schema(description = "创建Banner请求")
-public class ContentBannerCmd {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(description = "Banner请求")
+public class BannerCmd {
+
+    /**
+     * 创建校验组
+     */
+    public interface Create {}
+
+    /**
+     * 更新校验组
+     */
+    public interface Update {}
+
+    @Schema(description = "主键ID（更新时必传）")
+    @NotNull(groups = Update.class, message = "更新时ID不能为空")
+    private Long id;
 
     @Schema(description = "Banner名称", example = "新年促销")
-    @NotBlank(message = "名称不能为空")
+    @NotBlank(groups = Create.class, message = "创建时名称不能为空")
     @Size(max = 100, message = "名称长度不能超过100个字符")
     private String name;
 
     @Schema(description = "图片URL", example = "https://cdn.example.com/banner.jpg")
-    @NotBlank(message = "图片URL不能为空")
+    @NotBlank(groups = Create.class, message = "创建时图片URL不能为空")
     @Size(max = 500, message = "图片链接不能超过500个字符")
     private String pic;
 

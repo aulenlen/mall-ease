@@ -11,7 +11,7 @@ import jakarta.validation.constraints.*;
  * @create: 2025-11-15
  */
 @Data
-public class ContentPreferenceAreaCmd {
+public class PreferenceAreaCmd {
 
     @NotBlank(message = "名称不能为空")
     @Size(max = 255, message = "名称长度不能超过255个字符")

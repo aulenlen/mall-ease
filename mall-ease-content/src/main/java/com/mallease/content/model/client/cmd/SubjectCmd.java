@@ -11,7 +11,7 @@ import jakarta.validation.constraints.*;
  * @create: 2025-11-15
  */
 @Data
-public class ContentSubjectCmd {
+public class SubjectCmd {
 
     @NotNull(message = "分类ID不能为空")
     private Long categoryId;
