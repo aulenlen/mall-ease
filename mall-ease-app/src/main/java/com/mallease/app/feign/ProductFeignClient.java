@@ -2,6 +2,7 @@ package com.mallease.app.feign;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.CategoryDTO;
+import com.mallease.common.dto.remote.CategoryTreeDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -23,4 +24,12 @@ public interface ProductFeignClient {
      */
     @GetMapping("/product/category/internal/nav")
     R<List<CategoryDTO>> listNavCategories();
+
+    /**
+     * 完整分类树
+     *
+     * @return 分类树列表
+     */
+    @GetMapping("/product/category/internal/portalTree")
+    R<List<CategoryTreeDTO>> portalTree();
 }

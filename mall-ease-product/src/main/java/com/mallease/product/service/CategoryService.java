@@ -1,6 +1,9 @@
 package com.mallease.product.service;
 
+import com.mallease.common.dto.remote.CategoryDTO;
+import com.mallease.common.dto.remote.CategoryTreeDTO;
 import com.mallease.product.model.client.query.CategoryQuery;
+import com.mallease.product.model.client.vo.CategoryTreeVO;
 import com.mallease.product.model.data.entity.Category;
 
 import java.util.List;
@@ -105,13 +108,6 @@ public interface CategoryService {
     List<Category> listByQuery(CategoryQuery query);
 
     /**
-     * 查询导航分类
-     *
-     * @return 导航分类列表
-     */
-    List<Category> listNavCategories();
-
-    /**
      * 获取面包屑路径中的分类列表
      *
      * @param id 分类ID
@@ -153,4 +149,17 @@ public interface CategoryService {
      * @return 分类列表
      */
     List<Category> listByIds(List<Long> ids);
+
+    /**
+     * 前台app分类树（带缓存）
+     * @return 分类树 DTO 列表
+     */
+    List<CategoryTreeDTO> portalTree();
+
+    /**
+     * 查询导航分类（带缓存）
+     *
+     * @return 导航分类 DTO 列表
+     */
+    List<CategoryDTO> listNavCategories();
 }

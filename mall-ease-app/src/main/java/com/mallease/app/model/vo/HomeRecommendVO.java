@@ -30,6 +30,12 @@ public class HomeRecommendVO {
     @Schema(description = "副标题")
     private String subTitle;
 
+    @Schema(description = "分类ID")
+    private Long categoryId;
+
+    @Schema(description = "分类路径")
+    private String categoryPath;
+
     @Schema(description = "主图URL")
     private String pic;
 

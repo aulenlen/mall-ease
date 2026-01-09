@@ -33,6 +33,8 @@ public class SpuRecommendDTO {
 
     private Long categoryId;
 
+    private String categoryPath;
+
     private String categoryName;
 
     private BigDecimal minPrice;

@@ -3,6 +3,7 @@ package com.mallease.product.controller;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.common.dto.remote.CategoryDTO;
+import com.mallease.common.dto.remote.CategoryTreeDTO;
 import com.mallease.product.converter.CategoryConverter;
 import com.mallease.product.model.client.cmd.CategoryCmd;
 import com.mallease.product.model.client.query.CategoryQuery;
@@ -144,7 +145,7 @@ public class CategoryController {
     @Operation(summary = "获取导航分类树")
     @GetMapping("/tree/nav")
     public R<List<CategoryTreeVO>> getNavTree() {
-        List<Category> navCategories = categoryService.listNavCategories();
+        List<Category> navCategories = categoryService.listByQuery(CategoryQuery.builder().isNav(1).status(1).build());
         List<CategoryTreeVO> tree = categoryConverter.buildTree(navCategories);
         return R.success(tree);
     }
@@ -185,11 +186,16 @@ public class CategoryController {
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
-    @Operation(summary = "金刚区分类",description = "内部调用")
+    @Operation(summary = "金刚区分类", description = "内部调用")
     @GetMapping("/internal/nav")
     public R<List<CategoryDTO>> listNavCategories() {
-        List<Category> categoryList = categoryService.listNavCategories();
-        return R.success(categoryConverter.entityListToDTOList(categoryList));
+        return R.success(categoryService.listNavCategories());
+    }
+
+    @Operation(summary = "完整分类树", description = "内部调用")
+    @GetMapping("/internal/portalTree")
+    public R<List<CategoryTreeDTO>> portalTree() {
+        return R.success(categoryService.portalTree());
     }
 
     /**

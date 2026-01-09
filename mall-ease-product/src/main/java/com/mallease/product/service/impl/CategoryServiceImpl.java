@@ -1,14 +1,19 @@
 package com.mallease.product.service.impl;
 
+import com.mallease.common.dto.remote.CategoryDTO;
+import com.mallease.common.dto.remote.CategoryTreeDTO;
 import com.mallease.product.constant.RedisKey;
 import com.mallease.common.exception.ApiException;
 import com.mallease.product.component.CacheService;
+import com.mallease.product.converter.CategoryConverter;
 import com.mallease.product.dao.CategoryDao;
 import com.mallease.product.model.client.query.CategoryQuery;
 import com.mallease.product.model.data.entity.Category;
 import com.mallease.product.service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -37,10 +42,12 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
     private CacheService cacheService;
-
     @Autowired
     private CategoryDao categoryDao;
+    @Autowired
+    private CategoryConverter categoryConverter;
 
+    @CacheEvict(value = "product:category", allEntries = true)
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(Category entity, Long parentId) {
@@ -70,6 +77,7 @@ public class CategoryServiceImpl implements CategoryService {
         return entity.getId();
     }
 
+    @CacheEvict(value = "product:category", allEntries = true)
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int update(Category entity, Long newParentId) {
@@ -132,6 +140,7 @@ public class CategoryServiceImpl implements CategoryService {
         category.setParentId(newParentId);
     }
 
+    @CacheEvict(value = "product:category", allEntries = true)
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int delete(Long id) {
@@ -156,6 +165,7 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryDao.deleteById(id);
     }
 
+    @CacheEvict(value = "product:category", allEntries = true)
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteBatch(List<Long> ids) {
@@ -225,6 +235,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<Category> listByQuery(CategoryQuery query) {
+        // 导航分类查询（isNav=1 且 status=1）
+        if (Integer.valueOf(1).equals(query.getIsNav()) && Integer.valueOf(1).equals(query.getStatus())) {
+            return categoryDao.selectNavCategories();
+        }
         // 根据查询条件筛选
         if (StringUtils.hasText(query.getKeyword())) {
             return categoryDao.selectByNameLike(query.getKeyword());
@@ -235,22 +249,6 @@ public class CategoryServiceImpl implements CategoryService {
         } else {
             return categoryDao.selectAll();
         }
-    }
-
-    @Override
-    public List<Category> listNavCategories() {
-        // 优先从缓存获取
-        List<Category> cache = cacheService.getList(RedisKey.CATEGORY_NAV, Category.class);
-        if (cache != null) {
-            return cache;
-        }
-
-        // 缓存未命中，查询数据库
-        List<Category> categoryList = categoryDao.selectNavCategories();
-        if (!categoryList.isEmpty()) {
-            cacheService.set(RedisKey.CATEGORY_NAV, categoryList);
-        }
-        return categoryList;
     }
 
     @Override
@@ -273,6 +271,7 @@ public class CategoryServiceImpl implements CategoryService {
         return ancestors.stream().sorted(Comparator.comparing(Category::getLevel)).collect(Collectors.toList());
     }
 
+    @CacheEvict(value = "product:category", allEntries = true)
     @Override
     public int updateStatus(Long id, Integer status) {
         Category category = new Category();
@@ -281,6 +280,7 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryDao.updateByPrimaryKeySelective(category);
     }
 
+    @CacheEvict(value = "product:category", allEntries = true)
     @Override
     public int updateStatusBatch(List<Long> ids, Integer status) {
         if (CollectionUtils.isEmpty(ids)) {
@@ -289,6 +289,7 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryDao.updateStatusBatch(ids, status);
     }
 
+    @CacheEvict(value = "product:category", allEntries = true)
     @Override
     public int updateNavStatus(Long id, Integer isNav) {
         Category category = new Category();
@@ -303,5 +304,31 @@ public class CategoryServiceImpl implements CategoryService {
             return List.of();
         }
         return categoryDao.selectByIds(ids);
+    }
+
+    @Cacheable(value = "product:category", key = "'portalTree'", sync = true)
+    @Override
+    public List<CategoryTreeDTO> portalTree() {
+        log.info("缓存未命中，开始加载分类树数据");
+        long start = System.currentTimeMillis();
+
+        List<Category> published = categoryDao.selectByStatus(1);
+        List<CategoryTreeDTO> tree = categoryConverter.buildTreeDTO(published);
+
+        log.info("分类树数据加载完成，节点数: {}, 耗时: {}ms", published.size(), System.currentTimeMillis() - start);
+        return tree;
+    }
+
+    @Override
+    @Cacheable(value = "product:category", key = "'nav'", sync = true)
+    public List<CategoryDTO> listNavCategories() {
+        log.info("缓存未命中，开始加载导航分类数据");
+        long start = System.currentTimeMillis();
+
+        List<Category> entities = categoryDao.selectNavCategories();
+        List<CategoryDTO> result = categoryConverter.entityListToDTOList(entities);
+
+        log.info("导航分类数据加载完成，节点数: {}, 耗时: {}ms", entities.size(), System.currentTimeMillis() - start);
+        return result;
     }
 }

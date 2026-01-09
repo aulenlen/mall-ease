@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -18,6 +19,8 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author: Aulen
@@ -25,6 +28,7 @@ import java.time.Duration;
  * @create: 2025-11-08 02:24
  **/
 @Configuration
+@EnableCaching
 public class RedisConfig {
 
     private ObjectMapper createRedisObjectMapper() {
@@ -67,14 +71,24 @@ public class RedisConfig {
     public RedisCacheManager redisCacheManager(RedisConnectionFactory redisConnectionFactory) {
         RedisCacheWriter redisCacheWriter = RedisCacheWriter.nonLockingRedisCacheWriter(redisConnectionFactory);
 
-        // 使用配置好的 ObjectMapper 创建 GenericJackson2JsonRedisSerializer
         GenericJackson2JsonRedisSerializer jsonRedisSerializer = new GenericJackson2JsonRedisSerializer(
                 createRedisObjectMapper());
 
-        // 设置 Redis 缓存有效期为1天
-        RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
+        // 默认TTL 1天
+        RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonRedisSerializer))
                 .entryTtl(Duration.ofDays(1));
-        return new RedisCacheManager(redisCacheWriter, redisCacheConfiguration);
+
+        // 不同缓存不同 TTL
+        Map<String, RedisCacheConfiguration> configMap = new HashMap<>();
+        configMap.put("product:category", cacheConfig.entryTtl(Duration.ofHours(24)));
+        configMap.put("product:spu", cacheConfig.entryTtl(Duration.ofHours(1)));
+        configMap.put("product:brand", cacheConfig.entryTtl(Duration.ofHours(12)));
+        configMap.put("content:banner", cacheConfig.entryTtl(Duration.ofHours(6)));
+
+        return RedisCacheManager.builder(redisCacheWriter)
+                .cacheDefaults(cacheConfig)
+                .withInitialCacheConfigurations(configMap)
+                .build();
     }
 }

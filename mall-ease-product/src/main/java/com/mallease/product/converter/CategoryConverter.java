@@ -1,6 +1,7 @@
 package com.mallease.product.converter;
 
 import com.mallease.common.dto.remote.CategoryDTO;
+import com.mallease.common.dto.remote.CategoryTreeDTO;
 import com.mallease.product.model.client.cmd.CategoryCmd;
 import com.mallease.product.model.client.vo.CategoryDetailVO;
 
@@ -80,20 +81,16 @@ public interface CategoryConverter {
             return new ArrayList<>();
         }
 
-        // 1. 转换为 TreeVO 并建立 ID -> VO 的映射
         List<CategoryTreeVO> treeVoList = entityListToTreeVoList(entities);
         Map<Long, CategoryTreeVO> idMap = treeVoList.stream()
                 .collect(Collectors.toMap(CategoryTreeVO::getId, vo -> vo));
 
-        // 2. 构建父子关系
         List<CategoryTreeVO> roots = new ArrayList<>();
         for (CategoryTreeVO vo : treeVoList) {
             Long parentId = vo.getParentId();
             if (parentId == null || parentId == 0L) {
-                // 顶级节点
                 roots.add(vo);
             } else {
-                // 找到父节点并添加到其 children
                 CategoryTreeVO parent = idMap.get(parentId);
                 if (parent != null) {
                     if (parent.getChildren() == null) {
@@ -101,8 +98,53 @@ public interface CategoryConverter {
                     }
                     parent.getChildren().add(vo);
                 } else {
-                    // 父节点不在列表中，作为顶级节点处理
                     roots.add(vo);
+                }
+            }
+        }
+
+        return roots;
+    }
+
+    /**
+     * Entity → TreeDTO（内部调用）
+     */
+    CategoryTreeDTO entityToTreeDTO(Category entity);
+
+    /**
+     * 辅助方法：entityToTreeDTO 的列表版本
+     */
+    List<CategoryTreeDTO> entityListToTreeDTOList(List<Category> entities);
+
+    /**
+     * 将列表构建为树形 DTO 结构（服务间调用）
+     *
+     * @param entities 扁平分类列表
+     * @return 树形 DTO 结构（只返回顶级节点）
+     */
+    default List<CategoryTreeDTO> buildTreeDTO(List<Category> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<CategoryTreeDTO> treeDtoList = entityListToTreeDTOList(entities);
+        Map<Long, CategoryTreeDTO> idMap = treeDtoList.stream()
+                .collect(Collectors.toMap(CategoryTreeDTO::getId, dto -> dto));
+        
+        List<CategoryTreeDTO> roots = new ArrayList<>();
+        for (CategoryTreeDTO dto : treeDtoList) {
+            Long parentId = dto.getParentId();
+            if (parentId == null || parentId == 0L) {
+                roots.add(dto);
+            } else {
+                CategoryTreeDTO parent = idMap.get(parentId);
+                if (parent != null) {
+                    if (parent.getChildren() == null) {
+                        parent.setChildren(new ArrayList<>());
+                    }
+                    parent.getChildren().add(dto);
+                } else {
+                    roots.add(dto);
                 }
             }
         }

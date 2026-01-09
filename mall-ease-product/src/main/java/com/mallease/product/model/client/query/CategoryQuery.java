@@ -2,8 +2,7 @@ package com.mallease.product.model.client.query;
 
 import com.mallease.common.dto.client.BaseQuery;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 /**
  * 商品分类查询对象
@@ -15,6 +14,9 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Schema(description = "商品分类查询对象")
 public class CategoryQuery extends BaseQuery {
 

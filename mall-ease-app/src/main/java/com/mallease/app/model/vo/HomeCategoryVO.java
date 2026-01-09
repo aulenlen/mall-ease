@@ -25,6 +25,6 @@ public class HomeCategoryVO {
     @Schema(description = "分类名称")
     private String name;
 
-    @Schema(description = "分类图标URL")
+    @Schema(description = "分类图标")
     private String icon;
 }
