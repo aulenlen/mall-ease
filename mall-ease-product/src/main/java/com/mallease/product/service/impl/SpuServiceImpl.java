@@ -15,15 +15,13 @@ import com.mallease.product.model.client.vo.PublishFailDetailVO;
 import com.mallease.product.event.SpuPublishEvent;
 import com.mallease.product.feign.ContentPreferenceAreaFeignClient;
 import com.mallease.product.feign.ContentSubjectFeignClient;
+import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.*;
-import com.mallease.product.service.BrandService;
-import com.mallease.product.service.CategoryService;
-import com.mallease.product.service.SkuService;
-import com.mallease.product.service.SkuStockService;
-import com.mallease.product.service.SpuService;
+import com.mallease.product.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +56,9 @@ public class SpuServiceImpl implements SpuService {
     private ApplicationEventPublisher eventPublisher;
     @Autowired
     private SpuPublishRecordDao spuPublishRecordDao;
+    @Autowired
+    @Lazy
+    private SpuCacheService spuCacheService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -771,6 +772,17 @@ public class SpuServiceImpl implements SpuService {
             return List.of();
         }
         return fullReductionDao.selectBySpuIds(spuIds);
+    }
+
+    @Override
+    public SpuCache getProduct(Long spuId) {
+        SpuCache spuCache = spuCacheService.get(spuId);
+
+        if (spuCache == null) {
+            spuCacheService.warmUpBatch(Collections.singletonList(spuId));
+        }
+
+        return spuCacheService.get(spuId);
     }
 
     /**

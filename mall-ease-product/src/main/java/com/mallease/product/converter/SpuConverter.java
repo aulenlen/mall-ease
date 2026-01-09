@@ -3,13 +3,10 @@ package com.mallease.product.converter;
 import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.product.model.client.cmd.SpuCmd;
 import com.mallease.product.model.client.vo.SpuDetailVO;
-
 import com.mallease.product.model.client.vo.SpuVO;
 import com.mallease.product.model.data.entity.Spu;
 import com.mallease.product.model.data.entity.SpuDetail;
-
 import com.mallease.product.model.data.entity.SpuFullReduction;
-
 import com.mallease.product.model.data.entity.SpuParamValue;
 import org.mapstruct.*;
 
@@ -29,6 +26,7 @@ public interface SpuConverter {
 
     // Entity → VO
     SpuVO entityToVo(Spu entity);
+
     List<SpuVO> entityListToVoList(List<Spu> entities);
 
     @Mapping(source = "albumPics", target = "albumPicList", qualifiedByName = "splitAlbumPics")
@@ -38,6 +36,7 @@ public interface SpuConverter {
 
     @Mapping(source = "id", target = "spuId")
     SpuIndexDTO entityToIndexDto(Spu spu);
+
     List<SpuIndexDTO> entityListToIndexDtoList(List<Spu> spuList);
 
     // Cmd → Entity
@@ -89,8 +88,11 @@ public interface SpuConverter {
     @Mapping(source = "value", target = "value")
     @Mapping(target = "deleted", constant = "0")
     SpuParamValue paramValueCmdToEntity(SpuCmd.SpuParamValueCmd cmd);
+
     List<SpuParamValue> paramValueCmdListToEntityList(List<SpuCmd.SpuParamValueCmd> cmdList);
+
     SpuDetailVO.SpuParamValueVO paramValueEntityToVo(SpuParamValue entity);
+
     List<SpuDetailVO.SpuParamValueVO> paramValueEntityListToVoList(List<SpuParamValue> entityList);
 
     // 满减规则转换
@@ -99,7 +101,9 @@ public interface SpuConverter {
     @Mapping(source = "fullPrice", target = "fullPrice")
     @Mapping(source = "reducePrice", target = "reducePrice")
     SpuFullReduction fullReductionCmdToEntity(SpuCmd.SpuFullReductionCmd cmd);
+
     List<SpuFullReduction> fullReductionCmdListToEntityList(List<SpuCmd.SpuFullReductionCmd> cmdList);
+
     default SpuDetailVO.SpuFullReductionVO fullReductionEntityToVo(SpuFullReduction entity) {
         if (entity == null) {
             return null;

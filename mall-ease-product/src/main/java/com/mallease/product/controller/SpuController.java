@@ -5,9 +5,11 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.product.assembler.SpuDetailAssembler;
 import com.mallease.product.assembler.SpuSaveAssembler;
 import com.mallease.product.converter.SkuConverter;
+import com.mallease.product.converter.SpuCacheConverter;
 import com.mallease.product.converter.SpuConverter;
 import com.mallease.product.model.client.cmd.PublishSpuCmd;
 import com.mallease.product.model.client.cmd.SpuCmd;
@@ -15,6 +17,7 @@ import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.query.SpuQuery;
 import com.mallease.product.model.client.vo.*;
 
+import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.Sku;
 import com.mallease.product.model.data.entity.SkuStock;
 import com.mallease.product.model.data.entity.Spu;
@@ -24,6 +27,7 @@ import com.mallease.product.service.SpuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -36,22 +40,18 @@ import java.util.stream.Collectors;
 @Tag(name = "商品SPU管理", description = "SPU增删改查")
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/product/spu")
 public class SpuController {
-    @Autowired
-    private SpuService spuService;
-    @Autowired
-    private SpuConverter spuConverter;
-    @Autowired
-    private SpuSaveAssembler spuSaveAssembler;
-    @Autowired
-    private SpuDetailAssembler spuDetailAssembler;
-    @Autowired
-    private SkuService skuService;
-    @Autowired
-    private SkuConverter skuConverter;
-    @Autowired
-    private SkuStockService skuStockService;
+
+    private final SpuService spuService;
+    private final SpuConverter spuConverter;
+    private final SpuSaveAssembler spuSaveAssembler;
+    private final SpuDetailAssembler spuDetailAssembler;
+    private final SkuService skuService;
+    private final SkuConverter skuConverter;
+    private final SkuStockService skuStockService;
+    private final SpuCacheConverter spuCacheConverter;
 
     @Operation(summary = "创建商品")
     @PostMapping("/create")
@@ -128,5 +128,17 @@ public class SpuController {
 
         Page<SpuVO> result = PageUtils.buildPage(spuList, spuVOS);
         return R.success(result);
+    }
+
+    // 内部调用
+
+    @Operation(summary = "通过spuId 获取完整的商品信息", description = "内部调用")
+    @GetMapping("/internal/{spuId}")
+    public R<ProductDTO> getProduct(@PathVariable Long spuId) {
+        SpuCache cache = spuService.getProduct(spuId);
+        if (cache == null) {
+            return R.success(null);
+        }
+        return R.success(spuCacheConverter.cacheToDTO(cache));
     }
 }

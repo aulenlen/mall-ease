@@ -3,8 +3,11 @@ package com.mallease.app.feign;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.CategoryDTO;
 import com.mallease.common.dto.remote.CategoryTreeDTO;
+import com.mallease.common.dto.remote.ProductDTO;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
@@ -32,4 +35,13 @@ public interface ProductFeignClient {
      */
     @GetMapping("/product/category/internal/portalTree")
     R<List<CategoryTreeDTO>> portalTree();
+
+    /**
+     * 通过spuId 获取完整的商品信息
+     *
+     * @param spuId spuId
+     * @return 完整的商品信息
+     */
+    @GetMapping("/product/spu/internal/{spuId}")
+    R<ProductDTO> getProduct(@PathVariable Long spuId);
 }

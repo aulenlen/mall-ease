@@ -3,6 +3,7 @@ package com.mallease.product.service;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.query.SpuQuery;
 import com.mallease.product.model.client.vo.SpuPublishVO;
+import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.Spu;
 import com.mallease.product.model.data.entity.SpuDetail;
 
@@ -84,4 +85,12 @@ public interface SpuService {
      * @return 满减规则列表
      */
     List<SpuFullReduction> listFullReductionBySpuIds(List<Long> spuIds);
+
+    /**
+     * 根据SpuId获取完整的商品信息（带缓存）
+     *
+     * @param spuId SpuId
+     * @return 完整的商品信息
+     */
+    SpuCache getProduct(Long spuId);
 }

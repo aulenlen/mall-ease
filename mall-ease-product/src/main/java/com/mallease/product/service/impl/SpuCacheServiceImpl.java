@@ -332,16 +332,15 @@ public class SpuCacheServiceImpl implements SpuCacheService {
         return cacheDTOList;
     }
 
-    private SpuCache buildSingleSpuCache(
-            Spu spu,
-            SpuDetail detail,
-            Brand brand,
-            Category category,
-            List<Sku> skuList,
-            Map<Long, SkuStock> stockMap,
-            Map<Long, SkuPromotion> promotionMap,
-            List<SpuFullReduction> reductionList,
-            long cacheTime) {
+    private SpuCache buildSingleSpuCache(Spu spu,
+                                         SpuDetail detail,
+                                         Brand brand,
+                                         Category category,
+                                         List<Sku> skuList,
+                                         Map<Long, SkuStock> stockMap,
+                                         Map<Long, SkuPromotion> promotionMap,
+                                         List<SpuFullReduction> reductionList,
+                                         long cacheTime) {
 
         // 1. 构建SPU基础信息
         SpuCache.SpuBasicInfo spuBasic = cacheConverter.toSpuBasicInfo(spu);
