@@ -18,7 +18,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 商品搜索 Controller
@@ -80,5 +79,17 @@ public class SpuSearchController {
 
         List<SpuDocument> docs = spuSearchService.search(query);
         return R.success(spuDocConverter.docListToDTOList(docs));
+    }
+
+    @Operation(summary = "下架商品", description = "内部调用，返回的是elasticsearch不存在的spuIds，若为空则全部更新成功")
+    @PutMapping("/internal/product/unpublish")
+    public R<List<Long>> unpublish(@RequestBody List<Long> spuIds) {
+        return R.success(spuSearchService.unpublish(spuIds));
+    }
+
+    @Operation(summary = "上架商品（仅更新状态）", description = "内部调用，返回的是elasticsearch不存在的spuIds，若为空则全部更新成功")
+    @PutMapping("/internal/product/publish")
+    public R<List<Long>> publish(@RequestBody List<Long> spuIds) {
+        return R.success(spuSearchService.publish(spuIds));
     }
 }

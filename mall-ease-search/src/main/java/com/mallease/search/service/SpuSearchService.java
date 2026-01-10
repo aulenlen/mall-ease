@@ -55,4 +55,19 @@ public interface SpuSearchService {
      * 全量重建索引
      */
     void rebuildIndex();
+
+    /**
+     * 下架商品
+     *
+     * @param spuIds spu列表
+     * @return 不存在elasticsearch的spuId列表
+     */
+    List<Long> unpublish(List<Long> spuIds);
+
+    /**
+     * 上架商品（仅更新状态，用于已存在索引的商品）
+     * @param spuIds spu列表
+     * @return 不存在elasticsearch的spuId列表
+     */
+    List<Long> publish(List<Long> spuIds);
 }

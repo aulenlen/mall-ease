@@ -3,9 +3,11 @@ package com.mallease.search.service.impl;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.json.JsonData;
-import com.mallease.search.model.data.doc.SpuDocument;
+import com.mallease.common.exception.ApiException;
 import com.mallease.search.model.client.query.SpuSearchQuery;
+import com.mallease.search.model.data.doc.SpuDocument;
 import com.mallease.search.model.enums.SpuSortType;
+import com.mallease.search.model.enums.SpuStatus;
 import com.mallease.search.repository.SpuDocumentRepository;
 import com.mallease.search.service.SpuSearchService;
 import lombok.RequiredArgsConstructor;
@@ -14,13 +16,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.MultiGetItem;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.data.elasticsearch.core.query.UpdateQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -170,5 +176,74 @@ public class SpuSearchServiceImpl implements SpuSearchService {
     @Override
     public void rebuildIndex() {
         // TODO: 全量重建索引
+    }
+
+    @Override
+    public List<Long> unpublish(List<Long> spuIds) {
+        return updatePublishStatus(spuIds, SpuStatus.UNPUBLISH.getCode(), SpuStatus.UNPUBLISH.getDesc());
+    }
+
+    @Override
+    public List<Long> publish(List<Long> spuIds) {
+        return updatePublishStatus(spuIds, SpuStatus.PUBLISH.getCode(), SpuStatus.PUBLISH.getDesc());
+    }
+
+    /**
+     * 批量更新上架状态（内部方法）
+     *
+     * @param spuIds        商品ID列表
+     * @param publishStatus 目标状态：0-下架，1-上架
+     * @param action        操作描述（用于日志）
+     * @return 实际更新成功的数量
+     */
+    private List<Long> updatePublishStatus(List<Long> spuIds, int publishStatus, String action) {
+        if (CollectionUtils.isEmpty(spuIds)) {
+            return List.of();
+        }
+
+        try {
+            // 1. 检查哪些存在
+            NativeQuery existsQuery = NativeQuery.builder()
+                    .withIds(spuIds.stream().map(String::valueOf).toList())
+                    .build();
+            List<MultiGetItem<SpuDocument>> multiGetResult = elasticsearchOperations.multiGet(
+                    existsQuery, SpuDocument.class,
+                    elasticsearchOperations.getIndexCoordinatesFor(SpuDocument.class));
+
+            // 2. 过滤出存在的 ID
+            List<Long> existingIds = multiGetResult.stream()
+                    .filter(item -> item.hasItem() && item.getItem() != null)
+                    .map(item -> item.getItem().getSpuId())
+                    .toList();
+
+            if (existingIds.isEmpty()) {
+                log.info("ES批量{}：无文档存在，返回全部ID", action);
+                return spuIds;
+            }
+
+            // 3. 只对存在的执行更新
+            List<UpdateQuery> queries = new ArrayList<>();
+            for (Long spuId : existingIds) {
+                Document document = Document.create();
+                document.put("publishStatus", publishStatus);
+
+                UpdateQuery updateQuery = UpdateQuery.builder(String.valueOf(spuId))
+                        .withDocument(document)
+                        .build();
+                queries.add(updateQuery);
+            }
+
+            elasticsearchOperations.bulkUpdate(queries,
+                    elasticsearchOperations.getIndexCoordinatesFor(SpuDocument.class));
+
+            List<Long> nonExistentIds = spuIds.stream().filter(spuId -> !existingIds.contains(spuId)).toList();
+
+            log.info("ES批量{}成功，请求数量: {}, 实际更新: {}", action, spuIds.size(), existingIds.size());
+
+            return nonExistentIds;
+        } catch (Exception e) {
+            log.error("ES批量{}失败，ID列表: {}", action, spuIds, e);
+            throw new ApiException("ES批量更新失败", e);
+        }
     }
 }

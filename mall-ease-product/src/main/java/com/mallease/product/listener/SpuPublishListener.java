@@ -3,6 +3,7 @@ package com.mallease.product.listener;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.product.converter.SpuConverter;
 import com.mallease.product.dao.CategoryDao;
@@ -52,23 +53,39 @@ public class SpuPublishListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishEvent(SpuPublishEvent event) {
-
+        List<Long> spuIds = event.getSpuIds();
         // 处理缓存（缓存失败不影响业务结果）
         try {
             if (event.getPublishStatus() == 1) {
                 // 上架：预热缓存
-                log.info("开始预热SPU缓存，商品数量: {}", event.getSpuIds().size());
-                spuCacheService.warmUpBatch(event.getSpuIds());
-                List<SpuIndexDTO> spuIndexDTOList = buildIndex(event.getSpuIds());
-                spuSearchFeignClient.indexBatch(spuIndexDTOList);
+                log.info("开始预热SPU缓存，商品数量: {}", spuIds.size());
+                spuCacheService.warmUpBatch(spuIds);
+
+                // 先尝试只更新状态
+                R<List<Long>> publishResult = spuSearchFeignClient.publish(spuIds);
+
+                if (publishResult != null && publishResult.getData() != null) {
+                    List<Long> ids = publishResult.getData();
+                    if (ids.isEmpty()) {
+                        log.info("ES商品全部存在，仅更新状态，数量: {}", spuIds.size());
+                    } else {
+                        // 有缺失，执行返回的ids
+                        log.info("ES中缺少部分SPU，执行全量索引，请求: {}, 不存在: {}", spuIds, ids);
+                        List<SpuIndexDTO> spuIndexDTOList = buildIndex(ids);
+                        spuSearchFeignClient.indexBatch(spuIndexDTOList);
+                    }
+                }
                 log.info("SPU缓存预热完成");
             } else {
                 // 下架：清除缓存
-                spuCacheService.evictBatch(event.getSpuIds());
-                log.info("清除下架SPU缓存，数量: {}", event.getSpuIds().size());
+                spuCacheService.evictBatch(spuIds);
+
+                spuSearchFeignClient.unpublish(spuIds);
+
+                log.info("清除下架SPU缓存，数量: {}", spuIds);
             }
         } catch (Exception e) {
-            log.error("缓存操作失败，spuIds: {}", event.getSpuIds(), e);
+            log.error("缓存操作失败，spuIds: {}", spuIds, e);
         }
     }
 
