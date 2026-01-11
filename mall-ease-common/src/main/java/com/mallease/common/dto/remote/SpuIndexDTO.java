@@ -173,6 +173,21 @@ public class SpuIndexDTO {
          * 规格值，如 "黑色"、"128G"
          */
         private String specValue;
+
+        /**
+         * 展示类型：0-文字 1-颜色块 2-图片
+         */
+        private Integer displayType;
+
+        /**
+         * 颜色代码（displayType=1 时使用），如 "#000000"
+         */
+        private String colorCode;
+
+        /**
+         * 图片URL（displayType=2 时使用）
+         */
+        private String image;
     }
 
     /**

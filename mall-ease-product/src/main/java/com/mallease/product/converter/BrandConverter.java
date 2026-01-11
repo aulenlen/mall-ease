@@ -1,5 +1,7 @@
 package com.mallease.product.converter;
 
+import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.BrandDTO;
 import com.mallease.product.model.client.cmd.BrandCmd;
 import com.mallease.product.model.client.vo.BrandDetailVO;
 
@@ -31,12 +33,15 @@ public interface BrandConverter {
     List<BrandListVO> entityListToListVoList(List<Brand> entities);
 
     /**
-     * SaveCmd → Entity
+     * cmd → Entity
      */
-    Brand saveCmdToEntity(BrandCmd cmd);
+    Brand cmdToEntity(BrandCmd cmd);
 
     /**
-     * SaveCmd → Entity
+     * cmd → Entity
      */
     void updateEntityFromCmd(@MappingTarget Brand entity, BrandCmd cmd);
+
+
+    List<BrandDTO> entityToDTO(List<Brand> brands);
 }

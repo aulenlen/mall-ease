@@ -1,6 +1,5 @@
 package com.mallease.search.controller;
 
-import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
@@ -8,6 +7,7 @@ import com.mallease.search.converter.SpuDocConverter;
 import com.mallease.search.converter.SpuIndexConverter;
 import com.mallease.search.model.data.doc.SpuDocument;
 import com.mallease.search.model.client.query.SpuSearchQuery;
+import com.mallease.search.model.client.vo.SpuSearchPageVO;
 import com.mallease.search.model.client.vo.SpuSearchResultVO;
 import com.mallease.search.service.SpuSearchService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,12 +35,20 @@ public class SpuSearchController {
     private final SpuIndexConverter spuIndexConverter;
     private final SpuDocConverter spuDocConverter;
 
-    @Operation(summary = "商品搜索")
+    @Operation(summary = "商品搜索（带筛选面板）")
     @PostMapping("/spu")
-    public R<Page<SpuSearchResultVO>> search(@Validated @RequestBody SpuSearchQuery query) {
+    public R<SpuSearchPageVO> search(@Validated @RequestBody SpuSearchQuery query) {
+
+        if (Boolean.TRUE.equals(query.getNeedAggregation())) {
+            return R.success(spuSearchService.searchWithAggregation(query));
+        }
+
         List<SpuDocument> docs = spuSearchService.search(query);
         List<SpuSearchResultVO> voList = spuDocConverter.docListToVoList(docs);
-        return R.success(Page.restPage(docs, voList));
+        return R.success(SpuSearchPageVO.builder()
+                .total((long) voList.size())
+                .list(voList)
+                .build());
     }
 
     @Operation(summary = "搜索建议")

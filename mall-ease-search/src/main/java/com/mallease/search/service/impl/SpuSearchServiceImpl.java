@@ -1,10 +1,14 @@
 package com.mallease.search.service.impl;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.json.JsonData;
 import com.mallease.common.exception.ApiException;
 import com.mallease.search.model.client.query.SpuSearchQuery;
+import com.mallease.search.model.client.vo.SearchFilterVO;
+import com.mallease.search.model.client.vo.SpuSearchPageVO;
+import com.mallease.search.model.client.vo.SpuSearchResultVO;
 import com.mallease.search.model.data.doc.SpuDocument;
 import com.mallease.search.model.enums.SpuSortType;
 import com.mallease.search.model.enums.SpuStatus;
@@ -14,7 +18,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregations;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.MultiGetItem;
 import org.springframework.data.elasticsearch.core.SearchHit;
@@ -26,8 +32,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -122,7 +127,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
 
         Query finalQuery = Query.of(q -> q.bool(boolBuilder.build()));
 
-        // 9. 构建排序（核心改造点）
+        // 9. 构建排序
         SpuSortType sortType = SpuSortType.fromCode(query.getSortType());
         Sort sort = sortType.buildSort(hasKeyword);
 
@@ -207,10 +212,9 @@ public class SpuSearchServiceImpl implements SpuSearchService {
                     .withIds(spuIds.stream().map(String::valueOf).toList())
                     .build();
             List<MultiGetItem<SpuDocument>> multiGetResult = elasticsearchOperations.multiGet(
-                    existsQuery, SpuDocument.class,
-                    elasticsearchOperations.getIndexCoordinatesFor(SpuDocument.class));
+                    existsQuery, SpuDocument.class);
 
-            // 2. 过滤出存在的 ID
+            // 2. 过滤出ES存在的 ID
             List<Long> existingIds = multiGetResult.stream()
                     .filter(item -> item.hasItem() && item.getItem() != null)
                     .map(item -> item.getItem().getSpuId())
@@ -232,7 +236,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
                         .build();
                 queries.add(updateQuery);
             }
-
+            elasticsearchOperations.bulkUpdate(queries,SpuDocument.class);
             elasticsearchOperations.bulkUpdate(queries,
                     elasticsearchOperations.getIndexCoordinatesFor(SpuDocument.class));
 
@@ -245,5 +249,387 @@ public class SpuSearchServiceImpl implements SpuSearchService {
             log.error("ES批量{}失败，ID列表: {}", action, spuIds, e);
             throw new ApiException("ES批量更新失败", e);
         }
+    }
+
+    @Override
+    public SpuSearchPageVO searchWithAggregation(SpuSearchQuery query) {
+        log.info("【聚合搜索开始】关键词={}, 品牌IDs={}, 分类ID={}, 价格区间=[{}-{}], 规格={}",
+                query.getKeyword(), query.getBrandIds(), query.getCategoryId(),
+                query.getMinPrice(), query.getMaxPrice(), query.getSpecs());
+
+        boolean hasKeyword = StringUtils.hasText(query.getKeyword());
+
+        BoolQuery.Builder baseQueryBuilder = new BoolQuery.Builder();
+
+        // 关键字搜索
+        if (hasKeyword) {
+            MultiMatchQuery multiMatch = MultiMatchQuery.of(m -> m
+                    .query(query.getKeyword())
+                    .fields("name^3", "subTitle^2", "keywords")
+                    .type(TextQueryType.BestFields)
+                    .operator(Operator.And));
+            baseQueryBuilder.must(Query.of(q -> q.multiMatch(multiMatch)));
+        }
+
+        // 只查询已上架
+        baseQueryBuilder.filter(Query.of(q -> q.term(t -> t.field("publishStatus").value(1))));
+
+        Query baseQuery = Query.of(q -> q.bool(baseQueryBuilder.build()));
+
+        // 筛选条件，不影响聚合
+        BoolQuery.Builder postFilterBuilder = new BoolQuery.Builder();
+        boolean hasPostFilter = false;
+
+        // 品牌筛选
+        if (!CollectionUtils.isEmpty(query.getBrandIds())) {
+            postFilterBuilder.filter(Query.of(q -> q.terms(t -> t.field("brandId")
+                    .terms(tf -> tf.value(query.getBrandIds().stream()
+                            .map(FieldValue::of).collect(Collectors.toList()))))));
+            hasPostFilter = true;
+        }
+
+        // 分类筛选
+        if (query.getCategoryId() != null) {
+            postFilterBuilder.filter(Query.of(q -> q.term(
+                    t -> t.field("categoryId").value(query.getCategoryId()))));
+            hasPostFilter = true;
+        }
+
+        // 价格区间筛选
+        BigDecimal minPrice = query.getMinPrice();
+        BigDecimal maxPrice = query.getMaxPrice();
+        boolean hasMinPrice = minPrice != null && minPrice.compareTo(BigDecimal.ZERO) > 0;
+        boolean hasMaxPrice = maxPrice != null && maxPrice.compareTo(BigDecimal.ZERO) > 0;
+
+        if (hasMinPrice || hasMaxPrice) {
+            RangeQuery.Builder rangeBuilder = new RangeQuery.Builder().field("minPrice");
+            if (hasMinPrice) {
+                rangeBuilder.gte(JsonData.of(minPrice));
+            }
+            if (hasMaxPrice) {
+                rangeBuilder.lte(JsonData.of(maxPrice));
+            }
+            postFilterBuilder.filter(Query.of(q -> q.range(rangeBuilder.build())));
+            hasPostFilter = true;
+        }
+
+        // 规格筛选（嵌套查询）
+        if (!CollectionUtils.isEmpty(query.getSpecs())) {
+            for (String spec : query.getSpecs()) {
+                String[] parts = spec.split(":");
+                if (parts.length == 2) {
+                    Long specId = Long.parseLong(parts[0]);
+                    String specValue = parts[1];
+
+                    postFilterBuilder.filter(Query.of(q -> q.nested(n -> n
+                            .path("specValueList")
+                            .query(nq -> nq.bool(nb -> nb
+                                    .must(Query.of(mq -> mq.term(t -> t
+                                            .field("specValueList.specId").value(specId))))
+                                    .must(Query.of(mq -> mq.term(t -> t
+                                            .field("specValueList.specValue").value(specValue)))))))));
+                    hasPostFilter = true;
+                }
+            }
+        }
+
+        // 库存筛选
+        if (Boolean.TRUE.equals(query.getInStock())) {
+            postFilterBuilder.filter(Query.of(q -> q.term(t -> t.field("inStock").value(true))));
+            hasPostFilter = true;
+        }
+
+        // 品牌聚合（brandName 是 MultiField，聚合需使用 .keyword 子字段）
+        Aggregation brandAgg = Aggregation.of(a -> a
+                .terms(t -> t.field("brandId").size(50))
+                .aggregations("brandName", Aggregation.of(sa -> sa
+                        .terms(st -> st.field("brandName.keyword").size(1)))));
+
+        // 分类聚合
+        Aggregation categoryAgg = Aggregation.of(a -> a
+                .terms(t -> t.field("categoryId").size(50))
+                .aggregations("categoryName", Aggregation.of(sa -> sa
+                        .terms(st -> st.field("categoryName").size(1)))));
+
+        // 规格聚合（嵌套聚合）
+        Aggregation specAgg = Aggregation.of(a -> a
+                .nested(n -> n.path("specValueList"))
+                .aggregations("specId", Aggregation.of(sa -> sa
+                        .terms(t -> t.field("specValueList.specId").size(20))
+                        .aggregations("specName", Aggregation.of(sna -> sna
+                                .terms(st -> st.field("specValueList.specName").size(1))))
+                        .aggregations("displayType", Aggregation.of(dta -> dta
+                                .terms(st -> st.field("specValueList.displayType").size(1))))
+                        .aggregations("specValue", Aggregation.of(sva -> sva
+                                .terms(st -> st.field("specValueList.specValue").size(50))
+                                .aggregations("colorCode", Aggregation.of(cca -> cca
+                                        .terms(ct -> ct.field("specValueList.colorCode").size(1))))
+                                .aggregations("image", Aggregation.of(ia -> ia
+                                        .terms(it -> it.field("specValueList.image").size(1)))))))));
+
+        // 价格区间聚合
+        Aggregation priceAgg = Aggregation.of(a -> a
+                .range(r -> r.field("minPrice")
+                        .ranges(
+                                AggregationRange.of(ar -> ar.key("0-300").to("300")),
+                                AggregationRange.of(ar -> ar.key("300-800").from("300").to("800")),
+                                AggregationRange.of(ar -> ar.key("800-2000").from("800").to("2000")),
+                                AggregationRange.of(ar -> ar.key("2000+").from("2000"))
+                        )));
+
+        // 完整查询
+        SpuSortType sortType = SpuSortType.fromCode(query.getSortType());
+        Sort sort = sortType.buildSort(hasKeyword);
+
+        NativeQueryBuilder queryBuilder = NativeQuery.builder()
+                .withQuery(baseQuery)
+                .withPageable(PageRequest.of(query.getPageNum() - 1, query.getPageSize()))
+                .withSort(sort)
+                .withAggregation("brandAgg", brandAgg)
+                .withAggregation("categoryAgg", categoryAgg)
+                .withAggregation("specAgg", specAgg)
+                .withAggregation("priceAgg", priceAgg);
+
+        // 添加 Post Filter
+        if (hasPostFilter) {
+            queryBuilder.withFilter(Query.of(q -> q.bool(postFilterBuilder.build())));
+        }
+
+        NativeQuery nativeQuery = queryBuilder.build();
+
+        // 执行搜索
+        SearchHits<SpuDocument> searchHits = elasticsearchOperations.search(nativeQuery, SpuDocument.class);
+
+        // 解析商品列表
+        List<SpuDocument> docs = searchHits.getSearchHits().stream()
+                .map(SearchHit::getContent)
+                .collect(Collectors.toList());
+
+        // 解析聚合结果
+        SearchFilterVO filters = null;
+        if (Boolean.TRUE.equals(query.getNeedAggregation()) && searchHits.hasAggregations()) {
+            filters = parseAggregations(searchHits);
+        }
+
+        log.info("【聚合搜索完成】命中总数={}, 返回数量={}", searchHits.getTotalHits(), docs.size());
+
+        return SpuSearchPageVO.builder()
+                .total(searchHits.getTotalHits())
+                .list(convertToVoList(docs))
+                .filters(filters)
+                .build();
+    }
+
+    /**
+     * 解析聚合结果
+     */
+    private SearchFilterVO parseAggregations(SearchHits<SpuDocument> searchHits) {
+        ElasticsearchAggregations aggregations = (ElasticsearchAggregations) searchHits.getAggregations();
+        if (aggregations == null) {
+            return null;
+        }
+
+        Map<String, Aggregate> aggMap = aggregations.aggregations().stream()
+                .collect(Collectors.toMap(
+                        agg -> agg.aggregation().getName(),
+                        agg -> agg.aggregation().getAggregate()
+                ));
+
+        // 解析品牌聚合
+        List<SearchFilterVO.BrandAggVO> brands = parseBrandAggregation(aggMap.get("brandAgg"));
+
+        // 解析分类聚合
+        List<SearchFilterVO.CategoryAggVO> categories = parseCategoryAggregation(aggMap.get("categoryAgg"));
+
+        // 解析规格聚合
+        List<SearchFilterVO.SpecAggVO> specs = parseSpecAggregation(aggMap.get("specAgg"));
+
+        // 解析价格区间聚合
+        List<SearchFilterVO.PriceRangeVO> priceRanges = parsePriceAggregation(aggMap.get("priceAgg"));
+
+        return SearchFilterVO.builder()
+                .brands(brands)
+                .categories(categories)
+                .specs(specs)
+                .priceRanges(priceRanges)
+                .build();
+    }
+
+    /**
+     * 解析品牌聚合
+     */
+    private List<SearchFilterVO.BrandAggVO> parseBrandAggregation(Aggregate aggregate) {
+        if (aggregate == null || !aggregate.isLterms()) {
+            return Collections.emptyList();
+        }
+
+        return aggregate.lterms().buckets().array().stream()
+                .map(bucket -> {
+                    String brandName = "";
+                    if (bucket.aggregations().containsKey("brandName")) {
+                        Aggregate nameAgg = bucket.aggregations().get("brandName");
+                        if (nameAgg.isSterms() && !nameAgg.sterms().buckets().array().isEmpty()) {
+                            brandName = nameAgg.sterms().buckets().array().get(0).key().stringValue();
+                        }
+                    }
+                    return SearchFilterVO.BrandAggVO.builder()
+                            .brandId(bucket.key())
+                            .brandName(brandName)
+                            .count(bucket.docCount())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 解析分类聚合
+     */
+    private List<SearchFilterVO.CategoryAggVO> parseCategoryAggregation(Aggregate aggregate) {
+        if (aggregate == null || !aggregate.isLterms()) {
+            return Collections.emptyList();
+        }
+
+        return aggregate.lterms().buckets().array().stream()
+                .map(bucket -> {
+                    String categoryName = "";
+                    if (bucket.aggregations().containsKey("categoryName")) {
+                        Aggregate nameAgg = bucket.aggregations().get("categoryName");
+                        if (nameAgg.isSterms() && !nameAgg.sterms().buckets().array().isEmpty()) {
+                            categoryName = nameAgg.sterms().buckets().array().get(0).key().stringValue();
+                        }
+                    }
+                    return SearchFilterVO.CategoryAggVO.builder()
+                            .categoryId(bucket.key())
+                            .categoryName(categoryName)
+                            .count(bucket.docCount())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 解析规格聚合（嵌套聚合）
+     */
+    private List<SearchFilterVO.SpecAggVO> parseSpecAggregation(Aggregate aggregate) {
+        if (aggregate == null || !aggregate.isNested()) {
+            return Collections.emptyList();
+        }
+
+        Aggregate specIdAgg = aggregate.nested().aggregations().get("specId");
+        if (specIdAgg == null || !specIdAgg.isLterms()) {
+            return Collections.emptyList();
+        }
+
+        return specIdAgg.lterms().buckets().array().stream()
+                .map(specBucket -> {
+                    // 获取规格名称
+                    String specName = "";
+                    if (specBucket.aggregations().containsKey("specName")) {
+                        Aggregate nameAgg = specBucket.aggregations().get("specName");
+                        if (nameAgg.isSterms() && !nameAgg.sterms().buckets().array().isEmpty()) {
+                            specName = nameAgg.sterms().buckets().array().get(0).key().stringValue();
+                        }
+                    }
+
+                    // 获取展示类型
+                    Integer displayType = 0;
+                    if (specBucket.aggregations().containsKey("displayType")) {
+                        Aggregate typeAgg = specBucket.aggregations().get("displayType");
+                        if (typeAgg.isLterms() && !typeAgg.lterms().buckets().array().isEmpty()) {
+                            displayType = (int) typeAgg.lterms().buckets().array().get(0).key();
+                        }
+                    }
+
+                    // 获取规格值列表
+                    List<SearchFilterVO.SpecValueAggVO> values = new ArrayList<>();
+                    if (specBucket.aggregations().containsKey("specValue")) {
+                        Aggregate valueAgg = specBucket.aggregations().get("specValue");
+                        if (valueAgg.isSterms()) {
+                            values = valueAgg.sterms().buckets().array().stream()
+                                    .map(valueBucket -> {
+                                        // 获取颜色代码
+                                        String colorCode = null;
+                                        if (valueBucket.aggregations().containsKey("colorCode")) {
+                                            Aggregate colorAgg = valueBucket.aggregations().get("colorCode");
+                                            if (colorAgg.isSterms() && !colorAgg.sterms().buckets().array().isEmpty()) {
+                                                colorCode = colorAgg.sterms().buckets().array().get(0).key().stringValue();
+                                            }
+                                        }
+
+                                        // 获取图片
+                                        String image = null;
+                                        if (valueBucket.aggregations().containsKey("image")) {
+                                            Aggregate imageAgg = valueBucket.aggregations().get("image");
+                                            if (imageAgg.isSterms() && !imageAgg.sterms().buckets().array().isEmpty()) {
+                                                image = imageAgg.sterms().buckets().array().get(0).key().stringValue();
+                                            }
+                                        }
+
+                                        return SearchFilterVO.SpecValueAggVO.builder()
+                                                .value(valueBucket.key().stringValue())
+                                                .colorCode(colorCode)
+                                                .image(image)
+                                                .count(valueBucket.docCount())
+                                                .build();
+                                    })
+                                    .collect(Collectors.toList());
+                        }
+                    }
+
+                    return SearchFilterVO.SpecAggVO.builder()
+                            .specId(specBucket.key())
+                            .specName(specName)
+                            .displayType(displayType)
+                            .values(values)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 解析价格区间聚合
+     */
+    private List<SearchFilterVO.PriceRangeVO> parsePriceAggregation(Aggregate aggregate) {
+        if (aggregate == null || !aggregate.isRange()) {
+            return Collections.emptyList();
+        }
+
+        return aggregate.range().buckets().array().stream()
+                .map(bucket -> {
+                    String key = bucket.key() != null ? bucket.key() : "";
+                    String label = "¥" + key.replace("-", "-¥").replace("+", "以上");
+
+                    return SearchFilterVO.PriceRangeVO.builder()
+                            .key(key)
+                            .label(label)
+                            .from(bucket.from() != null ? BigDecimal.valueOf(bucket.from()) : null)
+                            .to(bucket.to() != null ? BigDecimal.valueOf(bucket.to()) : null)
+                            .count(bucket.docCount())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 转换为 VO 列表
+     */
+    private List<SpuSearchResultVO> convertToVoList(List<SpuDocument> docs) {
+        return docs.stream()
+                .map(doc -> SpuSearchResultVO.builder()
+                        .spuId(doc.getSpuId())
+                        .name(doc.getName())
+                        .subTitle(doc.getSubTitle())
+                        .pic(doc.getPic())
+                        .brandId(doc.getBrandId())
+                        .brandName(doc.getBrandName())
+                        .categoryId(doc.getCategoryId())
+                        .categoryName(doc.getCategoryName())
+                        .minPrice(doc.getMinPrice())
+                        .maxPrice(doc.getMaxPrice())
+                        .sale(doc.getSale())
+                        .inStock(doc.getInStock())
+                        .isNew(Integer.valueOf(1).equals(doc.getNewStatus()))
+                        .build())
+                .collect(Collectors.toList());
     }
 }

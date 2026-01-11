@@ -1,11 +1,17 @@
 package com.mallease.product.service.impl;
 
+import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.BrandDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.LoginContextUtil;
+import com.mallease.product.converter.BrandConverter;
 import com.mallease.product.dao.BrandDao;
 import com.mallease.product.model.data.entity.Brand;
 import com.mallease.product.service.BrandService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,9 +22,10 @@ import java.util.List;
  * @create: 2025-11-10 18:43
  **/
 @Service
+@RequiredArgsConstructor
 public class BrandServiceImpl implements BrandService {
-    @Autowired
-    private BrandDao brandDao;
+    private final BrandDao brandDao;
+    private final BrandConverter brandConverter;
 
     @Override
     public List<Brand> list(String keyword) {
@@ -26,6 +33,7 @@ public class BrandServiceImpl implements BrandService {
         return list;
     }
 
+    @CacheEvict(value = "product:brand", key = "'portal'")
     @Override
     public Long create(Brand brand) {
         // 设置默认值
@@ -57,6 +65,7 @@ public class BrandServiceImpl implements BrandService {
         return brand;
     }
 
+    @CacheEvict(value = "product:brand", key = "'portal'")
     @Override
     public int update(Brand brand) {
         // 先检查品牌是否存在
@@ -73,6 +82,7 @@ public class BrandServiceImpl implements BrandService {
         throw new ApiException("更新品牌失败");
     }
 
+    @CacheEvict(value = "product:brand", key = "'portal'")
     @Override
     public int delete(Long id) {
         // 先检查品牌是否存在
@@ -87,6 +97,7 @@ public class BrandServiceImpl implements BrandService {
         return result;
     }
 
+    @CacheEvict(value = "product:brand", key = "'portal'")
     @Override
     public int updateShowStatusBatch(List<Long> ids, Integer showStatus) {
         if (ids == null || ids.isEmpty()) {
@@ -98,6 +109,7 @@ public class BrandServiceImpl implements BrandService {
         return brandDao.updateShowStatusBatch(ids, showStatus);
     }
 
+    @CacheEvict(value = "product:brand", key = "'portal'")
     @Override
     public int updateFactoryStatusBatch(List<Long> ids, Integer factoryStatus) {
         if (ids == null || ids.isEmpty()) {
@@ -115,5 +127,12 @@ public class BrandServiceImpl implements BrandService {
             return List.of();
         }
         return brandDao.selectByIds(ids);
+    }
+
+    @Cacheable(value = "product:brand", key = "'portal'", sync = true)
+    @Override
+    public List<BrandDTO> listEnabledBrands() {
+        List<Brand> brands = brandDao.selectByShowStatus(1);
+        return brandConverter.entityToDTO(brands);
     }
 }

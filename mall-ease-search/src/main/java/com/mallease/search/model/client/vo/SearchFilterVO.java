@@ -42,6 +42,8 @@ public class SearchFilterVO {
     public static class BrandAggVO {
         private Long brandId;
         private String brandName;
+        @Schema(description = "品牌Logo")
+        private String logo;
         private Long count;
     }
 
@@ -64,6 +66,8 @@ public class SearchFilterVO {
     public static class SpecAggVO {
         private Long specId;
         private String specName;
+        @Schema(description = "展示类型：0-文字 1-颜色块 2-图片")
+        private Integer displayType;
         private List<SpecValueAggVO> values;
     }
 
@@ -74,6 +78,10 @@ public class SearchFilterVO {
     @Schema(description = "规格值聚合项")
     public static class SpecValueAggVO {
         private String value;
+        @Schema(description = "颜色代码（displayType=1 时使用）")
+        private String colorCode;
+        @Schema(description = "图片URL（displayType=2 时使用）")
+        private String image;
         private Long count;
     }
 
@@ -83,6 +91,9 @@ public class SearchFilterVO {
     @AllArgsConstructor
     @Schema(description = "价格区间聚合项")
     public static class PriceRangeVO {
+        @Schema(description = "区间标识，如 '0-300'")
+        private String key;
+        @Schema(description = "显示标签，如 '¥0-300'")
         private String label;
         private BigDecimal from;
         private BigDecimal to;

@@ -40,4 +40,22 @@ public class SpuSpecValueDocument implements Serializable {
      */
     @Field(type = FieldType.Keyword)
     private String specValue;
+
+    /**
+     * 展示类型：0-文字 1-颜色块 2-图片
+     */
+    @Field(type = FieldType.Integer)
+    private Integer displayType;
+
+    /**
+     * 颜色代码（displayType=1 时使用），如 "#000000"
+     */
+    @Field(type = FieldType.Keyword)
+    private String colorCode;
+
+    /**
+     * 图片URL（displayType=2 时使用）
+     */
+    @Field(type = FieldType.Keyword)
+    private String image;
 }

@@ -2,6 +2,7 @@ package com.mallease.search.service;
 
 import com.mallease.search.model.data.doc.SpuDocument;
 import com.mallease.search.model.client.query.SpuSearchQuery;
+import com.mallease.search.model.client.vo.SpuSearchPageVO;
 
 import java.util.List;
 
@@ -70,4 +71,12 @@ public interface SpuSearchService {
      * @return 不存在elasticsearch的spuId列表
      */
     List<Long> publish(List<Long> spuIds);
+
+    /**
+     * 带聚合的搜索（返回商品列表 + 筛选面板）
+     *
+     * @param query 搜索查询条件
+     * @return 商品列表 + 筛选面板
+     */
+    SpuSearchPageVO searchWithAggregation(SpuSearchQuery query);
 }

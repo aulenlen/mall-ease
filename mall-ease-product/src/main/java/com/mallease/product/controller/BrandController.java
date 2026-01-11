@@ -5,6 +5,7 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.common.dto.remote.BrandDTO;
 import com.mallease.product.converter.BrandConverter;
 import com.mallease.product.model.client.cmd.BrandCmd;
 import com.mallease.product.model.client.query.BrandQuery;
@@ -59,7 +60,7 @@ public class BrandController {
     @Operation(summary = "创建品牌")
     @PostMapping("/create")
     public R<Long> create(@Validated(BrandCmd.Create.class) @RequestBody BrandCmd cmd) {
-        Brand brand = brandConverter.saveCmdToEntity(cmd);
+        Brand brand = brandConverter.cmdToEntity(cmd);
         Long brandId = brandService.create(brand);
         return R.success(brandId);
     }
@@ -142,5 +143,12 @@ public class BrandController {
             return R.success(count);
         }
         return R.failed(ResultCode.FAILED);
+    }
+
+    // 内部调用
+    @Operation(summary = "获取启用的品牌列表", description = "内部调用")
+    @GetMapping("/internal/list")
+    public R<List<BrandDTO>> listEnabledBrands() {
+        return R.success(brandService.listEnabledBrands());
     }
 }

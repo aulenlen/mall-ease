@@ -1,5 +1,7 @@
 package com.mallease.product.service;
 
+import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.BrandDTO;
 import com.mallease.product.model.data.entity.Brand;
 
 import java.util.List;
@@ -74,4 +76,10 @@ public interface BrandService {
      * @return 品牌列表
      */
     List<Brand> listByIds(List<Long> ids);
+
+    /**
+     * 获取showstatus为启用的品牌列表
+     * @return 品牌列表
+     */
+    List<BrandDTO> listEnabledBrands();
 }
