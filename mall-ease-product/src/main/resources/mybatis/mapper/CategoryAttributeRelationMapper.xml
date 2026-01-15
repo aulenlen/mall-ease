@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dao.CategoryAttributeRelationDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.CategoryAttributeRelation">
+        <id column="id" property="id"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="attr_id" property="attrId"/>
+        <result column="group_name" property="groupName"/>
+        <result column="sort" property="sort"/>
+        <result column="required" property="required"/>
+        <result column="options" property="options"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, category_id, attr_id, group_name, sort, required, options, create_time, update_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_category_attribute_relation
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByCategoryId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_category_attribute_relation
+        WHERE category_id = #{categoryId}
+        ORDER BY group_name, sort
+    </select>
+
+    <select id="selectByCategoryIdAndType" resultMap="BaseResultMap">
+        SELECT r.id, r.category_id, r.attr_id, r.group_name, r.sort, r.required, r.options, r.create_time, r.update_time
+        FROM product_category_attribute_relation r
+        INNER JOIN product_attribute a ON r.attr_id = a.id
+        WHERE r.category_id = #{categoryId} AND a.type = #{type} AND a.deleted = 0
+        ORDER BY r.group_name, r.sort
+    </select>
+
+    <select id="selectByAttrId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_category_attribute_relation
+        WHERE attr_id = #{attrId}
+    </select>
+
+    <select id="selectByCategoryIdAndAttrId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_category_attribute_relation
+        WHERE category_id = #{categoryId} AND attr_id = #{attrId}
+    </select>
+
+    <select id="selectUnbindAttrIds" resultType="java.lang.Long">
+        SELECT a.id
+        FROM product_attribute a
+        WHERE a.deleted = 0
+          AND a.id NOT IN (
+              SELECT attr_id FROM product_category_attribute_relation WHERE category_id = #{categoryId}
+          )
+        ORDER BY a.type, a.id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_category_attribute_relation (
+            category_id, attr_id, group_name, sort, required, options, create_time, update_time
+        ) VALUES (
+            #{categoryId}, #{attrId}, #{groupName}, #{sort}, #{required}, #{options}, NOW(), NOW()
+        )
+    </insert>
+
+    <insert id="insertBatch">
+        INSERT INTO product_category_attribute_relation (
+            category_id, attr_id, group_name, sort, required, options, create_time, update_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.categoryId}, #{item.attrId}, #{item.groupName}, #{item.sort}, #{item.required}, #{item.options}, NOW(), NOW())
+        </foreach>
+    </insert>
+
+    <update id="updateById">
+        UPDATE product_category_attribute_relation
+        <set>
+            <if test="groupName != null">group_name = #{groupName},</if>
+            <if test="sort != null">sort = #{sort},</if>
+            <if test="required != null">required = #{required},</if>
+            <if test="options != null">options = #{options},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM product_category_attribute_relation WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByCategoryIdAndAttrId">
+        DELETE FROM product_category_attribute_relation
+        WHERE category_id = #{categoryId} AND attr_id = #{attrId}
+    </delete>
+
+    <delete id="deleteByCategoryId">
+        DELETE FROM product_category_attribute_relation WHERE category_id = #{categoryId}
+    </delete>
+
+    <delete id="deleteByAttrId">
+        DELETE FROM product_category_attribute_relation WHERE attr_id = #{attrId}
+    </delete>
+
+    <delete id="deleteByAttrIds">
+        DELETE FROM product_category_attribute_relation WHERE attr_id IN
+        <foreach collection="attrIds" item="attrId" open="(" separator="," close=")">
+            #{attrId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteByCategoryIdAndAttrIds">
+        DELETE FROM product_category_attribute_relation
+        WHERE category_id = #{categoryId}
+        AND attr_id IN
+        <foreach collection="attrIds" item="attrId" open="(" separator="," close=")">
+            #{attrId}
+        </foreach>
+    </delete>
+
+    <update id="updateBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE product_category_attribute_relation
+            SET group_name = #{item.groupName},
+                sort = #{item.sort},
+                required = #{item.required},
+                options = #{item.options},
+                update_time = NOW()
+            WHERE category_id = #{item.categoryId} AND attr_id = #{item.attrId}
+        </foreach>
+    </update>
+
+</mapper>

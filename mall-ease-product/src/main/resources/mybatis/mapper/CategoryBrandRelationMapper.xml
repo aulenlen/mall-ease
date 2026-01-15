@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dao.CategoryBrandRelationDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.CategoryBrandRelation">
+        <id column="id" property="id"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="brand_id" property="brandId"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, category_id, brand_id, create_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_category_brand_relation
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByCategoryId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_category_brand_relation
+        WHERE category_id = #{categoryId}
+        ORDER BY id
+    </select>
+
+    <select id="selectByBrandId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_category_brand_relation
+        WHERE brand_id = #{brandId}
+    </select>
+
+    <select id="selectByCategoryIdAndBrandId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_category_brand_relation
+        WHERE category_id = #{categoryId} AND brand_id = #{brandId}
+    </select>
+
+    <select id="selectBrandIdsByCategoryId" resultType="java.lang.Long">
+        SELECT brand_id
+        FROM product_category_brand_relation
+        WHERE category_id = #{categoryId}
+    </select>
+
+    <select id="selectUnbindBrandIds" resultType="java.lang.Long">
+        SELECT b.id
+        FROM product_brand b
+        WHERE b.show_status = 1
+          AND NOT EXISTS (
+              SELECT 1 FROM product_category_brand_relation r
+              WHERE r.category_id = #{categoryId} AND r.brand_id = b.id
+          )
+        ORDER BY b.id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_category_brand_relation (
+            category_id, brand_id, create_time
+        ) VALUES (
+            #{categoryId}, #{brandId}, NOW()
+        )
+    </insert>
+
+    <insert id="insertBatch">
+        INSERT INTO product_category_brand_relation (
+            category_id, brand_id, create_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.categoryId}, #{item.brandId}, NOW())
+        </foreach>
+    </insert>
+
+    <delete id="deleteById">
+        DELETE FROM product_category_brand_relation WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByCategoryIdAndBrandId">
+        DELETE FROM product_category_brand_relation
+        WHERE category_id = #{categoryId} AND brand_id = #{brandId}
+    </delete>
+
+    <delete id="deleteByCategoryId">
+        DELETE FROM product_category_brand_relation WHERE category_id = #{categoryId}
+    </delete>
+
+    <delete id="deleteByBrandId">
+        DELETE FROM product_category_brand_relation WHERE brand_id = #{brandId}
+    </delete>
+
+    <delete id="deleteByCategoryIdAndBrandIds">
+        DELETE FROM product_category_brand_relation
+        WHERE category_id = #{categoryId}
+        AND brand_id IN
+        <foreach collection="brandIds" item="brandId" open="(" separator="," close=")">
+            #{brandId}
+        </foreach>
+    </delete>
+
+</mapper>

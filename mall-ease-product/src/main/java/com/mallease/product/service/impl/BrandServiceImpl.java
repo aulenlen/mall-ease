@@ -6,14 +6,19 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.LoginContextUtil;
 import com.mallease.product.converter.BrandConverter;
 import com.mallease.product.dao.BrandDao;
+import com.mallease.product.dao.CategoryBrandRelationDao;
 import com.mallease.product.model.data.entity.Brand;
+import com.mallease.product.model.data.entity.CategoryBrandRelation;
 import com.mallease.product.service.BrandService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -26,6 +31,7 @@ import java.util.List;
 public class BrandServiceImpl implements BrandService {
     private final BrandDao brandDao;
     private final BrandConverter brandConverter;
+    private final CategoryBrandRelationDao categoryBrandRelationDao;
 
     @Override
     public List<Brand> list(String keyword) {
@@ -134,5 +140,92 @@ public class BrandServiceImpl implements BrandService {
     public List<BrandDTO> listEnabledBrands() {
         List<Brand> brands = brandDao.selectByShowStatus(1);
         return brandConverter.entityToDTO(brands);
+    }
+
+    // ==================== 分类关联品牌 ====================
+
+    @Override
+    public int bindCategory(Long categoryId, Long brandId) {
+        // 检查是否已关联
+        CategoryBrandRelation existing = categoryBrandRelationDao.selectByCategoryIdAndBrandId(categoryId, brandId);
+        if (existing != null) {
+            throw new ApiException("该分类已关联此品牌");
+        }
+
+        CategoryBrandRelation entity = new CategoryBrandRelation();
+        entity.setCategoryId(categoryId);
+        entity.setBrandId(brandId);
+        return categoryBrandRelationDao.insert(entity);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int bindCategoryBatch(Long categoryId, List<Long> brandIds) {
+        if (CollectionUtils.isEmpty(brandIds)) {
+            return 0;
+        }
+
+        List<CategoryBrandRelation> entities = brandIds.stream()
+                .map(brandId -> {
+                    CategoryBrandRelation entity = new CategoryBrandRelation();
+                    entity.setCategoryId(categoryId);
+                    entity.setBrandId(brandId);
+                    return entity;
+                })
+                .toList();
+
+        return categoryBrandRelationDao.insertBatch(entities);
+    }
+
+    @Override
+    public int unbindCategory(Long categoryId, Long brandId) {
+        return categoryBrandRelationDao.deleteByCategoryIdAndBrandId(categoryId, brandId);
+    }
+
+    @Override
+    public List<Brand> listByCategory(Long categoryId) {
+        List<Long> brandIds = categoryBrandRelationDao.selectBrandIdsByCategoryId(categoryId);
+        if (CollectionUtils.isEmpty(brandIds)) {
+            return Collections.emptyList();
+        }
+        return brandDao.selectByIds(brandIds);
+    }
+
+    @Override
+    public List<Brand> listUnbindByCategory(Long categoryId) {
+        List<Long> unbindBrandIds = categoryBrandRelationDao.selectUnbindBrandIds(categoryId);
+        if (CollectionUtils.isEmpty(unbindBrandIds)) {
+            return Collections.emptyList();
+        }
+        return brandDao.selectByIds(unbindBrandIds);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int copyFromParent(Long parentCategoryId, Long childCategoryId) {
+        List<CategoryBrandRelation> parentRelations = categoryBrandRelationDao.selectByCategoryId(parentCategoryId);
+        if (CollectionUtils.isEmpty(parentRelations)) {
+            return 0;
+        }
+
+        List<CategoryBrandRelation> childRelations = parentRelations.stream()
+                .map(parent -> {
+                    CategoryBrandRelation child = new CategoryBrandRelation();
+                    child.setCategoryId(childCategoryId);
+                    child.setBrandId(parent.getBrandId());
+                    return child;
+                })
+                .toList();
+
+        return categoryBrandRelationDao.insertBatch(childRelations);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int unbindCategoryBatch(Long categoryId, List<Long> brandIds) {
+        if (CollectionUtils.isEmpty(brandIds)) {
+            return 0;
+        }
+        return categoryBrandRelationDao.deleteByCategoryIdAndBrandIds(categoryId, brandIds);
     }
 }

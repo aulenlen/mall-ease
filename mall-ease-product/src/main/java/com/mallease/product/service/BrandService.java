@@ -82,4 +82,45 @@ public interface BrandService {
      * @return 品牌列表
      */
     List<BrandDTO> listEnabledBrands();
+
+    // ==================== 分类关联品牌 ====================
+
+    /**
+     * 为分类关联品牌
+     */
+    int bindCategory(Long categoryId, Long brandId);
+
+    /**
+     * 批量为分类关联品牌
+     */
+    int bindCategoryBatch(Long categoryId, List<Long> brandIds);
+
+    /**
+     * 解除分类与品牌的关联
+     */
+    int unbindCategory(Long categoryId, Long brandId);
+
+    /**
+     * 查询分类已关联的品牌
+     */
+    List<Brand> listByCategory(Long categoryId);
+
+    /**
+     * 查询分类未关联的品牌（供勾选弹窗）
+     */
+    List<Brand> listUnbindByCategory(Long categoryId);
+
+    /**
+     * 从父分类复制品牌关联
+     */
+    int copyFromParent(Long parentCategoryId, Long childCategoryId);
+
+    /**
+     * 批量解绑品牌
+     *
+     * @param categoryId 分类ID
+     * @param brandIds   品牌ID列表
+     * @return 解绑数量
+     */
+    int unbindCategoryBatch(Long categoryId, List<Long> brandIds);
 }

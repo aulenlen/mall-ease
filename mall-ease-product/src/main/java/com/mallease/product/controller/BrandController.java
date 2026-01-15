@@ -7,6 +7,7 @@ import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.common.dto.remote.BrandDTO;
 import com.mallease.product.converter.BrandConverter;
+import com.mallease.product.model.client.cmd.BatchUnbindBrandCmd;
 import com.mallease.product.model.client.cmd.BrandCmd;
 import com.mallease.product.model.client.query.BrandQuery;
 import com.mallease.product.model.client.vo.BrandDetailVO;
@@ -145,10 +146,57 @@ public class BrandController {
         return R.failed(ResultCode.FAILED);
     }
 
+    // 分类关联品牌
+
+    @Operation(summary = "为分类关联品牌")
+    @PostMapping("/bindCategory")
+    public R<Integer> bindCategory(@RequestParam Long categoryId, @RequestParam Long brandId) {
+        return R.success(brandService.bindCategory(categoryId, brandId));
+    }
+
+    @Operation(summary = "批量为分类关联品牌")
+    @PostMapping("/bindCategory/batch/{categoryId}")
+    public R<Integer> bindCategoryBatch(@PathVariable Long categoryId, @RequestBody List<Long> brandIds) {
+        return R.success(brandService.bindCategoryBatch(categoryId, brandIds));
+    }
+
+    @Operation(summary = "解除分类与品牌的关联")
+    @PostMapping("/unbindCategory")
+    public R<Integer> unbindCategory(@RequestParam Long categoryId, @RequestParam Long brandId) {
+        return R.success(brandService.unbindCategory(categoryId, brandId));
+    }
+
+    @Operation(summary = "查询分类已关联的品牌")
+    @GetMapping("/listByCategory/{categoryId}")
+    public R<List<BrandListVO>> listByCategory(@PathVariable Long categoryId) {
+        List<Brand> brands = brandService.listByCategory(categoryId);
+        return R.success(brandConverter.entityListToListVoList(brands));
+    }
+
+    @Operation(summary = "查询分类未关联的品牌（供勾选弹窗）")
+    @GetMapping("/listUnbind/{categoryId}")
+    public R<List<BrandListVO>> listUnbindByCategory(@PathVariable Long categoryId) {
+        List<Brand> brands = brandService.listUnbindByCategory(categoryId);
+        return R.success(brandConverter.entityListToListVoList(brands));
+    }
+
+    @Operation(summary = "从父分类复制品牌关联")
+    @PostMapping("/copyFromParent")
+    public R<Integer> copyFromParent(@RequestParam Long parentCategoryId, @RequestParam Long childCategoryId) {
+        return R.success(brandService.copyFromParent(parentCategoryId, childCategoryId));
+    }
+
+    @Operation(summary = "批量解绑品牌")
+    @PostMapping("/unbindCategory/batch")
+    public R<Integer> unbindCategoryBatch(@Validated @RequestBody BatchUnbindBrandCmd cmd) {
+        return R.success(brandService.unbindCategoryBatch(cmd.getCategoryId(), cmd.getBrandIds()));
+    }
+
     // 内部调用
     @Operation(summary = "获取启用的品牌列表", description = "内部调用")
     @GetMapping("/internal/list")
     public R<List<BrandDTO>> listEnabledBrands() {
         return R.success(brandService.listEnabledBrands());
     }
+
 }
