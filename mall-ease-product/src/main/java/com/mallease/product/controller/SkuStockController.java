@@ -84,15 +84,15 @@ public class SkuStockController {
         String spuName = spuList.isEmpty() ? null : spuList.get(0).getName();
 
         List<Sku> skuList = skuService.listBySpuId(spuId);
-        Map<Long, String> skuSpecMap = skuList.stream()
-                .collect(Collectors.toMap(Sku::getId, Sku::getSpecValues, (a, b) -> a));
-        
+        Map<Long, String> skuAttrMap = skuList.stream()
+                .collect(Collectors.toMap(Sku::getId, Sku::getAttrValues, (a, b) -> a));
+
         List<SkuStockVO> voList = skuStockConverter.entityListToVoList(stockList);
         for (SkuStockVO vo : voList) {
             vo.setSpuName(spuName);
-            String specValuesJson = skuSpecMap.get(vo.getSkuId());
-            vo.setSpecValues(specValuesJson);
-            vo.setSpecValuesObj(skuStockConverter.parseSpecValues(specValuesJson));
+            String attrValuesJson = skuAttrMap.get(vo.getSkuId());
+            vo.setAttrValues(attrValuesJson);
+            vo.setAttrValuesObj(skuStockConverter.parseAttrValues(attrValuesJson));
         }
 
         return R.success(voList);
