@@ -1,19 +1,29 @@
 package com.mallease.product.service.impl;
 
+import cn.hutool.core.util.IdUtil;
 import com.mallease.common.dto.remote.CategoryDTO;
 import com.mallease.common.dto.remote.CategoryTreeDTO;
-import com.mallease.product.constant.RedisKey;
 import com.mallease.common.exception.ApiException;
 import com.mallease.product.component.CacheService;
+import com.mallease.product.converter.AttributeConverter;
+import com.mallease.product.converter.BrandConverter;
 import com.mallease.product.converter.CategoryConverter;
 import com.mallease.product.dao.CategoryDao;
 import com.mallease.product.model.client.query.CategoryQuery;
+import com.mallease.product.model.client.vo.CategoryAttributeVO;
+import com.mallease.product.model.client.vo.CategoryConfigSnapshotVO;
+import com.mallease.product.model.data.entity.Attribute;
+import com.mallease.product.model.data.entity.Brand;
 import com.mallease.product.model.data.entity.Category;
+import com.mallease.product.model.data.entity.CategoryAttributeRelation;
+import com.mallease.product.service.AttributeService;
+import com.mallease.product.service.BrandService;
 import com.mallease.product.service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -46,6 +56,16 @@ public class CategoryServiceImpl implements CategoryService {
     private CategoryDao categoryDao;
     @Autowired
     private CategoryConverter categoryConverter;
+    @Autowired
+    @Lazy
+    private AttributeService attributeService;
+    @Autowired
+    @Lazy
+    private BrandService brandService;
+    @Autowired
+    private AttributeConverter attributeConverter;
+    @Autowired
+    private BrandConverter brandConverter;
 
     @CacheEvict(value = "product:category", allEntries = true)
     @Override
@@ -330,5 +350,58 @@ public class CategoryServiceImpl implements CategoryService {
 
         log.info("导航分类数据加载完成，节点数: {}, 耗时: {}ms", entities.size(), System.currentTimeMillis() - start);
         return result;
+    }
+
+    @Override
+    public CategoryConfigSnapshotVO getCategoryConfigSnapshot(Long categoryId) {
+
+        Category category = categoryDao.selectByPrimaryKey(categoryId);
+        if (category == null) {
+            throw new ApiException("分类不存在");
+        }
+
+        Map<Long, Long> childCountMap = countChildrenByParentIds(List.of(categoryId));
+        boolean isLeaf = childCountMap.getOrDefault(categoryId, 0L) == 0;
+
+        CategoryConfigSnapshotVO vo = new CategoryConfigSnapshotVO();
+        vo.setCategoryId(category.getId());
+        vo.setCategoryName(category.getName());
+        vo.setParentId(category.getParentId());
+        vo.setPath(category.getPath());
+        vo.setLevel(category.getLevel());
+        vo.setIsLeaf(isLeaf);
+        vo.setTraceId(IdUtil.fastSimpleUUID());
+
+        if (isLeaf) {
+
+            List<CategoryAttributeRelation> specRelations = attributeService.listSpecsByCategory(categoryId);
+            vo.setSpecs(buildCategoryAttributeVOList(specRelations));
+
+            List<CategoryAttributeRelation> paramRelations = attributeService.listParamsByCategory(categoryId);
+            vo.setParams(buildCategoryAttributeVOList(paramRelations));
+
+            List<Brand> brands = brandService.listByCategory(categoryId);
+            vo.setBrands(brandConverter.entityListToListVoList(brands));
+        } else {
+            vo.setSpecs(Collections.emptyList());
+            vo.setParams(Collections.emptyList());
+            vo.setBrands(Collections.emptyList());
+        }
+
+        return vo;
+    }
+
+    /**
+     * 构建分类属性视图对象列表
+     */
+    private List<CategoryAttributeVO> buildCategoryAttributeVOList(List<CategoryAttributeRelation> relations) {
+        if (CollectionUtils.isEmpty(relations)) {
+            return Collections.emptyList();
+        }
+        List<Long> attrIds = relations.stream()
+                .map(CategoryAttributeRelation::getAttrId)
+                .toList();
+        List<Attribute> attributes = attributeService.listByIds(attrIds);
+        return attributeConverter.buildCategoryAttributeVOList(relations, attributes);
     }
 }

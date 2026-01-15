@@ -3,7 +3,7 @@ package com.mallease.product.service;
 import com.mallease.common.dto.remote.CategoryDTO;
 import com.mallease.common.dto.remote.CategoryTreeDTO;
 import com.mallease.product.model.client.query.CategoryQuery;
-import com.mallease.product.model.client.vo.CategoryTreeVO;
+import com.mallease.product.model.client.vo.CategoryConfigSnapshotVO;
 import com.mallease.product.model.data.entity.Category;
 
 import java.util.List;
@@ -162,4 +162,13 @@ public interface CategoryService {
      * @return 导航分类 DTO 列表
      */
     List<CategoryDTO> listNavCategories();
+
+    /**
+     * 获取分类快照（聚合接口）
+     * 一次请求返回 category + specs + params + brands
+     *
+     * @param categoryId 分类ID
+     * @return 聚合快照
+     */
+    CategoryConfigSnapshotVO getCategoryConfigSnapshot(Long categoryId);
 }

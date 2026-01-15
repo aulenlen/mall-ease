@@ -12,6 +12,7 @@ import com.mallease.product.model.client.vo.CategoryDetailVO;
 import com.mallease.product.model.client.vo.CategoryListVO;
 
 import com.mallease.product.model.client.vo.CategoryTreeVO;
+import com.mallease.product.model.client.vo.CategoryConfigSnapshotVO;
 import com.mallease.product.model.data.entity.Category;
 import com.mallease.product.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -196,6 +197,15 @@ public class CategoryController {
     @GetMapping("/internal/portalTree")
     public R<List<CategoryTreeDTO>> portalTree() {
         return R.success(categoryService.portalTree());
+    }
+
+    // 分类配置\类目配置
+
+    @Operation(summary = "获取分类快照", description = "一次请求返回 category + specs + params + brands")
+    @GetMapping("/snapshot/{categoryId}")
+    public R<CategoryConfigSnapshotVO> getCategoryConfigSnapshot(
+            @Parameter(description = "分类ID") @PathVariable Long categoryId) {
+        return R.success(categoryService.getCategoryConfigSnapshot(categoryId));
     }
 
     /**
