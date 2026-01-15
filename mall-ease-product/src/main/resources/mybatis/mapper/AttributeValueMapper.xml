@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dao.AttributeValueDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.AttributeValue">
+        <id column="id" property="id"/>
+        <result column="spu_id" property="spuId"/>
+        <result column="sku_id" property="skuId"/>
+        <result column="attr_id" property="attrId"/>
+        <result column="attr_name" property="attrName"/>
+        <result column="attr_value" property="attrValue"/>
+        <result column="deleted" property="deleted"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, spu_id, sku_id, attr_id, attr_name, attr_value, deleted, create_time, update_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute_value
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectBySpuId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute_value
+        WHERE spu_id = #{spuId} AND deleted = 0
+    </select>
+
+    <select id="selectParamsBySpuId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute_value
+        WHERE spu_id = #{spuId} AND sku_id IS NULL AND deleted = 0
+    </select>
+
+    <select id="selectParamsBySpuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute_value
+        WHERE deleted = 0 AND sku_id IS NULL AND spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+            #{spuId}
+        </foreach>
+    </select>
+
+    <select id="selectSpecsBySkuId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute_value
+        WHERE sku_id = #{skuId} AND deleted = 0
+    </select>
+
+    <select id="selectSpecsBySkuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute_value
+        WHERE deleted = 0 AND sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+            #{skuId}
+        </foreach>
+    </select>
+
+    <select id="selectByAttrId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute_value
+        WHERE attr_id = #{attrId} AND deleted = 0
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_attribute_value (
+            spu_id, sku_id, attr_id, attr_name, attr_value, deleted, create_time, update_time
+        ) VALUES (
+            #{spuId}, #{skuId}, #{attrId}, #{attrName}, #{attrValue}, 0, NOW(), NOW()
+        )
+    </insert>
+
+    <insert id="insertBatch">
+        INSERT INTO product_attribute_value (
+            spu_id, sku_id, attr_id, attr_name, attr_value, deleted, create_time, update_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.spuId}, #{item.skuId}, #{item.attrId}, #{item.attrName}, #{item.attrValue}, 0, NOW(), NOW())
+        </foreach>
+    </insert>
+
+    <update id="updateById">
+        UPDATE product_attribute_value
+        <set>
+            <if test="attrValue != null">attr_value = #{attrValue},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="deleteById">
+        UPDATE product_attribute_value SET deleted = 1, update_time = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="deleteParamsBySpuId">
+        UPDATE product_attribute_value SET deleted = 1, update_time = NOW()
+        WHERE spu_id = #{spuId} AND sku_id IS NULL
+    </update>
+
+    <update id="deleteSpecsBySkuId">
+        UPDATE product_attribute_value SET deleted = 1, update_time = NOW()
+        WHERE sku_id = #{skuId}
+    </update>
+
+    <update id="deleteSpecsBySkuIds">
+        UPDATE product_attribute_value SET deleted = 1, update_time = NOW()
+        WHERE sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+            #{skuId}
+        </foreach>
+    </update>
+
+    <update id="deleteBySpuId">
+        UPDATE product_attribute_value SET deleted = 1, update_time = NOW()
+        WHERE spu_id = #{spuId}
+    </update>
+
+</mapper>

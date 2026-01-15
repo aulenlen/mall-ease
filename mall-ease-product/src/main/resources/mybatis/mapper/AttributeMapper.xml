@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dao.AttributeDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.Attribute">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="type" property="type"/>
+        <result column="unit" property="unit"/>
+        <result column="entry_method" property="entryMethod"/>
+        <result column="options" property="options"/>
+        <result column="searchable" property="searchable"/>
+        <result column="filterable" property="filterable"/>
+        <result column="deleted" property="deleted"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, type, unit, entry_method, options,
+        searchable, filterable, deleted, create_time, update_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE deleted = 0
+        ORDER BY type, id
+    </select>
+
+    <select id="selectByType" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE type = #{type} AND deleted = 0
+        ORDER BY id
+    </select>
+
+    <select id="selectByName" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE name = #{name} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByNameLike" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE name LIKE CONCAT('%', #{keyword}, '%') AND deleted = 0
+        ORDER BY type, id
+    </select>
+
+    <select id="selectSearchable" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE searchable = 1 AND deleted = 0
+        ORDER BY id
+    </select>
+
+    <select id="selectFilterable" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE filterable = 1 AND deleted = 0
+        ORDER BY id
+    </select>
+
+    <select id="selectByQuery" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE deleted = 0
+        <if test="query.type != null">
+            AND type = #{query.type}
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND name LIKE CONCAT('%', #{query.keyword}, '%')
+        </if>
+        <if test="query.searchable != null">
+            AND searchable = #{query.searchable}
+        </if>
+        <if test="query.filterable != null">
+            AND filterable = #{query.filterable}
+        </if>
+        ORDER BY type, id DESC
+    </select>
+
+    <select id="selectUnbindByCategory" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute
+        WHERE deleted = 0
+          AND id NOT IN (
+              SELECT attr_id FROM product_category_attribute_relation WHERE category_id = #{categoryId}
+          )
+        <if test="query.type != null">
+            AND type = #{query.type}
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND name LIKE CONCAT('%', #{query.keyword}, '%')
+        </if>
+        ORDER BY type, id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_attribute (
+            name, type, unit, entry_method, options,
+            searchable, filterable, deleted, create_time, update_time
+        ) VALUES (
+            #{name}, #{type}, #{unit}, #{entryMethod}, #{options},
+            #{searchable}, #{filterable}, 0, NOW(), NOW()
+        )
+    </insert>
+
+    <insert id="insertBatch">
+        INSERT INTO product_attribute (
+            name, type, unit, entry_method, options,
+            searchable, filterable, deleted, create_time, update_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.name}, #{item.type}, #{item.unit},
+             #{item.entryMethod}, #{item.options}, #{item.searchable},
+             #{item.filterable}, 0, NOW(), NOW())
+        </foreach>
+    </insert>
+
+    <update id="updateById">
+        UPDATE product_attribute
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="entryMethod != null">entry_method = #{entryMethod},</if>
+            <if test="options != null">options = #{options},</if>
+            <if test="searchable != null">searchable = #{searchable},</if>
+            <if test="filterable != null">filterable = #{filterable},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="deleteById">
+        UPDATE product_attribute SET deleted = 1, update_time = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="deleteBatch">
+        UPDATE product_attribute SET deleted = 1, update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>
