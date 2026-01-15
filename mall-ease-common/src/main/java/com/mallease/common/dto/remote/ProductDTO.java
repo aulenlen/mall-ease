@@ -160,7 +160,7 @@ public class ProductDTO {
 
         private String skuCode;
 
-        private String specValues;
+        private String attrValues;
 
         private String pic;
 

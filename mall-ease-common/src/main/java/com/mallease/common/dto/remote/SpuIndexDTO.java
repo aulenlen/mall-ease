@@ -114,14 +114,10 @@ public class SpuIndexDTO {
     private List<Sku> skuList;
 
     /**
-     * 规格列表 - 聚合筛选用
+     * 属性值列表 - 聚合筛选用
+     * 包含规格（type=1，用于筛选）和参数（type=0，用于展示）
      */
-    private List<SpecValue>  specValueList;;
-
-    /**
-     * 参数属性列表 - 搜索展示用
-     */
-    private List<ParamValue> paramValueList;
+    private List<AttrValue> attrValueList;
 
     private Date createTime;
 
@@ -152,65 +148,42 @@ public class SpuIndexDTO {
     }
 
     /**
-     * 规格值（嵌套对象）
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SpecValue implements Serializable {
-        /**
-         * 规格ID（pms_spec.id）
-         */
-        private Long specId;
-
-        /**
-         * 规格名称，如 "颜色"、"内存"
-         */
-        private String specName;
-
-        /**
-         * 规格值，如 "黑色"、"128G"
-         */
-        private String specValue;
-
-        /**
-         * 展示类型：0-文字 1-颜色块 2-图片
-         */
-        private Integer displayType;
-
-        /**
-         * 颜色代码（displayType=1 时使用），如 "#000000"
-         */
-        private String colorCode;
-
-        /**
-         * 图片URL（displayType=2 时使用）
-         */
-        private String image;
-    }
-
-    /**
      * 属性值（嵌套对象）
+     * 统一规格和参数，通过 type 字段区分
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ParamValue implements Serializable {
+    public static class AttrValue implements Serializable {
         /**
-         * 参数ID（pms_param.id）
+         * 属性ID
          */
-        private Long paramId;
+        private Long attrId;
 
         /**
-         * 参数名称，如 "CPU型号"、"屏幕尺寸"
+         * 属性名称，如 "颜色"、"内存"、"CPU型号"
          */
-        private String paramName;
+        private String attrName;
 
         /**
-         * 参数值，如 "骁龙8 Gen3"、"6.82英寸"
+         * 属性值，如 "黑色"、"128G"、"骁龙8 Gen3"
          */
-        private String paramValue;
+        private String attrValue;
+
+        /**
+         * 属性类型：0-参数 1-规格
+         */
+        private Integer type;
+
+        /**
+         * 是否可筛选（规格用于筛选面板）
+         */
+        private Boolean filterable;
+
+        /**
+         * 是否可搜索
+         */
+        private Boolean searchable;
     }
 }

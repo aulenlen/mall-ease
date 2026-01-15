@@ -1,10 +1,9 @@
 package com.mallease.search.converter;
 
 import com.mallease.common.dto.remote.SpuIndexDTO;
+import com.mallease.search.model.data.doc.SpuAttrValueDocument;
 import com.mallease.search.model.data.doc.SpuDocument;
-import com.mallease.search.model.data.doc.SpuParamValueDocument;
 import com.mallease.search.model.data.doc.SpuSkuDocument;
-import com.mallease.search.model.data.doc.SpuSpecValueDocument;
 import org.mapstruct.Mapper;
 
 import java.util.List;
@@ -28,11 +27,7 @@ public interface SpuIndexConverter {
 
     List<SpuSkuDocument> skuListToDocList(List<SpuIndexDTO.Sku> skuList);
 
-    SpuSpecValueDocument specValueToDoc(SpuIndexDTO.SpecValue specValue);
+    SpuAttrValueDocument attrValueToDoc(SpuIndexDTO.AttrValue attrValue);
 
-    List<SpuSpecValueDocument> specValueListToDocList(List<SpuIndexDTO.SpecValue> specValueList);
-
-    SpuParamValueDocument paramValueToDoc(SpuIndexDTO.ParamValue paramValue);
-
-    List<SpuParamValueDocument> paramValueListToDocList(List<SpuIndexDTO.ParamValue> paramValueList);
+    List<SpuAttrValueDocument> attrValueListToDocList(List<SpuIndexDTO.AttrValue> attrValueList);
 }

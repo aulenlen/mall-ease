@@ -155,8 +155,8 @@ public class SpuDetailVO {
     @Schema(description = "SKU列表")
     private List<SkuVO> skuList;
 
-    @Schema(description = "参数属性值列表")
-    private List<SpuParamValueVO> paramValueList;
+    @Schema(description = "属性值列表（参数）")
+    private List<AttrValueVO> attrValueList;
 
     @Schema(description = "满减规则列表")
     private List<SpuFullReductionVO> fullReductionList;
@@ -170,26 +170,26 @@ public class SpuDetailVO {
     // 嵌套VO对象
 
     /**
-     * SPU参数属性值VO
+     * SPU属性值VO
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "SPU参数属性值")
-    public static class SpuParamValueVO {
+    @Schema(description = "SPU属性值")
+    public static class AttrValueVO {
 
         @Schema(description = "主键ID")
         private Long id;
 
-        @Schema(description = "参数ID")
-        private Long paramId;
+        @Schema(description = "属性ID")
+        private Long attrId;
 
-        @Schema(description = "参数名称")
-        private String paramName;
+        @Schema(description = "属性名称")
+        private String attrName;
 
-        @Schema(description = "参数值")
-        private String value;
+        @Schema(description = "属性值")
+        private String attrValue;
     }
 
     /**

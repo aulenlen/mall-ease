@@ -44,30 +44,30 @@ public class SkuVO {
     @Schema(description = "SKU编码")
     private String skuCode;
 
-    @Schema(description = "SKU规格值（JSON格式）")
-    private String specValues;
+    @Schema(description = "SKU属性值（JSON格式）")
+    private String attrValues;
 
-    @Schema(description = "规格值列表（前端展示用）")
-    private List<SkuSpecValue> specValuesObj;
+    @Schema(description = "属性值列表（前端展示用）")
+    private List<AttrValueVO> attrValuesObj;
 
     /**
-     * SKU规格值VO
+     * SKU属性值VO
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "SKU规格值")
-    public static class SkuSpecValue {
+    @Schema(description = "SKU属性值")
+    public static class AttrValueVO {
 
-        @Schema(description = "规格ID")
-        private Long specId;
+        @Schema(description = "属性ID")
+        private Long attrId;
 
-        @Schema(description = "规格名称")
-        private String specName;
+        @Schema(description = "属性名称")
+        private String attrName;
 
-        @Schema(description = "规格值")
-        private String value;
+        @Schema(description = "属性值")
+        private String attrValue;
     }
 
     @Schema(description = "SKU图片URL")

@@ -6,16 +6,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.product.converter.SpuConverter;
-import com.mallease.product.dao.CategoryDao;
 
-import com.mallease.product.dao.ParamDao;
-import com.mallease.product.dao.SpuDao;
-import com.mallease.product.dao.SpuParamValueDao;
 import com.mallease.product.event.SpuPublishEvent;
 import com.mallease.product.feign.SpuSearchFeignClient;
 import com.mallease.product.model.data.entity.*;
+import com.mallease.product.service.AttributeService;
+import com.mallease.product.service.CategoryService;
 import com.mallease.product.service.SkuService;
 import com.mallease.product.service.SpuCacheService;
+import com.mallease.product.service.SpuService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -33,17 +32,15 @@ import java.util.stream.Collectors;
 @Component
 public class SpuPublishListener {
     @Autowired
-    private SpuDao spuDao;
+    private SpuService spuService;
     @Autowired
     private SkuService skuService;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
-    private SpuParamValueDao spuParamValueDao;
+    private AttributeService attributeService;
     @Autowired
-    private CategoryDao categoryDao;
-    @Autowired
-    private ParamDao paramDao;
+    private CategoryService categoryService;
     @Autowired
     private SpuConverter spuConverter;
     @Autowired
@@ -96,7 +93,7 @@ public class SpuPublishListener {
      * @return ES索引DTO列表
      */
     private List<SpuIndexDTO> buildIndex(List<Long> successIds) {
-        List<Spu> pmsSpuList = spuDao.selectByIds(successIds);
+        List<Spu> pmsSpuList = spuService.listByIds(successIds);
         if (pmsSpuList.isEmpty()) {
             return Collections.emptyList();
 
@@ -107,25 +104,42 @@ public class SpuPublishListener {
 
         // 查询分类路径
         List<Long> categoryIds = pmsSpuList.stream().map(Spu::getCategoryId).distinct().toList();
-        List<Category> categoryList = categoryDao.selectByIds(categoryIds);
+        List<Category> categoryList = categoryService.listByIds(categoryIds);
         Map<Long, String> categoryPathMap = categoryList.stream().collect(Collectors.toMap(Category::getId, Category::getPath));
 
         // 查询 SKU 列表
         List<Sku> skuList = skuService.selectBySpuIds(successIds);
         Map<Long, List<Sku>> skuGroupMap = skuList.stream().collect(Collectors.groupingBy(Sku::getSpuId));
 
-        // 查询参数值并关联参数名称
-        List<SpuParamValue> paramValueList = spuParamValueDao.selectBySpuIds(successIds);
-        Map<Long, List<SpuParamValue>> paramValueGroupMap = paramValueList.stream().collect(Collectors.groupingBy(SpuParamValue::getSpuId));
-        Set<Long> paramIds = paramValueList.stream().map(SpuParamValue::getParamId).collect(Collectors.toSet());
-        Map<Long, String> paramNameMap = Map.of();
-        if (!paramIds.isEmpty()) {
-            List<Param> paramList = paramDao.selectByIds(paramIds.stream().toList());
-            paramNameMap = paramList.stream().collect(Collectors.toMap(Param::getId, Param::getName));
+        // 查询属性值（参数，sku_id 为 null）
+        List<AttributeValue> paramValueList = attributeService.listParamValuesBySpuIds(successIds);
+        Map<Long, List<AttributeValue>> paramValueGroupMap = paramValueList.stream().collect(Collectors.groupingBy(AttributeValue::getSpuId));
 
+        // 查询属性定义以获取 filterable、searchable 等信息
+        Set<Long> attrIds = new HashSet<>();
+        paramValueList.forEach(pv -> attrIds.add(pv.getAttrId()));
+        skuList.forEach(sku -> {
+            if (StringUtils.hasText(sku.getAttrValues())) {
+                try {
+                    List<Map<String, Object>> specList = objectMapper.readValue(sku.getAttrValues(), new TypeReference<>() {});
+                    if (specList != null) {
+                        specList.forEach(spec -> {
+                            if (spec.get("attrId") != null) {
+                                attrIds.add(((Number) spec.get("attrId")).longValue());
+                            }
+                        });
+                    }
+                } catch (JsonProcessingException ignored) {}
+            }
+        });
+
+        Map<Long, Attribute> attrMap = Map.of();
+        if (!attrIds.isEmpty()) {
+            List<Attribute> attrList = attributeService.listByIds(attrIds.stream().toList());
+            attrMap = attrList.stream().collect(Collectors.toMap(Attribute::getId, a -> a));
         }
 
-        Map<Long, String> finalParamNameMap = paramNameMap;
+        Map<Long, Attribute> finalAttrMap = attrMap;
         for (Spu spu : pmsSpuList) {
             SpuIndexDTO dto = indexMap.get(spu.getId());
             dto.setInStock(spu.getStock() != null && spu.getStock() > 0);
@@ -142,11 +156,13 @@ public class SpuPublishListener {
             ).toList();
             dto.setSkuList(dtoSkuList);
 
-            // 构建规格值列表（从 SKU 的 specValues JSON 解析）
+            // 构建属性值列表（合并 SKU 规格和 SPU 参数）
+            List<SpuIndexDTO.AttrValue> allAttrValues = new ArrayList<>();
+
+            // 1. 从 SKU 的 attrValues JSON 解析规格属性（type=1）
             Set<String> seenSpecs = new HashSet<>();
-            List<SpuIndexDTO.SpecValue> allSpecValues = new ArrayList<>();
             for (Sku sku : spuSkuList) {
-                String jsonString = sku.getSpecValues();
+                String jsonString = sku.getAttrValues();
                 if (!StringUtils.hasText(jsonString)) {
                     continue;
                 }
@@ -159,37 +175,46 @@ public class SpuPublishListener {
                     }
 
                     for (Map<String, Object> spec : specList) {
-                        Long specId = spec.get("specId") != null ? ((Number) spec.get("specId")).longValue() : null;
-                        String specName = (String) spec.get("specName");
-                        String specValue = (String) spec.get("value");
-                        String uniqueKey = (specId != null ? specId : specName) + ":" + specValue;
+                        Long attrId = spec.get("attrId") != null ? ((Number) spec.get("attrId")).longValue() : null;
+                        String attrName = (String) spec.get("attrName");
+                        String attrValue = (String) spec.get("attrValue");
+                        String uniqueKey = (attrId != null ? attrId : attrName) + ":" + attrValue;
                         if (seenSpecs.contains(uniqueKey)) {
                             continue;
                         }
                         seenSpecs.add(uniqueKey);
-                        allSpecValues.add(SpuIndexDTO.SpecValue.builder()
-                                .specId(specId)
-                                .specName(specName)
-                                .specValue(specValue)
+
+                        // 获取属性定义信息
+                        Attribute attr = attrId != null ? finalAttrMap.get(attrId) : null;
+                        allAttrValues.add(SpuIndexDTO.AttrValue.builder()
+                                .attrId(attrId)
+                                .attrName(attrName)
+                                .attrValue(attrValue)
+                                .type(1) // 规格
+                                .filterable(attr != null && Integer.valueOf(1).equals(attr.getFilterable()))
+                                .searchable(attr != null && Integer.valueOf(1).equals(attr.getSearchable()))
                                 .build());
                     }
                 } catch (JsonProcessingException e) {
-                    log.warn("解析 SKU 规格值失败，skuId={}, json={}", sku.getId(), jsonString, e);
+                    log.warn("解析 SKU 属性值失败，skuId={}, json={}", sku.getId(), jsonString, e);
                 }
             }
 
-            dto.setSpecValueList(allSpecValues);
+            // 2. 添加 SPU 参数属性（type=0）
+            List<AttributeValue> spuParamValues = paramValueGroupMap.getOrDefault(spu.getId(), Collections.emptyList());
+            for (AttributeValue pv : spuParamValues) {
+                Attribute attr = finalAttrMap.get(pv.getAttrId());
+                allAttrValues.add(SpuIndexDTO.AttrValue.builder()
+                        .attrId(pv.getAttrId())
+                        .attrName(pv.getAttrName())
+                        .attrValue(pv.getAttrValue())
+                        .type(0) // 参数
+                        .filterable(attr != null && Integer.valueOf(1).equals(attr.getFilterable()))
+                        .searchable(attr != null && Integer.valueOf(1).equals(attr.getSearchable()))
+                        .build());
+            }
 
-            // 构建参数值列表
-            List<SpuParamValue> spuParamValues = paramValueGroupMap.getOrDefault(spu.getId(), Collections.emptyList());
-            List<SpuIndexDTO.ParamValue> paramValuesDTO = spuParamValues.stream()
-                    .map(pv -> SpuIndexDTO.ParamValue.builder()
-                            .paramId(pv.getParamId())
-                            .paramName(finalParamNameMap.get(pv.getParamId()))
-                            .paramValue(pv.getValue())
-                            .build())
-                    .toList();
-            dto.setParamValueList(paramValuesDTO);
+            dto.setAttrValueList(allAttrValues);
         }
 
         return spuIndexDTOList;

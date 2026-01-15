@@ -313,21 +313,21 @@ public class SpuSearchServiceImpl implements SpuSearchService {
             hasPostFilter = true;
         }
 
-        // 规格筛选（嵌套查询）
+        // 属性筛选（嵌套查询，仅筛选 filterable=true 的规格属性）
         if (!CollectionUtils.isEmpty(query.getSpecs())) {
             for (String spec : query.getSpecs()) {
                 String[] parts = spec.split(":");
                 if (parts.length == 2) {
-                    Long specId = Long.parseLong(parts[0]);
-                    String specValue = parts[1];
+                    Long attrId = Long.parseLong(parts[0]);
+                    String attrValue = parts[1];
 
                     postFilterBuilder.filter(Query.of(q -> q.nested(n -> n
-                            .path("specValueList")
+                            .path("attrValueList")
                             .query(nq -> nq.bool(nb -> nb
                                     .must(Query.of(mq -> mq.term(t -> t
-                                            .field("specValueList.specId").value(specId))))
+                                            .field("attrValueList.attrId").value(attrId))))
                                     .must(Query.of(mq -> mq.term(t -> t
-                                            .field("specValueList.specValue").value(specValue)))))))));
+                                            .field("attrValueList.attrValue").value(attrValue)))))))));
                     hasPostFilter = true;
                 }
             }
@@ -351,21 +351,17 @@ public class SpuSearchServiceImpl implements SpuSearchService {
                 .aggregations("categoryName", Aggregation.of(sa -> sa
                         .terms(st -> st.field("categoryName").size(1)))));
 
-        // 规格聚合（嵌套聚合）
-        Aggregation specAgg = Aggregation.of(a -> a
-                .nested(n -> n.path("specValueList"))
-                .aggregations("specId", Aggregation.of(sa -> sa
-                        .terms(t -> t.field("specValueList.specId").size(20))
-                        .aggregations("specName", Aggregation.of(sna -> sna
-                                .terms(st -> st.field("specValueList.specName").size(1))))
-                        .aggregations("displayType", Aggregation.of(dta -> dta
-                                .terms(st -> st.field("specValueList.displayType").size(1))))
-                        .aggregations("specValue", Aggregation.of(sva -> sva
-                                .terms(st -> st.field("specValueList.specValue").size(50))
-                                .aggregations("colorCode", Aggregation.of(cca -> cca
-                                        .terms(ct -> ct.field("specValueList.colorCode").size(1))))
-                                .aggregations("image", Aggregation.of(ia -> ia
-                                        .terms(it -> it.field("specValueList.image").size(1)))))))));
+        // 属性聚合（嵌套聚合，仅聚合 filterable=true 的规格属性）
+        Aggregation attrAgg = Aggregation.of(a -> a
+                .nested(n -> n.path("attrValueList"))
+                .aggregations("filteredAttrs", Aggregation.of(fa -> fa
+                        .filter(f -> f.term(t -> t.field("attrValueList.filterable").value(true)))
+                        .aggregations("attrId", Aggregation.of(sa -> sa
+                                .terms(t -> t.field("attrValueList.attrId").size(20))
+                                .aggregations("attrName", Aggregation.of(sna -> sna
+                                        .terms(st -> st.field("attrValueList.attrName").size(1))))
+                                .aggregations("attrValue", Aggregation.of(sva -> sva
+                                        .terms(st -> st.field("attrValueList.attrValue").size(50)))))))));
 
         // 价格区间聚合
         Aggregation priceAgg = Aggregation.of(a -> a
@@ -387,7 +383,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
                 .withSort(sort)
                 .withAggregation("brandAgg", brandAgg)
                 .withAggregation("categoryAgg", categoryAgg)
-                .withAggregation("specAgg", specAgg)
+                .withAggregation("attrAgg", attrAgg)
                 .withAggregation("priceAgg", priceAgg);
 
         // 添加 Post Filter
@@ -441,8 +437,8 @@ public class SpuSearchServiceImpl implements SpuSearchService {
         // 解析分类聚合
         List<SearchFilterVO.CategoryAggVO> categories = parseCategoryAggregation(aggMap.get("categoryAgg"));
 
-        // 解析规格聚合
-        List<SearchFilterVO.SpecAggVO> specs = parseSpecAggregation(aggMap.get("specAgg"));
+        // 解析属性聚合
+        List<SearchFilterVO.AttrAggVO> attrs = parseAttrAggregation(aggMap.get("attrAgg"));
 
         // 解析价格区间聚合
         List<SearchFilterVO.PriceRangeVO> priceRanges = parsePriceAggregation(aggMap.get("priceAgg"));
@@ -450,7 +446,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
         return SearchFilterVO.builder()
                 .brands(brands)
                 .categories(categories)
-                .specs(specs)
+                .attrs(attrs)
                 .priceRanges(priceRanges)
                 .build();
     }
@@ -508,78 +504,52 @@ public class SpuSearchServiceImpl implements SpuSearchService {
     }
 
     /**
-     * 解析规格聚合（嵌套聚合）
+     * 解析属性聚合（嵌套聚合）
      */
-    private List<SearchFilterVO.SpecAggVO> parseSpecAggregation(Aggregate aggregate) {
+    private List<SearchFilterVO.AttrAggVO> parseAttrAggregation(Aggregate aggregate) {
         if (aggregate == null || !aggregate.isNested()) {
             return Collections.emptyList();
         }
 
-        Aggregate specIdAgg = aggregate.nested().aggregations().get("specId");
-        if (specIdAgg == null || !specIdAgg.isLterms()) {
+        // 获取过滤后的属性聚合
+        Aggregate filteredAttrsAgg = aggregate.nested().aggregations().get("filteredAttrs");
+        if (filteredAttrsAgg == null || !filteredAttrsAgg.isFilter()) {
             return Collections.emptyList();
         }
 
-        return specIdAgg.lterms().buckets().array().stream()
-                .map(specBucket -> {
-                    // 获取规格名称
-                    String specName = "";
-                    if (specBucket.aggregations().containsKey("specName")) {
-                        Aggregate nameAgg = specBucket.aggregations().get("specName");
+        Aggregate attrIdAgg = filteredAttrsAgg.filter().aggregations().get("attrId");
+        if (attrIdAgg == null || !attrIdAgg.isLterms()) {
+            return Collections.emptyList();
+        }
+
+        return attrIdAgg.lterms().buckets().array().stream()
+                .map(attrBucket -> {
+                    // 获取属性名称
+                    String attrName = "";
+                    if (attrBucket.aggregations().containsKey("attrName")) {
+                        Aggregate nameAgg = attrBucket.aggregations().get("attrName");
                         if (nameAgg.isSterms() && !nameAgg.sterms().buckets().array().isEmpty()) {
-                            specName = nameAgg.sterms().buckets().array().get(0).key().stringValue();
+                            attrName = nameAgg.sterms().buckets().array().get(0).key().stringValue();
                         }
                     }
 
-                    // 获取展示类型
-                    Integer displayType = 0;
-                    if (specBucket.aggregations().containsKey("displayType")) {
-                        Aggregate typeAgg = specBucket.aggregations().get("displayType");
-                        if (typeAgg.isLterms() && !typeAgg.lterms().buckets().array().isEmpty()) {
-                            displayType = (int) typeAgg.lterms().buckets().array().get(0).key();
-                        }
-                    }
-
-                    // 获取规格值列表
-                    List<SearchFilterVO.SpecValueAggVO> values = new ArrayList<>();
-                    if (specBucket.aggregations().containsKey("specValue")) {
-                        Aggregate valueAgg = specBucket.aggregations().get("specValue");
+                    // 获取属性值列表
+                    List<SearchFilterVO.AttrValueAggVO> values = new ArrayList<>();
+                    if (attrBucket.aggregations().containsKey("attrValue")) {
+                        Aggregate valueAgg = attrBucket.aggregations().get("attrValue");
                         if (valueAgg.isSterms()) {
                             values = valueAgg.sterms().buckets().array().stream()
-                                    .map(valueBucket -> {
-                                        // 获取颜色代码
-                                        String colorCode = null;
-                                        if (valueBucket.aggregations().containsKey("colorCode")) {
-                                            Aggregate colorAgg = valueBucket.aggregations().get("colorCode");
-                                            if (colorAgg.isSterms() && !colorAgg.sterms().buckets().array().isEmpty()) {
-                                                colorCode = colorAgg.sterms().buckets().array().get(0).key().stringValue();
-                                            }
-                                        }
-
-                                        // 获取图片
-                                        String image = null;
-                                        if (valueBucket.aggregations().containsKey("image")) {
-                                            Aggregate imageAgg = valueBucket.aggregations().get("image");
-                                            if (imageAgg.isSterms() && !imageAgg.sterms().buckets().array().isEmpty()) {
-                                                image = imageAgg.sterms().buckets().array().get(0).key().stringValue();
-                                            }
-                                        }
-
-                                        return SearchFilterVO.SpecValueAggVO.builder()
-                                                .value(valueBucket.key().stringValue())
-                                                .colorCode(colorCode)
-                                                .image(image)
-                                                .count(valueBucket.docCount())
-                                                .build();
-                                    })
+                                    .map(valueBucket -> SearchFilterVO.AttrValueAggVO.builder()
+                                            .value(valueBucket.key().stringValue())
+                                            .count(valueBucket.docCount())
+                                            .build())
                                     .collect(Collectors.toList());
                         }
                     }
 
-                    return SearchFilterVO.SpecAggVO.builder()
-                            .specId(specBucket.key())
-                            .specName(specName)
-                            .displayType(displayType)
+                    return SearchFilterVO.AttrAggVO.builder()
+                            .attrId(attrBucket.key())
+                            .attrName(attrName)
                             .values(values)
                             .build();
                 })

@@ -38,9 +38,9 @@ public class SpuAggregate {
     private List<SkuData> skuList;
 
     /**
-     * SPU参数属性值列表（可选）
+     * SPU属性值列表（参数）
      */
-    private List<SpuParamValue> paramValueList;
+    private List<AttributeValue> attrValueList;
 
     /**
      * 满减规则列表（可选）
@@ -65,9 +65,9 @@ public class SpuAggregate {
     private boolean updateSkus;
 
     /**
-     * 是否更新参数值
+     * 是否更新属性值
      */
-    private boolean updateParamValues;
+    private boolean updateAttrValues;
 
     /**
      * 是否更新满减规则

@@ -211,8 +211,8 @@ public class ProductVO {
         @Schema(description = "SKU编码")
         private String skuCode;
 
-        @Schema(description = "SKU规格值（JSON格式）")
-        private String specValues;
+        @Schema(description = "SKU属性值（JSON格式）")
+        private String attrValues;
 
         @Schema(description = "SKU图片URL")
         private String pic;

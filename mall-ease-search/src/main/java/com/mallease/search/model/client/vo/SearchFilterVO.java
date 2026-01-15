@@ -28,8 +28,8 @@ public class SearchFilterVO {
     @Schema(description = "分类聚合")
     private List<CategoryAggVO> categories;
 
-    @Schema(description = "规格聚合")
-    private List<SpecAggVO> specs;
+    @Schema(description = "属性聚合（可筛选的规格）")
+    private List<AttrAggVO> attrs;
 
     @Schema(description = "价格区间聚合")
     private List<PriceRangeVO> priceRanges;
@@ -62,26 +62,20 @@ public class SearchFilterVO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "规格聚合项")
-    public static class SpecAggVO {
-        private Long specId;
-        private String specName;
-        @Schema(description = "展示类型：0-文字 1-颜色块 2-图片")
-        private Integer displayType;
-        private List<SpecValueAggVO> values;
+    @Schema(description = "属性聚合项")
+    public static class AttrAggVO {
+        private Long attrId;
+        private String attrName;
+        private List<AttrValueAggVO> values;
     }
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "规格值聚合项")
-    public static class SpecValueAggVO {
+    @Schema(description = "属性值聚合项")
+    public static class AttrValueAggVO {
         private String value;
-        @Schema(description = "颜色代码（displayType=1 时使用）")
-        private String colorCode;
-        @Schema(description = "图片URL（displayType=2 时使用）")
-        private String image;
         private Long count;
     }
 

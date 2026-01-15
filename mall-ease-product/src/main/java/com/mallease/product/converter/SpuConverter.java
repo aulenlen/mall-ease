@@ -4,10 +4,10 @@ import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.product.model.client.cmd.SpuCmd;
 import com.mallease.product.model.client.vo.SpuDetailVO;
 import com.mallease.product.model.client.vo.SpuVO;
+import com.mallease.product.model.data.entity.AttributeValue;
 import com.mallease.product.model.data.entity.Spu;
 import com.mallease.product.model.data.entity.SpuDetail;
 import com.mallease.product.model.data.entity.SpuFullReduction;
-import com.mallease.product.model.data.entity.SpuParamValue;
 import org.mapstruct.*;
 
 import java.math.BigDecimal;
@@ -81,19 +81,20 @@ public interface SpuConverter {
     @Mapping(source = "serviceIds", target = "serviceList", qualifiedByName = "splitServiceIds")
     void mergeSpuDetailToVo(@MappingTarget SpuDetailVO vo, SpuDetail detail);
 
-    // 参数值转换
+    // 属性值转换
 
     @BeanMapping(ignoreByDefault = true)
-    @Mapping(source = "paramId", target = "paramId")
-    @Mapping(source = "value", target = "value")
+    @Mapping(source = "attrId", target = "attrId")
+    @Mapping(source = "attrName", target = "attrName")
+    @Mapping(source = "attrValue", target = "attrValue")
     @Mapping(target = "deleted", constant = "0")
-    SpuParamValue paramValueCmdToEntity(SpuCmd.SpuParamValueCmd cmd);
+    AttributeValue attrValueCmdToEntity(SpuCmd.AttrValueCmd cmd);
 
-    List<SpuParamValue> paramValueCmdListToEntityList(List<SpuCmd.SpuParamValueCmd> cmdList);
+    List<AttributeValue> attrValueCmdListToEntityList(List<SpuCmd.AttrValueCmd> cmdList);
 
-    SpuDetailVO.SpuParamValueVO paramValueEntityToVo(SpuParamValue entity);
+    SpuDetailVO.AttrValueVO attrValueEntityToVo(AttributeValue entity);
 
-    List<SpuDetailVO.SpuParamValueVO> paramValueEntityListToVoList(List<SpuParamValue> entityList);
+    List<SpuDetailVO.AttrValueVO> attrValueEntityListToVoList(List<AttributeValue> entityList);
 
     // 满减规则转换
 

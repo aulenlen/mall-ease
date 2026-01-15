@@ -41,7 +41,7 @@ public class SpuServiceImpl implements SpuService {
     @Autowired
     private SpuDetailDao spuDetailDao;
     @Autowired
-    private SpuParamValueDao spuParamValueDao;
+    private AttributeValueDao attributeValueDao;
     @Autowired
     private SpuFullReductionDao fullReductionDao;
     @Autowired
@@ -137,10 +137,10 @@ public class SpuServiceImpl implements SpuService {
         // 批量保存SKU及关联数据
         skuService.createBatch(spuId, context.getSkuList());
 
-        // 保存参数属性值
-        if (context.getParamValueList() != null && !context.getParamValueList().isEmpty()) {
-            context.getParamValueList().forEach(param -> param.setSpuId(spuId));
-            spuParamValueDao.insertBatch(context.getParamValueList());
+        // 保存属性值（参数）
+        if (context.getAttrValueList() != null && !context.getAttrValueList().isEmpty()) {
+            context.getAttrValueList().forEach(attr -> attr.setSpuId(spuId));
+            attributeValueDao.insertBatch(context.getAttrValueList());
         }
 
         // 保存满减规则
@@ -442,15 +442,15 @@ public class SpuServiceImpl implements SpuService {
             spuDao.updateByPrimaryKeySelective(aggregate);
         }
 
-        // 5. 更新参数属性值（全量替换）
-        if (context.isUpdateParamValues()) {
+        // 5. 更新属性值（全量替换）
+        if (context.isUpdateAttrValues()) {
             // 先删除旧数据
-            spuParamValueDao.deleteBySpuId(spuId);
+            attributeValueDao.deleteParamsBySpuId(spuId);
 
             // 插入新数据
-            if (context.getParamValueList() != null && !context.getParamValueList().isEmpty()) {
-                context.getParamValueList().forEach(param -> param.setSpuId(spuId));
-                spuParamValueDao.insertBatch(context.getParamValueList());
+            if (context.getAttrValueList() != null && !context.getAttrValueList().isEmpty()) {
+                context.getAttrValueList().forEach(attr -> attr.setSpuId(spuId));
+                attributeValueDao.insertBatch(context.getAttrValueList());
             }
         }
 
@@ -573,8 +573,8 @@ public class SpuServiceImpl implements SpuService {
                     .collect(Collectors.toList());
         }
 
-        // 4. 查询参数属性值列表
-        List<SpuParamValue> paramValueList = spuParamValueDao.selectBySpuId(id);
+        // 4. 查询属性值列表（参数）
+        List<AttributeValue> attrValueList = attributeValueDao.selectParamsBySpuId(id);
 
         // 5. 查询满减规则列表
         List<SpuFullReduction> fullReductionList = fullReductionDao.selectBySpuId(id);
@@ -609,7 +609,7 @@ public class SpuServiceImpl implements SpuService {
                 .spu(spu)
                 .spuDetail(detail)
                 .skuList(skuList)
-                .paramValueList(paramValueList)
+                .attrValueList(attrValueList)
                 .fullReductionList(fullReductionList)
                 .subjectIds(subjectIds)
                 .preferenceAreaIds(preferenceAreaIds)
@@ -637,8 +637,8 @@ public class SpuServiceImpl implements SpuService {
         // 3. 删除 SPU 详情
         spuDetailDao.deleteBySpuId(id);
 
-        // 4. 删除 SPU 参数属性值
-        spuParamValueDao.deleteBySpuId(id);
+        // 4. 删除 SPU 属性值
+        attributeValueDao.deleteBySpuId(id);
 
         // 5. 删除 SPU 满减规则
         fullReductionDao.deleteBySpuId(id);

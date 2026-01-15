@@ -45,9 +45,9 @@ public class SpuDetailAssembler {
         // 3. 组装 SKU 列表
         vo.setSkuList(assembleSkuList(aggregate.getSkuList()));
 
-        // 4. 转换参数值
-        vo.setParamValueList(
-                spuConverter.paramValueEntityListToVoList(aggregate.getParamValueList()));
+        // 4. 转换属性值
+        vo.setAttrValueList(
+                spuConverter.attrValueEntityListToVoList(aggregate.getAttrValueList()));
 
         // 5. 转换满减规则
         vo.setFullReductionList(

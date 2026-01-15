@@ -168,16 +168,11 @@ public class SpuDocument implements Serializable {
     private List<SpuSkuDocument> skuList;
 
     /**
-     * 规格列表 - 聚合筛选用
+     * 属性值列表 - 聚合筛选用
+     * 统一规格和参数，通过 type 字段区分
      */
     @Field(type = FieldType.Nested)
-    private List<SpuSpecValueDocument> specValueList;
-
-    /**
-     * 参数属性列表 - 搜索展示用
-     */
-    @Field(type = FieldType.Nested)
-    private List<SpuParamValueDocument> paramValueList;
+    private List<SpuAttrValueDocument> attrValueList;
 
     @Field(type = FieldType.Date, format = DateFormat.date_time)
     private Date createTime;

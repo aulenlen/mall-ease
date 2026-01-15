@@ -34,5 +34,5 @@ public class SkuSimpleDTO implements Serializable {
 
     private BigDecimal originalPrice;
 
-    private String specValues;
+    private String attrValues;
 }

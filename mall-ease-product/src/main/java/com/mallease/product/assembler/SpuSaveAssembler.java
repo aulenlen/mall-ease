@@ -2,12 +2,12 @@ package com.mallease.product.assembler;
 
 import com.mallease.product.converter.SkuConverter;
 import com.mallease.product.converter.SpuConverter;
-import com.mallease.product.dao.SpecDao;
+import com.mallease.product.dao.AttributeDao;
 import com.mallease.product.model.client.cmd.SkuCmd;
 import com.mallease.product.model.client.cmd.SpuCmd;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.data.entity.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,16 +22,12 @@ import java.util.stream.Collectors;
  * @create: 2025-12-20
  */
 @Component
+@RequiredArgsConstructor
 public class SpuSaveAssembler {
 
-    @Autowired
-    private SpuConverter spuConverter;
-
-    @Autowired
-    private SkuConverter skuConverter;
-
-    @Autowired
-    private SpecDao specDao;
+    private final SpuConverter spuConverter;
+    private final SkuConverter skuConverter;
+    private final AttributeDao attributeDao;
 
     /**
      * 组装 SPU（创建场景）
@@ -46,8 +42,8 @@ public class SpuSaveAssembler {
         // SPU详情
         SpuDetail spuDetail = convertSpuDetail(cmd);
 
-        // 参数属性值列表
-        List<SpuParamValue> paramValueList = convertParamValues(cmd);
+        // 属性值列表（参数）
+        List<AttributeValue> attrValueList = convertAttrValues(cmd);
 
         // 满减规则列表
         List<SpuFullReduction> fullReductionList = convertFullReductions(cmd);
@@ -57,7 +53,7 @@ public class SpuSaveAssembler {
         return SpuAggregate.builder()
                 .spu(spu)
                 .spuDetail(spuDetail)
-                .paramValueList(paramValueList)
+                .attrValueList(attrValueList)
                 .fullReductionList(fullReductionList)
                 .skuList(skuList)
                 .subjectIds(cmd.getSubjectIds())
@@ -92,11 +88,11 @@ public class SpuSaveAssembler {
             updateSkus = true;
         }
 
-        // 参数值列表
-        boolean updateParamValues = false;
-        if (cmd.getParamValueList() != null) {
-            builder.paramValueList(spuConverter.paramValueCmdListToEntityList(cmd.getParamValueList()));
-            updateParamValues = true;
+        // 属性值列表
+        boolean updateAttrValues = false;
+        if (cmd.getAttrValueList() != null) {
+            builder.attrValueList(convertAttrValues(cmd));
+            updateAttrValues = true;
         }
 
         // 满减规则列表
@@ -122,16 +118,14 @@ public class SpuSaveAssembler {
 
         return builder
                 .updateSkus(updateSkus)
-                .updateParamValues(updateParamValues)
+                .updateAttrValues(updateAttrValues)
                 .updateFullReductions(updateFullReductions)
                 .updateSubjects(updateSubjects)
                 .updatePreferenceAreas(updatePreferenceAreas)
                 .build();
     }
 
-    // ========================================================================
     // 共享的转换方法
-    // ========================================================================
 
     private SpuDetail convertSpuDetail(SpuCmd cmd) {
         if (cmd.getSpuDetail() == null) {
@@ -140,11 +134,19 @@ public class SpuSaveAssembler {
         return spuConverter.spuDetailCmdToEntity(cmd.getSpuDetail());
     }
 
-    private List<SpuParamValue> convertParamValues(SpuCmd cmd) {
-        if (cmd.getParamValueList() == null || cmd.getParamValueList().isEmpty()) {
+    private List<AttributeValue> convertAttrValues(SpuCmd cmd) {
+        if (cmd.getAttrValueList() == null || cmd.getAttrValueList().isEmpty()) {
             return null;
         }
-        return spuConverter.paramValueCmdListToEntityList(cmd.getParamValueList());
+        return cmd.getAttrValueList().stream()
+                .map(attrCmd -> {
+                    AttributeValue value = new AttributeValue();
+                    value.setAttrId(attrCmd.getAttrId());
+                    value.setAttrName(attrCmd.getAttrName());
+                    value.setAttrValue(attrCmd.getAttrValue());
+                    return value;
+                })
+                .collect(Collectors.toList());
     }
 
     private List<SpuFullReduction> convertFullReductions(SpuCmd cmd) {
@@ -163,32 +165,32 @@ public class SpuSaveAssembler {
             return List.of();
         }
 
-        // 批量查询 specName
-        Map<Long, String> specNameMap = querySpecNameMap(cmdList);
+        // 批量查询属性名称
+        Map<Long, String> attrNameMap = queryAttrNameMap(cmdList);
         return cmdList.stream()
-                .map(cmd -> convertSkuForCreate(cmd, specNameMap))
+                .map(cmd -> convertSkuForCreate(cmd, attrNameMap))
                 .collect(Collectors.toList());
     }
 
-    private Map<Long, String> querySpecNameMap(List<SkuCmd> cmdList) {
-        Set<Long> specIds = cmdList.stream()
-                .flatMap(cmd -> cmd.getSpecValues().stream())
-                .map(SkuCmd.SkuSpecValue::getSpecId)
+    private Map<Long, String> queryAttrNameMap(List<SkuCmd> cmdList) {
+        Set<Long> attrIds = cmdList.stream()
+                .flatMap(cmd -> cmd.getAttrValues().stream())
+                .map(SkuCmd.AttrValueCmd::getAttrId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
-        if (specIds.isEmpty()) {
+        if (attrIds.isEmpty()) {
             return Map.of();
         }
 
-        List<Spec> specList = specDao.selectByIds(specIds.stream().toList());
-        return specList.stream().collect(Collectors.toMap(Spec::getId, Spec::getName));
+        List<Attribute> attrList = attributeDao.selectByIds(attrIds.stream().toList());
+        return attrList.stream().collect(Collectors.toMap(Attribute::getId, Attribute::getName));
     }
 
-    private SpuAggregate.SkuData convertSkuForCreate(SkuCmd cmd, Map<Long, String> specNameMap) {
-        // 补充 specName
-        cmd.getSpecValues().forEach(spec -> {
-            if (spec.getSpecId() != null && spec.getSpecName() == null) {
-                spec.setSpecName(specNameMap.get(spec.getSpecId()));
+    private SpuAggregate.SkuData convertSkuForCreate(SkuCmd cmd, Map<Long, String> attrNameMap) {
+        // 补充属性名称
+        cmd.getAttrValues().forEach(attr -> {
+            if (attr.getAttrId() != null && attr.getAttrName() == null) {
+                attr.setAttrName(attrNameMap.get(attr.getAttrId()));
             }
         });
 

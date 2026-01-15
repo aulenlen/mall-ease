@@ -29,9 +29,9 @@ public class Sku {
     private String skuCode;
 
     /**
-     * SKU规格值（JSON格式）
+     * SKU属性值（JSON格式，规格）
      */
-    private String specValues;
+    private String attrValues;
 
     /**
      * SKU图片URL

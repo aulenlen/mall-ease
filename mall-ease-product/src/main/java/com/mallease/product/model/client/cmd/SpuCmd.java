@@ -116,9 +116,9 @@ public class SpuCmd {
     @Valid
     private List<SkuCmd> skuList;
 
-    @Schema(description = "SPU参数属性值列表（可选）")
+    @Schema(description = "SPU属性值列表（参数）")
     @Valid
-    private List<SpuParamValueCmd> paramValueList;
+    private List<AttrValueCmd> attrValueList;
 
     @Schema(description = "满减规则列表（可选）")
     @Valid
@@ -168,23 +168,26 @@ public class SpuCmd {
     }
 
     /**
-     * SPU参数属性值命令（内部类）
+     * 属性值命令（内部类，通用于参数和规格）
      */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "SPU参数属性值")
-    public static class SpuParamValueCmd {
+    @Schema(description = "属性值")
+    public static class AttrValueCmd {
 
-        @Schema(description = "参数ID", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "参数ID不能为空")
-        private Long paramId;
+        @Schema(description = "属性ID", requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotNull(message = "属性ID不能为空")
+        private Long attrId;
 
-        @Schema(description = "参数值", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotBlank(message = "参数值不能为空")
-        @Size(max = 255, message = "参数值长度不能超过255个字符")
-        private String value;
+        @Schema(description = "属性名称")
+        private String attrName;
+
+        @Schema(description = "属性值", requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotBlank(message = "属性值不能为空")
+        @Size(max = 256, message = "属性值长度不能超过256个字符")
+        private String attrValue;
     }
 
     /**

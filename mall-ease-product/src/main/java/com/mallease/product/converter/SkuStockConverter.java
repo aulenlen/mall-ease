@@ -26,8 +26,8 @@ public interface SkuStockConverter {
 
     @Mapping(target = "lowStockWarning", source = ".", qualifiedByName = "calcLowStockWarning")
     @Mapping(target = "spuName", ignore = true)
-    @Mapping(target = "specValues", ignore = true)
-    @Mapping(target = "specValuesObj", ignore = true)
+    @Mapping(target = "attrValues", ignore = true)
+    @Mapping(target = "attrValuesObj", ignore = true)
     SkuStockVO entityToVo(SkuStock entity);
 
     List<SkuStockVO> entityListToVoList(List<SkuStock> entities);
@@ -52,16 +52,23 @@ public interface SkuStockConverter {
     }
 
     /**
-     * 解析规格值 JSON 字符串为对象列表
+     * 解析属性值 JSON 字符串为对象列表
      */
-    @Named("parseSpecValues")
-    default List<SkuStockVO.SkuSpecValue> parseSpecValues(String specValues) {
-        if (specValues == null || specValues.trim().isEmpty()) {
+    @Named("parseAttrValues")
+    default List<SkuStockVO.AttrValueVO> parseAttrValues(String attrValues) {
+        if (attrValues == null || attrValues.trim().isEmpty()) {
             return null;
         }
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(specValues, new TypeReference<>() {});
+            List<java.util.Map<String, Object>> rawList = objectMapper.readValue(attrValues, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+            return rawList.stream()
+                    .map(map -> SkuStockVO.AttrValueVO.builder()
+                            .attrId(map.get("attrId") != null ? Long.valueOf(map.get("attrId").toString()) : null)
+                            .attrName(map.get("attrName") != null ? map.get("attrName").toString() : null)
+                            .attrValue(map.get("attrValue") != null ? map.get("attrValue").toString() : null)
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
         } catch (JsonProcessingException e) {
             return null;
         }

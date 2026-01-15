@@ -69,7 +69,7 @@ public class SkuServiceImpl implements SkuService {
                     .spuPic(spu != null ? spu.getPic() : null)
                     .skuPic(sku.getPic())
                     .originalPrice(sku.getOriginalPrice())
-                    .specValues(sku.getSpecValues())
+                    .attrValues(sku.getAttrValues())
                     .build();
         }).toList();
     }

@@ -13,6 +13,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * SKU转换器
@@ -25,7 +26,7 @@ public interface SkuConverter {
 
     // Entity → VO
 
-    @Mapping(source = "specValues", target = "specValuesObj", qualifiedByName = "parseSpecValues")
+    @Mapping(source = "attrValues", target = "attrValuesObj", qualifiedByName = "parseAttrValues")
     SkuVO entityToVo(Sku entity);
 
     List<SkuVO> entityListToVoList(List<Sku> entities);
@@ -46,10 +47,10 @@ public interface SkuConverter {
     // Cmd → Entity
 
     @Mapping(target = "deleted", constant = "0")
-    @Mapping(source = "specValues", target = "specValues", qualifiedByName = "serializeSpecValues")
+    @Mapping(source = "attrValues", target = "attrValues", qualifiedByName = "serializeAttrValues")
     Sku saveCmdToEntity(SkuCmd cmd);
 
-    @Mapping(source = "specValues", target = "specValues", qualifiedByName = "serializeSpecValues")
+    @Mapping(source = "attrValues", target = "attrValues", qualifiedByName = "serializeAttrValues")
     void updateEntityFromCmd(@MappingTarget Sku entity, SkuCmd cmd);
 
     @Mapping(target = "lockStock", constant = "0")
@@ -85,27 +86,34 @@ public interface SkuConverter {
 
     // 工具方法
 
-    @Named("parseSpecValues")
-    default List<SkuVO.SkuSpecValue> parseSpecValues(String specValues) {
-        if (specValues == null || specValues.trim().isEmpty()) {
+    @Named("parseAttrValues")
+    default List<SkuVO.AttrValueVO> parseAttrValues(String attrValues) {
+        if (attrValues == null || attrValues.trim().isEmpty()) {
             return null;
         }
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(specValues, new TypeReference<>() {});
+            List<Map<String, Object>> rawList = objectMapper.readValue(attrValues, new TypeReference<>() {});
+            return rawList.stream()
+                    .map(map -> SkuVO.AttrValueVO.builder()
+                            .attrId(map.get("attrId") != null ? Long.valueOf(map.get("attrId").toString()) : null)
+                            .attrName(map.get("attrName") != null ? map.get("attrName").toString() : null)
+                            .attrValue(map.get("attrValue") != null ? map.get("attrValue").toString() : null)
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
         } catch (JsonProcessingException e) {
             return null;
         }
     }
 
-    @Named("serializeSpecValues")
-    default String serializeSpecValues(List<SkuCmd.SkuSpecValue> specValues) {
-        if (specValues == null || specValues.isEmpty()) {
+    @Named("serializeAttrValues")
+    default String serializeAttrValues(List<SkuCmd.AttrValueCmd> attrValues) {
+        if (attrValues == null || attrValues.isEmpty()) {
             return null;
         }
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.writeValueAsString(specValues);
+            return objectMapper.writeValueAsString(attrValues);
         } catch (JsonProcessingException e) {
             return null;
         }

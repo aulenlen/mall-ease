@@ -46,26 +46,28 @@ public class SkuCmd {
     @Schema(description = "SKU规格值列表", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(groups = Create.class, message = "创建时SKU规格值不能为空")
     @Valid
-    private List<SkuSpecValue> specValues;
+    private List<AttrValueCmd> attrValues;
 
     /**
-     * SKU规格值（内部类）
+     * 属性值命令（内部类）
      */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "SKU规格值")
-    public static class SkuSpecValue implements Serializable {
+    @Schema(description = "属性值")
+    public static class AttrValueCmd implements Serializable {
 
-        @Schema(description = "规格ID")
-        private Long specId;
+        @Schema(description = "属性ID")
+        @NotNull(message = "属性ID不能为空")
+        private Long attrId;
 
-        @Schema(description = "规格名称")
-        private String specName;
+        @Schema(description = "属性名称")
+        private String attrName;
 
-        @Schema(description = "规格值")
-        private String value;
+        @Schema(description = "属性值")
+        @NotBlank(message = "属性值不能为空")
+        private String attrValue;
     }
 
     @Schema(description = "SKU图片URL")
