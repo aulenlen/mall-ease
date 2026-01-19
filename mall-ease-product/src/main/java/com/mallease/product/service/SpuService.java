@@ -1,5 +1,7 @@
 package com.mallease.product.service;
 
+import com.mallease.common.dto.remote.SpuSearchQuery;
+import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.query.SpuQuery;
 import com.mallease.product.model.client.vo.SpuPublishVO;
@@ -93,4 +95,12 @@ public interface SpuService {
      * @return 完整的商品信息
      */
     SpuCache getProduct(Long spuId);
+
+    /**
+     * MySQL 搜索商品
+     *
+     * @param query 搜索条件
+     * @return 搜索结果（商品列表 + 聚合筛选项）
+     */
+    SpuSearchResultDTO advancedSearch(SpuSearchQuery query);
 }

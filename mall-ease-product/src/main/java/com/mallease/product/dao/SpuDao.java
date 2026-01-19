@@ -1,5 +1,8 @@
 package com.mallease.product.dao;
 
+import com.mallease.common.dto.remote.SearchFilterDTO;
+import com.mallease.common.dto.remote.SpuSearchQuery;
+import com.mallease.product.model.data.entity.AttrValueAggregation;
 import com.mallease.product.model.data.entity.Spu;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -59,22 +62,22 @@ public interface SpuDao {
     /**
      * 根据多条件查询SPU列表
      *
-     * @param keyword 关键字（名称模糊匹配）
-     * @param brandId 品牌ID
-     * @param categoryId 分类ID
-     * @param publishStatus 上架状态
-     * @param verifyStatus 审核状态
-     * @param newStatus 新品状态
+     * @param keyword         关键字（名称模糊匹配）
+     * @param brandId         品牌ID
+     * @param categoryId      分类ID
+     * @param publishStatus   上架状态
+     * @param verifyStatus    审核状态
+     * @param newStatus       新品状态
      * @param recommendStatus 推荐状态
      * @return SPU列表
      */
     List<Spu> selectByConditions(@Param("keyword") String keyword,
-                                    @Param("brandId") Long brandId,
-                                    @Param("categoryId") Long categoryId,
-                                    @Param("publishStatus") Integer publishStatus,
-                                    @Param("verifyStatus") Integer verifyStatus,
-                                    @Param("newStatus") Integer newStatus,
-                                    @Param("recommendStatus") Integer recommendStatus);
+                                 @Param("brandId") Long brandId,
+                                 @Param("categoryId") Long categoryId,
+                                 @Param("publishStatus") Integer publishStatus,
+                                 @Param("verifyStatus") Integer verifyStatus,
+                                 @Param("newStatus") Integer newStatus,
+                                 @Param("recommendStatus") Integer recommendStatus);
 
     /**
      * 插入记录
@@ -119,7 +122,7 @@ public interface SpuDao {
     /**
      * 批量更新上架状态
      *
-     * @param ids SPU ID列表
+     * @param ids           SPU ID列表
      * @param publishStatus 上架状态：0-下架 1-上架
      * @return 影响行数
      */
@@ -128,7 +131,7 @@ public interface SpuDao {
     /**
      * 批量更新新品状态
      *
-     * @param ids SPU ID列表
+     * @param ids       SPU ID列表
      * @param newStatus 新品状态：0-非新品 1-新品
      * @return 影响行数
      */
@@ -137,7 +140,7 @@ public interface SpuDao {
     /**
      * 批量更新推荐状态
      *
-     * @param ids SPU ID列表
+     * @param ids             SPU ID列表
      * @param recommendStatus 推荐状态：0-不推荐 1-推荐
      * @return 影响行数
      */
@@ -146,7 +149,7 @@ public interface SpuDao {
     /**
      * 批量更新审核状态
      *
-     * @param ids SPU ID列表
+     * @param ids          SPU ID列表
      * @param verifyStatus 审核状态：0-未审核 1-审核通过
      * @return 影响行数
      */
@@ -164,11 +167,11 @@ public interface SpuDao {
      * 更新SPU统计信息（价格、库存、销量）
      * 用于SKU变更后同步更新SPU的聚合字段
      *
-     * @param id SPU ID
+     * @param id       SPU ID
      * @param minPrice 最低价格
      * @param maxPrice 最高价格
-     * @param stock 总库存
-     * @param sale 总销量
+     * @param stock    总库存
+     * @param sale     总销量
      * @return 影响行数
      */
     int updateStats(@Param("id") Long id,
@@ -183,4 +186,44 @@ public interface SpuDao {
      * @return SPU列表
      */
     List<Spu> selectAll();
+
+    /**
+     * MySQL 搜索商品
+     *
+     * @param query 搜索条件
+     * @return SPU列表
+     */
+    List<Spu> search(@Param("query") SpuSearchQuery query);
+
+    /**
+     * 聚合品牌（基于当前筛选条件）
+     *
+     * @param query 搜索条件
+     * @return 品牌聚合结果
+     */
+    List<SearchFilterDTO.FilterItem> aggregateBrands(@Param("query") SpuSearchQuery query);
+
+    /**
+     * 聚合分类（基于当前筛选条件）
+     *
+     * @param query 搜索条件
+     * @return 分类聚合结果
+     */
+    List<SearchFilterDTO.FilterItem> aggregateCategories(@Param("query") SpuSearchQuery query);
+
+    /**
+     * 聚合属性（基于当前筛选条件）
+     *
+     * @param query 搜索条件
+     * @return 属性聚合结果
+     */
+    List<AttrValueAggregation> aggregateAttrs(@Param("query") SpuSearchQuery query);
+
+    /**
+     * 聚合价格区间（基于当前筛选条件）
+     *
+     * @param query 搜索条件
+     * @return 价格区间
+     */
+    SearchFilterDTO.PriceRange aggregatePriceRange(@Param("query") SpuSearchQuery query);
 }

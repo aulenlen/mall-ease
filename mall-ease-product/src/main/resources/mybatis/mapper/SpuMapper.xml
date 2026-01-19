@@ -45,6 +45,26 @@
         create_time, update_time, creator, updater, version
     </sql>
 
+    <sql id="AttrValuesFilter">
+        <if test="query.attrValues != null and query.attrValues.size() > 0">
+            <bind name="attrValuesSize" value="query.attrValues.size()"/>
+            AND ps.id IN (
+                SELECT pav.spu_id
+                FROM product_attribute_value pav
+                WHERE
+                <foreach collection="query.attrValues" index="attrId" item="values" separator=" OR ">
+                    (pav.attr_id = #{attrId} AND pav.attr_value IN
+                    <foreach collection="values" item="val" open="(" separator="," close=")">
+                        #{val}
+                    </foreach>
+                    )
+                </foreach>
+                GROUP BY pav.spu_id
+                HAVING COUNT(DISTINCT pav.attr_id) = #{attrValuesSize}
+            )
+        </if>
+    </sql>
+
     <!-- 根据主键查询 -->
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
@@ -122,6 +142,152 @@
         FROM product_spu
         WHERE deleted = 0
         ORDER BY sort, id DESC
+    </select>
+
+    <select id="search" resultMap="BaseResultMap">
+        SELECT ps.*
+        FROM product_spu ps
+        WHERE ps.deleted = 0
+          AND ps.publish_status = 1
+        <if test="query.keyword != null and query.keyword != ''">
+          AND ps.name LIKE CONCAT('%', #{query.keyword}, '%')
+        </if>
+        <if test="query.brandIds != null and query.brandIds.size() > 0">
+          AND ps.brand_id IN
+          <foreach collection="query.brandIds" item="brandId" open="(" separator="," close=")">
+              #{brandId}
+          </foreach>
+        </if>
+        <if test="query.categoryId != null and query.categoryId > 0">
+          AND ps.category_id = #{query.categoryId}
+        </if>
+        <if test="query.minPrice != null and query.minPrice > 0">
+          AND ps.min_price &gt;= #{query.minPrice}
+        </if>
+        <if test="query.maxPrice != null and query.maxPrice > 0">
+          AND ps.max_price &lt;= #{query.maxPrice}
+        </if>
+        <include refid="AttrValuesFilter"/>
+        <choose>
+            <when test="query.sortType == 1">
+                ORDER BY ps.sale DESC
+            </when>
+            <when test="query.sortType == 2">
+                ORDER BY ps.min_price ASC
+            </when>
+            <when test="query.sortType == 3">
+                ORDER BY ps.min_price DESC
+            </when>
+            <when test="query.sortType == 4">
+                ORDER BY ps.create_time DESC
+            </when>
+            <otherwise>
+                ORDER BY ps.sort DESC, ps.id DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 聚合品牌 -->
+    <select id="aggregateBrands" resultType="com.mallease.common.dto.remote.SearchFilterDTO$FilterItem">
+        SELECT ps.brand_id as id, ps.brand_name as name, COUNT(*) as count
+        FROM product_spu ps
+        WHERE ps.deleted = 0 AND ps.publish_status = 1
+        <if test="query.keyword != null and query.keyword != ''">
+            AND ps.name LIKE CONCAT('%', #{query.keyword}, '%')
+        </if>
+        <if test="query.categoryId != null and query.categoryId > 0">
+            AND ps.category_id = #{query.categoryId}
+        </if>
+        <if test="query.minPrice != null and query.minPrice > 0">
+            AND ps.min_price &gt;= #{query.minPrice}
+        </if>
+        <if test="query.maxPrice != null and query.maxPrice > 0">
+            AND ps.max_price &lt;= #{query.maxPrice}
+        </if>
+        <include refid="AttrValuesFilter"/>
+        GROUP BY ps.brand_id, ps.brand_name
+        HAVING COUNT(*) > 0
+        ORDER BY count DESC
+    </select>
+
+    <!-- 聚合分类 -->
+    <select id="aggregateCategories" resultType="com.mallease.common.dto.remote.SearchFilterDTO$FilterItem">
+        SELECT ps.category_id as id, ps.category_name as name, COUNT(*) as count
+        FROM product_spu ps
+        WHERE ps.deleted = 0 AND ps.publish_status = 1
+        <if test="query.keyword != null and query.keyword != ''">
+            AND ps.name LIKE CONCAT('%', #{query.keyword}, '%')
+        </if>
+        <if test="query.brandIds != null and query.brandIds.size() > 0">
+            AND ps.brand_id IN
+            <foreach collection="query.brandIds" item="brandId" open="(" separator="," close=")">
+                #{brandId}
+            </foreach>
+        </if>
+        <if test="query.minPrice != null">
+            AND ps.min_price &gt;= #{query.minPrice}
+        </if>
+        <if test="query.maxPrice != null">
+            AND ps.max_price &lt;= #{query.maxPrice}
+        </if>
+        <include refid="AttrValuesFilter"/>
+        GROUP BY ps.category_id, ps.category_name
+        HAVING COUNT(*) > 0
+        ORDER BY count DESC
+    </select>
+
+    <!-- 聚合属性 -->
+    <select id="aggregateAttrs" resultType="com.mallease.product.model.data.entity.AttrValueAggregation">
+        SELECT
+            pav.attr_id as attrId,
+            pav.attr_name as attrName,
+            pav.attr_value as `value`,
+            COUNT(DISTINCT ps.id) as count
+        FROM product_spu ps
+        INNER JOIN product_attribute_value pav ON pav.spu_id = ps.id
+        WHERE ps.deleted = 0 AND ps.publish_status = 1
+        <if test="query.keyword != null and query.keyword != ''">
+            AND ps.name LIKE CONCAT('%', #{query.keyword}, '%')
+        </if>
+        <if test="query.brandIds != null and query.brandIds.size() > 0">
+            AND ps.brand_id IN
+            <foreach collection="query.brandIds" item="brandId" open="(" separator="," close=")">
+                #{brandId}
+            </foreach>
+        </if>
+        <if test="query.categoryId != null and query.categoryId > 0">
+            AND ps.category_id = #{query.categoryId}
+        </if>
+        <if test="query.minPrice != null and query.minPrice > 0">
+            AND ps.min_price &gt;= #{query.minPrice}
+        </if>
+        <if test="query.maxPrice != null and query.maxPrice > 0">
+            AND ps.max_price &lt;= #{query.maxPrice}
+        </if>
+        <include refid="AttrValuesFilter"/>
+        GROUP BY pav.attr_id, pav.attr_name, pav.attr_value
+        HAVING COUNT(DISTINCT ps.id) > 0
+        ORDER BY pav.attr_id, count DESC
+    </select>
+
+    <!-- 聚合价格区间 -->
+    <select id="aggregatePriceRange" resultType="com.mallease.common.dto.remote.SearchFilterDTO$PriceRange">
+        SELECT MIN(ps.min_price) as min, MAX(ps.max_price) as max
+        FROM product_spu ps
+        WHERE ps.deleted = 0 AND ps.publish_status = 1
+        <if test="query.keyword != null and query.keyword != ''">
+            AND ps.name LIKE CONCAT('%', #{query.keyword}, '%')
+        </if>
+        <if test="query.brandIds != null and query.brandIds.size() > 0">
+            AND ps.brand_id IN
+            <foreach collection="query.brandIds" item="brandId" open="(" separator="," close=")">
+                #{brandId}
+            </foreach>
+        </if>
+        <if test="query.categoryId != null and query.categoryId > 0">
+            AND ps.category_id = #{query.categoryId}
+        </if>
+        <include refid="AttrValuesFilter"/>
     </select>
 
     <!-- 插入 -->

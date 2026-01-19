@@ -1,13 +1,13 @@
 package com.mallease.app.feign;
 
 import com.mallease.common.api.R;
-import com.mallease.common.dto.remote.CategoryDTO;
-import com.mallease.common.dto.remote.CategoryTreeDTO;
-import com.mallease.common.dto.remote.ProductDTO;
+import com.mallease.common.dto.remote.*;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -44,4 +44,13 @@ public interface ProductFeignClient {
      */
     @GetMapping("/product/spu/internal/{spuId}")
     R<ProductDTO> getProduct(@PathVariable Long spuId);
+
+    /**
+     * MySQL 商品搜索（支持聚合筛选）
+     *
+     * @param query 查询条件
+     * @return 查询结果
+     */
+    @PostMapping("/product/spu/internal/advancedSearch")
+    R<SpuSearchResultDTO> advancedSearch(@RequestBody SpuSearchQuery query);
 }

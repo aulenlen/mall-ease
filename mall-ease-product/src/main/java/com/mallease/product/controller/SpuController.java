@@ -6,17 +6,21 @@ import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.common.dto.remote.ProductDTO;
+import com.mallease.common.dto.remote.SpuSearchQuery;
+import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import com.mallease.product.assembler.SpuDetailAssembler;
 import com.mallease.product.assembler.SpuSaveAssembler;
 import com.mallease.product.converter.SkuConverter;
 import com.mallease.product.converter.SpuCacheConverter;
 import com.mallease.product.converter.SpuConverter;
+import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.cmd.PublishSpuCmd;
 import com.mallease.product.model.client.cmd.SpuCmd;
-import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.query.SpuQuery;
-import com.mallease.product.model.client.vo.*;
-
+import com.mallease.product.model.client.vo.SkuVO;
+import com.mallease.product.model.client.vo.SpuDetailVO;
+import com.mallease.product.model.client.vo.SpuPublishVO;
+import com.mallease.product.model.client.vo.SpuVO;
 import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.Sku;
 import com.mallease.product.model.data.entity.SkuStock;
@@ -29,7 +33,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -140,5 +143,13 @@ public class SpuController {
             return R.success(null);
         }
         return R.success(spuCacheConverter.cacheToDTO(cache));
+    }
+
+    @Operation(summary = "MySQL搜索商品", description = "内部调用")
+    @PostMapping("/internal/advancedSearch")
+    public R<SpuSearchResultDTO> advancedSearch(@RequestBody SpuSearchQuery query) {
+        PageHelper.startPage(query.getPageNum(), query.getPageSize());
+        SpuSearchResultDTO result = spuService.advancedSearch(query);
+        return R.success(result);
     }
 }

@@ -1,7 +1,12 @@
 package com.mallease.product.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.SearchFilterDTO;
+import com.mallease.common.dto.remote.SpuRecommendDTO;
+import com.mallease.common.dto.remote.SpuSearchQuery;
+import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.exception.Asserts;
 import com.mallease.common.util.LoginContextUtil;
@@ -17,6 +22,7 @@ import com.mallease.product.feign.ContentPreferenceAreaFeignClient;
 import com.mallease.product.feign.ContentSubjectFeignClient;
 import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.*;
+import com.mallease.product.model.data.entity.AttrValueAggregation;
 import com.mallease.product.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -783,6 +790,85 @@ public class SpuServiceImpl implements SpuService {
         }
 
         return spuCacheService.get(spuId);
+    }
+
+    @Override
+    public SpuSearchResultDTO advancedSearch(SpuSearchQuery query) {
+        List<Spu> spus = spuDao.search(query);
+
+        List<SpuRecommendDTO> products = spus.stream()
+                .map(spu -> SpuRecommendDTO.builder()
+                        .spuId(spu.getId())
+                        .name(spu.getName())
+                        .subTitle(spu.getSubTitle())
+                        .pic(spu.getPic())
+                        .brandId(spu.getBrandId())
+                        .brandName(spu.getBrandName())
+                        .categoryId(spu.getCategoryId())
+                        .categoryPath(spu.getCategoryIds())
+                        .categoryName(spu.getCategoryName())
+                        .minPrice(spu.getMinPrice())
+                        .maxPrice(spu.getMaxPrice())
+                        .sale(spu.getSale())
+                        .inStock(spu.getStock() != null && spu.getStock() > 0)
+                        .isNew(spu.getNewStatus() != null && spu.getNewStatus() == 1)
+                        .build())
+                .toList();
+
+        Page<SpuRecommendDTO> productPage = Page.restPage(spus, products);
+
+        SearchFilterDTO filters = new SearchFilterDTO();
+
+        if (query.getNeedAggregation()) {
+            CompletableFuture<List<SearchFilterDTO.FilterItem>> brandsFuture =
+                    CompletableFuture.supplyAsync(() -> spuDao.aggregateBrands(query));
+            CompletableFuture<List<SearchFilterDTO.FilterItem>> categoriesFuture =
+                    CompletableFuture.supplyAsync(() -> spuDao.aggregateCategories(query));
+            CompletableFuture<List<AttrValueAggregation>> attrsAggregationFuture =
+                    CompletableFuture.supplyAsync(() -> spuDao.aggregateAttrs(query));
+            CompletableFuture<SearchFilterDTO.PriceRange> priceRangeFuture =
+                    CompletableFuture.supplyAsync(() -> spuDao.aggregatePriceRange(query));
+
+            CompletableFuture.allOf(brandsFuture, categoriesFuture, attrsAggregationFuture, priceRangeFuture).join();
+
+            List<SearchFilterDTO.AttrFilterItem> attrs = attrsAggregationFuture.join().stream()
+                    .collect(Collectors.groupingBy(AttrValueAggregation::getAttrId))
+                    .entrySet().stream()
+                    .map(entry -> {
+                        List<AttrValueAggregation> values = entry.getValue();
+                        return SearchFilterDTO.AttrFilterItem.builder()
+                                .attrId(entry.getKey())
+                                .attrName(values.get(0).getAttrName())
+                                .values(values.stream()
+                                        .map(v -> SearchFilterDTO.AttrValue.builder()
+                                                .value(v.getValue())
+                                                .count(v.getCount())
+                                                .build())
+                                        .collect(Collectors.toList()))
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            SearchFilterDTO.PriceRange priceRange = priceRangeFuture.join();
+            if (priceRange == null || (priceRange.getMin() == null && priceRange.getMax() == null)) {
+                priceRange = SearchFilterDTO.PriceRange.builder()
+                        .min(BigDecimal.ZERO)
+                        .max(BigDecimal.ZERO)
+                        .build();
+            }
+
+            filters = SearchFilterDTO.builder()
+                    .brands(brandsFuture.join())
+                    .categories(categoriesFuture.join())
+                    .attrs(attrs)
+                    .priceRange(priceRange)
+                    .build();
+        }
+
+        return SpuSearchResultDTO.builder()
+                .products(productPage)
+                .filters(filters)
+                .build();
     }
 
     /**
