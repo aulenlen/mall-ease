@@ -3,10 +3,10 @@ package com.mallease.search.controller;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
+import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.search.converter.SpuDocConverter;
 import com.mallease.search.converter.SpuIndexConverter;
 import com.mallease.search.model.data.doc.SpuDocument;
-import com.mallease.search.model.client.query.SpuSearchQuery;
 import com.mallease.search.model.client.vo.SpuSearchPageVO;
 import com.mallease.search.model.client.vo.SpuSearchResultVO;
 import com.mallease.search.service.SpuSearchService;
@@ -34,22 +34,6 @@ public class SpuSearchController {
     private final SpuSearchService spuSearchService;
     private final SpuIndexConverter spuIndexConverter;
     private final SpuDocConverter spuDocConverter;
-
-    @Operation(summary = "商品搜索（带筛选面板）")
-    @PostMapping("/spu")
-    public R<SpuSearchPageVO> search(@Validated @RequestBody SpuSearchQuery query) {
-
-        if (Boolean.TRUE.equals(query.getNeedAggregation())) {
-            return R.success(spuSearchService.searchWithAggregation(query));
-        }
-
-        List<SpuDocument> docs = spuSearchService.search(query);
-        List<SpuSearchResultVO> voList = spuDocConverter.docListToVoList(docs);
-        return R.success(SpuSearchPageVO.builder()
-                .total((long) voList.size())
-                .list(voList)
-                .build());
-    }
 
     @Operation(summary = "搜索建议")
     @GetMapping("/suggest")
@@ -99,5 +83,21 @@ public class SpuSearchController {
     @PutMapping("/internal/product/publish")
     public R<List<Long>> publish(@RequestBody List<Long> spuIds) {
         return R.success(spuSearchService.publish(spuIds));
+    }
+
+    @Operation(summary = "商品搜索（带筛选面板）")
+    @PostMapping("/internal/product/advancedSearch")
+    public R<SpuSearchPageVO> advancedSearch(@Validated @RequestBody SpuSearchQuery query) {
+
+        if (Boolean.TRUE.equals(query.getNeedAggregation())) {
+            return R.success(spuSearchService.searchWithAggregation(query));
+        }
+
+        List<SpuDocument> docs = spuSearchService.search(query);
+        List<SpuSearchResultVO> voList = spuDocConverter.docListToVoList(docs);
+        return R.success(SpuSearchPageVO.builder()
+                .total((long) voList.size())
+                .list(voList)
+                .build());
     }
 }
