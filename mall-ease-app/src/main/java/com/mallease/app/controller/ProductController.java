@@ -2,6 +2,7 @@ package com.mallease.app.controller;
 
 import com.mallease.app.converter.ProductConverter;
 import com.mallease.app.feign.ProductFeignClient;
+import com.mallease.app.feign.SearchFeignClient;
 import com.mallease.app.model.vo.ProductSearchResultVO;
 import com.mallease.app.model.vo.ProductVO;
 import com.mallease.common.api.R;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
     private final ProductFeignClient productFeignClient;
     private final ProductConverter productConverter;
+    private final SearchFeignClient searchFeignClient;
 
     @Operation(summary = "商品详情")
     @GetMapping("/{spuId}")
@@ -38,8 +40,8 @@ public class ProductController {
         if (query.getNeedAggregation() == null) {
             query.setNeedAggregation(true);
         }
-
-        SpuSearchResultDTO resultDTO = productFeignClient.advancedSearch(query).getData();
+        SpuSearchResultDTO resultDTO = searchFeignClient.advancedSearch(query).getData();
+//        SpuSearchResultDTO resultDTO = productFeignClient.advancedSearch(query).getData();
         return R.success(productConverter.searchResultDtoToVo(resultDTO));
     }
 }

@@ -1,8 +1,8 @@
 package com.mallease.search.service;
 
+import com.mallease.common.dto.remote.SpuSearchQuery;
+import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import com.mallease.search.model.data.doc.SpuDocument;
-import com.mallease.search.model.client.query.SpuSearchQuery;
-import com.mallease.search.model.client.vo.SpuSearchPageVO;
 
 import java.util.List;
 
@@ -78,5 +78,5 @@ public interface SpuSearchService {
      * @param query 搜索查询条件
      * @return 商品列表 + 筛选面板
      */
-    SpuSearchPageVO searchWithAggregation(SpuSearchQuery query);
+    SpuSearchResultDTO searchWithAggregation(SpuSearchQuery query);
 }

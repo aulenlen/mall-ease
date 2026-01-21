@@ -2,8 +2,14 @@ package com.mallease.app.feign;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
+import com.mallease.common.dto.remote.SpuSearchQuery;
+import com.mallease.common.dto.remote.SpuSearchResultDTO;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -25,4 +31,9 @@ public interface SearchFeignClient {
      */
     @GetMapping("/search/internal/recommend")
     R<List<SpuRecommendDTO>> listRecommend(@RequestParam(defaultValue = "20") Integer limit);
+
+    @Operation(summary = "商品搜索（带筛选面板）")
+    @PostMapping("/search/internal/product/advancedSearch")
+    R<SpuSearchResultDTO> advancedSearch(@Validated @RequestBody SpuSearchQuery query);
+
 }

@@ -4,11 +4,10 @@ import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
+import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import com.mallease.search.converter.SpuDocConverter;
 import com.mallease.search.converter.SpuIndexConverter;
 import com.mallease.search.model.data.doc.SpuDocument;
-import com.mallease.search.model.client.vo.SpuSearchPageVO;
-import com.mallease.search.model.client.vo.SpuSearchResultVO;
 import com.mallease.search.service.SpuSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,7 +28,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/search")
 @RequiredArgsConstructor
-public class SpuSearchController {
+public class EsController {
 
     private final SpuSearchService spuSearchService;
     private final SpuIndexConverter spuIndexConverter;
@@ -87,17 +86,7 @@ public class SpuSearchController {
 
     @Operation(summary = "商品搜索（带筛选面板）")
     @PostMapping("/internal/product/advancedSearch")
-    public R<SpuSearchPageVO> advancedSearch(@Validated @RequestBody SpuSearchQuery query) {
-
-        if (Boolean.TRUE.equals(query.getNeedAggregation())) {
-            return R.success(spuSearchService.searchWithAggregation(query));
-        }
-
-        List<SpuDocument> docs = spuSearchService.search(query);
-        List<SpuSearchResultVO> voList = spuDocConverter.docListToVoList(docs);
-        return R.success(SpuSearchPageVO.builder()
-                .total((long) voList.size())
-                .list(voList)
-                .build());
+    public R<SpuSearchResultDTO> advancedSearch(@Validated @RequestBody SpuSearchQuery query) {
+        return R.success(spuSearchService.searchWithAggregation(query));
     }
 }

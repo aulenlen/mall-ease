@@ -23,7 +23,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(indexName = "mall_spu_v1")
+@Document(indexName = "mall_spu_v1", createIndex = false)
 @Setting(shards = 1, replicas = 0)
 public class SpuDocument implements Serializable {
     private static final long serialVersionUID = 1L;
