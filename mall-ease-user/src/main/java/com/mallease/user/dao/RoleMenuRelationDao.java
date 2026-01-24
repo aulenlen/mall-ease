@@ -101,4 +101,20 @@ public interface RoleMenuRelationDao {
      * @return 影响行数
      */
     int deleteByMenuId(@Param("menuId") Long menuId);
+
+    /**
+     * 根据角色ID列表查询菜单ID列表
+     *
+     * @param roleIds 角色ID列表
+     * @return 菜单ID列表（已去重）
+     */
+    List<Long> selectMenuIdsByRoleIds(@Param("roleIds") List<Long> roleIds);
+
+    /**
+     * 根据角色ID列表批量删除
+     *
+     * @param roleIds 角色ID列表
+     * @return 影响行数
+     */
+    int deleteByRoleIds(@Param("roleIds") List<Long> roleIds);
 }

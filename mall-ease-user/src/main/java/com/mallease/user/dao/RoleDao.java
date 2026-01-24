@@ -92,5 +92,13 @@ public interface RoleDao {
      * @return 影响行数
      */
     int deleteBatch(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据ID列表批量查询
+     *
+     * @param ids ID列表
+     * @return 记录列表
+     */
+    List<Role> selectByIds(@Param("ids") List<Long> ids);
 }
 

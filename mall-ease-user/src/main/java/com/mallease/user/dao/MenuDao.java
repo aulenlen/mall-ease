@@ -76,5 +76,13 @@ public interface MenuDao {
      * @return 记录列表
      */
     List<Menu> selectAll();
+
+    /**
+     * 根据ID列表批量查询
+     *
+     * @param ids ID列表
+     * @return 记录列表
+     */
+    List<Menu> selectByIds(@Param("ids") List<Long> ids);
 }
 

@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -73,13 +74,9 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int delete(Long id) {
-        // 删除角色
         int count = roleDao.deleteByPrimaryKey(id);
-        // 删除角色-资源关系
         roleResourceRelationDao.deleteByRoleId(id);
-        // 删除角色-菜单关系
         roleMenuRelationDao.deleteByRoleId(id);
-        // 删除管理员-角色关系
         adminRoleRelationDao.deleteByRoleId(id);
         return count;
     }
@@ -87,17 +84,16 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int batchDelete(List<Long> ids) {
+
         if (ids == null || ids.isEmpty()) {
             return 0;
         }
-        // 批量删除角色
+
         int count = roleDao.deleteBatch(ids);
-        // 删除相关关系
-        for (Long id : ids) {
-            roleResourceRelationDao.deleteByRoleId(id);
-            roleMenuRelationDao.deleteByRoleId(id);
-            adminRoleRelationDao.deleteByRoleId(id);
-        }
+        roleResourceRelationDao.deleteByRoleIds(ids);
+        roleMenuRelationDao.deleteByRoleIds(ids);
+        adminRoleRelationDao.deleteByRoleIds(ids);
+
         return count;
     }
 
@@ -109,14 +105,12 @@ public class RoleServiceImpl implements RoleService {
         }
         RoleDetailVO detailVO = roleConverter.entityToDetailVo(role);
 
-        // 查询已分配的资源ID列表
         List<RoleResourceRelation> resourceRelations = roleResourceRelationDao.selectByRoleId(id);
         List<Long> resourceIds = resourceRelations.stream()
                 .map(RoleResourceRelation::getResourceId)
                 .collect(Collectors.toList());
         detailVO.setResourceIds(resourceIds);
 
-        // 查询已分配的菜单ID列表
         List<RoleMenuRelation> menuRelations = roleMenuRelationDao.selectByRoleId(id);
         List<Long> menuIds = menuRelations.stream()
                 .map(RoleMenuRelation::getMenuId)
@@ -161,5 +155,29 @@ public class RoleServiceImpl implements RoleService {
         role.setId(id);
         role.setStatus(status);
         return roleDao.updateByPrimaryKeySelective(role);
+    }
+
+    @Override
+    public List<Role> listByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return roleDao.selectByIds(ids);
+    }
+
+    @Override
+    public List<Long> getResourceIdsByRoleIds(List<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return roleResourceRelationDao.selectResourceIdsByRoleIds(roleIds);
+    }
+
+    @Override
+    public List<Long> getMenuIdsByRoleIds(List<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return roleMenuRelationDao.selectMenuIdsByRoleIds(roleIds);
     }
 }

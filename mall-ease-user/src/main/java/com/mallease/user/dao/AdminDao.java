@@ -1,9 +1,6 @@
 package com.mallease.user.dao;
 
 import com.mallease.user.model.data.Admin;
-import com.mallease.user.model.data.Menu;
-import com.mallease.user.model.data.Resource;
-import com.mallease.user.model.data.Role;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -79,26 +76,5 @@ public interface AdminDao {
      * @return 记录列表
      */
     List<Admin> selectAll();
-
-    /**
-     * 获取用户拥有的资源
-     * @param adminId
-     * @return
-     */
-    List<Resource> getResourceList(@Param("adminId") Long adminId);
-
-    /**
-     * 获取用户角色
-     * @param adminId
-     * @return
-     */
-    List<Role> getRolesByAdminId(@Param("adminId") Long adminId);
-
-    /**
-     * 获取用户菜单
-     * @param adminId
-     * @return
-     */
-    List<Menu> getMenusByAdminId(@Param("adminId") Long adminId);
 }
 

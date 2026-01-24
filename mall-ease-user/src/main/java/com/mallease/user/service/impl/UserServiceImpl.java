@@ -1,16 +1,18 @@
 package com.mallease.user.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.mallease.common.constant.AuthConstant;
-import com.mallease.common.dto.UserDto;
+import com.mallease.common.dto.UserDTO;
 import com.mallease.user.dao.AdminDao;
+import com.mallease.user.dao.AdminRoleRelationDao;
 import com.mallease.user.dao.MemberDao;
 import com.mallease.user.model.data.*;
-import com.mallease.user.service.UserService;
-import com.mallease.user.service.UserCacheService;
+import com.mallease.user.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -26,6 +28,14 @@ public class UserServiceImpl implements UserService {
     private MemberDao memberDao;
     @Autowired
     private UserCacheService userCacheService;
+    @Autowired
+    private AdminRoleRelationDao adminRoleRelationDao;
+    @Autowired
+    private RoleService roleService;
+    @Autowired
+    private ResourceService resourceService;
+    @Autowired
+    private MenuService menuService;
 
     @Override
     public Admin getAdminByUsername(String username) {
@@ -49,12 +59,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<Resource> getResourceList(Long adminId) {
-        return adminDao.getResourceList(adminId);
+
+        List<Long> roleIds = adminRoleRelationDao.selectRoleIdsByAdminId(adminId);
+        if (CollUtil.isEmpty(roleIds)) {
+            return Collections.emptyList();
+        }
+
+        List<Long> resourceIds = roleService.getResourceIdsByRoleIds(roleIds);
+        if (CollUtil.isEmpty(resourceIds)) {
+            return Collections.emptyList();
+        }
+
+        return resourceService.listByIds(resourceIds);
     }
 
     @Override
     public Admin getCurrentAdmin() {
-        UserDto userDto = (UserDto) StpUtil.getSession().get(AuthConstant.STP_ADMIN_INFO);
+        UserDTO userDto = (UserDTO) StpUtil.getSession().get(AuthConstant.STP_ADMIN_INFO);
         Admin admin = userCacheService.getAdmin(userDto.getId());
         if (admin == null) {
             admin = adminDao.selectByPrimaryKey(userDto.getId());
@@ -65,11 +86,28 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<Menu> getCurrentMenus(Long adminId) {
-        return adminDao.getMenusByAdminId(adminId);
+
+        List<Long> roleIds = adminRoleRelationDao.selectRoleIdsByAdminId(adminId);
+        if (CollUtil.isEmpty(roleIds)) {
+            return Collections.emptyList();
+        }
+
+        List<Long> menuIds = roleService.getMenuIdsByRoleIds(roleIds);
+        if (CollUtil.isEmpty(menuIds)) {
+            return Collections.emptyList();
+        }
+
+        return menuService.listByIds(menuIds);
     }
 
     @Override
     public List<Role> getCurrentRoles(Long adminId) {
-        return adminDao.getRolesByAdminId(adminId);
+
+        List<Long> roleIds = adminRoleRelationDao.selectRoleIdsByAdminId(adminId);
+        if (CollUtil.isEmpty(roleIds)) {
+            return Collections.emptyList();
+        }
+
+        return roleService.listByIds(roleIds);
     }
 }

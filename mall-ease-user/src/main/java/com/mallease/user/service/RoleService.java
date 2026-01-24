@@ -4,6 +4,7 @@ import com.github.pagehelper.PageInfo;
 import com.mallease.user.model.client.cmd.SaveRoleCmd;
 import com.mallease.user.model.client.vo.RoleDetailVO;
 import com.mallease.user.model.client.vo.RoleVO;
+import com.mallease.user.model.data.Role;
 
 import java.util.List;
 
@@ -88,4 +89,28 @@ public interface RoleService {
      * @return 影响行数
      */
     int updateStatus(Long id, Integer status);
+
+    /**
+     * 根据ID列表批量查询角色
+     *
+     * @param ids ID列表
+     * @return 角色列表
+     */
+    List<Role> listByIds(List<Long> ids);
+
+    /**
+     * 根据角色ID列表查询资源ID列表
+     *
+     * @param roleIds 角色ID列表
+     * @return 资源ID列表
+     */
+    List<Long> getResourceIdsByRoleIds(List<Long> roleIds);
+
+    /**
+     * 根据角色ID列表查询菜单ID列表
+     *
+     * @param roleIds 角色ID列表
+     * @return 菜单ID列表
+     */
+    List<Long> getMenuIdsByRoleIds(List<Long> roleIds);
 }

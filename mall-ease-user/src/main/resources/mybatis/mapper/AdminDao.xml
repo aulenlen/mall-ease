@@ -38,54 +38,6 @@
         from user_admin
     </select>
 
-    <select id="getResourceList" resultType="com.mallease.user.model.data.Resource">
-        SELECT res.id          id,
-               res.create_time createTime,
-               res.`name`      `name`,
-               res.url         url,
-               res.description description,
-               res.category_id categoryId
-        FROM user_admin_role_relation ar
-                 LEFT JOIN user_role ur ON ar.role_id = ur.id
-                 LEFT JOIN user_role_resource_relation urrr ON ur.id = urrr.role_id
-                 LEFT JOIN user_resource res ON res.id = urrr.resource_id
-        WHERE ar.admin_id = #{adminId}
-          AND res.id IS NOT NULL
-        GROUP BY res.id
-    </select>
-    <select id="getRolesByAdminId" resultType="com.mallease.user.model.data.Role">
-        SELECT
-            ur.*
-        FROM
-            user_admin_role_relation rr
-                LEFT JOIN user_role ur ON rr.role_id = ur.id
-        WHERE
-            rr.admin_id = #{adminId}
-        GROUP BY
-            ur.id
-    </select>
-    <select id="getMenusByAdminId" resultType="com.mallease.user.model.data.Menu">
-        SELECT
-            m.id id,
-            m.parent_id parentId,
-            m.create_time createTime,
-            m.title title,
-            m.LEVEL LEVEL,
-            m.sort sort,
-            m.NAME NAME,
-            m.icon icon,
-            m.hidden hidden
-        FROM
-            user_admin_role_relation arr
-                LEFT JOIN user_role ur ON arr.role_id = ur.id
-                LEFT JOIN user_role_menu_relation mr ON mr.role_id = ur.id
-                LEFT JOIN user_menu m ON m.id = mr.menu_id
-        WHERE
-            arr.admin_id = #{adminId}
-        GROUP BY
-            m.id
-    </select>
-
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from user_admin
         where id = #{id,jdbcType=BIGINT}

@@ -3,8 +3,11 @@ package com.mallease.user.controller;
 import com.mallease.common.api.R;
 import com.mallease.user.model.data.MemberLevel;
 import com.mallease.user.service.MemberLevelService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,22 +18,19 @@ import java.util.List;
  * @author: Aulen
  * @create: 2025-11-13
  */
+@Tag(name = "会员等级管理", description = "会员等级增删改查")
 @RestController
 @RequestMapping("/user/memberLevel")
 @Slf4j
+@RequiredArgsConstructor
 public class MemberLevelController {
 
-    @Autowired
-    private MemberLevelService memberLevelService;
+    private final MemberLevelService memberLevelService;
 
-    /**
-     * 查询所有会员等级
-     *
-     * @param defaultStatus 默认状态 0->不是；1->是(可选)
-     * @return 会员等级列表
-     */
+    @Operation(summary = "查询会员等级列表")
     @GetMapping("/list")
-    public R<List<MemberLevel>> list(@RequestParam(required = false) Integer defaultStatus) {
+    public R<List<MemberLevel>> list(
+            @Parameter(description = "是否默认等级：0-否，1-是") @RequestParam(required = false) Integer defaultStatus) {
         log.info("查询会员等级列表, defaultStatus: {}", defaultStatus);
         try {
             List<MemberLevel> list;
@@ -46,14 +46,10 @@ public class MemberLevelController {
         }
     }
 
-    /**
-     * 根据ID查询会员等级
-     *
-     * @param id 会员等级ID
-     * @return 会员等级详情
-     */
+    @Operation(summary = "根据ID查询会员等级")
     @GetMapping("/{id}")
-    public R<MemberLevel> getById(@PathVariable Long id) {
+    public R<MemberLevel> getById(
+            @Parameter(description = "会员等级ID") @PathVariable Long id) {
         log.info("根据ID查询会员等级, id: {}", id);
         try {
             MemberLevel memberLevel = memberLevelService.getById(id);
@@ -67,12 +63,7 @@ public class MemberLevelController {
         }
     }
 
-    /**
-     * 创建会员等级
-     *
-     * @param memberLevel 会员等级信息
-     * @return 创建结果
-     */
+    @Operation(summary = "创建会员等级")
     @PostMapping("/create")
     public R<Integer> create(@RequestBody MemberLevel memberLevel) {
         log.info("创建会员等级, memberLevel: {}", memberLevel);
@@ -88,12 +79,7 @@ public class MemberLevelController {
         }
     }
 
-    /**
-     * 更新会员等级
-     *
-     * @param memberLevel 会员等级信息
-     * @return 更新结果
-     */
+    @Operation(summary = "更新会员等级")
     @PostMapping("/update")
     public R<Integer> update(@RequestBody MemberLevel memberLevel) {
         log.info("更新会员等级, memberLevel: {}", memberLevel);
@@ -109,14 +95,10 @@ public class MemberLevelController {
         }
     }
 
-    /**
-     * 删除会员等级
-     *
-     * @param id 会员等级ID
-     * @return 删除结果
-     */
+    @Operation(summary = "删除会员等级")
     @DeleteMapping("/{id}")
-    public R<Integer> delete(@PathVariable Long id) {
+    public R<Integer> delete(
+            @Parameter(description = "会员等级ID") @PathVariable Long id) {
         log.info("删除会员等级, id: {}", id);
         try {
             int count = memberLevelService.delete(id);

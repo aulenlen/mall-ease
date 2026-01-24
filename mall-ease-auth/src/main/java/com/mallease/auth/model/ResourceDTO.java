@@ -1,4 +1,4 @@
-package com.mallease.auth.dto;
+package com.mallease.auth.model;
 
 import lombok.Data;
 

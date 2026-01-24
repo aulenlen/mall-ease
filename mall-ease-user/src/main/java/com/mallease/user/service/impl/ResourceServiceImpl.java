@@ -8,6 +8,7 @@ import com.mallease.user.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,5 +33,13 @@ public class ResourceServiceImpl implements ResourceService {
         redisService.del(AuthConstant.PATH_RESOURCE_MAP);
         redisService.hSetAll(AuthConstant.PATH_RESOURCE_MAP, resourceMap);
         return resourceMap;
+    }
+
+    @Override
+    public List<Resource> listByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return resourceDao.selectByIds(ids);
     }
 }

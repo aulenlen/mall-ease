@@ -93,5 +93,21 @@ public interface AdminRoleRelationDao {
      * @return 影响行数
      */
     int deleteByRoleId(@Param("roleId") Long roleId);
+
+    /**
+     * 根据管理员ID查询角色ID列表
+     *
+     * @param adminId 管理员ID
+     * @return 角色ID列表
+     */
+    List<Long> selectRoleIdsByAdminId(@Param("adminId") Long adminId);
+
+    /**
+     * 根据角色ID列表批量删除
+     *
+     * @param roleIds 角色ID列表
+     * @return 影响行数
+     */
+    int deleteByRoleIds(@Param("roleIds") List<Long> roleIds);
 }
 

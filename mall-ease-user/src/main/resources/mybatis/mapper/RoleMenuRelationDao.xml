@@ -105,4 +105,21 @@
             menu_id = #{menuId,jdbcType=BIGINT}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <select id="selectMenuIdsByRoleIds" resultType="java.lang.Long">
+        SELECT DISTINCT menu_id
+        FROM user_role_menu_relation
+        WHERE role_id IN
+        <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+            #{roleId,jdbcType=BIGINT}
+        </foreach>
+    </select>
+
+    <delete id="deleteByRoleIds">
+        DELETE FROM user_role_menu_relation
+        WHERE role_id IN
+        <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+            #{roleId,jdbcType=BIGINT}
+        </foreach>
+    </delete>
 </mapper>

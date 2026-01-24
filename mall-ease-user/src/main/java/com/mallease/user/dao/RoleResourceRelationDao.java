@@ -93,5 +93,21 @@ public interface RoleResourceRelationDao {
      * @return 影响行数
      */
     int deleteByResourceId(@Param("resourceId") Long resourceId);
+
+    /**
+     * 根据角色ID列表查询资源ID列表
+     *
+     * @param roleIds 角色ID列表
+     * @return 资源ID列表（已去重）
+     */
+    List<Long> selectResourceIdsByRoleIds(@Param("roleIds") List<Long> roleIds);
+
+    /**
+     * 根据角色ID列表批量删除
+     *
+     * @param roleIds 角色ID列表
+     * @return 影响行数
+     */
+    int deleteByRoleIds(@Param("roleIds") List<Long> roleIds);
 }
 
