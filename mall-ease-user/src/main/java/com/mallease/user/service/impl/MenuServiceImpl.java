@@ -1,10 +1,12 @@
 package com.mallease.user.service.impl;
 
+import com.mallease.common.exception.ApiException;
 import com.mallease.user.dao.MenuDao;
 import com.mallease.user.model.data.Menu;
 import com.mallease.user.service.MenuService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,4 +40,45 @@ public class MenuServiceImpl implements MenuService {
     public List<Menu> listByParentId(Long parentId) {
         return menuDao.selectByParentId(parentId);
     }
+
+    @Override
+    public Integer create(Menu menu) {
+        return menuDao.insert(menu);
+    }
+
+    @Override
+    public Integer update(Menu menu) {
+        return menuDao.updateByPrimaryKeySelective(menu);
+    }
+
+    @Override
+    public Integer delete(Long id) {
+        List<Menu> menus = menuDao.selectByParentId(id);
+        if (menus != null && !menus.isEmpty()) {
+            throw new ApiException("存在下属菜单，无法删除！");
+        }
+        return menuDao.deleteByPrimaryKey(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteBatch(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return 0;
+        }
+
+        List<Menu> menus = menuDao.selectByParentIds(ids);
+        if (menus != null && !menus.isEmpty()) {
+            throw new ApiException("存在下属菜单，无法删除！");
+        }
+
+        return menuDao.deleteBatch(ids);
+    }
+
+    @Override
+    public Menu getById(Long id) {
+        return menuDao.selectByPrimaryKey(id);
+    }
+
+
 }

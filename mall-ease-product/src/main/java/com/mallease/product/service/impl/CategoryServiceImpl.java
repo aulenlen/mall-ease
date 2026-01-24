@@ -106,11 +106,9 @@ public class CategoryServiceImpl implements CategoryService {
             throw new ApiException("分类不存在，ID: " + entity.getId());
         }
 
-        // 判断是否需要移动（newParentId不为null且与原parentId不同）
         boolean needMove = newParentId != null && !newParentId.equals(original.getParentId());
         if (needMove) {
             moveCategory(original, newParentId);
-            // 移动后将新的path/level/parentId复制到entity
             entity.setPath(original.getPath());
             entity.setLevel(original.getLevel());
             entity.setParentId(original.getParentId());

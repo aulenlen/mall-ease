@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "保存菜单命令")
-public class SaveMenuCmd {
+public class MenuCmd {
 
     /**
      * 创建时的校验组

@@ -1,6 +1,6 @@
 package com.mallease.user.converter;
 
-import com.mallease.user.model.client.cmd.SaveRoleCmd;
+import com.mallease.user.model.client.cmd.RoleCmd;
 import com.mallease.user.model.client.vo.RoleDetailVO;
 import com.mallease.user.model.client.vo.RoleVO;
 import com.mallease.user.model.data.Role;
@@ -36,10 +36,10 @@ public interface RoleConverter {
     /**
      * Cmd → Entity
      */
-    Role cmdToEntity(SaveRoleCmd cmd);
+    Role cmdToEntity(RoleCmd cmd);
 
     /**
      * Cmd → Entity (更新)
      */
-    void updateEntityFromCmd(@MappingTarget Role entity, SaveRoleCmd cmd);
+    void updateEntityFromCmd(@MappingTarget Role entity, RoleCmd cmd);
 }

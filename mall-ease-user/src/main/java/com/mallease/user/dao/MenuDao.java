@@ -84,5 +84,21 @@ public interface MenuDao {
      * @return 记录列表
      */
     List<Menu> selectByIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据ID列表批量查询子类
+     *
+     * @param ids ID列表
+     * @return 记录列表
+     */
+    List<Menu> selectByParentIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据ID列表删除菜单
+     *
+     * @param ids ID列表
+     * @return 影响行数
+     */
+    int deleteBatch(List<Long> ids);
 }
 

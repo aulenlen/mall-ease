@@ -6,17 +6,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.List;
 
 /**
- * 菜单树形视图对象
- * <p>
- * 用于树形结构展示，包含子菜单列表
+ * 菜单视图对象
  *
  * @author: Aulen
  * @create: 2026-01-23
  */
-@Schema(description = "菜单树形视图对象")
+@Schema(description = "菜单树形结构")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -46,6 +45,9 @@ public class MenuTreeVO {
 
     @Schema(description = "是否隐藏：0->不隐藏；1->隐藏")
     private Integer hidden;
+
+    @Schema(description = "创建时间")
+    private Date createTime;
 
     @Schema(description = "子菜单列表")
     private List<MenuTreeVO> children;

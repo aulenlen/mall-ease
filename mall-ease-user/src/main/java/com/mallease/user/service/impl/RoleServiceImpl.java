@@ -8,7 +8,7 @@ import com.mallease.user.dao.AdminRoleRelationDao;
 import com.mallease.user.dao.RoleDao;
 import com.mallease.user.dao.RoleMenuRelationDao;
 import com.mallease.user.dao.RoleResourceRelationDao;
-import com.mallease.user.model.client.cmd.SaveRoleCmd;
+import com.mallease.user.model.client.cmd.RoleCmd;
 import com.mallease.user.model.client.vo.RoleDetailVO;
 import com.mallease.user.model.client.vo.RoleVO;
 import com.mallease.user.model.data.Role;
@@ -52,7 +52,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(SaveRoleCmd cmd) {
+    public Long create(RoleCmd cmd) {
         Role role = roleConverter.cmdToEntity(cmd);
         role.setCreateTime(new Date());
         role.setAdminCount(0);
@@ -62,7 +62,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int update(SaveRoleCmd cmd) {
+    public int update(RoleCmd cmd) {
         Role role = roleDao.selectByPrimaryKey(cmd.getId());
         if (role == null) {
             throw new IllegalArgumentException("角色不存在");

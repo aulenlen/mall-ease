@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "保存资源命令")
-public class SaveResourceCmd {
+public class ResourceCmd {
 
     /**
      * 创建时的校验组

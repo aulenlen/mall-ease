@@ -1,5 +1,6 @@
 package com.mallease.user.service;
 
+import com.mallease.user.model.client.vo.MenuVO;
 import com.mallease.user.model.data.Menu;
 
 import java.util.List;
@@ -34,4 +35,39 @@ public interface MenuService {
      * @return 子菜单列表
      */
     List<Menu> listByParentId(Long parentId);
+
+    /**
+     * 创建菜单
+     * @param menu 菜单对象
+     * @return 影响的行数
+     */
+    Integer create(Menu menu);
+
+    /**
+     * 更新菜单
+     * @param menu 菜单对象
+     * @return 影响的行数
+     */
+    Integer update(Menu menu);
+
+    /**
+     * 删除菜单
+     * @param id 菜单ID
+     * @return 影响的行数
+     */
+    Integer delete(Long id);
+
+    /**
+     * 批量删除菜单
+     * @param ids 菜单ID列表
+     * @return 影响的行数
+     */
+    int deleteBatch(List<Long> ids);
+
+    /**
+     * 通过ID获取详情
+     * @param id 菜单ID
+     * @return 菜单
+     */
+    Menu getById(Long id);
 }

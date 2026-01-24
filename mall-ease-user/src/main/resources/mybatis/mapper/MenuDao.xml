@@ -14,7 +14,8 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, parent_id, create_time, title, level, sort, name, icon, hidden
+        id
+        , parent_id, create_time, title, level, sort, name, icon, hidden
     </sql>
 
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
@@ -38,20 +39,31 @@
     </select>
 
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
-        delete from user_menu
+        delete
+        from user_menu
         where id = #{id,jdbcType=BIGINT}
+    </delete>
+
+    <delete id="deleteBatch">
+        delete
+        from user_menu
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
     </delete>
 
     <insert id="insert" parameterType="com.mallease.user.model.data.Menu" useGeneratedKeys="true" keyProperty="id">
         insert into user_menu (id, parent_id, create_time,
-                              title, level, sort,
-                              name, icon, hidden)
+                               title, level, sort,
+                               name, icon, hidden)
         values (#{id,jdbcType=BIGINT}, #{parentId,jdbcType=BIGINT}, #{createTime,jdbcType=TIMESTAMP},
                 #{title,jdbcType=VARCHAR}, #{level,jdbcType=INTEGER}, #{sort,jdbcType=INTEGER},
                 #{name,jdbcType=VARCHAR}, #{icon,jdbcType=VARCHAR}, #{hidden,jdbcType=INTEGER})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.user.model.data.Menu" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.user.model.data.Menu" useGeneratedKeys="true"
+            keyProperty="id">
         insert into user_menu
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
@@ -146,14 +158,14 @@
 
     <update id="updateByPrimaryKey" parameterType="com.mallease.user.model.data.Menu">
         update user_menu
-        set parent_id = #{parentId,jdbcType=BIGINT},
+        set parent_id   = #{parentId,jdbcType=BIGINT},
             create_time = #{createTime,jdbcType=TIMESTAMP},
-            title = #{title,jdbcType=VARCHAR},
-            level = #{level,jdbcType=INTEGER},
-            sort = #{sort,jdbcType=INTEGER},
-            name = #{name,jdbcType=VARCHAR},
-            icon = #{icon,jdbcType=VARCHAR},
-            hidden = #{hidden,jdbcType=INTEGER}
+            title       = #{title,jdbcType=VARCHAR},
+            level       = #{level,jdbcType=INTEGER},
+            sort        = #{sort,jdbcType=INTEGER},
+            name        = #{name,jdbcType=VARCHAR},
+            icon        = #{icon,jdbcType=VARCHAR},
+            hidden      = #{hidden,jdbcType=INTEGER}
         where id = #{id,jdbcType=BIGINT}
     </update>
 
@@ -164,6 +176,16 @@
         WHERE id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id,jdbcType=BIGINT}
+        </foreach>
+    </select>
+
+    <select id="selectByParentIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from user_menu
+        where parent_id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
         </foreach>
     </select>
 </mapper>

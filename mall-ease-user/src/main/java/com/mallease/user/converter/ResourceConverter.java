@@ -1,6 +1,6 @@
 package com.mallease.user.converter;
 
-import com.mallease.user.model.client.cmd.SaveResourceCmd;
+import com.mallease.user.model.client.cmd.ResourceCmd;
 import com.mallease.user.model.client.vo.ResourceVO;
 import com.mallease.user.model.data.Resource;
 import org.mapstruct.Mapper;
@@ -30,10 +30,10 @@ public interface ResourceConverter {
     /**
      * Cmd → Entity
      */
-    Resource cmdToEntity(SaveResourceCmd cmd);
+    Resource cmdToEntity(ResourceCmd cmd);
 
     /**
      * Cmd → Entity (更新)
      */
-    void updateEntityFromCmd(@MappingTarget Resource entity, SaveResourceCmd cmd);
+    void updateEntityFromCmd(@MappingTarget Resource entity, ResourceCmd cmd);
 }

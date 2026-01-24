@@ -18,6 +18,7 @@ import com.mallease.product.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -36,13 +37,12 @@ import java.util.stream.Collectors;
 @Tag(name = "商品分类管理", description = "分类增删改查、树形结构、导航管理")
 @RestController
 @RequestMapping("/product/category")
+@RequiredArgsConstructor
 public class CategoryController {
 
-    @Autowired
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
 
-    @Autowired
-    private CategoryConverter categoryConverter;
+    private final CategoryConverter categoryConverter;
 
     @Operation(summary = "创建分类")
     @PostMapping("/create")

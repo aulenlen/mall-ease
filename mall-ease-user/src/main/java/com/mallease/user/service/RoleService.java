@@ -1,7 +1,7 @@
 package com.mallease.user.service;
 
 import com.github.pagehelper.PageInfo;
-import com.mallease.user.model.client.cmd.SaveRoleCmd;
+import com.mallease.user.model.client.cmd.RoleCmd;
 import com.mallease.user.model.client.vo.RoleDetailVO;
 import com.mallease.user.model.client.vo.RoleVO;
 import com.mallease.user.model.data.Role;
@@ -22,7 +22,7 @@ public interface RoleService {
      * @param cmd 保存角色命令
      * @return 角色ID
      */
-    Long create(SaveRoleCmd cmd);
+    Long create(RoleCmd cmd);
 
     /**
      * 更新角色
@@ -30,7 +30,7 @@ public interface RoleService {
      * @param cmd 保存角色命令
      * @return 影响行数
      */
-    int update(SaveRoleCmd cmd);
+    int update(RoleCmd cmd);
 
     /**
      * 删除角色

@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "保存角色命令")
-public class SaveRoleCmd {
+public class RoleCmd {
 
     /**
      * 创建时的校验组
