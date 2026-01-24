@@ -1,8 +1,8 @@
 package com.mallease.user.controller;
 
 import com.mallease.common.api.R;
-import com.mallease.user.pojo.*;
-import com.mallease.user.service.IUserService;
+import com.mallease.user.model.data.*;
+import com.mallease.user.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +24,7 @@ import java.util.Map;
 @Slf4j
 public class UserController {
     @Autowired
-    private IUserService userService;
+    private UserService userService;
 
     /**
      * 示例：获取当前登录用户信息
@@ -34,11 +34,11 @@ public class UserController {
     public R<Map<String, Object>> getCurrentAdmin() {
         try {
             // 从session中获取管理员信息
-            UserAdmin admin = userService.getCurrentAdmin();
-            List<UserRole> roleList = userService.getCurrentRoles(admin.getId());
-            List<String> roles = roleList.stream().map(UserRole::getName).toList();
+            Admin admin = userService.getCurrentAdmin();
+            List<Role> roleList = userService.getCurrentRoles(admin.getId());
+            List<String> roles = roleList.stream().map(Role::getName).toList();
             Map<String, Object> data = new HashMap<>();
-            List<UserMenu> menus = userService.getCurrentMenus(admin.getId());
+            List<Menu> menus = userService.getCurrentMenus(admin.getId());
             data.put("username", admin.getUsername());
             data.put("icon", admin.getIcon());
             data.put("roles",roles);
@@ -52,33 +52,33 @@ public class UserController {
 
     // 管理员接口
     @GetMapping("/admin/username/{username}")
-    public R<UserAdmin> getAdminByUsername(@PathVariable String username) {
-        UserAdmin admin = userService.getAdminByUsername(username);
+    public R<Admin> getAdminByUsername(@PathVariable String username) {
+        Admin admin = userService.getAdminByUsername(username);
         return R.success(admin);
     }
 
     @GetMapping("/admin/{id}")
-    public R<UserAdmin> getAdminById(@PathVariable Long id) {
-        UserAdmin admin = userService.getAdminById(id);
+    public R<Admin> getAdminById(@PathVariable Long id) {
+        Admin admin = userService.getAdminById(id);
         return R.success(admin);
     }
 
     // 会员接口
     @GetMapping("/member/username/{username}")
-    public R<UserMember> getMemberByUsername(@PathVariable String username) {
-        UserMember member = userService.getMemberByUsername(username);
+    public R<Member> getMemberByUsername(@PathVariable String username) {
+        Member member = userService.getMemberByUsername(username);
         return R.success(member);
     }
 
     @GetMapping("/member/{id}")
-    public R<UserMember> getMemberById(@PathVariable Long id) {
-        UserMember member = userService.getMemberById(id);
+    public R<Member> getMemberById(@PathVariable Long id) {
+        Member member = userService.getMemberById(id);
         return R.success(member);
     }
 
     @GetMapping("/admin/resource/{adminId}")
-    public R<List<UserResource>> getResourceList(@PathVariable Long adminId) {
-        List<UserResource> resourceList = userService.getResourceList(adminId);
+    public R<List<Resource>> getResourceList(@PathVariable Long adminId) {
+        List<Resource> resourceList = userService.getResourceList(adminId);
         return R.success(resourceList);
     }
 }

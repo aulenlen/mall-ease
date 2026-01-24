@@ -1,6 +1,6 @@
 package com.mallease.user.component;
 
-import com.mallease.user.service.UserResourceService;
+import com.mallease.user.service.ResourceService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class UrlPathResourceHolder {
     @Autowired
-    private UserResourceService resourceService;
+    private ResourceService resourceService;
 
     @PostConstruct
     public void initResource() {

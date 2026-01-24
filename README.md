@@ -23,31 +23,31 @@ Mall-Ease 是一个基于 Spring Boot 3.2.2 和 Spring Cloud 2023.0.1 的微服�
 mall-ease/
 ├── pom.xml                          # 父 POM 文件
 ├── mall-ease-auth/                  # 认证服务模块
-├── mall-ease-admin/                 # 管理后台模块
-├── mall-ease-portal/                # 门户模块
-├── mall-ease-common/                # 公共模块
 ├── mall-ease-gateway/               # 网关模块
-├── mall-ease-monitor/               # 监控模块
-├── mall-ease-oms/                   # 订单管理服务模块
-├── mall-ease-pms/                   # 商品管理服务模块
+├── mall-ease-user/                  # 用户服务模块
+├── mall-ease-product/               # 商品服务模块
+├── mall-ease-trade/                 # 交易服务模块（订单/支付）
+├── mall-ease-content/               # 内容服务模块
+├── mall-ease-marketing/             # 营销服务模块
 ├── mall-ease-search/                # 搜索服务模块
-├── mall-ease-sms/                   # 短信服务模块
-└── mall-ease-ums/                   # 用户管理服务模块
+├── mall-ease-monitor/               # 监控模块
+├── mall-ease-app/                   # 应用编排/BFF 模块
+└── mall-ease-common/                # 公共模块
 ```
 
 ## 模块说明
 
 - **mall-ease-auth**: 提供用户认证和授权服务
-- **mall-ease-admin**: 管理后台服务
-- **mall-ease-portal**: 前端门户服务
-- **mall-ease-common**: 公共工具类和通用组件
 - **mall-ease-gateway**: API 网关服务
-- **mall-ease-monitor**: 系统监控服务
-- **mall-ease-oms**: 订单管理系统
-- **mall-ease-pms**: 商品管理系统
+- **mall-ease-user**: 用户服务
+- **mall-ease-product**: 商品服务
+- **mall-ease-trade**: 交易服务（订单/支付）
+- **mall-ease-content**: 内容服务
+- **mall-ease-marketing**: 营销服务
 - **mall-ease-search**: 商品搜索服务
-- **mall-ease-sms**: 短信服务
-- **mall-ease-ums**: 用户管理系统
+- **mall-ease-monitor**: 系统监控服务
+- **mall-ease-app**: 应用编排/BFF 服务
+- **mall-ease-common**: 公共工具类和通用组件
 
 ## 快速开始
 

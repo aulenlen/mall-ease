@@ -14,7 +14,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.2</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
 
     <modules>
@@ -23,7 +23,7 @@
         <module>mall-ease-common</module>
         <module>mall-ease-gateway</module>
         <module>mall-ease-monitor</module>
-        <module>mall-ease-order</module>
+        <module>mall-ease-trade</module>
         <module>mall-ease-product</module>
         <module>mall-ease-content</module>
         <module>mall-ease-search</module>
