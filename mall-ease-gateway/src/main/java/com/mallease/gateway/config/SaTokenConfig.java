@@ -7,8 +7,6 @@ import cn.dev33.satoken.reactor.context.SaReactorSyncHolder;
 import cn.dev33.satoken.reactor.filter.SaReactorFilter;
 import cn.dev33.satoken.router.SaHttpMethod;
 import cn.dev33.satoken.router.SaRouter;
-import cn.dev33.satoken.stp.StpUtil;
-import cn.dev33.satoken.util.SaResult;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,65 +33,90 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * Sa-Token 权限认证全局配置类（支持多账号体系）
+ *
  * @author: Aulen
- * @description: [Sa-Token 权限认证] 全局配置类
- * @create: 2025-11-08 23:25
- **/
+ * @create: 2025-11-08
+ */
 @Configuration
 @Slf4j
 public class SaTokenConfig {
+
     @Autowired
     private RedisService redisService;
 
-    // 注册 Sa-Token全局过滤器
+    /**
+     * 登录接口放行列表
+     */
+    private static final List<String> LOGIN_EXCLUDE_PATHS = List.of(
+            "/mall-ease-auth/auth/admin/login",
+            "/mall-ease-auth/auth/portal/login"
+    );
+
+    /**
+     * 前台 BFF 放行路径
+     */
+    private static final String APP_PATH_PATTERN = "/mall-ease-app/**";
+
     @Bean
     public SaReactorFilter getSaReactorFilter() {
-        List<String> list = new ArrayList<>();
-        list.add("/mall-ease-auth/auth/admin/login");
-        list.add("/mall-ease-app/**");  // App端由自身处理鉴权
+        List<String> excludeList = new ArrayList<>(LOGIN_EXCLUDE_PATHS);
+        excludeList.add(APP_PATH_PATTERN);
+
         return new SaReactorFilter()
-                // 拦截地址
-                .addInclude("/**")    /* 拦截全部path */
-                // 开放地址
+                .addInclude("/**")
                 .addExclude("/favicon.ico")
-                .setExcludeList(list)
-                // 鉴权方法：每次访问进入
+                .setExcludeList(excludeList)
                 .setAuth(obj -> {
-                    // 对于OPTIONS预检请求直接放行
                     SaRouter.match(SaHttpMethod.OPTIONS).stop();
-                    // 登录校验 -- 拦截所有路由，并排除/user/doLogin 用于开放登录
-                    SaRouter.match("/**", "/mall-ease-auth/auth/admin/login", r -> StpUtil.checkLogin());
-                    // 获取Redis中缓存的各个接口路径所需权限规则
-                    Map<Object, Object> map = redisService.hGetAll(AuthConstant.PATH_RESOURCE_MAP);
-                    // 获取到访问当前接口所需权限（一个路径对应多个资源时，拥有任意一个资源都可以访问该路径）
-                    List<String> needPermissionList = new ArrayList<>();
-                    // 获取当前请求路径
-                    String requestPath = SaHolder.getRequest().getRequestPath();
-                    // 创建路径匹配器
-                    PathMatcher pathMatcher = new AntPathMatcher();
-                    Set<Map.Entry<Object, Object>> entrySet = map.entrySet();
-                    for (Map.Entry<Object, Object> entry : entrySet) {
-                        String pattern = (String) entry.getKey();
-                        if (pathMatcher.match(pattern, requestPath)) {
-                            needPermissionList.add((String) entry.getValue());
-                        }
-                    }
-                    // 接口需要权限时鉴权
-                    if (CollUtil.isNotEmpty(needPermissionList)) {
-                        SaRouter.match(requestPath, r -> StpUtil.checkPermissionOr(Convert.toStrArray(needPermissionList)));
-                    }
+
+                    // 后台管理接口：使用 admin 账号体系校验
+                    SaRouter.match("/mall-ease-user/**", "/mall-ease-product/**", "/mall-ease-content/**",
+                                    "/mall-ease-marketing/**")
+                            .notMatch(LOGIN_EXCLUDE_PATHS.toArray(new String[0]))
+                            .check(r -> {
+                                StpAdminUtil.checkLogin();
+                                checkAdminPermission();
+                            });
+
+                    // 前台接口如需登录校验，使用 member 账号体系
+                    // 目前 /mall-ease-app/** 已放行，如需部分接口校验可在此添加
                 })
                 .setError(this::handleException);
+    }
+
+    /**
+     * 检查管理员权限
+     */
+    private void checkAdminPermission() {
+        Map<Object, Object> map = redisService.hGetAll(AuthConstant.PATH_RESOURCE_MAP);
+        if (map == null || map.isEmpty()) {
+            return;
+        }
+
+        String requestPath = SaHolder.getRequest().getRequestPath();
+        PathMatcher pathMatcher = new AntPathMatcher();
+        List<String> needPermissionList = new ArrayList<>();
+
+        Set<Map.Entry<Object, Object>> entrySet = map.entrySet();
+        for (Map.Entry<Object, Object> entry : entrySet) {
+            String pattern = (String) entry.getKey();
+            if (pathMatcher.match(pattern, requestPath)) {
+                needPermissionList.add((String) entry.getValue());
+            }
+        }
+
+        if (CollUtil.isNotEmpty(needPermissionList)) {
+            StpAdminUtil.checkPermissionOr(Convert.toStrArray(needPermissionList));
+        }
     }
 
     /**
      * 自定义异常处理
      */
     private Object handleException(Throwable e) {
-        e.printStackTrace();
         log.error("网关异常处理: {}", e.getMessage(), e);
 
-        //设置错误返回格式为JSON
         ServerWebExchange exchange = SaReactorSyncHolder.getContext();
         if (exchange == null) {
             log.error("无法获取 ServerWebExchange 上下文");
@@ -105,7 +128,7 @@ public class SaTokenConfig {
         headers.set("Access-Control-Allow-Origin", "*");
         headers.set("Cache-Control", "no-cache");
 
-        R result;
+        R<?> result;
         HttpStatus status;
 
         if (e instanceof NotLoginException) {
@@ -119,17 +142,13 @@ public class SaTokenConfig {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         }
 
-        // 设置响应状态码
         exchange.getResponse().setStatusCode(status);
 
-        // 手动写入响应体
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(result);
             DataBufferFactory bufferFactory = exchange.getResponse().bufferFactory();
             DataBuffer buffer = bufferFactory.wrap(json.getBytes("UTF-8"));
-
-            // 异步写入响应体
             exchange.getResponse().writeWith(Mono.just(buffer)).subscribe();
         } catch (Exception ex) {
             log.error("序列化响应失败", ex);
