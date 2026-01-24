@@ -1,4 +1,4 @@
-package com.mallease.auth.model.request;
+package com.mallease.auth.model.query;
 
 import lombok.Data;
 
@@ -8,7 +8,7 @@ import lombok.Data;
  * @create: 2025-11-09 21:45
  **/
 @Data
-public class LoginRequest {
+public class LoginQuery {
     private String username;
     private String password;
     private String userType;

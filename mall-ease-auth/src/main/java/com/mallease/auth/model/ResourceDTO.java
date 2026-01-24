@@ -10,7 +10,7 @@ import java.util.Date;
  * @create: 2025-11-10 00:17
  **/
 @Data
-public class UserResourceDto {
+public class ResourceDTO {
     /**
      * 主键ID
      */

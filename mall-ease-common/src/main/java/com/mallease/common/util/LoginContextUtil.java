@@ -2,7 +2,7 @@ package com.mallease.common.util;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.mallease.common.constant.AuthConstant;
-import com.mallease.common.dto.UserDto;
+import com.mallease.common.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -15,26 +15,24 @@ import lombok.extern.slf4j.Slf4j;
 public class LoginContextUtil {
 
     /**
-     * 获取当前登录用户的 UserDto 对象
+     * 获取当前登录用户的 UserDTO 对象
      *
-     * @return UserDto对象，未登录返回null
+     * @return UserDTO，未登录返回null
      */
-    private static UserDto getCurrentUser() {
+    private static UserDTO getCurrentUser() {
         try {
             if (!StpUtil.isLogin()) {
                 return null;
             }
 
-            // 优先尝试获取管理员信息
             Object adminInfo = StpUtil.getSession().get(AuthConstant.STP_ADMIN_INFO);
-            if (adminInfo instanceof UserDto) {
-                return (UserDto) adminInfo;
+            if (adminInfo instanceof UserDTO) {
+                return (UserDTO) adminInfo;
             }
 
-            // 尝试获取会员信息
             Object memberInfo = StpUtil.getSession().get(AuthConstant.STP_MEMBER_INFO);
-            if (memberInfo instanceof UserDto) {
-                return (UserDto) memberInfo;
+            if (memberInfo instanceof UserDTO) {
+                return (UserDTO) memberInfo;
             }
 
             return null;
@@ -64,7 +62,7 @@ public class LoginContextUtil {
      * @return 用户名
      */
     public static String getUserName() {
-        UserDto userDto = getCurrentUser();
+        UserDTO userDto = getCurrentUser();
         return userDto != null ? userDto.getUsername() : null;
     }
 
@@ -74,7 +72,7 @@ public class LoginContextUtil {
      * @return 客户端ID（admin-app 或 portal-app）
      */
     public static String getClientId() {
-        UserDto userDto = getCurrentUser();
+        UserDTO userDto = getCurrentUser();
         return userDto != null ? userDto.getClientId() : null;
     }
 
@@ -84,7 +82,7 @@ public class LoginContextUtil {
      * @return 权限列表
      */
     public static java.util.List<String> getPermissionList() {
-        UserDto userDto = getCurrentUser();
+        UserDTO userDto = getCurrentUser();
         return userDto != null && userDto.getPermissionList() != null
             ? userDto.getPermissionList()
             : java.util.Collections.emptyList();
@@ -148,11 +146,11 @@ public class LoginContextUtil {
     }
 
     /**
-     * 获取完整的 UserDto 对象
+     * 获取完整的 UserDTO 对象
      *
      * @return UserDto对象，未登录返回null
      */
-    public static UserDto getUserDto() {
+    public static UserDTO getUserDto() {
         return getCurrentUser();
     }
 }

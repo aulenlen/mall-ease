@@ -60,4 +60,14 @@ public interface AuthConstant {
      * sa-token session中存储的后台管理员信息
      */
     String STP_ADMIN_INFO = "adminInfo";
+
+    /**
+     * Sa-Token 多账号体系 - 管理员登录类型
+     */
+    String LOGIN_TYPE_ADMIN = "admin";
+
+    /**
+     * Sa-Token 多账号体系 - 会员登录类型
+     */
+    String LOGIN_TYPE_MEMBER = "member";
 }

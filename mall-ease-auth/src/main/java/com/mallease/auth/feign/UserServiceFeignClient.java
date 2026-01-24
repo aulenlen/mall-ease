@@ -1,8 +1,8 @@
 package com.mallease.auth.feign;
 
-import com.mallease.auth.dto.UserAdminDto;
-import com.mallease.auth.dto.UserMemberDto;
-import com.mallease.auth.dto.UserResourceDto;
+import com.mallease.auth.model.AdminDTO;
+import com.mallease.auth.model.MemberDTO;
+import com.mallease.auth.model.ResourceDTO;
 import com.mallease.common.api.R;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,18 +20,18 @@ import java.util.List;
 public interface UserServiceFeignClient {
     // 管理员相关方法
     @GetMapping("/user/admin/username/{username}")
-    R<UserAdminDto> getAdminByUsername(@PathVariable("username") String username);
+    R<AdminDTO> getAdminByUsername(@PathVariable("username") String username);
 
     @GetMapping("/user/admin/{id}")
-    R<UserAdminDto> getAdminById(@PathVariable("id") Long id);
+    R<AdminDTO> getAdminById(@PathVariable("id") Long id);
 
     // 会员相关方法
     @GetMapping("/user/member/username/{username}")
-    R<UserMemberDto> getMemberByUsername(@PathVariable("username") String username);
+    R<MemberDTO> getMemberByUsername(@PathVariable("username") String username);
 
     @GetMapping("/user/member/{id}")
-    R<UserMemberDto> getMemberById(@PathVariable("id") Long id);
+    R<MemberDTO> getMemberById(@PathVariable("id") Long id);
 
     @GetMapping("/user/admin/resource/{adminId}")
-    R<List<UserResourceDto>> getResourceList(@PathVariable Long adminId);
+    R<List<ResourceDTO>> getResourceList(@PathVariable Long adminId);
 }

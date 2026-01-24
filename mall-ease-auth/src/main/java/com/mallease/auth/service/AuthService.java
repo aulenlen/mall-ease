@@ -1,16 +1,23 @@
 package com.mallease.auth.service;
 
 import cn.dev33.satoken.stp.SaTokenInfo;
-import com.mallease.auth.dto.request.LoginRequest;
+import com.mallease.auth.model.query.LoginQuery;
 
 /**
+ * 认证服务接口
+ *
  * @author: Aulen
- * @description:
- * @create: 2025-11-09 19:09
- **/
+ * @create: 2025-11-09
+ */
 public interface AuthService {
+
     /**
-     * 统一登录接口
+     * 管理员登录
      */
-    SaTokenInfo login(LoginRequest request);
+    SaTokenInfo loginAdmin(LoginQuery request);
+
+    /**
+     * 会员登录
+     */
+    SaTokenInfo loginMember(LoginQuery request);
 }
