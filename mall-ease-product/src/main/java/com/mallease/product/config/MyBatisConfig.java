@@ -1,4 +1,4 @@
-package com.mallease.marketing.config;
+package com.mallease.product.config;
 
 import com.mallease.common.mybatis.AuditFieldInterceptor;
 import org.springframework.context.annotation.Bean;

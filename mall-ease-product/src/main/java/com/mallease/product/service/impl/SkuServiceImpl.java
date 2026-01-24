@@ -3,7 +3,6 @@ package com.mallease.product.service.impl;
 import cn.hutool.core.util.IdUtil;
 import com.mallease.common.dto.remote.SkuSimpleDTO;
 import com.mallease.common.exception.ApiException;
-import com.mallease.common.util.LoginContextUtil;
 import com.mallease.product.dao.SkuDao;
 import com.mallease.product.dao.SkuLadderDao;
 import com.mallease.product.dao.SkuMemberPriceDao;
@@ -77,7 +76,6 @@ public class SkuServiceImpl implements SkuService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public Long create(Long spuId, SpuAggregate.SkuData skuData) {
-        String userName = LoginContextUtil.getUserName();
         if (skuData == null || skuData.getSku() == null) {
             throw new ApiException("SKU数据不能为空");
         }
@@ -88,7 +86,6 @@ public class SkuServiceImpl implements SkuService {
         Sku sku = skuData.getSku();
         sku.setSpuId(spuId);
         sku.setSkuCode(sku.getSkuCode() == null ? IdUtil.getSnowflakeNextIdStr() : sku.getSkuCode());
-        sku.setCreator(userName);
         skuDao.insertSelective(sku);
 
         Long skuId = sku.getId();
@@ -100,32 +97,24 @@ public class SkuServiceImpl implements SkuService {
         }
         stock.setSkuId(skuId);
         stock.setSpuId(spuId);
-        stock.setCreator(userName);
         skuStockService.createBatch(List.of(stock));
 
         // 促销（可选）
         if (skuData.getPromotion() != null) {
             SkuPromotion promotion = skuData.getPromotion();
             promotion.setSkuId(skuId);
-            promotion.setCreator(userName);
             promotionDao.insertSelective(promotion);
         }
 
         // 阶梯价（可选）
         if (skuData.getLadderList() != null && !skuData.getLadderList().isEmpty()) {
-            skuData.getLadderList().forEach(ladder -> {
-                ladder.setSkuId(skuId);
-                ladder.setCreator(userName);
-            });
+            skuData.getLadderList().forEach(ladder -> ladder.setSkuId(skuId));
             ladderDao.insertBatch(skuData.getLadderList());
         }
 
         // 会员价（可选）
         if (skuData.getMemberPriceList() != null && !skuData.getMemberPriceList().isEmpty()) {
-            skuData.getMemberPriceList().forEach(memberPrice -> {
-                memberPrice.setSkuId(skuId);
-                memberPrice.setCreator(userName);
-            });
+            skuData.getMemberPriceList().forEach(memberPrice -> memberPrice.setSkuId(skuId));
             memberPriceDao.insertBatch(skuData.getMemberPriceList());
         }
 
@@ -135,7 +124,6 @@ public class SkuServiceImpl implements SkuService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public int createBatch(Long spuId, List<SpuAggregate.SkuData> skuDataList) {
-        String userName = LoginContextUtil.getUserName();
         if (skuDataList == null || skuDataList.isEmpty()) {
             throw new ApiException("SKU为空");
         }
@@ -146,7 +134,6 @@ public class SkuServiceImpl implements SkuService {
                 .peek(sku -> {
                     sku.setSpuId(spuId);
                     sku.setSkuCode(sku.getSkuCode() == null ? IdUtil.getSnowflakeNextIdStr() : sku.getSkuCode());
-                    sku.setCreator(userName);
                 })
                 .collect(Collectors.toList());
         skuDao.insertBatch(skuList);
@@ -164,32 +151,24 @@ public class SkuServiceImpl implements SkuService {
             SkuStock stock = data.getStock();
             stock.setSkuId(skuId);
             stock.setSpuId(spuId);
-            stock.setCreator(userName);
             stockList.add(stock);
 
             // 促销（可选）
             if (data.getPromotion() != null) {
                 SkuPromotion promotion = data.getPromotion();
                 promotion.setSkuId(skuId);
-                promotion.setCreator(userName);
                 promotionList.add(promotion);
             }
 
             // 阶梯价（可选）
             if (data.getLadderList() != null && !data.getLadderList().isEmpty()) {
-                data.getLadderList().forEach(ladder -> {
-                    ladder.setSkuId(skuId);
-                    ladder.setCreator(userName);
-                });
+                data.getLadderList().forEach(ladder -> ladder.setSkuId(skuId));
                 ladderList.addAll(data.getLadderList());
             }
 
             // 会员价（可选）
             if (data.getMemberPriceList() != null && !data.getMemberPriceList().isEmpty()) {
-                data.getMemberPriceList().forEach(memberPrice -> {
-                    memberPrice.setSkuId(skuId);
-                    memberPrice.setCreator(userName);
-                });
+                data.getMemberPriceList().forEach(memberPrice -> memberPrice.setSkuId(skuId));
                 memberPriceList.addAll(data.getMemberPriceList());
             }
         }
@@ -213,7 +192,6 @@ public class SkuServiceImpl implements SkuService {
 
     @Override
     public int update(Sku sku) {
-        String userName = LoginContextUtil.getUserName();
         if (sku == null || sku.getId() == null) {
             throw new ApiException("SKU ID不能为空");
         }
@@ -229,7 +207,6 @@ public class SkuServiceImpl implements SkuService {
             throw new ApiException("SKU不属于该商品");
         }
 
-        sku.setUpdater(userName);
         int count = skuDao.updateByPrimaryKeySelective(sku);
         if (count == 0) {
             throw new ApiException("SKU更新失败");
@@ -336,7 +313,6 @@ public class SkuServiceImpl implements SkuService {
     @Override
     public void savePromotionBatch(List<Long> skuIdsToDelete, List<SkuPromotion> promotions) {
 
-        // 1. 先删除指定SKU的促销信息
         if (skuIdsToDelete != null && !skuIdsToDelete.isEmpty()) {
             List<SkuPromotion> existingPromotions = promotionDao.selectBySkuIds(skuIdsToDelete);
             if (!existingPromotions.isEmpty()) {
@@ -347,7 +323,6 @@ public class SkuServiceImpl implements SkuService {
             }
         }
 
-        // 2. 批量插入新促销信息
         if (promotions != null && !promotions.isEmpty()) {
             promotionDao.insertBatch(promotions);
         }
@@ -367,7 +342,6 @@ public class SkuServiceImpl implements SkuService {
     @Override
     public void saveLadderBatch(List<Long> skuIdsToDelete, List<SkuLadder> ladders) {
 
-        // 1. 先删除指定SKU的阶梯价信息
         if (skuIdsToDelete != null && !skuIdsToDelete.isEmpty()) {
             List<SkuLadder> existingLadders = ladderDao.selectBySkuIds(skuIdsToDelete);
             if (!existingLadders.isEmpty()) {
@@ -378,7 +352,6 @@ public class SkuServiceImpl implements SkuService {
             }
         }
 
-        // 2. 批量插入新阶梯价信息
         if (ladders != null && !ladders.isEmpty()) {
             ladderDao.insertBatch(ladders);
         }
@@ -387,7 +360,6 @@ public class SkuServiceImpl implements SkuService {
     @Override
     public void saveMemberPriceBatch(List<Long> skuIdsToDelete, List<SkuMemberPrice> memberPriceList) {
 
-        // 1. 先删除指定SKU的会员价信息
         if (skuIdsToDelete != null && !skuIdsToDelete.isEmpty()) {
             List<SkuMemberPrice> existingPrices = memberPriceDao.selectBySkuIds(skuIdsToDelete);
             if (!existingPrices.isEmpty()) {
@@ -397,7 +369,7 @@ public class SkuServiceImpl implements SkuService {
                 memberPriceDao.deleteBatch(idsToDelete);
             }
         }
-        // 2. 批量插入新会员价信息
+
         if (memberPriceList != null && !memberPriceList.isEmpty()) {
             memberPriceDao.insertBatch(memberPriceList);
         }

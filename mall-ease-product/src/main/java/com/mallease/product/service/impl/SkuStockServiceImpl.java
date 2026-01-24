@@ -1,7 +1,6 @@
 package com.mallease.product.service.impl;
 
 import com.mallease.common.exception.ApiException;
-import com.mallease.common.util.LoginContextUtil;
 import com.mallease.product.constant.RedisKey;
 import com.mallease.product.component.CacheService;
 import com.mallease.product.dao.SkuStockDao;
@@ -29,7 +28,6 @@ public class SkuStockServiceImpl implements SkuStockService {
 
     @Override
     public Long create(SkuStock stock) {
-        String userName = LoginContextUtil.getUserName();
         if (stock == null || stock.getSkuId() == null) {
             throw new ApiException("SKU ID不能为空");
         }
@@ -40,7 +38,6 @@ public class SkuStockServiceImpl implements SkuStockService {
             throw new ApiException("该SKU已存在库存记录");
         }
 
-        stock.setCreator(userName);
         stock.setLockStock(stock.getLockStock() != null ? stock.getLockStock() : 0);
         stock.setSale(stock.getSale() != null ? stock.getSale() : 0);
         skuStockDao.insertSelective(stock);
@@ -54,7 +51,6 @@ public class SkuStockServiceImpl implements SkuStockService {
 
     @Override
     public int update(SkuStock stock) {
-        String userName = LoginContextUtil.getUserName();
         if (stock == null || stock.getId() == null) {
             throw new ApiException("库存ID不能为空");
         }
@@ -64,7 +60,6 @@ public class SkuStockServiceImpl implements SkuStockService {
             throw new ApiException("库存记录不存在");
         }
 
-        stock.setUpdater(userName);
         return skuStockDao.updateByPrimaryKeySelective(stock);
     }
 

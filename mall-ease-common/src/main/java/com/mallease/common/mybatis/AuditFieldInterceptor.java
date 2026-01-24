@@ -6,8 +6,12 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.plugin.*;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 
 /**
@@ -29,8 +33,41 @@ public class AuditFieldInterceptor implements Interceptor {
             return invocation.proceed();
         }
         SqlCommandType sqlCommandType = ms.getSqlCommandType();
-        String username = LoginContextUtil.getUserName();
+
+        // 注意：批量写入/脚本初始化等场景可能没有登录上下文，此时使用 system 兜底避免审计字段为空
+        String username = Optional.ofNullable(LoginContextUtil.getUserName()).orElse("system");
         LocalDateTime now = LocalDateTime.now();
+
+        fillAuditFields(parameter, sqlCommandType, username, now);
+        return invocation.proceed();
+    }
+
+    private void fillAuditFields(Object parameter, SqlCommandType sqlCommandType, String username, LocalDateTime now) {
+        if (parameter instanceof Map<?, ?> map) {
+            for (Object value : map.values()) {
+                fillAuditFields(value, sqlCommandType, username, now);
+            }
+            return;
+        }
+
+        if (parameter instanceof Iterable<?> iterable) {
+            for (Object item : iterable) {
+                fillAuditFields(item, sqlCommandType, username, now);
+            }
+            return;
+        }
+
+        if (parameter.getClass().isArray()) {
+            int length = Array.getLength(parameter);
+            for (int i = 0; i < length; i++) {
+                fillAuditFields(Array.get(parameter, i), sqlCommandType, username, now);
+            }
+            return;
+        }
+
+        if (parameter == null || isSimpleType(parameter.getClass())) {
+            return;
+        }
 
         if (SqlCommandType.INSERT == sqlCommandType) {
             // 插入时填充 creator, createTime, updater, updateTime
@@ -44,7 +81,24 @@ public class AuditFieldInterceptor implements Interceptor {
             setFieldValue(parameter, "updater", username);
             setFieldValue(parameter, "updateTime", now);
         }
-        return invocation.proceed();
+    }
+
+    private boolean isSimpleType(Class<?> clazz) {
+        if (clazz.isPrimitive()) {
+            return true;
+        }
+        if (Number.class.isAssignableFrom(clazz)
+                || CharSequence.class.isAssignableFrom(clazz)
+                || Boolean.class.isAssignableFrom(clazz)
+                || Character.class.isAssignableFrom(clazz)
+                || java.util.Date.class.isAssignableFrom(clazz)
+                || java.time.temporal.Temporal.class.isAssignableFrom(clazz)
+                || java.util.UUID.class.isAssignableFrom(clazz)) {
+            return true;
+        }
+        // 避免深入解析 MyBatis 自身的参数类型
+        String pkg = clazz.getPackageName();
+        return Objects.equals(pkg, "org.apache.ibatis.session") || pkg.startsWith("org.apache.ibatis");
     }
 
     private void setFieldValue(Object obj, String fieldName, Object value) {

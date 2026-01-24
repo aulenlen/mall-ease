@@ -70,7 +70,6 @@ public class SpuServiceImpl implements SpuService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public Long create(SpuAggregate context) {
-        String userName = LoginContextUtil.getUserName();
         if (context == null || context.getSpu() == null) {
             throw new ApiException("商品不能为空");
         }
@@ -100,7 +99,6 @@ public class SpuServiceImpl implements SpuService {
             spu.setSpuCode("SN" + IdUtil.getSnowflakeNextIdStr());
         }
 
-        spu.setCreator(userName);
         List<SpuAggregate.SkuData> skuDataList = context.getSkuList();
         if (skuDataList == null || skuDataList.isEmpty()) {
             throw new ApiException("SKU为空");
@@ -137,7 +135,6 @@ public class SpuServiceImpl implements SpuService {
         if (context.getSpuDetail() != null) {
             SpuDetail spuDetail = context.getSpuDetail();
             spuDetail.setSpuId(spuId);
-            spuDetail.setCreator(userName);
             spuDetailDao.insert(spuDetail);
         }
 
@@ -152,10 +149,7 @@ public class SpuServiceImpl implements SpuService {
 
         // 保存满减规则
         if (context.getFullReductionList() != null && !context.getFullReductionList().isEmpty()) {
-            context.getFullReductionList().forEach(r -> {
-                r.setSpuId(spuId);
-                r.setCreator(userName);
-            });
+            context.getFullReductionList().forEach(r -> r.setSpuId(spuId));
             fullReductionDao.insertBatch(context.getFullReductionList());
         }
 
@@ -230,7 +224,6 @@ public class SpuServiceImpl implements SpuService {
             }
 
             spu.setId(spuId);
-            spu.setUpdater(userName);
             int spuCount = spuDao.updateByPrimaryKeySelective(spu);
             if (spuCount == 0) {
                 log.warn("SPU 基础信息更新失败，SPU ID: {}", spuId);
@@ -241,7 +234,6 @@ public class SpuServiceImpl implements SpuService {
         if (context.getSpuDetail() != null) {
             SpuDetail spuDetail = context.getSpuDetail();
             spuDetail.setSpuId(spuId);
-            spuDetail.setUpdater(userName);
 
             // 先查询是否已存在详情
             SpuDetail existingDetail = spuDetailDao.selectBySpuId(spuId);
@@ -249,7 +241,6 @@ public class SpuServiceImpl implements SpuService {
                 spuDetail.setId(existingDetail.getId());
                 spuDetailDao.updateByPrimaryKeySelective(spuDetail);
             } else {
-                spuDetail.setCreator(userName);
                 spuDetailDao.insert(spuDetail);
             }
         }
@@ -296,7 +287,6 @@ public class SpuServiceImpl implements SpuService {
                 if (skuId != null && existingSkuIds.contains(skuId)) {
                     // 有 ID 且存在：收集更新数据
                     sku.setSpuId(spuId);
-                    sku.setUpdater(userName);
                     skusToUpdate.add(sku);
                     if (!updatedSkuIds.add(skuId)) {
                         throw new ApiException("SKU ID重复: " + skuId);
@@ -308,9 +298,7 @@ public class SpuServiceImpl implements SpuService {
                         if (skuData.getPromotion() != null) {
                             SkuPromotion promotion = skuData.getPromotion();
                             promotion.setSkuId(skuId);
-                            promotion.setUpdater(userName);
-                            promotion.setCreator(userName); // 后续会根据是否存在判断是插入还是更新
-                            promotionsToUpdate.add(promotion); // 暂存，等查询结果后再分类
+                            promotionsToUpdate.add(promotion);
                         } else {
                             promotionSkuIdsToDelete.add(skuId);
                         }
@@ -320,10 +308,7 @@ public class SpuServiceImpl implements SpuService {
                     if (skuData.isUpdateLadders()) {
                         ladderSkuIdsToDelete.add(skuId);
                         if (skuData.getLadderList() != null && !skuData.getLadderList().isEmpty()) {
-                            skuData.getLadderList().forEach(ladder -> {
-                                ladder.setSkuId(skuId);
-                                ladder.setCreator(userName);
-                            });
+                            skuData.getLadderList().forEach(ladder -> ladder.setSkuId(skuId));
                             laddersToInsert.addAll(skuData.getLadderList());
                         }
                     }
@@ -332,10 +317,7 @@ public class SpuServiceImpl implements SpuService {
                     if (skuData.isUpdateMemberPrices()) {
                         memberPriceSkuIdsToDelete.add(skuId);
                         if (skuData.getMemberPriceList() != null && !skuData.getMemberPriceList().isEmpty()) {
-                            skuData.getMemberPriceList().forEach(memberPrice -> {
-                                memberPrice.setSkuId(skuId);
-                                memberPrice.setCreator(userName);
-                            });
+                            skuData.getMemberPriceList().forEach(memberPrice -> memberPrice.setSkuId(skuId));
                             memberPricesToInsert.addAll(skuData.getMemberPriceList());
                         }
                     }
@@ -445,7 +427,6 @@ public class SpuServiceImpl implements SpuService {
             aggregate.setStock(totalStock);
             aggregate.setMinPrice(minPrice);
             aggregate.setMaxPrice(maxPrice);
-            aggregate.setUpdater(userName);
             spuDao.updateByPrimaryKeySelective(aggregate);
         }
 
@@ -468,10 +449,7 @@ public class SpuServiceImpl implements SpuService {
 
             // 插入新数据
             if (context.getFullReductionList() != null && !context.getFullReductionList().isEmpty()) {
-                context.getFullReductionList().forEach(r -> {
-                    r.setSpuId(spuId);
-                    r.setCreator(userName);
-                });
+                context.getFullReductionList().forEach(r -> r.setSpuId(spuId));
                 fullReductionDao.insertBatch(context.getFullReductionList());
             }
         }
