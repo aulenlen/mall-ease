@@ -1,12 +1,12 @@
 package com.mallease.common.util;
 
-import cn.dev33.satoken.stp.StpUtil;
+import cn.dev33.satoken.stp.StpLogic;
 import com.mallease.common.constant.AuthConstant;
 import com.mallease.common.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 登录用户信息统一获取工具类
+ * 登录用户信息统一获取工具类（支持多账号体系）
  *
  * @author: Aulen
  * @create: 2025-11-19
@@ -15,24 +15,34 @@ import lombok.extern.slf4j.Slf4j;
 public class LoginContextUtil {
 
     /**
-     * 获取当前登录用户的 UserDTO 对象
-     *
-     * @return UserDTO，未登录返回null
+     * 管理员账号体系的 StpLogic
+     */
+    private static final StpLogic stpAdminLogic = new StpLogic(AuthConstant.LOGIN_TYPE_ADMIN);
+
+    /**
+     * 会员账号体系的 StpLogic
+     */
+    private static final StpLogic stpMemberLogic = new StpLogic(AuthConstant.LOGIN_TYPE_MEMBER);
+
+    /**
+     * 获取当前登录用户的 UserDTO 对象（支持多账号体系）
      */
     private static UserDTO getCurrentUser() {
         try {
-            if (!StpUtil.isLogin()) {
-                return null;
+            // 检查管理员账号体系
+            if (stpAdminLogic.isLogin()) {
+                Object adminInfo = stpAdminLogic.getSession().get(AuthConstant.STP_ADMIN_INFO);
+                if (adminInfo instanceof UserDTO) {
+                    return (UserDTO) adminInfo;
+                }
             }
 
-            Object adminInfo = StpUtil.getSession().get(AuthConstant.STP_ADMIN_INFO);
-            if (adminInfo instanceof UserDTO) {
-                return (UserDTO) adminInfo;
-            }
-
-            Object memberInfo = StpUtil.getSession().get(AuthConstant.STP_MEMBER_INFO);
-            if (memberInfo instanceof UserDTO) {
-                return (UserDTO) memberInfo;
+            // 检查会员账号体系
+            if (stpMemberLogic.isLogin()) {
+                Object memberInfo = stpMemberLogic.getSession().get(AuthConstant.STP_MEMBER_INFO);
+                if (memberInfo instanceof UserDTO) {
+                    return (UserDTO) memberInfo;
+                }
             }
 
             return null;
@@ -43,13 +53,17 @@ public class LoginContextUtil {
     }
 
     /**
-     * 获取用户ID
-     *
-     * @return 用户ID
+     * 获取用户ID（支持多账号体系）
      */
     public static Long getUserId() {
         try {
-            return StpUtil.getLoginIdAsLong();
+            if (stpAdminLogic.isLogin()) {
+                return stpAdminLogic.getLoginIdAsLong();
+            }
+            if (stpMemberLogic.isLogin()) {
+                return stpMemberLogic.getLoginIdAsLong();
+            }
+            return null;
         } catch (Exception e) {
             log.warn("获取当前用户ID失败: {}", e.getMessage());
             return null;
@@ -58,8 +72,6 @@ public class LoginContextUtil {
 
     /**
      * 获取用户名
-     *
-     * @return 用户名
      */
     public static String getUserName() {
         UserDTO userDto = getCurrentUser();
@@ -68,8 +80,6 @@ public class LoginContextUtil {
 
     /**
      * 获取客户端ID（区分管理员和会员）
-     *
-     * @return 客户端ID（admin-app 或 portal-app）
      */
     public static String getClientId() {
         UserDTO userDto = getCurrentUser();
@@ -78,8 +88,6 @@ public class LoginContextUtil {
 
     /**
      * 获取当前用户的权限列表
-     *
-     * @return 权限列表
      */
     public static java.util.List<String> getPermissionList() {
         UserDTO userDto = getCurrentUser();
@@ -89,42 +97,38 @@ public class LoginContextUtil {
     }
 
     /**
-     * 判断当前用户是否已登录
-     *
-     * @return true-已登录 false-未登录
+     * 判断当前用户是否已登录（任一账号体系）
      */
     public static boolean isLogin() {
-        return StpUtil.isLogin();
+        return stpAdminLogic.isLogin() || stpMemberLogic.isLogin();
     }
 
     /**
      * 判断当前用户是否为管理员
-     *
-     * @return true-管理员 false-会员或未登录
      */
     public static boolean isAdmin() {
-        String clientId = getClientId();
-        return AuthConstant.ADMIN_CLIENT_ID.equals(clientId);
+        return stpAdminLogic.isLogin();
     }
 
     /**
      * 判断当前用户是否为会员
-     *
-     * @return true-会员 false-管理员或未登录
      */
     public static boolean isMember() {
-        String clientId = getClientId();
-        return AuthConstant.PORTAL_CLIENT_ID.equals(clientId);
+        return stpMemberLogic.isLogin();
     }
 
     /**
      * 获取当前请求的Token值
-     *
-     * @return Token值
      */
     public static String getTokenValue() {
         try {
-            return StpUtil.getTokenValue();
+            if (stpAdminLogic.isLogin()) {
+                return stpAdminLogic.getTokenValue();
+            }
+            if (stpMemberLogic.isLogin()) {
+                return stpMemberLogic.getTokenValue();
+            }
+            return null;
         } catch (Exception e) {
             log.warn("获取Token值失败: {}", e.getMessage());
             return null;
@@ -133,12 +137,16 @@ public class LoginContextUtil {
 
     /**
      * 获取当前用户的所有角色（Sa-Token角色）
-     *
-     * @return 角色列表
      */
     public static java.util.List<String> getRoleList() {
         try {
-            return StpUtil.getRoleList();
+            if (stpAdminLogic.isLogin()) {
+                return stpAdminLogic.getRoleList();
+            }
+            if (stpMemberLogic.isLogin()) {
+                return stpMemberLogic.getRoleList();
+            }
+            return java.util.Collections.emptyList();
         } catch (Exception e) {
             log.warn("获取当前用户角色列表失败: {}", e.getMessage());
             return java.util.Collections.emptyList();
@@ -147,8 +155,6 @@ public class LoginContextUtil {
 
     /**
      * 获取完整的 UserDTO 对象
-     *
-     * @return UserDto对象，未登录返回null
      */
     public static UserDTO getUserDto() {
         return getCurrentUser();
