@@ -2,7 +2,7 @@ package com.mallease.user.component;
 
 import com.mallease.user.service.ResourceService;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
  * @create: 2025-11-10 22:58
  **/
 @Component
+@RequiredArgsConstructor
 public class UrlPathResourceHolder {
-    @Autowired
-    private ResourceService resourceService;
+    private final ResourceService resourceService;
 
     @PostConstruct
     public void initResource() {

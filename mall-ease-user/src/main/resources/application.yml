@@ -40,9 +40,9 @@ mybatis:
   mapper-locations: classpath:mybatis/mapper/*.xml
 
 redis:
-  database: mall-swarm
+  database: mall-ease
   key:
-    admin: 'ums:admin'
+    admin: 'user:admin'
   expire:
     common: 86400
 
