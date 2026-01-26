@@ -3,19 +3,20 @@ package com.mallease.user.service.impl;
 import com.mallease.common.service.RedisService;
 import com.mallease.user.model.data.Admin;
 import com.mallease.user.service.UserCacheService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
  * @author: Aulen
  * @description: 后台用户信息缓存操作
- * @create: 2025-11-10 14:27
+ * @create: 2025-11-10
  **/
 @Service
+@RequiredArgsConstructor
 public class UserCacheServiceImpl implements UserCacheService {
-    @Autowired
-    private RedisService redisService;
+    private final RedisService redisService;
+    
     @Value("${redis.database}")
     private String REDIS_DATABASE;
     @Value("${redis.expire.common}")

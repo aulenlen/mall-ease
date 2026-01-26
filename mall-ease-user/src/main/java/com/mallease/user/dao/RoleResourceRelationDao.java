@@ -108,6 +108,14 @@ public interface RoleResourceRelationDao {
      * @param roleIds 角色ID列表
      * @return 影响行数
      */
-    int deleteByRoleIds(@Param("roleIds") List<Long> roleIds);
+    int deleteByRoleIds(@Param("roleIds") List<Long> ids);
+
+    /**
+     * 批量插入
+     *
+     * @param list 记录列表
+     * @return 影响行数
+     */
+    int insertBatch(List<RoleResourceRelation> list);
 }
 

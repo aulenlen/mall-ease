@@ -1,9 +1,6 @@
 package com.mallease.user.service;
 
 import com.github.pagehelper.PageInfo;
-import com.mallease.user.model.client.cmd.RoleCmd;
-import com.mallease.user.model.client.vo.RoleDetailVO;
-import com.mallease.user.model.client.vo.RoleVO;
 import com.mallease.user.model.data.Role;
 
 import java.util.List;
@@ -19,18 +16,18 @@ public interface RoleService {
     /**
      * 创建角色
      *
-     * @param cmd 保存角色命令
+     * @param role 角色对象
      * @return 角色ID
      */
-    Long create(RoleCmd cmd);
+    Long create(Role role);
 
     /**
      * 更新角色
      *
-     * @param cmd 保存角色命令
+     * @param role 角色对象
      * @return 影响行数
      */
-    int update(RoleCmd cmd);
+    int update(Role role);
 
     /**
      * 删除角色
@@ -49,19 +46,19 @@ public interface RoleService {
     int batchDelete(List<Long> ids);
 
     /**
-     * 根据ID查询角色详情
+     * 根据ID查询角色
      *
      * @param id 角色ID
-     * @return 角色详情
+     * @return 角色
      */
-    RoleDetailVO getById(Long id);
+    Role getById(Long id);
 
     /**
      * 查询所有角色列表
      *
      * @return 角色列表
      */
-    List<RoleVO> listAll();
+    List<Role> listAll();
 
     /**
      * 根据状态查询角色列表
@@ -69,7 +66,7 @@ public interface RoleService {
      * @param status 启用状态：0->禁用；1->启用
      * @return 角色列表
      */
-    List<RoleVO> listByStatus(Integer status);
+    List<Role> listByStatus(Integer status);
 
     /**
      * 分页查询角色列表
@@ -77,9 +74,9 @@ public interface RoleService {
      * @param keyword 关键词（角色名称）
      * @param pageNum 页码
      * @param pageSize 每页数量
-     * @return 分页结果
+     * @return 角色列表
      */
-    PageInfo<RoleVO> page(String keyword, Integer pageNum, Integer pageSize);
+    List<Role> list(String keyword, Integer pageNum, Integer pageSize);
 
     /**
      * 更新角色状态
@@ -113,4 +110,22 @@ public interface RoleService {
      * @return 菜单ID列表
      */
     List<Long> getMenuIdsByRoleIds(List<Long> roleIds);
+
+    /**
+     * 给角色分配菜单
+     *
+     * @param roleId  角色ID
+     * @param menuIds 菜单ID列表
+     * @return 影响行数
+     */
+    int allocMenu(Long roleId, List<Long> menuIds);
+
+    /**
+     * 给角色分配资源
+     *
+     * @param roleId      角色ID
+     * @param resourceIds 资源ID列表
+     * @return 影响行数
+     */
+    int allocResource(Long roleId, List<Long> resourceIds);
 }

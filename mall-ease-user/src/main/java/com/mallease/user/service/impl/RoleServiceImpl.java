@@ -2,26 +2,23 @@ package com.mallease.user.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
-import com.mallease.user.converter.RoleConverter;
 import com.mallease.user.dao.AdminRoleRelationDao;
 import com.mallease.user.dao.RoleDao;
 import com.mallease.user.dao.RoleMenuRelationDao;
 import com.mallease.user.dao.RoleResourceRelationDao;
-import com.mallease.user.model.client.cmd.RoleCmd;
-import com.mallease.user.model.client.vo.RoleDetailVO;
-import com.mallease.user.model.client.vo.RoleVO;
+import com.mallease.user.event.PermissionChangeEvent;
+import com.mallease.user.model.data.AdminRoleRelation;
 import com.mallease.user.model.data.Role;
 import com.mallease.user.model.data.RoleMenuRelation;
 import com.mallease.user.model.data.RoleResourceRelation;
 import com.mallease.user.service.RoleService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,28 +30,28 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class RoleServiceImpl implements RoleService {
 
-    @Autowired
-    private RoleDao roleDao;
+    private final RoleDao roleDao;
+    private final RoleResourceRelationDao roleResourceRelationDao;
+    private final RoleMenuRelationDao roleMenuRelationDao;
+    private final AdminRoleRelationDao adminRoleRelationDao;
+    private final ApplicationEventPublisher eventPublisher;
 
-    @Autowired
-    private RoleResourceRelationDao roleResourceRelationDao;
-
-    @Autowired
-    private RoleMenuRelationDao roleMenuRelationDao;
-
-    @Autowired
-    private AdminRoleRelationDao adminRoleRelationDao;
-
-    @Autowired
-    private RoleConverter roleConverter;
+    private List<Long> getAdminIdsByRoleId(Long roleId) {
+        if (roleId == null) {
+            return Collections.emptyList();
+        }
+        return adminRoleRelationDao.selectByRoleId(roleId).stream()
+                .map(AdminRoleRelation::getAdminId)
+                .distinct()
+                .toList();
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(RoleCmd cmd) {
-        Role role = roleConverter.cmdToEntity(cmd);
-        role.setCreateTime(new Date());
+    public Long create(Role role) {
         role.setAdminCount(0);
         roleDao.insertSelective(role);
         return role.getId();
@@ -62,90 +59,66 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int update(RoleCmd cmd) {
-        Role role = roleDao.selectByPrimaryKey(cmd.getId());
-        if (role == null) {
-            throw new IllegalArgumentException("角色不存在");
-        }
-        roleConverter.updateEntityFromCmd(role, cmd);
+    public int update(Role role) {
         return roleDao.updateByPrimaryKeySelective(role);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int delete(Long id) {
+        List<Long> adminIds = getAdminIdsByRoleId(id);
         int count = roleDao.deleteByPrimaryKey(id);
         roleResourceRelationDao.deleteByRoleId(id);
         roleMenuRelationDao.deleteByRoleId(id);
         adminRoleRelationDao.deleteByRoleId(id);
+
+        eventPublisher.publishEvent(new PermissionChangeEvent(adminIds));
         return count;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int batchDelete(List<Long> ids) {
-
         if (ids == null || ids.isEmpty()) {
             return 0;
         }
+        List<Long> adminIds = ids.stream()
+                .flatMap(roleId -> getAdminIdsByRoleId(roleId).stream())
+                .distinct()
+                .toList();
 
         int count = roleDao.deleteBatch(ids);
         roleResourceRelationDao.deleteByRoleIds(ids);
         roleMenuRelationDao.deleteByRoleIds(ids);
         adminRoleRelationDao.deleteByRoleIds(ids);
 
+        eventPublisher.publishEvent(new PermissionChangeEvent(adminIds));
         return count;
     }
 
     @Override
-    public RoleDetailVO getById(Long id) {
-        Role role = roleDao.selectByPrimaryKey(id);
-        if (role == null) {
-            return null;
-        }
-        RoleDetailVO detailVO = roleConverter.entityToDetailVo(role);
-
-        List<RoleResourceRelation> resourceRelations = roleResourceRelationDao.selectByRoleId(id);
-        List<Long> resourceIds = resourceRelations.stream()
-                .map(RoleResourceRelation::getResourceId)
-                .collect(Collectors.toList());
-        detailVO.setResourceIds(resourceIds);
-
-        List<RoleMenuRelation> menuRelations = roleMenuRelationDao.selectByRoleId(id);
-        List<Long> menuIds = menuRelations.stream()
-                .map(RoleMenuRelation::getMenuId)
-                .collect(Collectors.toList());
-        detailVO.setMenuIds(menuIds);
-
-        return detailVO;
+    public Role getById(Long id) {
+        return roleDao.selectByPrimaryKey(id);
     }
 
     @Override
-    public List<RoleVO> listAll() {
-        List<Role> roles = roleDao.selectAll();
-        return roleConverter.entityListToVoList(roles);
+    public List<Role> listAll() {
+        return roleDao.selectAll();
     }
 
     @Override
-    public List<RoleVO> listByStatus(Integer status) {
-        List<Role> roles = roleDao.selectByStatus(status);
-        return roleConverter.entityListToVoList(roles);
+    public List<Role> listByStatus(Integer status) {
+        return roleDao.selectByStatus(status);
     }
 
     @Override
-    public PageInfo<RoleVO> page(String keyword, Integer pageNum, Integer pageSize) {
+    public List<Role> list(String keyword, Integer pageNum, Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
-        List<Role> roles;
         if (StrUtil.isNotBlank(keyword)) {
-            roles = roleDao.selectByKeyword(keyword);
+            return roleDao.selectByKeyword(keyword);
         } else {
-            roles = roleDao.selectAll();
+            return roleDao.selectAll();
         }
-        PageInfo<Role> pageInfo = new PageInfo<>(roles);
-        PageInfo<RoleVO> result = new PageInfo<>();
-        result.setTotal(pageInfo.getTotal());
-        result.setList(roleConverter.entityListToVoList(roles));
-        return result;
     }
 
     @Override
@@ -154,7 +127,10 @@ public class RoleServiceImpl implements RoleService {
         Role role = new Role();
         role.setId(id);
         role.setStatus(status);
-        return roleDao.updateByPrimaryKeySelective(role);
+        int count = roleDao.updateByPrimaryKeySelective(role);
+
+        eventPublisher.publishEvent(new PermissionChangeEvent(getAdminIdsByRoleId(id)));
+        return count;
     }
 
     @Override
@@ -179,5 +155,53 @@ public class RoleServiceImpl implements RoleService {
             return Collections.emptyList();
         }
         return roleMenuRelationDao.selectMenuIdsByRoleIds(roleIds);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int allocMenu(Long roleId, List<Long> menuIds) {
+        List<Long> adminIds = getAdminIdsByRoleId(roleId);
+
+        roleMenuRelationDao.deleteByRoleId(roleId);
+
+        if (menuIds != null && !menuIds.isEmpty()) {
+            List<RoleMenuRelation> relationList = menuIds.stream().map(menuId -> {
+                RoleMenuRelation relation = new RoleMenuRelation();
+                relation.setRoleId(roleId);
+                relation.setMenuId(menuId);
+                return relation;
+            }).collect(Collectors.toList());
+            int count = roleMenuRelationDao.insertBatch(relationList);
+
+            eventPublisher.publishEvent(new PermissionChangeEvent(adminIds));
+            return count;
+        }
+
+        eventPublisher.publishEvent(new PermissionChangeEvent(adminIds));
+        return 0;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int allocResource(Long roleId, List<Long> resourceIds) {
+        List<Long> adminIds = getAdminIdsByRoleId(roleId);
+
+        roleResourceRelationDao.deleteByRoleId(roleId);
+
+        if (resourceIds != null && !resourceIds.isEmpty()) {
+            List<RoleResourceRelation> relationList = resourceIds.stream().map(resourceId -> {
+                RoleResourceRelation relation = new RoleResourceRelation();
+                relation.setRoleId(roleId);
+                relation.setResourceId(resourceId);
+                return relation;
+            }).collect(Collectors.toList());
+            int count = roleResourceRelationDao.insertBatch(relationList);
+
+            eventPublisher.publishEvent(new PermissionChangeEvent(adminIds));
+            return count;
+        }
+
+        eventPublisher.publishEvent(new PermissionChangeEvent(adminIds));
+        return 0;
     }
 }

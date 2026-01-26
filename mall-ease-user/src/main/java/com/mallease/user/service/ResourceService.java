@@ -24,4 +24,34 @@ public interface ResourceService {
      * @return 资源列表
      */
     List<Resource> listByIds(List<Long> ids);
+
+    /**
+     * 添加资源
+     */
+    int create(Resource resource);
+
+    /**
+     * 修改资源
+     */
+    int update(Long id, Resource resource);
+
+    /**
+     * 获取资源详情
+     */
+    Resource getItem(Long id);
+
+    /**
+     * 删除资源
+     */
+    int delete(Long id);
+
+    /**
+     * 分页查询资源
+     */
+    List<Resource> list(String keyword, String url, Long categoryId);
+
+    /**
+     * 查询所有资源
+     */
+    List<Resource> listAll();
 }

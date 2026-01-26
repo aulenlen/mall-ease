@@ -84,5 +84,13 @@ public interface ResourceDao {
      * @return 记录列表
      */
     List<Resource> selectByIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据查询条件查询
+     *
+     * @param query 查询条件
+     * @return 记录列表
+     */
+    List<Resource> selectByQuery(@Param("query") com.mallease.user.model.client.query.ResourceQuery query);
 }
 

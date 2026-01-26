@@ -131,5 +131,23 @@
             #{id,jdbcType=BIGINT}
         </foreach>
     </select>
+
+    <select id="selectByQuery" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from user_resource
+        <where>
+            <if test="query.name != null and query.name != ''">
+                and name like concat('%', #{query.name}, '%')
+            </if>
+            <if test="query.url != null and query.url != ''">
+                and url like concat('%', #{query.url}, '%')
+            </if>
+            <if test="query.categoryId != null">
+                and category_id = #{query.categoryId}
+            </if>
+        </where>
+        order by create_time desc
+    </select>
 </mapper>
 

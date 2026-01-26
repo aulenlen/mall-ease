@@ -76,5 +76,13 @@ public interface AdminDao {
      * @return 记录列表
      */
     List<Admin> selectAll();
+
+    /**
+     * 根据查询条件查询
+     *
+     * @param query 查询条件
+     * @return 记录列表
+     */
+    List<Admin> selectByQuery(@Param("query") com.mallease.user.model.client.query.AdminQuery query);
 }
 

@@ -169,5 +169,20 @@
             status = #{status,jdbcType=INTEGER}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <select id="selectByQuery" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from user_admin
+        <where>
+            <if test="query.username != null and query.username != ''">
+                and username like concat('%', #{query.username}, '%')
+            </if>
+            <if test="query.status != null">
+                and status = #{query.status}
+            </if>
+        </where>
+        order by create_time desc
+    </select>
 </mapper>
 

@@ -3,8 +3,8 @@ package com.mallease.user.service.impl;
 import com.mallease.user.dao.MemberLevelDao;
 import com.mallease.user.model.data.MemberLevel;
 import com.mallease.user.service.MemberLevelService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +18,10 @@ import java.util.List;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class MemberLevelServiceImpl implements MemberLevelService {
 
-    @Autowired
-    private MemberLevelDao memberLevelDao;
+    private final MemberLevelDao memberLevelDao;
 
     @Override
     public List<MemberLevel> listByDefaultStatus(Integer defaultStatus) {

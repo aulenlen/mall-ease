@@ -78,6 +78,14 @@
         </trim>
     </insert>
 
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into user_role_resource_relation (role_id, resource_id)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.roleId,jdbcType=BIGINT}, #{item.resourceId,jdbcType=BIGINT})
+        </foreach>
+    </insert>
+
     <update id="updateByPrimaryKeySelective" parameterType="com.mallease.user.model.data.RoleResourceRelation">
         update user_role_resource_relation
         <set>
