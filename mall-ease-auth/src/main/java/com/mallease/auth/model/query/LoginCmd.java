@@ -8,8 +8,7 @@ import lombok.Data;
  * @create: 2025-11-09 21:45
  **/
 @Data
-public class LoginQuery {
+public class LoginCmd {
     private String username;
     private String password;
-    private String userType;
 }

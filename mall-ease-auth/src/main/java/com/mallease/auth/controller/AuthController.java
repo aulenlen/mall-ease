@@ -1,7 +1,8 @@
 package com.mallease.auth.controller;
 
 import cn.dev33.satoken.stp.SaTokenInfo;
-import com.mallease.auth.model.query.LoginQuery;
+import com.mallease.auth.config.StpAdminUtil;
+import com.mallease.auth.model.query.LoginCmd;
 import com.mallease.auth.service.AuthService;
 import com.mallease.common.api.R;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,14 +39,21 @@ public class AuthController {
 
     @Operation(summary = "后台管理员登录")
     @PostMapping("/admin/login")
-    public R<Map<String, String>> adminLogin(@Validated @RequestBody LoginQuery request) {
+    public R<Map<String, String>> adminLogin(@Validated @RequestBody LoginCmd request) {
         SaTokenInfo tokenInfo = authService.loginAdmin(request);
         return buildTokenResponse(tokenInfo);
     }
 
+    @Operation(summary = "退出登录")
+    @PostMapping("/admin/logout")
+    public R<Void> logout() {
+        StpAdminUtil.logout();
+        return R.success(null);
+    }
+
     @Operation(summary = "前台会员登录")
     @PostMapping("/portal/login")
-    public R<Map<String, String>> portalLogin(@Validated @RequestBody LoginQuery request) {
+    public R<Map<String, String>> portalLogin(@Validated @RequestBody LoginCmd request) {
         SaTokenInfo tokenInfo = authService.loginMember(request);
         return buildTokenResponse(tokenInfo);
     }

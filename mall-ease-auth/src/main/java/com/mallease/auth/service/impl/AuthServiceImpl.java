@@ -5,7 +5,7 @@ import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.hutool.core.util.StrUtil;
 import com.mallease.auth.config.StpAdminUtil;
 import com.mallease.auth.config.StpMemberUtil;
-import com.mallease.auth.model.query.LoginQuery;
+import com.mallease.auth.model.query.LoginCmd;
 import com.mallease.auth.model.AdminDTO;
 import com.mallease.auth.model.MemberDTO;
 import com.mallease.auth.model.ResourceDTO;
@@ -35,7 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private UserServiceFeignClient umsServiceFeignClient;
 
     @Override
-    public SaTokenInfo loginAdmin(LoginQuery request) {
+    public SaTokenInfo loginAdmin(LoginCmd request) {
         validateLoginParams(request);
 
         R<AdminDTO> result = umsServiceFeignClient.getAdminByUsername(request.getUsername());
@@ -54,7 +54,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public SaTokenInfo loginMember(LoginQuery request) {
+    public SaTokenInfo loginMember(LoginCmd request) {
         validateLoginParams(request);
 
         R<MemberDTO> result = umsServiceFeignClient.getMemberByUsername(request.getUsername());
@@ -72,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
         return StpMemberUtil.getTokenInfo();
     }
 
-    private void validateLoginParams(LoginQuery request) {
+    private void validateLoginParams(LoginCmd request) {
         if (StrUtil.isEmpty(request.getUsername()) || StrUtil.isEmpty(request.getPassword())) {
             Asserts.fail("用户名或密码不能为空！");
         }

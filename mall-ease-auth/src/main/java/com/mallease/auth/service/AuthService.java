@@ -1,7 +1,7 @@
 package com.mallease.auth.service;
 
 import cn.dev33.satoken.stp.SaTokenInfo;
-import com.mallease.auth.model.query.LoginQuery;
+import com.mallease.auth.model.query.LoginCmd;
 
 /**
  * 认证服务接口
@@ -14,10 +14,10 @@ public interface AuthService {
     /**
      * 管理员登录
      */
-    SaTokenInfo loginAdmin(LoginQuery request);
+    SaTokenInfo loginAdmin(LoginCmd request);
 
     /**
      * 会员登录
      */
-    SaTokenInfo loginMember(LoginQuery request);
+    SaTokenInfo loginMember(LoginCmd request);
 }
