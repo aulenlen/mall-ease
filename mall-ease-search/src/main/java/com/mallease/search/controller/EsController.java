@@ -5,8 +5,10 @@ import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
+import com.mallease.search.converter.SearchResultConverter;
 import com.mallease.search.converter.SpuDocConverter;
 import com.mallease.search.converter.SpuIndexConverter;
+import com.mallease.search.model.client.vo.SpuSearchPageVO;
 import com.mallease.search.model.data.doc.SpuDocument;
 import com.mallease.search.service.SpuSearchService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,6 +35,7 @@ public class EsController {
     private final SpuSearchService spuSearchService;
     private final SpuIndexConverter spuIndexConverter;
     private final SpuDocConverter spuDocConverter;
+    private final SearchResultConverter searchResultConverter;
 
     @Operation(summary = "搜索建议")
     @GetMapping("/suggest")
@@ -88,5 +91,15 @@ public class EsController {
     @PostMapping("/internal/product/advancedSearch")
     public R<SpuSearchResultDTO> advancedSearch(@Validated @RequestBody SpuSearchQuery query) {
         return R.success(spuSearchService.searchWithAggregation(query));
+    }
+
+    @Operation(summary = "前台商品搜索", description = "支持关键词、分类、品牌、价格区间、规格筛选")
+    @PostMapping("/portal/product")
+    public R<SpuSearchPageVO> portalSearch(@Validated @RequestBody SpuSearchQuery query) {
+        if (query.getNeedAggregation() == null) {
+            query.setNeedAggregation(true);
+        }
+        SpuSearchResultDTO dto = spuSearchService.searchWithAggregation(query);
+        return R.success(searchResultConverter.toPageVO(dto));
     }
 }
