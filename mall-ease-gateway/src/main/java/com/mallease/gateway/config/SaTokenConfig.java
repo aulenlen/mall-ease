@@ -11,6 +11,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.common.api.R;
+import com.mallease.common.api.ResultCode;
 import com.mallease.common.constant.AuthConstant;
 import com.mallease.common.service.RedisService;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,12 @@ import java.util.Set;
 /**
  * Sa-Token 权限认证全局配置类（支持多账号体系）
  *
+ * 接口分类：
+ * 1. internal 接口 - 服务间调用，禁止外部访问
+ * 2. portal 公开接口 - 前台无需登录（商品详情、搜索、注册登录）
+ * 3. portal 登录接口 - 前台需 member 登录（购物车、订单）
+ * 4. admin 接口 - 后台需 admin 登录
+ *
  * @author: Aulen
  * @create: 2025-11-08
  */
@@ -45,44 +52,101 @@ public class SaTokenConfig {
     @Autowired
     private RedisService redisService;
 
+    private static final PathMatcher PATH_MATCHER = new AntPathMatcher();
+
     /**
-     * 登录接口放行列表
+     * 内部接口路径模式 - 禁止外部访问
      */
-    private static final List<String> LOGIN_EXCLUDE_PATHS = List.of(
+    private static final String INTERNAL_PATH_PATTERN = "**/internal/**";
+
+    /**
+     * 前台公开接口 - 无需登录
+     */
+    private static final List<String> PORTAL_PUBLIC_PATHS = List.of(
+            "/mall-ease-auth/auth/portal/login",
+            "/mall-ease-auth/auth/portal/register",
             "/mall-ease-auth/auth/admin/login",
-            "/mall-ease-auth/auth/portal/login"
+            "/mall-ease-product/product/spu/portal/*",
+            "/mall-ease-search/search/suggest",
+            "/mall-ease-search/search/portal/product"
     );
 
     /**
-     * 前台 BFF 放行路径
+     * 前台需登录接口 - 需要 member 登录
      */
-    private static final String APP_PATH_PATTERN = "/mall-ease-app/**";
+    private static final List<String> PORTAL_AUTH_PATHS = List.of(
+            "/mall-ease-auth/auth/portal/logout",
+            "/mall-ease-user/user/member/portal/**",
+            "/mall-ease-trade/trade/cart/portal/**"
+    );
+
+    /**
+     * BFF 聚合层放行路径
+     */
+    private static final String BFF_PATH_PATTERN = "/mall-ease-bff/**";
 
     @Bean
     public SaReactorFilter getSaReactorFilter() {
-        List<String> excludeList = new ArrayList<>(LOGIN_EXCLUDE_PATHS);
-        excludeList.add(APP_PATH_PATTERN);
-
         return new SaReactorFilter()
                 .addInclude("/**")
                 .addExclude("/favicon.ico")
-                .setExcludeList(excludeList)
                 .setAuth(obj -> {
                     SaRouter.match(SaHttpMethod.OPTIONS).stop();
 
-                    // 后台管理接口：使用 admin 账号体系校验
-                    SaRouter.match("/mall-ease-user/**", "/mall-ease-product/**", "/mall-ease-content/**",
-                                    "/mall-ease-marketing/**")
-                            .notMatch(LOGIN_EXCLUDE_PATHS.toArray(new String[0]))
-                            .check(r -> {
-                                StpAdminUtil.checkLogin();
-                                checkAdminPermission();
-                            });
+                    String requestPath = SaHolder.getRequest().getRequestPath();
 
-                    // 前台接口如需登录校验，使用 member 账号体系
-                    // 目前 /mall-ease-app/** 已放行，如需部分接口校验可在此添加
+                    if (isInternalPath(requestPath)) {
+                        throw new NotPermissionException("内部接口禁止外部访问");
+                    }
+
+                    if (isPortalPublicPath(requestPath)) {
+                        return;
+                    }
+
+                    if (PATH_MATCHER.match(BFF_PATH_PATTERN, requestPath)) {
+                        return;
+                    }
+
+                    if (isPortalAuthPath(requestPath)) {
+                        StpMemberUtil.checkLogin();
+                        return;
+                    }
+
+                    StpAdminUtil.checkLogin();
+                    checkAdminPermission();
                 })
                 .setError(this::handleException);
+    }
+
+    /**
+     * 判断是否为内部接口
+     */
+    private boolean isInternalPath(String requestPath) {
+        return requestPath.contains("/internal/");
+    }
+
+    /**
+     * 判断是否为前台公开接口
+     */
+    private boolean isPortalPublicPath(String requestPath) {
+        for (String pattern : PORTAL_PUBLIC_PATHS) {
+            if (PATH_MATCHER.match(pattern, requestPath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 判断是否为前台需登录接口
+     */
+    private boolean isPortalAuthPath(String requestPath) {
+        for (String pattern : PORTAL_AUTH_PATHS) {
+            if (PATH_MATCHER.match(pattern, requestPath)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -95,13 +159,12 @@ public class SaTokenConfig {
         }
 
         String requestPath = SaHolder.getRequest().getRequestPath();
-        PathMatcher pathMatcher = new AntPathMatcher();
         List<String> needPermissionList = new ArrayList<>();
 
         Set<Map.Entry<Object, Object>> entrySet = map.entrySet();
         for (Map.Entry<Object, Object> entry : entrySet) {
             String pattern = (String) entry.getKey();
-            if (pathMatcher.match(pattern, requestPath)) {
+            if (PATH_MATCHER.match(pattern, requestPath)) {
                 needPermissionList.add((String) entry.getValue());
             }
         }
@@ -115,7 +178,7 @@ public class SaTokenConfig {
      * 自定义异常处理
      */
     private Object handleException(Throwable e) {
-        log.error("网关异常处理: {}", e.getMessage(), e);
+        log.error("网关认证异常: {}", e.getMessage());
 
         ServerWebExchange exchange = SaReactorSyncHolder.getContext();
         if (exchange == null) {
@@ -135,7 +198,13 @@ public class SaTokenConfig {
             result = R.unauthorized(null);
             status = HttpStatus.UNAUTHORIZED;
         } else if (e instanceof NotPermissionException) {
-            result = R.forbidden(null);
+
+            String message = e.getMessage();
+            if (message != null && message.contains("内部接口")) {
+                result = R.failed(ResultCode.FORBIDDEN, "接口不存在");
+            } else {
+                result = R.forbidden(null);
+            }
             status = HttpStatus.FORBIDDEN;
         } else {
             result = R.failed(e.getMessage());

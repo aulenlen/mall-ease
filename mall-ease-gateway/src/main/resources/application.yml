@@ -38,10 +38,22 @@ spring:
             - Path=/mall-ease-marketing/**
           filters:
             - StripPrefix=1
-        - id: mall-ease-app
-          uri: lb://mall-ease-app
+        - id: mall-ease-bff
+          uri: lb://mall-ease-bff
           predicates:
-            - Path=/mall-ease-app/**
+            - Path=/mall-ease-bff/**
+          filters:
+            - StripPrefix=1
+        - id: mall-ease-search
+          uri: lb://mall-ease-search
+          predicates:
+            - Path=/mall-ease-search/**
+          filters:
+            - StripPrefix=1
+        - id: mall-ease-trade
+          uri: lb://mall-ease-trade
+          predicates:
+            - Path=/mall-ease-trade/**
           filters:
             - StripPrefix=1
 
