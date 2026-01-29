@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.trade.dao.CartItemDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.trade.model.data.entity.CartItem">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
+        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
+        <result column="quantity" property="quantity" jdbcType="INTEGER"/>
+        <result column="checked" property="checked" jdbcType="TINYINT"/>
+        <result column="spu_name" property="spuName" jdbcType="VARCHAR"/>
+        <result column="sku_pic" property="skuPic" jdbcType="VARCHAR"/>
+        <result column="sku_attrs" property="skuAttrs" jdbcType="VARCHAR"/>
+        <result column="price" property="price" jdbcType="DECIMAL"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, sku_id, spu_id, quantity, checked,
+        spu_name, sku_pic, sku_attrs, price, create_time, update_time
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_cart_item
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据ID列表批量查询 -->
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_cart_item
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据用户ID查询购物车列表 -->
+    <select id="selectByUserId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_cart_item
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据用户ID和SKU ID查询 -->
+    <select id="selectByUserIdAndSkuId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_cart_item
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+          AND sku_id = #{skuId,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据用户ID和选中状态查询 -->
+    <select id="selectByUserIdAndChecked" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_cart_item
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+          AND checked = #{checked,jdbcType=TINYINT}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 统计用户购物车商品数量 -->
+    <select id="countByUserId" parameterType="java.lang.Long" resultType="int">
+        SELECT COALESCE(SUM(quantity), 0)
+        FROM trade_cart_item
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+    </select>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.mallease.trade.model.data.entity.CartItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO trade_cart_item (
+            user_id, sku_id, spu_id, quantity, checked,
+            spu_name, sku_pic, sku_attrs, price
+        ) VALUES (
+            #{userId,jdbcType=BIGINT}, #{skuId,jdbcType=BIGINT}, #{spuId,jdbcType=BIGINT},
+            #{quantity,jdbcType=INTEGER}, #{checked,jdbcType=TINYINT},
+            #{spuName,jdbcType=VARCHAR}, #{skuPic,jdbcType=VARCHAR},
+            #{skuAttrs,jdbcType=VARCHAR}, #{price,jdbcType=DECIMAL}
+        )
+    </insert>
+
+    <!-- 选择性插入 -->
+    <insert id="insertSelective" parameterType="com.mallease.trade.model.data.entity.CartItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO trade_cart_item
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="skuId != null">sku_id,</if>
+            <if test="spuId != null">spu_id,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="checked != null">checked,</if>
+            <if test="spuName != null">spu_name,</if>
+            <if test="skuPic != null">sku_pic,</if>
+            <if test="skuAttrs != null">sku_attrs,</if>
+            <if test="price != null">price,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+            <if test="skuId != null">#{skuId,jdbcType=BIGINT},</if>
+            <if test="spuId != null">#{spuId,jdbcType=BIGINT},</if>
+            <if test="quantity != null">#{quantity,jdbcType=INTEGER},</if>
+            <if test="checked != null">#{checked,jdbcType=TINYINT},</if>
+            <if test="spuName != null">#{spuName,jdbcType=VARCHAR},</if>
+            <if test="skuPic != null">#{skuPic,jdbcType=VARCHAR},</if>
+            <if test="skuAttrs != null">#{skuAttrs,jdbcType=VARCHAR},</if>
+            <if test="price != null">#{price,jdbcType=DECIMAL},</if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO trade_cart_item (
+            user_id, sku_id, spu_id, quantity, checked,
+            spu_name, sku_pic, sku_attrs, price
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.userId,jdbcType=BIGINT}, #{item.skuId,jdbcType=BIGINT},
+                #{item.spuId,jdbcType=BIGINT}, #{item.quantity,jdbcType=INTEGER},
+                #{item.checked,jdbcType=TINYINT}, #{item.spuName,jdbcType=VARCHAR},
+                #{item.skuPic,jdbcType=VARCHAR}, #{item.skuAttrs,jdbcType=VARCHAR},
+                #{item.price,jdbcType=DECIMAL}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据主键更新 -->
+    <update id="updateByPrimaryKey" parameterType="com.mallease.trade.model.data.entity.CartItem">
+        UPDATE trade_cart_item
+        SET user_id = #{userId,jdbcType=BIGINT},
+            sku_id = #{skuId,jdbcType=BIGINT},
+            spu_id = #{spuId,jdbcType=BIGINT},
+            quantity = #{quantity,jdbcType=INTEGER},
+            checked = #{checked,jdbcType=TINYINT},
+            spu_name = #{spuName,jdbcType=VARCHAR},
+            sku_pic = #{skuPic,jdbcType=VARCHAR},
+            sku_attrs = #{skuAttrs,jdbcType=VARCHAR},
+            price = #{price,jdbcType=DECIMAL}
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据主键选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.trade.model.data.entity.CartItem">
+        UPDATE trade_cart_item
+        <set>
+            <if test="userId != null">user_id = #{userId,jdbcType=BIGINT},</if>
+            <if test="skuId != null">sku_id = #{skuId,jdbcType=BIGINT},</if>
+            <if test="spuId != null">spu_id = #{spuId,jdbcType=BIGINT},</if>
+            <if test="quantity != null">quantity = #{quantity,jdbcType=INTEGER},</if>
+            <if test="checked != null">checked = #{checked,jdbcType=TINYINT},</if>
+            <if test="spuName != null">spu_name = #{spuName,jdbcType=VARCHAR},</if>
+            <if test="skuPic != null">sku_pic = #{skuPic,jdbcType=VARCHAR},</if>
+            <if test="skuAttrs != null">sku_attrs = #{skuAttrs,jdbcType=VARCHAR},</if>
+            <if test="price != null">price = #{price,jdbcType=DECIMAL},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 更新数量（增量更新） -->
+    <update id="updateQuantity">
+        UPDATE trade_cart_item
+        SET quantity = quantity + #{quantity,jdbcType=INTEGER}
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 批量更新选中状态 -->
+    <update id="updateCheckedBatch">
+        UPDATE trade_cart_item
+        SET checked = #{checked,jdbcType=TINYINT}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <!-- 更新用户所有购物车项的选中状态 -->
+    <update id="updateCheckedByUserId">
+        UPDATE trade_cart_item
+        SET checked = #{checked,jdbcType=TINYINT}
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据主键删除 -->
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        DELETE FROM trade_cart_item
+        WHERE id = #{id,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBatch">
+        DELETE FROM trade_cart_item
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </delete>
+
+    <!-- 根据用户ID删除所有购物车项 -->
+    <delete id="deleteByUserId" parameterType="java.lang.Long">
+        DELETE FROM trade_cart_item
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 删除用户已选中的购物车项 -->
+    <delete id="deleteCheckedByUserId" parameterType="java.lang.Long">
+        DELETE FROM trade_cart_item
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+          AND checked = 1
+    </delete>
+
+</mapper>
