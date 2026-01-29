@@ -19,7 +19,7 @@
 
     <modules>
         <module>mall-ease-auth</module>
-        <module>mall-ease-app</module>
+        <module>mall-ease-bff</module>
         <module>mall-ease-common</module>
         <module>mall-ease-gateway</module>
         <module>mall-ease-monitor</module>
