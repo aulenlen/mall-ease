@@ -209,4 +209,42 @@ public class UserServiceImpl implements UserService {
         }
         return roleService.listByIds(roleIds);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long registerMember(Member member) {
+
+        Member existMember = memberDao.selectByUsername(member.getUsername());
+        if (existMember != null) {
+            throw new ApiException("用户名已存在");
+        }
+
+        if (StrUtil.isNotBlank(member.getPhone())) {
+            Member phoneMember = memberDao.selectByPhone(member.getPhone());
+            if (phoneMember != null) {
+                throw new ApiException("手机号已被注册");
+            }
+        }
+
+        String encodePassword = BCrypt.hashpw(member.getPassword(), BCrypt.gensalt());
+        member.setPassword(encodePassword);
+
+        member.setStatus(1);
+        member.setIntegration(0);
+        member.setGrowth(0);
+        member.setLuckyCount(0);
+        member.setHistoryIntegration(0);
+        member.setDeleted(0);
+
+        // TODO: 设置默认会员等级（可从配置或数据库获取默认等级ID）
+        // member.setMemberLevelId(defaultLevelId);
+
+        memberDao.insertSelective(member);
+        return member.getId();
+    }
+
+    @Override
+    public Member getMemberByPhone(String phone) {
+        return memberDao.selectByPhone(phone);
+    }
 }

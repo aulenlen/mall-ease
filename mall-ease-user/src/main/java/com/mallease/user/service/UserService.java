@@ -90,4 +90,17 @@ public interface UserService {
      * 获取指定管理员的角色列表
      */
     List<Role> getRoleList(Long adminId);
+
+    /**
+     * 会员注册
+     *
+     * @param member 会员信息
+     * @return 新会员ID
+     */
+    Long registerMember(Member member);
+
+    /**
+     * 根据手机号获取会员
+     */
+    Member getMemberByPhone(String phone);
 }

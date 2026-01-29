@@ -3,6 +3,7 @@ package com.mallease.user.model.data;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 会员等级表
@@ -23,57 +24,67 @@ public class MemberLevel {
     private String name;
 
     /**
-     * 成长点
+     * 成长点门槛
      */
     private Integer growthPoint;
 
     /**
-     * 是否为默认等级：0->不是；1->是
+     * 是否为默认等级：0-否 1-是
      */
     private Integer defaultStatus;
 
     /**
-     * 免运费标准
+     * 免运费标准（订单金额）
      */
     private BigDecimal freeFreightPoint;
 
     /**
-     * 每次评价获取的成长值
+     * 评价获取成长值
      */
     private Integer commentGrowthPoint;
 
     /**
-     * 是否有免邮特权
+     * 免邮特权：0-否 1-是
      */
-    private Integer priviledgeFreeFreight;
+    private Integer privilegeFreeFreight;
 
     /**
-     * 是否有签到特权
+     * 签到特权：0-否 1-是
      */
-    private Integer priviledgeSignIn;
+    private Integer privilegeSignIn;
 
     /**
-     * 是否有评论获奖励特权
+     * 评论获奖励特权：0-否 1-是
      */
-    private Integer priviledgeComment;
+    private Integer privilegeComment;
 
     /**
-     * 是否有专享活动特权
+     * 专享活动特权：0-否 1-是
      */
-    private Integer priviledgePromotion;
+    private Integer privilegePromotion;
 
     /**
-     * 是否有会员价格特权
+     * 会员价格特权：0-否 1-是
      */
-    private Integer priviledgeMemberPrice;
+    private Integer privilegeMemberPrice;
 
     /**
-     * 是否有生日特权
+     * 生日特权：0-否 1-是
      */
-    private Integer priviledgeBirthday;
+    private Integer privilegeBirthday;
 
     /**
      * 备注
      */
     private String note;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updateTime;
 }

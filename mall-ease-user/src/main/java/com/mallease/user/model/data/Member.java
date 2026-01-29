@@ -2,7 +2,8 @@ package com.mallease.user.model.data;
 
 import lombok.Data;
 
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 会员表
@@ -43,14 +44,14 @@ public class Member {
     private String phone;
 
     /**
-     * 帐号启用状态:0->禁用；1->启用
+     * 邮箱
      */
-    private Integer status;
+    private String email;
 
     /**
-     * 注册时间
+     * 帐号启用状态：0-禁用 1-启用
      */
-    private Date createTime;
+    private Integer status;
 
     /**
      * 头像
@@ -58,17 +59,17 @@ public class Member {
     private String icon;
 
     /**
-     * 性别：0->未知；1->男；2->女
+     * 性别：0-未知 1-男 2-女
      */
     private Integer gender;
 
     /**
      * 生日
      */
-    private Date birthday;
+    private LocalDate birthday;
 
     /**
-     * 所做城市
+     * 所在城市
      */
     private String city;
 
@@ -83,7 +84,7 @@ public class Member {
     private String personalizedSignature;
 
     /**
-     * 用户来源
+     * 用户来源：0-其他 1-PC 2-H5 3-Android 4-IOS 5-小程序
      */
     private Integer sourceType;
 
@@ -100,16 +101,30 @@ public class Member {
     /**
      * 剩余抽奖次数
      */
-    private Integer luckeyCount;
+    private Integer luckyCount;
 
     /**
      * 历史积分数量
      */
     private Integer historyIntegration;
+
+    /**
+     * 删除标记：0-未删除 1-已删除
+     */
+    private Integer deleted;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
+
+    /**
+     * 最后登录时间
+     */
+    private LocalDateTime loginTime;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updateTime;
 }
-
-
-
-
-
-

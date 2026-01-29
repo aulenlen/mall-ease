@@ -3,11 +3,15 @@ package com.mallease.user.controller;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.MemberDTO;
+import com.mallease.user.config.StpMemberUtil;
 import com.mallease.user.converter.AdminConverter;
+import com.mallease.user.converter.MemberConverter;
 import com.mallease.user.converter.RoleConverter;
 import com.mallease.user.model.client.cmd.AdminCmd;
 import com.mallease.user.model.client.cmd.AllocRoleCmd;
 import com.mallease.user.model.client.vo.AdminVO;
+import com.mallease.user.model.client.vo.MemberVO;
 import com.mallease.user.model.client.vo.RoleVO;
 import com.mallease.user.model.data.*;
 import com.mallease.user.service.UserService;
@@ -38,6 +42,7 @@ public class UserController {
 
     private final UserService userService;
     private final AdminConverter adminConverter;
+    private final MemberConverter memberConverter;
     private final RoleConverter roleConverter;
 
     @Operation(summary = "获取当前登录管理员信息", description = "返回用户名、头像、角色列表、菜单列表")
@@ -58,6 +63,14 @@ public class UserController {
             log.error("获取当前用户信息失败", e);
             return R.failed("获取用户信息失败: " + e.getMessage());
         }
+    }
+
+    @Operation(summary = "获取当前登录会员信息", description = "前台接口，返回会员基本信息")
+    @GetMapping("/member/portal/me")
+    public R<MemberVO> getCurrentMember() {
+        Long memberId = StpMemberUtil.getLoginIdAsLong();
+        Member member = userService.getMemberById(memberId);
+        return R.success(memberConverter.entityToVO(member));
     }
 
     @Operation(summary = "管理员注册")
@@ -131,17 +144,17 @@ public class UserController {
 
     @Operation(summary = "根据用户名查询会员", description = "内部调用")
     @GetMapping("/member/username/{username}")
-    public R<Member> getMemberByUsername(@Parameter(description = "用户名") @PathVariable String username) {
+    public R<MemberDTO> getMemberByUsername(@Parameter(description = "用户名") @PathVariable String username) {
         Member member = userService.getMemberByUsername(username);
-        return R.success(member);
+        return R.success(memberConverter.entityToDTO(member));
     }
 
     @Operation(summary = "根据ID查询会员", description = "内部调用")
     @GetMapping("/member/{id}")
-    public R<Member> getMemberById(
+    public R<MemberDTO> getMemberById(
             @Parameter(description = "会员ID") @PathVariable Long id) {
         Member member = userService.getMemberById(id);
-        return R.success(member);
+        return R.success(memberConverter.entityToDTO(member));
     }
 
     @Operation(summary = "获取管理员资源列表", description = "内部调用，用于权限校验")
@@ -150,5 +163,20 @@ public class UserController {
             @Parameter(description = "管理员ID") @PathVariable Long adminId) {
         List<Resource> resourceList = userService.getResourceList(adminId);
         return R.success(resourceList);
+    }
+
+    @Operation(summary = "会员注册", description = "内部调用")
+    @PostMapping("/member/internal/register")
+    public R<Long> registerMember(@RequestBody MemberDTO memberDTO) {
+        Member member = memberConverter.dtoToEntity(memberDTO);
+        Long memberId = userService.registerMember(member);
+        return R.success(memberId);
+    }
+
+    @Operation(summary = "根据手机号查询会员", description = "内部调用")
+    @GetMapping("/member/internal/phone/{phone}")
+    public R<MemberDTO> getMemberByPhone(@Parameter(description = "手机号") @PathVariable String phone) {
+        Member member = userService.getMemberByPhone(phone);
+        return R.success(memberConverter.entityToDTO(member));
     }
 }
