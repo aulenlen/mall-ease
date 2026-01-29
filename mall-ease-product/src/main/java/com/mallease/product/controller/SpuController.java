@@ -5,7 +5,6 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
-import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import com.mallease.product.assembler.SpuDetailAssembler;
@@ -17,10 +16,7 @@ import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.cmd.PublishSpuCmd;
 import com.mallease.product.model.client.cmd.SpuCmd;
 import com.mallease.product.model.client.query.SpuQuery;
-import com.mallease.product.model.client.vo.SkuVO;
-import com.mallease.product.model.client.vo.SpuDetailVO;
-import com.mallease.product.model.client.vo.SpuPublishVO;
-import com.mallease.product.model.client.vo.SpuVO;
+import com.mallease.product.model.client.vo.*;
 import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.Sku;
 import com.mallease.product.model.data.entity.SkuStock;
@@ -133,18 +129,17 @@ public class SpuController {
         return R.success(result);
     }
 
-    // 内部调用
-
-    @Operation(summary = "通过spuId 获取完整的商品信息", description = "内部调用")
-    @GetMapping("/internal/{spuId}")
-    public R<ProductDTO> getProduct(@PathVariable Long spuId) {
+    @Operation(summary = "前台商品详情", description = "获取完整商品信息（前台展示）")
+    @GetMapping("/portal/{spuId}")
+    public R<ProductVO> portalDetail(@PathVariable Long spuId) {
         SpuCache cache = spuService.getProduct(spuId);
         if (cache == null) {
             return R.success(null);
         }
-        return R.success(spuCacheConverter.cacheToDTO(cache));
+        return R.success(spuCacheConverter.cacheToVO(cache));
     }
 
+    // 内部调用
     @Operation(summary = "MySQL搜索商品", description = "内部调用")
     @PostMapping("/internal/advancedSearch")
     public R<SpuSearchResultDTO> advancedSearch(@RequestBody SpuSearchQuery query) {

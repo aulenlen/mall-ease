@@ -2,6 +2,7 @@ package com.mallease.product.converter;
 
 import cn.hutool.core.util.StrUtil;
 import com.mallease.common.dto.remote.ProductDTO;
+import com.mallease.product.model.client.vo.ProductVO;
 import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.*;
 import org.mapstruct.Mapper;
@@ -66,6 +67,13 @@ public interface SpuCacheConverter {
      * SpuCache → ProductDTO（服务间调用）
      */
     ProductDTO cacheToDTO(SpuCache cache);
+
+    // Cache → VO（前台接口）
+
+    /**
+     * SpuCache → ProductVO（前台展示）
+     */
+    ProductVO cacheToVO(SpuCache cache);
 
     // 工具方法
 
