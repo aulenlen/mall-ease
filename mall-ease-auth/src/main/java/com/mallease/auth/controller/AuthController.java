@@ -2,6 +2,8 @@ package com.mallease.auth.controller;
 
 import cn.dev33.satoken.stp.SaTokenInfo;
 import com.mallease.auth.config.StpAdminUtil;
+import com.mallease.auth.config.StpMemberUtil;
+import com.mallease.auth.model.cmd.MemberRegisterCmd;
 import com.mallease.auth.model.query.LoginCmd;
 import com.mallease.auth.service.AuthService;
 import com.mallease.common.api.R;
@@ -44,11 +46,18 @@ public class AuthController {
         return buildTokenResponse(tokenInfo);
     }
 
-    @Operation(summary = "退出登录")
+    @Operation(summary = "后台管理员退出登录")
     @PostMapping("/admin/logout")
-    public R<Void> logout() {
+    public R<Void> adminLogout() {
         StpAdminUtil.logout();
         return R.success(null);
+    }
+
+    @Operation(summary = "前台会员注册", description = "注册成功后自动登录并返回 Token")
+    @PostMapping("/portal/register")
+    public R<Map<String, String>> portalRegister(@Validated @RequestBody MemberRegisterCmd cmd) {
+        SaTokenInfo tokenInfo = authService.registerMember(cmd);
+        return buildTokenResponse(tokenInfo);
     }
 
     @Operation(summary = "前台会员登录")
@@ -56,6 +65,13 @@ public class AuthController {
     public R<Map<String, String>> portalLogin(@Validated @RequestBody LoginCmd request) {
         SaTokenInfo tokenInfo = authService.loginMember(request);
         return buildTokenResponse(tokenInfo);
+    }
+
+    @Operation(summary = "前台会员退出登录")
+    @PostMapping("/portal/logout")
+    public R<Void> portalLogout() {
+        StpMemberUtil.logout();
+        return R.success(null);
     }
 
     private R<Map<String, String>> buildTokenResponse(SaTokenInfo tokenInfo) {
