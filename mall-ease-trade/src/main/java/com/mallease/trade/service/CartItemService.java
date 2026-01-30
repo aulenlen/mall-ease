@@ -118,4 +118,10 @@ public interface CartItemService {
      * @return 影响行数
      */
     int deleteCheckedByUserId(Long userId);
+
+    /**
+     * 获取用户勾选的购物车项
+     * @return 购物车项列表
+     */
+    List<CartItem> listChecked();
 }

@@ -72,6 +72,15 @@
         WHERE user_id = #{userId,jdbcType=BIGINT}
     </select>
 
+    <!-- 获取用户已选择的购物车项目 -->
+    <select id="listChecked" resultType="com.mallease.trade.model.data.entity.CartItem">
+        select
+        <include refid="Base_Column_List"/>
+        from trade_cart_item
+        where user_id = #{userId,jdbcType=BIGINT}
+        and checked = 1
+    </select>
+
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.trade.model.data.entity.CartItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_cart_item (

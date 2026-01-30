@@ -1,6 +1,7 @@
 package com.mallease.trade.service.impl;
 
 import com.mallease.common.exception.ApiException;
+import com.mallease.common.util.LoginContextUtil;
 import com.mallease.trade.dao.CartItemDao;
 import com.mallease.trade.model.data.entity.CartItem;
 import com.mallease.trade.service.CartItemService;
@@ -156,5 +157,10 @@ public class CartItemServiceImpl implements CartItemService {
             throw new ApiException("用户ID不能为空");
         }
         return cartItemDao.deleteCheckedByUserId(userId);
+    }
+
+    @Override
+    public List<CartItem> listChecked() {
+        return cartItemDao.listChecked(LoginContextUtil.getUserId());
     }
 }

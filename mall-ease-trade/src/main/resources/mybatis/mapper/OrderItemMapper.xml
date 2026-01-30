@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.trade.dao.OrderItemDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.trade.model.data.entity.OrderItem">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="order_id" property="orderId" jdbcType="BIGINT"/>
+        <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
+        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
+        <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
+        <result column="spu_name" property="spuName" jdbcType="VARCHAR"/>
+        <result column="sku_pic" property="skuPic" jdbcType="VARCHAR"/>
+        <result column="sku_attrs" property="skuAttrs" jdbcType="VARCHAR"/>
+        <result column="price" property="price" jdbcType="DECIMAL"/>
+        <result column="quantity" property="quantity" jdbcType="INTEGER"/>
+        <result column="subtotal" property="subtotal" jdbcType="DECIMAL"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, order_id, order_no, spu_id, sku_id, spu_name, sku_pic, sku_attrs,
+        price, quantity, subtotal, create_time
+    </sql>
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_order_item
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据订单ID查询商品列表 -->
+    <select id="selectByOrderId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_order_item
+        WHERE order_id = #{orderId,jdbcType=BIGINT}
+        ORDER BY id ASC
+    </select>
+
+    <!-- 根据订单编号查询商品列表 -->
+    <select id="selectByOrderNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_order_item
+        WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+        ORDER BY id ASC
+    </select>
+
+    <!-- 根据订单ID列表批量查询商品 -->
+    <select id="selectByOrderIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_order_item
+        WHERE order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId,jdbcType=BIGINT}
+        </foreach>
+        ORDER BY order_id, id ASC
+    </select>
+
+    <!-- 插入订单商品 -->
+    <insert id="insert" parameterType="com.mallease.trade.model.data.entity.OrderItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO trade_order_item (
+            order_id, order_no, spu_id, sku_id, spu_name, sku_pic, sku_attrs,
+            price, quantity, subtotal
+        ) VALUES (
+            #{orderId,jdbcType=BIGINT}, #{orderNo,jdbcType=VARCHAR},
+            #{spuId,jdbcType=BIGINT}, #{skuId,jdbcType=BIGINT},
+            #{spuName,jdbcType=VARCHAR}, #{skuPic,jdbcType=VARCHAR}, #{skuAttrs,jdbcType=VARCHAR},
+            #{price,jdbcType=DECIMAL}, #{quantity,jdbcType=INTEGER}, #{subtotal,jdbcType=DECIMAL}
+        )
+    </insert>
+
+    <!-- 批量插入订单商品 -->
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO trade_order_item (
+            order_id, order_no, spu_id, sku_id, spu_name, sku_pic, sku_attrs,
+            price, quantity, subtotal
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.orderId,jdbcType=BIGINT}, #{item.orderNo,jdbcType=VARCHAR},
+                #{item.spuId,jdbcType=BIGINT}, #{item.skuId,jdbcType=BIGINT},
+                #{item.spuName,jdbcType=VARCHAR}, #{item.skuPic,jdbcType=VARCHAR},
+                #{item.skuAttrs,jdbcType=VARCHAR}, #{item.price,jdbcType=DECIMAL},
+                #{item.quantity,jdbcType=INTEGER}, #{item.subtotal,jdbcType=DECIMAL}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据主键删除 -->
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        DELETE FROM trade_order_item
+        WHERE id = #{id,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 根据订单ID删除商品 -->
+    <delete id="deleteByOrderId" parameterType="java.lang.Long">
+        DELETE FROM trade_order_item
+        WHERE order_id = #{orderId,jdbcType=BIGINT}
+    </delete>
+
+</mapper>
