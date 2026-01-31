@@ -51,10 +51,9 @@ public class SpuPublishListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishEvent(SpuPublishEvent event) {
         List<Long> spuIds = event.getSpuIds();
-        // 处理缓存（缓存失败不影响业务结果）
         try {
             if (event.getPublishStatus() == 1) {
-                // 上架：预热缓存
+
                 log.info("开始预热SPU缓存，商品数量: {}", spuIds.size());
                 spuCacheService.warmUpBatch(spuIds);
 
@@ -102,16 +101,13 @@ public class SpuPublishListener {
         List<SpuIndexDTO> spuIndexDTOList = spuConverter.entityListToIndexDtoList(pmsSpuList);
         Map<Long, SpuIndexDTO> indexMap = spuIndexDTOList.stream().collect(Collectors.toMap(SpuIndexDTO::getSpuId, c -> c));
 
-        // 查询分类路径
         List<Long> categoryIds = pmsSpuList.stream().map(Spu::getCategoryId).distinct().toList();
         List<Category> categoryList = categoryService.listByIds(categoryIds);
         Map<Long, String> categoryPathMap = categoryList.stream().collect(Collectors.toMap(Category::getId, Category::getPath));
 
-        // 查询 SKU 列表
         List<Sku> skuList = skuService.selectBySpuIds(successIds);
         Map<Long, List<Sku>> skuGroupMap = skuList.stream().collect(Collectors.groupingBy(Sku::getSpuId));
 
-        // 查询属性值（参数，sku_id 为 null）
         List<AttributeValue> paramValueList = attributeService.listParamValuesBySpuIds(successIds);
         Map<Long, List<AttributeValue>> paramValueGroupMap = paramValueList.stream().collect(Collectors.groupingBy(AttributeValue::getSpuId));
 
@@ -145,7 +141,6 @@ public class SpuPublishListener {
             dto.setInStock(spu.getStock() != null && spu.getStock() > 0);
             dto.setCategoryPath(categoryPathMap.get(spu.getCategoryId()));
 
-            // 构建 SKU 列表
             List<Sku> spuSkuList = skuGroupMap.getOrDefault(spu.getId(), Collections.emptyList());
             List<SpuIndexDTO.Sku> dtoSkuList = spuSkuList.stream().map(
                     sku -> SpuIndexDTO.Sku.builder()
@@ -156,10 +151,8 @@ public class SpuPublishListener {
             ).toList();
             dto.setSkuList(dtoSkuList);
 
-            // 构建属性值列表（合并 SKU 规格和 SPU 参数）
             List<SpuIndexDTO.AttrValue> allAttrValues = new ArrayList<>();
 
-            // 1. 从 SKU 的 attrValues JSON 解析规格属性（type=1）
             Set<String> seenSpecs = new HashSet<>();
             for (Sku sku : spuSkuList) {
                 String jsonString = sku.getAttrValues();
@@ -200,7 +193,6 @@ public class SpuPublishListener {
                 }
             }
 
-            // 2. 添加 SPU 参数属性（type=0）
             List<AttributeValue> spuParamValues = paramValueGroupMap.getOrDefault(spu.getId(), Collections.emptyList());
             for (AttributeValue pv : spuParamValues) {
                 Attribute attr = finalAttrMap.get(pv.getAttrId());
@@ -208,7 +200,7 @@ public class SpuPublishListener {
                         .attrId(pv.getAttrId())
                         .attrName(pv.getAttrName())
                         .attrValue(pv.getAttrValue())
-                        .type(0) // 参数
+                        .type(0)
                         .filterable(attr != null && Integer.valueOf(1).equals(attr.getFilterable()))
                         .searchable(attr != null && Integer.valueOf(1).equals(attr.getSearchable()))
                         .build());

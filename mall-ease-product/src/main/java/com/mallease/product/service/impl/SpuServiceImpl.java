@@ -196,13 +196,13 @@ public class SpuServiceImpl implements SpuService {
 
         Long spuId = context.getSpuId();
 
-        // 1. 验证 SPU 是否存在
+        // 验证 SPU 是否存在
         Spu existingSpu = spuDao.selectByPrimaryKey(spuId);
         if (existingSpu == null) {
             throw new ApiException("商品不存在");
         }
 
-        // 2. 更新 SPU 基础信息（部分更新）
+        // 更新 SPU 基础信息（部分更新）
         Spu spu = context.getSpu();
         if (spu != null) {
             // 如果修改了品牌或分类，需要更新关联的名称字段
@@ -230,12 +230,11 @@ public class SpuServiceImpl implements SpuService {
             }
         }
 
-        // 3. 更新 SPU 详情（全量替换）
+        // 更新 SPU 详情
         if (context.getSpuDetail() != null) {
             SpuDetail spuDetail = context.getSpuDetail();
             spuDetail.setSpuId(spuId);
 
-            // 先查询是否已存在详情
             SpuDetail existingDetail = spuDetailDao.selectBySpuId(spuId);
             if (existingDetail != null) {
                 spuDetail.setId(existingDetail.getId());
@@ -245,7 +244,7 @@ public class SpuServiceImpl implements SpuService {
             }
         }
 
-        // 4. SKU 快照更新（传空数组=清空；不传=不更新；仅支持传已有SKU ID）
+        // SKU 快照更新（传空数组=清空；不传=不更新；仅支持传已有SKU ID）
         if (context.isUpdateSkus() && context.getSkuList() != null) {
 
             // 获取现有 SKU 列表
@@ -430,37 +429,31 @@ public class SpuServiceImpl implements SpuService {
             spuDao.updateByPrimaryKeySelective(aggregate);
         }
 
-        // 5. 更新属性值（全量替换）
+        // 更新属性值
         if (context.isUpdateAttrValues()) {
-            // 先删除旧数据
             attributeValueDao.deleteParamsBySpuId(spuId);
 
-            // 插入新数据
             if (context.getAttrValueList() != null && !context.getAttrValueList().isEmpty()) {
                 context.getAttrValueList().forEach(attr -> attr.setSpuId(spuId));
                 attributeValueDao.insertBatch(context.getAttrValueList());
             }
         }
 
-        // 6. 更新满减规则（全量替换）
+        // 更新满减规则
         if (context.isUpdateFullReductions()) {
-            // 先删除旧数据
             fullReductionDao.deleteBySpuId(spuId);
 
-            // 插入新数据
             if (context.getFullReductionList() != null && !context.getFullReductionList().isEmpty()) {
                 context.getFullReductionList().forEach(r -> r.setSpuId(spuId));
                 fullReductionDao.insertBatch(context.getFullReductionList());
             }
         }
 
-        // 7. 更新专题关联（全量替换，通过 Feign 调用 CMS 服务）
+        // 更新专题关联（全量替换，通过 Feign 调用 CMS 服务）
         if (context.isUpdateSubjects()) {
             try {
-                // 先删除旧关联
                 subjectFeignClient.deleteRelationsBySpuId(spuId);
 
-                // 添加新关联
                 if (context.getSubjectIds() != null && !context.getSubjectIds().isEmpty()) {
                     List<ContentSubjectSpuRelationDTO> subjectRelations = context.getSubjectIds().stream()
                             .map(subjectId -> ContentSubjectSpuRelationDTO.builder()
@@ -475,13 +468,11 @@ public class SpuServiceImpl implements SpuService {
             }
         }
 
-        // 8. 更新优选专区关联（全量替换，通过 Feign 调用 CMS 服务）
+        // 更新优选专区关联（全量替换，通过 Feign 调用 CMS 服务）
         if (context.isUpdatePreferenceAreas()) {
             try {
-                // 先删除旧关联
                 preferenceAreaFeignClient.deleteRelationsBySpuId(spuId);
 
-                // 添加新关联
                 if (context.getPreferenceAreaIds() != null && !context.getPreferenceAreaIds().isEmpty()) {
                     List<ContentPreferenceAreaSpuRelationDTO> areaRelations = context.getPreferenceAreaIds().stream()
                             .map(areaId -> ContentPreferenceAreaSpuRelationDTO.builder()

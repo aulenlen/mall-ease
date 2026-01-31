@@ -6,7 +6,7 @@ spring:
   datasource:
     # TiDB Cloud 连接配置
     # 环境变量示例:
-    # DB_URL=jdbc:mysql://gateway01.eu-central-1.prod.aws.tidbcloud.com:4000/mall_ease?sslMode=VERIFY_IDENTITY&enabledTLSProtocols=TLSv1.2,TLSv1.3
+    # DB_URL=jdbc:mysql://gateway01.eu-central-1.prod.aws.tidbcloud.com:4000/mall_ease?sslMode=VERIFY_IDENTITY&enabledTLSProtocols=TLSv1.2,TLSv1.3&allowMultiQueries=true
     # DB_USERNAME=your_username
     # DB_PASSWORD=your_password
     url: ${DB_URL}
