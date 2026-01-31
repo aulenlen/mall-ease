@@ -5,7 +5,7 @@ import com.mallease.bff.feign.ContentFeignClient;
 import com.mallease.bff.feign.MarketingFeignClient;
 import com.mallease.bff.feign.ProductFeignClient;
 import com.mallease.bff.feign.SearchFeignClient;
-import com.mallease.bff.model.vo.HomePageVO;
+import com.mallease.bff.model.client.vo.HomePageVO;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.*;
 import io.swagger.v3.oas.annotations.Operation;

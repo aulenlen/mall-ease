@@ -3,6 +3,7 @@ package com.mallease.bff;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.ComponentScan;
 
 /**
  * BFF 聚合层启动类（Backend for Frontend）

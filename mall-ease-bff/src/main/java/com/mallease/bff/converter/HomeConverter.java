@@ -1,6 +1,6 @@
 package com.mallease.bff.converter;
 
-import com.mallease.bff.model.vo.*;
+import com.mallease.bff.model.client.vo.*;
 import com.mallease.common.dto.remote.BannerDTO;
 import com.mallease.common.dto.remote.CategoryDTO;
 import com.mallease.common.dto.remote.EditorialDTO;

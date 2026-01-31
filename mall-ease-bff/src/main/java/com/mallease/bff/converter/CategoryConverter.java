@@ -1,6 +1,6 @@
 package com.mallease.bff.converter;
 
-import com.mallease.bff.model.vo.CategoryTreeVO;
+import com.mallease.bff.model.client.vo.CategoryTreeVO;
 import com.mallease.common.dto.remote.CategoryTreeDTO;
 import org.mapstruct.Mapper;
 
