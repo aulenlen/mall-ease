@@ -2,11 +2,14 @@ package com.mallease.trade.feign;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SkuSimpleDTO;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 商品服务 Feign 客户端
@@ -25,4 +28,12 @@ public interface ProductFeignClient {
      */
     @PostMapping("/product/sku/internal/listSimpleByIds")
     R<List<SkuSimpleDTO>> listSkuSimpleByIds(@RequestBody List<Long> skuIds);
+
+    /**
+     * 锁定库存
+     * @param skuQuantityMap
+     * @return
+     */
+    @PutMapping("/product/stock/internal/lock")
+    R<Void> lockStock(@RequestBody Map<Long, Integer> skuQuantityMap);
 }

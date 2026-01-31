@@ -157,21 +157,6 @@ public class CartItemController {
         return R.success(cartItemService.clearByUserId(userId));
     }
 
-    // 内部接口（供 Order 服务调用）
-
-    @Operation(summary = "获取用户已选中的购物车项", description = "内部调用，下单时获取已选中商品")
-    @GetMapping("/internal/checked")
-    public R<List<CartItemDTO>> internalListChecked(@RequestParam Long userId) {
-        List<CartItem> items = cartItemService.listCheckedByUserId(userId);
-        return R.success(cartItemConverter.entityListToDtoList(items));
-    }
-
-    @Operation(summary = "清除已选中的购物车项", description = "内部调用，下单成功后调用")
-    @DeleteMapping("/internal/clearChecked")
-    public R<Integer> internalClearChecked(@RequestParam Long userId) {
-        return R.success(cartItemService.deleteCheckedByUserId(userId));
-    }
-
     // 私有方法
 
     /**
