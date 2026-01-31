@@ -74,9 +74,10 @@ public class RedisConfig {
         GenericJackson2JsonRedisSerializer jsonRedisSerializer = new GenericJackson2JsonRedisSerializer(
                 createRedisObjectMapper());
 
-        // 默认TTL 1天
+        // 默认TTL 1天，使用单冒号作为 key 分隔符
         RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonRedisSerializer))
+                .computePrefixWith(cacheName -> cacheName + ":")
                 .entryTtl(Duration.ofDays(1));
 
         // 不同缓存不同 TTL
