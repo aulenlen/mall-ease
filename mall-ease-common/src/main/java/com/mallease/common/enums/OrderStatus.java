@@ -14,7 +14,7 @@ public enum OrderStatus {
     COMPLETED(3, "已完成"),
     CANCELLED(4, "已取消"),
     PENDING_PAYMENT(5, "待支付"),
-    PAID(6, "待支付");
+    PAID(6, "已支付");
 
     private final int code;
     private final String description;

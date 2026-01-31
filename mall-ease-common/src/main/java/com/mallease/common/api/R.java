@@ -137,4 +137,8 @@ public class R<T> {
     public void setData(T data) {
         this.data = data;
     }
+
+    public boolean isSuccess() {
+        return ResultCode.SUCCESS.getCode().equals(this.code);
+    }
 }
