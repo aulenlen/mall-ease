@@ -1,5 +1,6 @@
 package com.mallease.product.dao;
 
+import com.mallease.product.model.client.cmd.LockStockItem;
 import com.mallease.product.model.data.entity.SkuStock;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -143,6 +144,15 @@ public interface SkuStockDao {
     int lockStock(@Param("skuId") Long skuId,
                   @Param("quantity") Integer quantity,
                   @Param("version") Integer version);
+
+    /**
+     * 批量锁定库存（下单时使用）
+     * 使用乐观锁，一次 DB 调用完成多个 SKU 的库存锁定
+     *
+     * @param items 锁定项列表（skuId, quantity, version）
+     * @return 影响行数（应等于 items.size()，否则表示部分失败）
+     */
+    int batchLockStock(@Param("items") List<LockStockItem> items);
 
     /**
      * 解锁库存（支付超时或取消订单）

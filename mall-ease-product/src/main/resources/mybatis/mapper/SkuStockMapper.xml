@@ -198,6 +198,19 @@
           AND stock >= #{quantity,jdbcType=INTEGER}
     </update>
 
+    <!-- 批量锁定库存 -->
+    <update id="batchLockStock">
+        <foreach collection="items" item="item" separator=";">
+            UPDATE product_sku_stock
+            SET stock = stock - #{item.quantity,jdbcType=INTEGER},
+                lock_stock = lock_stock + #{item.quantity,jdbcType=INTEGER},
+                version = version + 1
+            WHERE sku_id = #{item.skuId,jdbcType=BIGINT}
+              AND version = #{item.version,jdbcType=INTEGER}
+              AND stock >= #{item.quantity,jdbcType=INTEGER}
+        </foreach>
+    </update>
+
     <!-- 解锁库存（支付超时或取消订单） -->
     <!-- 将锁定库存释放回可用库存 -->
     <update id="unlockStock">

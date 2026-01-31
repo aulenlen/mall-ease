@@ -3,6 +3,7 @@ package com.mallease.product.service;
 import com.mallease.product.model.data.entity.SkuStock;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * SKU库存服务接口
@@ -94,4 +95,11 @@ public interface SkuStockService {
      * @return 影响行数
      */
     int updateStockStatusBatch(List<Long> skuIds, Integer stockStatus);
+
+    /**
+     * 批量锁定库存（下单时使用）
+     *
+     * @param skuQuantityMap SKU数量映射（skuId → 锁定数量）
+     */
+    void lockStock(Map<Long, Integer> skuQuantityMap);
 }

@@ -123,4 +123,13 @@ public class SkuStockController {
         int count = skuStockService.updateStockStatusBatch(skuIds, stockStatus);
         return R.success(count);
     }
+
+    // 内部调用
+
+    @Operation(summary = "锁定库存", description = "内部调用，下单时锁定库存")
+    @PutMapping("/internal/lock")
+    public R<Void> lockStock(@RequestBody Map<Long, Integer> skuQuantityMap) {
+        skuStockService.lockStock(skuQuantityMap);
+        return R.success(null);
+    }
 }

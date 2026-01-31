@@ -4,13 +4,19 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.product.constant.RedisKey;
 import com.mallease.product.component.CacheService;
 import com.mallease.product.dao.SkuStockDao;
+import com.mallease.product.model.client.cmd.LockStockItem;
 import com.mallease.product.model.data.entity.SkuStock;
 import com.mallease.product.service.SkuStockService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * SKU库存服务实现类
@@ -81,7 +87,6 @@ public class SkuStockServiceImpl implements SkuStockService {
             log.info("扣减SKU库存成功，spuId={}, skuId={}, quantity={}, 剩余={}",
                     spuId, skuId, quantity, newStock);
 
-            // 检查是否售罄
             if (newStock == 0) {
                 log.warn("SKU已售罄，spuId={}, skuId={}", spuId, skuId);
             }
@@ -118,7 +123,7 @@ public class SkuStockServiceImpl implements SkuStockService {
             if (existing.getStock() < absQuantity) {
                 throw new ApiException("库存不足，当前库存: " + existing.getStock());
             }
-            result = skuStockDao.increaseStock(skuId, quantity); // 负数实现减少
+            result = skuStockDao.increaseStock(skuId, quantity);
             log.info("库存出库成功，skuId={}, 出库数量={}", skuId, absQuantity);
         }
 
@@ -152,6 +157,43 @@ public class SkuStockServiceImpl implements SkuStockService {
             throw new ApiException("库存状态值必须为0-2");
         }
         return skuStockDao.updateStockStatusBatch(skuIds, stockStatus);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void lockStock(Map<Long, Integer> skuQuantityMap) {
+        if (skuQuantityMap == null || skuQuantityMap.isEmpty()) {
+            return;
+        }
+
+        List<Long> skuIds = new ArrayList<>(skuQuantityMap.keySet());
+        List<SkuStock> stocks = skuStockDao.selectBySkuIds(skuIds);
+
+        Map<Long, SkuStock> stockMap = stocks.stream()
+                .collect(Collectors.toMap(SkuStock::getSkuId, Function.identity()));
+
+        List<LockStockItem> items = new ArrayList<>();
+        for (Map.Entry<Long, Integer> entry : skuQuantityMap.entrySet()) {
+            Long skuId = entry.getKey();
+            Integer quantity = entry.getValue();
+
+            SkuStock stock = stockMap.get(skuId);
+            if (stock == null) {
+                throw new ApiException("商品不存在: " + skuId);
+            }
+            if (stock.getStock() < quantity) {
+                throw new ApiException("库存不足: " + skuId);
+            }
+
+            items.add(new LockStockItem(skuId, quantity, stock.getVersion()));
+        }
+
+        int rows = skuStockDao.batchLockStock(items);
+        if (rows < items.size()) {
+            throw new ApiException("系统繁忙，请重试");
+        }
+
+        log.info("批量锁定库存成功，共锁定 {} 个SKU", items.size());
     }
 }
 
