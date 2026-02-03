@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.RedisStringCommands;
+import org.springframework.data.redis.connection.ReturnType;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -445,11 +446,31 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public Long execute(String script, List<String> keys, List<String> args) {
-        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
-        redisScript.setScriptText(script);
-        redisScript.setResultType(Long.class);
+        // 使用 RedisCallback 直接操作连接，确保参数以原始字符串字节传递
+        // 避免与 multiSetHashWithExpire 写入的原始字节产生序列化不一致
+        return redisTemplate.execute((RedisCallback<Long>) connection -> {
+            RedisSerializer<String> serializer = RedisSerializer.string();
 
-        return redisTemplate.execute(redisScript, keys, args.toArray());
+            // 合并 keys 和 args 为字节数组（Redis EVAL 命令格式要求）
+            int numKeys = keys.size();
+            byte[][] keysAndArgs = new byte[numKeys + args.size()][];
+
+            for (int i = 0; i < numKeys; i++) {
+                keysAndArgs[i] = serializer.serialize(keys.get(i));
+            }
+            for (int i = 0; i < args.size(); i++) {
+                keysAndArgs[numKeys + i] = serializer.serialize(args.get(i));
+            }
+
+            Object result = connection.scriptingCommands().eval(
+                    script.getBytes(StandardCharsets.UTF_8),
+                    ReturnType.INTEGER,
+                    numKeys,
+                    keysAndArgs
+            );
+
+            return result != null ? ((Number) result).longValue() : null;
+        });
     }
 
     @Override

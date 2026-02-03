@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dao.StockReservationDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.StockReservation">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
+        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
+        <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
+        <result column="quantity" property="quantity" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="TINYINT"/>
+        <result column="expire_time" property="expireTime" jdbcType="TIMESTAMP"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, order_no, spu_id, sku_id, quantity, status, expire_time, create_time, update_time
+    </sql>
+
+    <!-- ==================== 查询方法 ==================== -->
+
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_stock_reservation
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据订单号查询 -->
+    <select id="selectByOrderNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_stock_reservation
+        WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+    </select>
+
+    <!-- 根据订单号和状态查询 -->
+    <select id="selectByOrderNoAndStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_stock_reservation
+        WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+          AND status = #{status,jdbcType=TINYINT}
+    </select>
+
+    <!-- 根据订单号和SKU ID查询（幂等检查） -->
+    <select id="selectByOrderNoAndSkuId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_stock_reservation
+        WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+          AND sku_id = #{skuId,jdbcType=BIGINT}
+    </select>
+
+    <!-- 查询已过期的锁定记录（定时任务使用） -->
+    <select id="selectExpiredByStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_stock_reservation
+        WHERE status = #{status,jdbcType=TINYINT}
+          AND expire_time &lt;= NOW()
+        ORDER BY expire_time ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 检查订单是否存在预占记录 -->
+    <select id="countByOrderNo" parameterType="java.lang.String" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM product_stock_reservation
+        WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+    </select>
+
+    <!-- ==================== 写入方法 ==================== -->
+
+    <!-- 插入单条记录 -->
+    <insert id="insert" parameterType="com.mallease.product.model.data.entity.StockReservation"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_stock_reservation (
+            order_no, spu_id, sku_id, quantity, status, expire_time, create_time, update_time
+        ) VALUES (
+            #{orderNo,jdbcType=VARCHAR},
+            #{spuId,jdbcType=BIGINT},
+            #{skuId,jdbcType=BIGINT},
+            #{quantity,jdbcType=INTEGER},
+            #{status,jdbcType=TINYINT},
+            #{expireTime,jdbcType=TIMESTAMP},
+            #{createTime,jdbcType=TIMESTAMP},
+            #{updateTime,jdbcType=TIMESTAMP}
+        )
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO product_stock_reservation (
+            order_no, spu_id, sku_id, quantity, status, expire_time, create_time, update_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.orderNo,jdbcType=VARCHAR},
+                #{item.spuId,jdbcType=BIGINT},
+                #{item.skuId,jdbcType=BIGINT},
+                #{item.quantity,jdbcType=INTEGER},
+                #{item.status,jdbcType=TINYINT},
+                #{item.expireTime,jdbcType=TIMESTAMP},
+                #{item.createTime,jdbcType=TIMESTAMP},
+                #{item.updateTime,jdbcType=TIMESTAMP}
+            )
+        </foreach>
+    </insert>
+
+    <!-- ==================== 更新方法 ==================== -->
+
+    <!-- 更新单条记录状态 -->
+    <update id="updateStatus">
+        UPDATE product_stock_reservation
+        SET status = #{status,jdbcType=TINYINT},
+            update_time = NOW()
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 按订单号批量更新状态（带原状态校验，防止重复操作） -->
+    <update id="updateStatusByOrderNo">
+        UPDATE product_stock_reservation
+        SET status = #{newStatus,jdbcType=TINYINT},
+            update_time = NOW()
+        WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+          AND status = #{oldStatus,jdbcType=TINYINT}
+    </update>
+
+    <!-- ==================== 删除方法 ==================== -->
+
+    <!-- 根据主键删除（慎用） -->
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        DELETE FROM product_stock_reservation
+        WHERE id = #{id,jdbcType=BIGINT}
+    </delete>
+
+</mapper>
