@@ -94,6 +94,13 @@ public class Order {
     private String remark;
 
     /**
+     * 库存释放状态：0-未触发, 1-待释放, 2-已释放, 3-释放失败
+     *
+     * @see com.mallease.common.enums.StockReleaseStatus
+     */
+    private Integer stockReleaseStatus;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;

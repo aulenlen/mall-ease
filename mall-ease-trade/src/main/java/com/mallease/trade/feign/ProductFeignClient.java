@@ -2,7 +2,7 @@ package com.mallease.trade.feign;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SkuSimpleDTO;
-import io.swagger.v3.oas.annotations.Operation;
+import com.mallease.common.dto.remote.StockLockDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -31,9 +31,19 @@ public interface ProductFeignClient {
 
     /**
      * 锁定库存
-     * @param skuQuantityMap
+     *
+     * @param stockLockDTO
      * @return
      */
     @PutMapping("/product/stock/internal/lock")
-    R<Void> lockStock(@RequestBody Map<Long, Integer> skuQuantityMap);
+    R<Void> lockStock(@RequestBody StockLockDTO stockLockDTO);
+
+    /**
+     * 释放订单库存
+     *
+     * @param orderNos 订单号列表
+     * @return 释放失败的订单号列表（空列表表示全部成功）
+     */
+    @PutMapping("/product/stock/internal/unlock")
+    R<List<String>> unlock(@RequestBody List<String> orderNos);
 }

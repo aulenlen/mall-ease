@@ -1,10 +1,15 @@
 package com.mallease.trade.service.impl;
 
+import com.alibaba.nacos.common.notify.EventPublisher;
+import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.StockLockDTO;
 import com.mallease.common.enums.OrderStatus;
+import com.mallease.common.enums.StockReleaseStatus;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.RedisService;
 import com.mallease.trade.dao.OrderDao;
 import com.mallease.trade.dao.OrderItemDao;
+import com.mallease.trade.evnent.OrderCancelledEvent;
 import com.mallease.trade.feign.ProductFeignClient;
 import com.mallease.trade.model.aggregate.OrderAggregate;
 import com.mallease.trade.model.client.vo.OrderConfirmVO;
@@ -16,8 +21,11 @@ import com.mallease.trade.service.CartItemService;
 import com.mallease.trade.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,6 +33,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+
+import static com.mallease.trade.constant.OrderConstant.PAYMENT_TIMEOUT_MINUTES;
+import static com.mallease.trade.constant.OrderConstant.SNAPSHOT_EXPIRE_SECONDS;
 
 @Slf4j
 @Service
@@ -36,9 +47,9 @@ public class OrderServiceImpl implements OrderService {
     private final CartItemService cartItemService;
     private final RedisService redisService;
     private final ProductFeignClient productFeignClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final String SNAPSHOT_KEY_PREFIX = "order:snapshot:";
-    private static final long SNAPSHOT_EXPIRE_SECONDS = 30 * 60;
 
     @Override
     public OrderConfirmVO generateSnapshot(Long userId, List<Long> cartItemIds) {
@@ -107,9 +118,32 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public List<Order> listNeedProcess() {
+        return orderDao.listNeedProcess(
+                OrderStatus.PENDING_PAYMENT.getCode(),
+                LocalDateTime.now().minusMinutes(PAYMENT_TIMEOUT_MINUTES),
+                OrderStatus.CANCELLED.getCode(),
+                StockReleaseStatus.PENDING_RELEASE.getCode(),
+                StockReleaseStatus.RELEASE_FAILED.getCode()
+        );
+    }
+
+    @Override
+    public int orderReleaseSuccess(List<String> released) {
+        return orderDao.updateStockReleaseStatusByOrderNos(released, StockReleaseStatus.RELEASED.getCode());
+    }
+
+    @Override
+    public int orderReleaseFailed(List<String> failed) {
+        return orderDao.updateStockReleaseStatusByOrderNos(failed, StockReleaseStatus.RELEASE_FAILED.getCode());
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public String submit(Long userId, Order order, String requestId) {
+
         OrderConfirmVO snapshot = getSnapshot(requestId);
+
         if (snapshot == null) {
             throw new ApiException("订单已过期，请重新结算");
         }
@@ -118,17 +152,36 @@ public class OrderServiceImpl implements OrderService {
             throw new ApiException("非法请求");
         }
 
+        Order existOrder = orderDao.selectByRequestId(requestId);
+        if (existOrder != null) {
+            log.info("订单已存在，返回已有订单号: requestId={}, orderNo={}", requestId, existOrder.getOrderNo());
+            return existOrder.getOrderNo();
+        }
+
         List<OrderItemVO> snapshotItems = snapshot.getItems();
         if (snapshotItems == null || snapshotItems.isEmpty()) {
             throw new ApiException("未选择任何商品");
         }
 
-        Map<Long, Integer> skuMap = snapshotItems.stream().collect(Collectors.toMap(OrderItemVO::getSkuId, OrderItemVO::getQuantity));
+        Map<Long, Map<Long, Integer>> spuSkuQuantityMap = snapshotItems.stream()
+                .collect(Collectors.groupingBy(
+                        OrderItemVO::getSpuId,
+                        Collectors.toMap(OrderItemVO::getSkuId, OrderItemVO::getQuantity)
+                ));
 
-        // 锁定库存
-        productFeignClient.lockStock(skuMap);
+        String orderNo = orderNumberGenerator(userId);
 
-        order.setOrderNo(orderNumberGenerator(userId));
+        R<Void> lockResult = productFeignClient.lockStock(StockLockDTO.builder()
+                .orderNo(orderNo)
+                .spuSkuQuantityMap(spuSkuQuantityMap)
+                .expireTime(LocalDateTime.now().plusMinutes(PAYMENT_TIMEOUT_MINUTES))
+                .build());
+
+        if (!lockResult.isSuccess()) {
+            throw new ApiException("系统繁忙！");
+        }
+
+        order.setOrderNo(orderNo);
         order.setRequestId(requestId);
         order.setUserId(userId);
         order.setTotalAmount(snapshot.getTotalAmount());
@@ -136,6 +189,7 @@ public class OrderServiceImpl implements OrderService {
         order.setDiscountAmount(snapshot.getDiscountAmount());
         order.setPayAmount(snapshot.getPayAmount());
         order.setStatus(OrderStatus.PENDING_PAYMENT.getCode());
+        order.setStockReleaseStatus(StockReleaseStatus.NOT_TRIGGERED.getCode());
 
         List<OrderItem> orderItems = snapshotItems.stream()
                 .map(item -> OrderItem.builder()
@@ -155,11 +209,12 @@ public class OrderServiceImpl implements OrderService {
                 .items(orderItems)
                 .build();
 
-        String orderNo = create(aggregate);
+        orderNo = create(aggregate);
 
         deleteSnapshot(requestId);
 
-        log.info("订单创建成功, requestId=, orderNo={}, userId={}", requestId, orderNo, userId);
+        log.info("订单创建成功, requestId={}, orderNo={}, userId={}", requestId, orderNo, userId);
+
         return orderNo;
     }
 
@@ -211,15 +266,77 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean cancel(String orderNo, Long userId) {
-        Order order = orderDao.selectByOrderNo(orderNo);
+        validateAndGetOrder(orderNo, userId);
+        cancelByOrderNos(List.of(orderNo));
+        return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelByOrderNos(List<String> orderNos) {
+        if (orderNos == null || orderNos.isEmpty()) {
+            return;
+        }
+
+        orderDao.batchUpdateStatusByOrderNos(
+                orderNos,
+                OrderStatus.CANCELLED.getCode(),
+                StockReleaseStatus.PENDING_RELEASE.getCode()
+        );
+
+        eventPublisher.publishEvent(new OrderCancelledEvent(orderNos));
+
+        log.info("批量取消订单完成，orderNos={}", orderNos);
+    }
+
+
+    /**
+     * 校验并获取订单
+     */
+    private Order validateAndGetOrder(String orderNo, Long userId) {
+        Order order = orderDao.selectByConditions(userId, orderNo, OrderStatus.PENDING_PAYMENT.getCode());
         if (order == null) {
             throw new ApiException("订单不存在");
         }
         if (!order.getUserId().equals(userId)) {
             throw new ApiException("无权操作此订单");
         }
-        return orderDao.updateStatusByOrderNo(orderNo, OrderStatus.CANCELLED.getCode()) > 0;
+        return order;
+    }
+
+    /**
+     * 尝试释放库存
+     */
+    public Map<String, StockReleaseStatus> tryReleaseStock(List<String> orderNos) {
+        Map<String, StockReleaseStatus> resultMap = new HashMap<>();
+        try {
+            R<List<String>> r = productFeignClient.unlock(orderNos);
+
+            Set<String> failedSet;
+            if (r.isSuccess()) {
+                failedSet = (r.getData() != null && !r.getData().isEmpty()) ? new HashSet<>(r.getData()) : Collections.emptySet();
+            } else {
+                failedSet = new HashSet<>(orderNos);
+            }
+
+            for (String orderNo : orderNos) {
+                if (failedSet.contains(orderNo)) {
+                    resultMap.put(orderNo, StockReleaseStatus.RELEASE_FAILED);
+                } else {
+                    resultMap.put(orderNo, StockReleaseStatus.RELEASED);
+                }
+            }
+
+            if (!failedSet.isEmpty()) {
+                log.warn("部分库存释放失败，failedOrderNos={}，将由定时任务兜底", failedSet);
+            }
+        } catch (Exception e) {
+            log.warn("库存释放异常，orderNos={}，error={}", orderNos, e.getMessage());
+            orderNos.forEach(orderNo -> resultMap.put(orderNo, StockReleaseStatus.RELEASE_FAILED));
+        }
+        return resultMap;
     }
 
     private String orderNumberGenerator(Long userId) {

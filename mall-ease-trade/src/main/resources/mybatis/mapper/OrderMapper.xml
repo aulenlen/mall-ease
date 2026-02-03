@@ -19,6 +19,7 @@
         <result column="pay_amount" property="payAmount" jdbcType="DECIMAL"/>
         <result column="status" property="status" jdbcType="TINYINT"/>
         <result column="remark" property="remark" jdbcType="VARCHAR"/>
+        <result column="stock_release_status" property="stockReleaseStatus" jdbcType="TINYINT"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
@@ -27,7 +28,7 @@
         id, order_no, request_id, user_id, receiver_name, receiver_phone,
         receiver_province, receiver_city, receiver_district, receiver_address,
         total_amount, freight_amount, discount_amount, pay_amount,
-        status, remark, create_time, update_time
+        status, remark, stock_release_status, create_time, update_time
     </sql>
 
     <!-- 根据主键查询 -->
@@ -76,11 +77,28 @@
     </select>
 
     <!-- 根据用户id和订单状态查询订单 -->
-    <select id="listByUserId" resultType="com.mallease.trade.model.data.entity.Order">
+    <select id="listByUserId" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
         from trade_order
         where user_id = #{userId,jdbcType=BIGINT} and status = #{status,jdbcType=TINYINT}
+    </select>
+
+    <select id="listByStatusAndTime" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from trade_order
+        where status = #{status,jdbcType=TINYINT}
+        and create_time &lt;= #{creatTime,jdbcType=TIMESTAMP}
+    </select>
+
+    <select id="selectByConditions" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from trade_order
+        where user_id = #{userId}
+        and order_no = #{orderNo}
+        and status = #{status}
     </select>
 
     <!-- 插入订单 -->
@@ -89,7 +107,7 @@
             order_no, request_id, user_id, receiver_name, receiver_phone,
             receiver_province, receiver_city, receiver_district, receiver_address,
             total_amount, freight_amount, discount_amount, pay_amount,
-            status, remark
+            status, remark, stock_release_status
         ) VALUES (
             #{orderNo,jdbcType=VARCHAR}, #{requestId,jdbcType=VARCHAR}, #{userId,jdbcType=BIGINT},
             #{receiverName,jdbcType=VARCHAR}, #{receiverPhone,jdbcType=VARCHAR},
@@ -97,7 +115,7 @@
             #{receiverDistrict,jdbcType=VARCHAR}, #{receiverAddress,jdbcType=VARCHAR},
             #{totalAmount,jdbcType=DECIMAL}, #{freightAmount,jdbcType=DECIMAL},
             #{discountAmount,jdbcType=DECIMAL}, #{payAmount,jdbcType=DECIMAL},
-            #{status,jdbcType=TINYINT}, #{remark,jdbcType=VARCHAR}
+            #{status,jdbcType=TINYINT}, #{remark,jdbcType=VARCHAR}, #{stockReleaseStatus,jdbcType=TINYINT}
         )
     </insert>
 
@@ -120,6 +138,7 @@
             <if test="payAmount != null">pay_amount,</if>
             <if test="status != null">status,</if>
             <if test="remark != null">remark,</if>
+            <if test="stockReleaseStatus != null">stock_release_status,</if>
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
             <if test="orderNo != null">#{orderNo,jdbcType=VARCHAR},</if>
@@ -137,6 +156,7 @@
             <if test="payAmount != null">#{payAmount,jdbcType=DECIMAL},</if>
             <if test="status != null">#{status,jdbcType=TINYINT},</if>
             <if test="remark != null">#{remark,jdbcType=VARCHAR},</if>
+            <if test="stockReleaseStatus != null">#{stockReleaseStatus,jdbcType=TINYINT},</if>
         </trim>
     </insert>
 
@@ -157,7 +177,8 @@
             discount_amount = #{discountAmount,jdbcType=DECIMAL},
             pay_amount = #{payAmount,jdbcType=DECIMAL},
             status = #{status,jdbcType=TINYINT},
-            remark = #{remark,jdbcType=VARCHAR}
+            remark = #{remark,jdbcType=VARCHAR},
+            stock_release_status = #{stockReleaseStatus,jdbcType=TINYINT}
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
 
@@ -180,6 +201,7 @@
             <if test="payAmount != null">pay_amount = #{payAmount,jdbcType=DECIMAL},</if>
             <if test="status != null">status = #{status,jdbcType=TINYINT},</if>
             <if test="remark != null">remark = #{remark,jdbcType=VARCHAR},</if>
+            <if test="stockReleaseStatus != null">stock_release_status = #{stockReleaseStatus,jdbcType=TINYINT},</if>
         </set>
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
@@ -198,10 +220,51 @@
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
     </update>
 
+    <update id="updateBatchStatus">
+        UPDATE trade_order
+        SET status = #{status,jdbcType=TINYINT}, update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+
     <!-- 根据主键删除 -->
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         DELETE FROM trade_order
         WHERE id = #{id,jdbcType=BIGINT}
     </delete>
+
+    <!-- 批量更新订单状态和库存释放状态（根据订单编号） -->
+    <update id="batchUpdateStatusByOrderNos">
+        UPDATE trade_order
+        SET status = #{orderStatus,jdbcType=TINYINT},
+            stock_release_status = #{stockReleaseStatus,jdbcType=TINYINT},
+            update_time = NOW()
+        WHERE order_no IN
+        <foreach collection="orderNos" item="orderNo" open="(" close=")" separator=",">
+            #{orderNo}
+        </foreach>
+    </update>
+
+    <!-- 批量更新库存释放状态（根据订单编号） -->
+    <update id="updateStockReleaseStatusByOrderNos">
+        UPDATE trade_order
+        SET stock_release_status = #{stockReleaseStatus,jdbcType=TINYINT},
+            update_time = NOW()
+        WHERE order_no IN
+        <foreach collection="orderNos" item="orderNo" open="(" close=")" separator=",">
+            #{orderNo}
+        </foreach>
+    </update>
+
+    <!-- 查询需要处理的订单：超时未支付 或 库存待释放/释放失败 -->
+    <select id="listNeedProcess" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM trade_order
+        WHERE (status = #{pendingStatus} AND create_time &lt; #{expireTime})
+        OR (status = #{cancelledStatus} AND stock_release_status IN (#{pendingReleaseStatus}, #{releaseFailedStatus}))
+    </select>
 
 </mapper>

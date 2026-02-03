@@ -4,6 +4,7 @@ import com.mallease.trade.model.data.entity.Order;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -124,9 +125,55 @@ public interface OrderDao {
 
     /**
      * 根据用户id和订单状态查询订单
+     *
      * @param userId
      * @param status
      * @return 订单列表
      */
     List<Order> listByUserId(@Param("userId") Long userId, @Param("status") Integer status);
+
+    List<Order> listByStatusAndTime(@Param("status") int status, @Param("creatTime") LocalDateTime creatTime);
+
+    /**
+     * 查询需要处理的订单（超时未支付 或 库存待释放/释放失败）
+     *
+     * @param pendingStatus        待支付状态
+     * @param expireTime           超时时间
+     * @param cancelledStatus      订单取消状态
+     * @param pendingReleaseStatus 待释放状态
+     * @param releaseFailedStatus  释放失败状态
+     * @return 订单列表
+     */
+    List<Order> listNeedProcess(@Param("pendingStatus") Integer pendingStatus,
+                                @Param("expireTime") LocalDateTime expireTime,
+                                @Param("cancelledStatus") Integer cancelledStatus,
+                                @Param("pendingReleaseStatus") Integer pendingReleaseStatus,
+                                @Param("releaseFailedStatus") Integer releaseFailedStatus);
+
+    int updateBatchStatus(@Param("ids") List<Long> ids, @Param("status") int status);
+
+    Order selectByConditions(@Param("userId") Long userId, @Param("orderNo") String orderNo, @Param("status") int status);
+
+    /**
+     * 批量更新订单状态和库存释放状态（根据订单编号）
+     *
+     * @param orderNos           订单编号列表
+     * @param orderStatus        订单状态
+     * @param stockReleaseStatus 库存释放状态
+     * @return 影响行数
+     */
+    int batchUpdateStatusByOrderNos(@Param("orderNos") List<String> orderNos,
+                                    @Param("orderStatus") Integer orderStatus,
+                                    @Param("stockReleaseStatus") Integer stockReleaseStatus);
+
+    /**
+     * 批量更新库存释放状态（根据订单编号）
+     *
+     * @param orderNos           订单编号列表
+     * @param stockReleaseStatus 库存释放状态
+     * @return 影响行数
+     */
+    int updateStockReleaseStatusByOrderNos(@Param("orderNos") List<String> orderNos,
+                                           @Param("stockReleaseStatus") Integer stockReleaseStatus);
+
 }

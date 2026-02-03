@@ -34,6 +34,7 @@ public interface OrderConverter {
     @Mapping(target = "discountAmount", ignore = true)
     @Mapping(target = "payAmount", ignore = true)
     @Mapping(target = "status", ignore = true)
+    @Mapping(target = "stockReleaseStatus", ignore = true)
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
     Order cmdToEntity(SubmitOrderCmd cmd);
