@@ -1,4 +1,4 @@
-package com.mallease.common.dto;
+package com.mallease.common.dto.remote;
 
 import lombok.*;
 

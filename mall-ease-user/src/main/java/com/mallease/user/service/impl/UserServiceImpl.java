@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.github.pagehelper.PageHelper;
-import com.mallease.common.dto.UserDTO;
+import com.mallease.common.dto.remote.UserDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.LoginContextUtil;
 import com.mallease.user.dao.AdminDao;

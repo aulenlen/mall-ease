@@ -2,7 +2,7 @@ package com.mallease.gateway.config;
 
 import cn.dev33.satoken.stp.StpInterface;
 import com.mallease.common.constant.AuthConstant;
-import com.mallease.common.dto.UserDTO;
+import com.mallease.common.dto.remote.UserDTO;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

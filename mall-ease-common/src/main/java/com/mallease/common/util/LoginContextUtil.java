@@ -2,7 +2,7 @@ package com.mallease.common.util;
 
 import cn.dev33.satoken.stp.StpLogic;
 import com.mallease.common.constant.AuthConstant;
-import com.mallease.common.dto.UserDTO;
+import com.mallease.common.dto.remote.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 
 /**

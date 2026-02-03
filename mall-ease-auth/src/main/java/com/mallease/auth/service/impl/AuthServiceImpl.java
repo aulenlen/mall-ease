@@ -13,7 +13,7 @@ import com.mallease.auth.feign.UserServiceFeignClient;
 import com.mallease.auth.service.AuthService;
 import com.mallease.common.api.R;
 import com.mallease.common.constant.AuthConstant;
-import com.mallease.common.dto.UserDTO;
+import com.mallease.common.dto.remote.UserDTO;
 import com.mallease.common.dto.remote.MemberDTO;
 import com.mallease.common.enums.UserType;
 import com.mallease.common.exception.Asserts;
