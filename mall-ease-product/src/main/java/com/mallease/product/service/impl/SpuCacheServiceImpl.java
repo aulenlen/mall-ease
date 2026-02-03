@@ -7,6 +7,7 @@ import com.mallease.product.converter.SpuCacheConverter;
 import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.*;
 import com.mallease.product.service.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,22 +23,16 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SpuCacheServiceImpl implements SpuCacheService {
 
-    @Autowired
-    private CacheService cacheService;
-    @Autowired
-    private SpuService spuService;
-    @Autowired
-    private BrandService brandService;
-    @Autowired
-    private CategoryService categoryService;
-    @Autowired
-    private SkuService skuService;
-    @Autowired
-    private SkuStockService skuStockService;
-    @Autowired
-    private SpuCacheConverter cacheConverter;
+    private final CacheService cacheService;
+    private final SpuService spuService;
+    private final BrandService brandService;
+    private final CategoryService categoryService;
+    private final SkuService skuService;
+    private final SkuStockService skuStockService;
+    private final SpuCacheConverter cacheConverter;
 
     // 缓存预热
 
@@ -179,19 +174,16 @@ public class SpuCacheServiceImpl implements SpuCacheService {
         }
 
         try {
-            // 删除SPU详情缓存
             cacheService.deleteBatch(spuIds, RedisKey.SPU_DETAIL.getPrefix());
 
-            // 删除SKU库存缓存
             cacheService.deleteBatch(spuIds, RedisKey.SPU_SKU_STOCK.getPrefix());
             log.info("批量删除SPU缓存完成，数量: {}", spuIds.size());
-
         } catch (Exception e) {
             log.error("批量删除SPU缓存失败，spuIds: {}", spuIds, e);
         }
     }
 
-    // ==================== 库存操作 ====================
+    // 库存操作
 
     @Override
     public Long decreaseStock(Long spuId, Long skuId, int quantity) {
@@ -201,15 +193,38 @@ public class SpuCacheServiceImpl implements SpuCacheService {
         }
 
         String hashKey = String.valueOf(skuId);
-        Long newStock = cacheService.deductStockAtomic(RedisKey.SPU_SKU_STOCK, spuId, hashKey, quantity);
-        if (newStock == null) {
-            log.warn("SKU库存不足或扣减失败，spuId: {}, skuId: {}, 尝试扣减: {}", spuId, skuId, quantity);
+        Long result = cacheService.deductStockAtomic(RedisKey.SPU_SKU_STOCK, spuId, hashKey, quantity);
+
+        if (result == null) {
+            log.error("SKU库存扣减系统异常，spuId: {}, skuId: {}", spuId, skuId);
+            return null;
+        }
+
+        if (result == -2L) {
+            log.info("缓存不存在，触发回源重建，spuId: {}", spuId);
+            try {
+                warmUpBatch(Collections.singletonList(spuId));
+                result = cacheService.deductStockAtomic(RedisKey.SPU_SKU_STOCK, spuId, hashKey, quantity);
+                if (result == null || result < 0) {
+                    log.warn("回源后扣减仍失败，spuId: {}, skuId: {}, result: {}", spuId, skuId, result);
+                    return null;
+                }
+                log.info("回源后扣减成功，spuId: {}, skuId: {}, 剩余: {}", spuId, skuId, result);
+                return result;
+            } catch (Exception e) {
+                log.error("回源重建失败，spuId: {}", spuId, e);
+                return null;
+            }
+        }
+
+        if (result == -1L) {
+            log.warn("SKU库存不足，spuId: {}, skuId: {}, 尝试扣减: {}", spuId, skuId, quantity);
             return null;
         }
 
         log.debug("SKU库存扣减成功，spuId: {}, skuId: {}, 扣减: {}, 剩余: {}",
-                spuId, skuId, quantity, newStock);
-        return newStock;
+                spuId, skuId, quantity, result);
+        return result;
     }
 
     @Override
@@ -264,18 +279,15 @@ public class SpuCacheServiceImpl implements SpuCacheService {
      */
     private List<SpuCache> buildSpuCacheBatch(List<Long> spuIds) {
 
-        // 批量查询SPU基础信息
         List<Spu> spuList = spuService.listByIds(spuIds);
         if (CollUtil.isEmpty(spuList)) {
             return Collections.emptyList();
         }
 
-        // 批量查询SPU详情
         List<SpuDetail> detailList = spuService.listDetailBySpuIds(spuIds);
         Map<Long, SpuDetail> detailMap = detailList.stream()
                 .collect(Collectors.toMap(SpuDetail::getSpuId, detail -> detail));
 
-        // 批量查询品牌
         Set<Long> brandIds = spuList.stream()
                 .map(Spu::getBrandId)
                 .filter(Objects::nonNull)
@@ -284,7 +296,6 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                 brandService.listByIds(new ArrayList<>(brandIds)).stream()
                         .collect(Collectors.toMap(Brand::getId, brand -> brand));
 
-        // 批量查询分类
         Set<Long> categoryIds = spuList.stream()
                 .map(Spu::getCategoryId)
                 .filter(Objects::nonNull)
@@ -293,7 +304,6 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                 categoryService.listByIds(new ArrayList<>(categoryIds)).stream()
                         .collect(Collectors.toMap(Category::getId, category -> category));
 
-        // 批量查询SKU和库存
         List<Sku> skuList = skuService.selectBySpuIds(spuIds);
         Map<Long, List<Sku>> skuGroupMap = skuList.stream()
                 .collect(Collectors.groupingBy(Sku::getSpuId));
@@ -304,17 +314,14 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                 skuStockService.listStockBySpuIds(spuIds).stream()
                         .collect(Collectors.toMap(SkuStock::getSkuId, stock -> stock));
 
-        // 批量查询SKU促销信息
         Map<Long, SkuPromotion> promotionMap = CollUtil.isEmpty(skuIds) ? Collections.emptyMap() :
                 skuService.listPromotionBySkuIds(new ArrayList<>(skuIds)).stream()
                         .collect(Collectors.toMap(SkuPromotion::getSkuId, promotion -> promotion));
 
-        // 批量查询满减规则
         List<SpuFullReduction> reductionList = spuService.listFullReductionBySpuIds(spuIds);
         Map<Long, List<SpuFullReduction>> reductionGroupMap = reductionList.stream()
                 .collect(Collectors.groupingBy(SpuFullReduction::getSpuId));
 
-        // 组装缓存对象
         List<SpuCache> cacheDTOList = new ArrayList<>();
         long cacheTime = System.currentTimeMillis();
         for (Spu spu : spuList) {
@@ -342,25 +349,20 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                                          List<SpuFullReduction> reductionList,
                                          long cacheTime) {
 
-        // 1. 构建SPU基础信息
         SpuCache.SpuBasicInfo spuBasic = cacheConverter.toSpuBasicInfo(spu);
 
-        // 2. 构建SPU详情信息
         SpuCache.SpuDetailInfo spuDetail = detail != null
                 ? cacheConverter.toSpuDetailInfo(detail, spu)
                 : null;
 
-        // 3. 构建品牌信息
         SpuCache.BrandInfo brandInfo = brand != null
                 ? cacheConverter.toBrandInfo(brand)
                 : null;
 
-        // 4. 构建分类信息
         SpuCache.CategoryInfo categoryInfo = category != null
                 ? cacheConverter.toCategoryInfo(category, spu.getCategoryIds())
                 : null;
 
-        // 5. 构建SKU列表
         List<SpuCache.SkuInfo> skuInfoList = skuList.stream()
                 .map(sku -> {
                     SkuStock stock = stockMap.get(sku.getId());
@@ -375,11 +377,9 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                 })
                 .collect(Collectors.toList());
 
-        // 6. 构建满减规则列表
         List<SpuCache.FullReductionInfo> fullReductionInfoList =
                 cacheConverter.toFullReductionInfoList(reductionList);
 
-        // 7. 组装聚合根
         return SpuCache.builder()
                 .spuBasic(spuBasic)
                 .spuDetail(spuDetail)

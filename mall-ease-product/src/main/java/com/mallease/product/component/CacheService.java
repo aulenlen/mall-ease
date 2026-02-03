@@ -361,12 +361,18 @@ public class CacheService {
 
     /**
      * 原子扣减库存（Lua 脚本保证原子性）
+     * <p>
+     * 返回值说明：
+     * - 正数或0：扣减成功后的剩余库存
+     * - -1：库存不足
+     * - -2：缓存 key 不存在（需要回源重建）
+     * - null：系统异常
      *
      * @param redisKey Redis Key 枚举
      * @param id       业务ID（如 spuId）
      * @param hashKey  Hash 字段名（如 skuId）
      * @param quantity 扣减数量（正数）
-     * @return 扣减后的库存值，库存不足返回 null
+     * @return 扣减结果状态码
      */
     @Nullable
     public Long deductStockAtomic(RedisKey redisKey, Long id, String hashKey, int quantity) {
@@ -378,29 +384,86 @@ public class CacheService {
             String key = redisKey.key(id);
             String luaScript =
                     "local stock = redis.call('HGET', KEYS[1], ARGV[1]) " +
-                            "if stock and tonumber(stock) >= tonumber(ARGV[2]) then " +
-                            "  return redis.call('HINCRBY', KEYS[1], ARGV[1], -ARGV[2]) " +
+                            "if not stock then " +
+                            "  return -2 " +  // key 不存在
+                            "elseif tonumber(stock) < tonumber(ARGV[2]) then " +
+                            "  return -1 " +  // 库存不足
                             "else " +
-                            "  return nil " +
+                            "  return redis.call('HINCRBY', KEYS[1], ARGV[1], -ARGV[2]) " +
                             "end";
             Object result = redisService.execute(
                     luaScript,
                     Collections.singletonList(key),
                     List.of(hashKey, String.valueOf(quantity))
             );
-            if (result != null) {
-                Long newStock = ((Number) result).longValue();
-                log.debug("扣减库存成功，key: {}, hashKey: {}, 扣减: {}, 剩余: {}",
-                        key, hashKey, quantity, newStock);
-                return newStock;
+
+            if (result == null) {
+                log.error("Lua 脚本执行返回 null，key: {}, hashKey: {}", key, hashKey);
+                return null;
             }
 
-            log.warn("库存不足，key: {}, hashKey: {}, 尝试扣减: {}", key, hashKey, quantity);
-            return null;
+            Long resultCode = ((Number) result).longValue();
+
+            if (resultCode == -2) {
+                log.warn("缓存 key 不存在，需要回源重建，key: {}, hashKey: {}", key, hashKey);
+                return -2L;
+            } else if (resultCode == -1) {
+                log.warn("库存不足，key: {}, hashKey: {}, 尝试扣减: {}", key, hashKey, quantity);
+                return -1L;
+            } else {
+                log.debug("扣减库存成功，key: {}, hashKey: {}, 扣减: {}, 剩余: {}",
+                        key, hashKey, quantity, resultCode);
+                return resultCode;
+            }
 
         } catch (Exception e) {
             log.error("扣减库存失败，redisKey: {}, id: {}, hashKey: {}, quantity: {}",
                     redisKey.name(), id, hashKey, quantity, e);
+            return null;
+        }
+    }
+
+    /**
+     * 原子释放库存（Lua 脚本保证原子性）
+     *
+     * @param redisKey Redis Key 枚举
+     * @param id       业务ID（如 spuId）
+     * @param hashKey  Hash 字段名（如 skuId）
+     * @param quantity 扣减数量（正数）
+     * @return 扣减后的库存值，库存不足返回 null
+     */
+    public Long releaseStockAtomic(RedisKey redisKey, Long id, String hashKey, Integer quantity) {
+        if (id == null || hashKey == null || quantity <= 0) {
+            return null;
+        }
+
+        try {
+            String key = redisKey.key(id);
+            String luaScript =
+                    "if redis.call('EXISTS', KEYS[1]) == 1 then " +
+                            "  return redis.call('HINCRBY', KEYS[1], ARGV[1], ARGV[2]) " +
+                            "else " +
+                            "  return nil " +
+                            "end";
+
+            Object result = redisService.execute(
+                    luaScript,
+                    Collections.singletonList(key),
+                    List.of(hashKey, String.valueOf(quantity))
+            );
+
+            if (result != null) {
+                Long newStock = ((Number) result).longValue();
+                log.info("释放库存成功，key: {}, hashKey: {}, 归还: {}, 最新库存: {}",
+                        key, hashKey, quantity, newStock);
+                return newStock;
+            } else {
+                log.warn("释放库存失败，RedisKey不存在，可能已过期。准备触发回源逻辑。key: {}", key);
+                return null;
+            }
+
+        } catch (Exception e) {
+            log.error("释放库存系统异常", e);
             return null;
         }
     }

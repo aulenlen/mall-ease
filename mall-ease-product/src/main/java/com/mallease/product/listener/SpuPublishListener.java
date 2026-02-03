@@ -15,6 +15,7 @@ import com.mallease.product.service.CategoryService;
 import com.mallease.product.service.SkuService;
 import com.mallease.product.service.SpuCacheService;
 import com.mallease.product.service.SpuService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -30,23 +31,17 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SpuPublishListener {
-    @Autowired
-    private SpuService spuService;
-    @Autowired
-    private SkuService skuService;
-    @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
-    private AttributeService attributeService;
-    @Autowired
-    private CategoryService categoryService;
-    @Autowired
-    private SpuConverter spuConverter;
-    @Autowired
-    private SpuCacheService spuCacheService;
-    @Autowired
-    private SpuSearchFeignClient spuSearchFeignClient;
+
+    private final SpuService spuService;
+    private final SkuService skuService;
+    private final ObjectMapper objectMapper;
+    private final AttributeService attributeService;
+    private final CategoryService categoryService;
+    private final SpuConverter spuConverter;
+    private final SpuCacheService spuCacheService;
+    private final SpuSearchFeignClient spuSearchFeignClient;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishEvent(SpuPublishEvent event) {
