@@ -18,8 +18,6 @@
         id, order_no, spu_id, sku_id, quantity, status, expire_time, create_time, update_time
     </sql>
 
-    <!-- ==================== 查询方法 ==================== -->
-
     <!-- 根据主键查询 -->
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
@@ -52,10 +50,11 @@
 
     <!-- 查询已过期的锁定记录（定时任务使用） -->
     <select id="selectExpiredByStatus" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List"/>
+        SELECT
+        <include refid="Base_Column_List"/>
         FROM product_stock_reservation
         WHERE status = #{status,jdbcType=TINYINT}
-          AND expire_time &lt;= NOW()
+        AND expire_time &lt;= NOW()
         ORDER BY expire_time ASC
         LIMIT #{limit}
     </select>
@@ -67,7 +66,15 @@
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
     </select>
 
-    <!-- ==================== 写入方法 ==================== -->
+    <select id="listByOrderNosAndStatus" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from product_stock_reservation
+        where status = #{status} and order_no in
+        <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
+            #{orderNo}
+        </foreach>
+    </select>
 
     <!-- 插入单条记录 -->
     <insert id="insert" parameterType="com.mallease.product.model.data.entity.StockReservation"
@@ -105,8 +112,6 @@
         </foreach>
     </insert>
 
-    <!-- ==================== 更新方法 ==================== -->
-
     <!-- 更新单条记录状态 -->
     <update id="updateStatus">
         UPDATE product_stock_reservation
@@ -124,7 +129,15 @@
           AND status = #{oldStatus,jdbcType=TINYINT}
     </update>
 
-    <!-- ==================== 删除方法 ==================== -->
+    <!-- 按预约记录ID批量更新状态 -->
+    <update id="updateStatusByIds">
+        UPDATE product_stock_reservation
+        SET status = #{status,jdbcType=TINYINT}, update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
 
     <!-- 根据主键删除（慎用） -->
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">

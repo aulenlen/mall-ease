@@ -2,6 +2,7 @@ package com.mallease.product.controller;
 
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.common.dto.remote.StockLockDTO;
 import com.mallease.product.converter.SkuStockConverter;
 import com.mallease.product.model.client.cmd.SkuStockCmd;
 import com.mallease.product.model.client.vo.SkuStockVO;
@@ -128,8 +129,18 @@ public class SkuStockController {
 
     @Operation(summary = "锁定库存", description = "内部调用，下单时锁定库存")
     @PutMapping("/internal/lock")
-    public R<Void> lockStock(@RequestBody Map<Long, Integer> skuQuantityMap) {
-        skuStockService.lockStock(skuQuantityMap);
+    public R<Boolean> lockStock(@RequestBody StockLockDTO stockLockDTO) {
+        skuStockService.lockStock(
+                stockLockDTO.getSpuSkuQuantityMap(),
+                stockLockDTO.getOrderNo(),
+                stockLockDTO.getExpireTime()
+        );
         return R.success(null);
+    }
+
+    @Operation(summary = "释放库存", description = "内部调用，取消订单释放库存")
+    @PutMapping("/internal/unlock")
+    R<List<String>> releaseStock(@RequestBody List<String> orderNos) {
+        return R.success(skuStockService.unlockStock(orderNos));
     }
 }

@@ -1,20 +1,24 @@
 package com.mallease.product.service.impl;
 
 import com.mallease.common.exception.ApiException;
-import com.mallease.product.constant.RedisKey;
-import com.mallease.product.component.CacheService;
 import com.mallease.product.dao.SkuStockDao;
+import com.mallease.product.event.StockLockRollbackEvent;
+import com.mallease.product.event.StockReleaseEvent;
 import com.mallease.product.model.client.cmd.LockStockItem;
 import com.mallease.product.model.data.entity.SkuStock;
+import com.mallease.product.model.data.entity.StockReservation;
+import com.mallease.product.model.enums.ReservationStatus;
 import com.mallease.product.service.SkuStockService;
+import com.mallease.product.service.SpuCacheService;
+import com.mallease.product.service.StockReservationService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,10 +31,22 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class SkuStockServiceImpl implements SkuStockService {
-    @Autowired
-    private SkuStockDao skuStockDao;
-    @Autowired
-    private CacheService cacheService;
+
+    private final SkuStockDao skuStockDao;
+    private final SpuCacheService spuCacheService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final StockReservationService stockReservationService;
+
+    public SkuStockServiceImpl(
+            SkuStockDao skuStockDao,
+            @Lazy SpuCacheService spuCacheService,
+            ApplicationEventPublisher eventPublisher,
+            StockReservationService stockReservationService) {
+        this.skuStockDao = skuStockDao;
+        this.spuCacheService = spuCacheService;
+        this.eventPublisher = eventPublisher;
+        this.stockReservationService = stockReservationService;
+    }
 
     @Override
     public Long create(SkuStock stock) {
@@ -75,27 +91,6 @@ public class SkuStockServiceImpl implements SkuStockService {
             return null;
         }
         return skuStockDao.selectBySkuId(skuId);
-    }
-
-    @Override
-    public boolean deductStock(Long spuId, Long skuId, Integer quantity) {
-        String hashKey = String.valueOf(skuId);
-        Long newStock = cacheService.deductStockAtomic(
-                RedisKey.SPU_SKU_STOCK, spuId, hashKey, quantity
-        );
-        if (newStock != null) {
-            log.info("扣减SKU库存成功，spuId={}, skuId={}, quantity={}, 剩余={}",
-                    spuId, skuId, quantity, newStock);
-
-            if (newStock == 0) {
-                log.warn("SKU已售罄，spuId={}, skuId={}", spuId, skuId);
-            }
-
-            return true;
-        }
-
-        log.warn("SKU库存不足，spuId={}, skuId={}, 尝试扣减={}", spuId, skuId, quantity);
-        return false;
     }
 
     @Override
@@ -161,39 +156,196 @@ public class SkuStockServiceImpl implements SkuStockService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void lockStock(Map<Long, Integer> skuQuantityMap) {
-        if (skuQuantityMap == null || skuQuantityMap.isEmpty()) {
-            return;
+    public void lockStock(Map<Long, Map<Long, Integer>> spuSkuQuantityMap, String orderNo, LocalDateTime expireTime) {
+
+        if (expireTime == null || orderNo == null || orderNo.isEmpty()) {
+            throw new ApiException("系统繁忙");
         }
 
-        List<Long> skuIds = new ArrayList<>(skuQuantityMap.keySet());
-        List<SkuStock> stocks = skuStockDao.selectBySkuIds(skuIds);
+        if (spuSkuQuantityMap == null || spuSkuQuantityMap.isEmpty()) {
+            throw new ApiException("系统繁忙");
+        }
 
+        List<StockReservation> exist = stockReservationService.listByOrderNo(orderNo);
+        if (exist != null && !exist.isEmpty()) {
+            throw new ApiException("请勿重复提交");
+        }
+
+        List<Long> allSkuIds = spuSkuQuantityMap.values().stream()
+                .flatMap(skuMap -> skuMap.keySet().stream())
+                .collect(Collectors.toList());
+
+        List<SkuStock> stocks = skuStockDao.selectBySkuIds(allSkuIds);
         Map<Long, SkuStock> stockMap = stocks.stream()
                 .collect(Collectors.toMap(SkuStock::getSkuId, Function.identity()));
 
-        List<LockStockItem> items = new ArrayList<>();
+        List<StockReservation> deductedList = new ArrayList<>();
+        List<LockStockItem> lockItems = new ArrayList<>();
+        List<StockReservation> reservations = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Map.Entry<Long, Map<Long, Integer>> spuEntry : spuSkuQuantityMap.entrySet()) {
+            Long spuId = spuEntry.getKey();
+            Map<Long, Integer> skuQuantityMap = spuEntry.getValue();
+
+            for (Map.Entry<Long, Integer> skuEntry : skuQuantityMap.entrySet()) {
+                Long skuId = skuEntry.getKey();
+                Integer quantity = skuEntry.getValue();
+
+                SkuStock stock = stockMap.get(skuId);
+                if (stock == null) {
+                    log.error("商品不存在 skuId={}", skuId);
+                    if (!deductedList.isEmpty()) {
+                        eventPublisher.publishEvent(new StockLockRollbackEvent(deductedList, orderNo));
+                    }
+                    throw new ApiException("商品不存在");
+                }
+
+                Long newStock = spuCacheService.decreaseStock(spuId, skuId, quantity);
+                if (newStock == null) {
+                    log.warn("Redis 库存扣减失败，spuId={}, skuId={}, 需要={}", spuId, skuId, quantity);
+                    if (!deductedList.isEmpty()) {
+                        eventPublisher.publishEvent(new StockLockRollbackEvent(deductedList, orderNo));
+                    }
+                    throw new ApiException("库存不足");
+                }
+
+                deductedList.add(StockReservation.builder()
+                        .spuId(spuId)
+                        .skuId(skuId)
+                        .quantity(quantity)
+                        .build());
+
+                lockItems.add(new LockStockItem(skuId, quantity, stock.getVersion()));
+
+                reservations.add(StockReservation.builder()
+                        .orderNo(orderNo)
+                        .spuId(spuId)
+                        .skuId(skuId)
+                        .quantity(quantity)
+                        .status(ReservationStatus.LOCKED.getCode())
+                        .expireTime(expireTime)
+                        .createTime(now)
+                        .updateTime(now)
+                        .build());
+            }
+        }
+
+        log.info("Redis 库存扣减成功，orderNo={}, 扣减SKU数={}", orderNo, deductedList.size());
+
+        if (!deductedList.isEmpty()) {
+            eventPublisher.publishEvent(new StockLockRollbackEvent(deductedList, orderNo));
+        }
+
+        int rows = skuStockDao.batchLockStock(lockItems);
+        if (rows < lockItems.size()) {
+            throw new ApiException("库存不足");
+        }
+
+        stockReservationService.insertBatch(reservations);
+
+        log.info("锁定库存成功，orderNo={}, 锁定SKU数={}", orderNo, lockItems.size());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<String> unlockStock(List<String> orderNos) {
+        if (orderNos == null || orderNos.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<String> failedOrderNos = new HashSet<>();
+        for (String orderNo : orderNos) {
+            if (orderNo == null || orderNo.isEmpty()) {
+                continue;
+            }
+
+            List<StockReservation> locked = stockReservationService.listLockedByOrderNo(orderNo);
+            if (locked == null || locked.isEmpty()) {
+                continue;
+            }
+
+            releaseLockedReservationsForSingleOrder(orderNo, locked);
+            List<StockReservation> remainingLocked = stockReservationService.listLockedByOrderNo(orderNo);
+            if (remainingLocked != null && !remainingLocked.isEmpty()) {
+                failedOrderNos.add(orderNo);
+            }
+        }
+
+        if (!failedOrderNos.isEmpty()) {
+            log.warn("部分订单库存释放未完成，将由 Trade 定时任务兜底，failedOrderNos={}", failedOrderNos);
+        }
+
+        return failedOrderNos.stream().toList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int releaseExpiredReservations(int limit) {
+        List<StockReservation> reservations = stockReservationService.listExpiredLocked(limit);
+        if (reservations == null || reservations.isEmpty()) {
+            log.info("无过期预占记录");
+            return 0;
+        }
+
+        Map<String, List<StockReservation>> groupByOrderNo = reservations.stream()
+                .filter(item -> item.getOrderNo() != null && !item.getOrderNo().isEmpty())
+                .collect(Collectors.groupingBy(StockReservation::getOrderNo));
+
+        int releasedReservationCount = 0;
+        for (Map.Entry<String, List<StockReservation>> entry : groupByOrderNo.entrySet()) {
+            releasedReservationCount += releaseLockedReservationsForSingleOrder(entry.getKey(), entry.getValue());
+        }
+
+        return releasedReservationCount;
+    }
+
+    /**
+     * 释放单个订单的一批 LOCKED 预占记录（允许部分 SKU 成功）。
+     *
+     * @return 本次成功释放的 reservation 数量
+     */
+    private int releaseLockedReservationsForSingleOrder(String orderNo, List<StockReservation> lockedReservations) {
+        if (lockedReservations == null || lockedReservations.isEmpty()) {
+            return 0;
+        }
+
+        Map<Long, List<StockReservation>> skuReservationMap = lockedReservations.stream()
+                .collect(Collectors.groupingBy(StockReservation::getSkuId));
+
+        Map<Long, Integer> skuQuantityMap = lockedReservations.stream()
+                .collect(Collectors.groupingBy(
+                        StockReservation::getSkuId,
+                        Collectors.summingInt(StockReservation::getQuantity)
+                ));
+
+        List<Long> successIds = new ArrayList<>();
+        List<StockReservation> successList = new ArrayList<>();
+
         for (Map.Entry<Long, Integer> entry : skuQuantityMap.entrySet()) {
             Long skuId = entry.getKey();
-            Integer quantity = entry.getValue();
+            Integer totalQuantity = entry.getValue();
+            List<StockReservation> skuReservations = skuReservationMap.get(skuId);
 
-            SkuStock stock = stockMap.get(skuId);
-            if (stock == null) {
-                throw new ApiException("商品不存在: " + skuId);
+            int count = skuStockDao.unlockStock(skuId, totalQuantity);
+            if (count > 0) {
+                for (StockReservation r : skuReservations) {
+                    successIds.add(r.getId());
+                    successList.add(r);
+                }
+                log.info("库存释放成功，orderNo={}, skuId={}, 汇总释放量={}", orderNo, skuId, totalQuantity);
+            } else {
+                log.warn("库存释放失败，orderNo={}, skuId={}, 汇总释放量={}", orderNo, skuId, totalQuantity);
             }
-            if (stock.getStock() < quantity) {
-                throw new ApiException("库存不足: " + skuId);
-            }
-
-            items.add(new LockStockItem(skuId, quantity, stock.getVersion()));
         }
 
-        int rows = skuStockDao.batchLockStock(items);
-        if (rows < items.size()) {
-            throw new ApiException("系统繁忙，请重试");
+        if (!successIds.isEmpty()) {
+            stockReservationService.updateStatusToReleasedByIds(successIds);
+            eventPublisher.publishEvent(new StockReleaseEvent(successList));
+            log.info("订单预占释放落库完成，orderNo={}, successReservationCount={}", orderNo, successIds.size());
         }
 
-        log.info("批量锁定库存成功，共锁定 {} 个SKU", items.size());
+        return successIds.size();
     }
 }
 

@@ -15,8 +15,6 @@ import java.util.List;
 @Mapper
 public interface StockReservationDao {
 
-    // ==================== 查询方法 ====================
-
     /**
      * 根据主键查询
      *
@@ -41,7 +39,7 @@ public interface StockReservationDao {
      * @return 预占记录列表
      */
     List<StockReservation> selectByOrderNoAndStatus(@Param("orderNo") String orderNo,
-                                                     @Param("status") Integer status);
+                                                    @Param("status") Integer status);
 
     /**
      * 根据订单号和SKU ID查询（幂等检查）
@@ -51,7 +49,7 @@ public interface StockReservationDao {
      * @return 预占记录
      */
     StockReservation selectByOrderNoAndSkuId(@Param("orderNo") String orderNo,
-                                              @Param("skuId") Long skuId);
+                                             @Param("skuId") Long skuId);
 
     /**
      * 查询已过期的锁定记录（用于定时任务释放库存）
@@ -61,7 +59,7 @@ public interface StockReservationDao {
      * @return 已过期的预占记录列表
      */
     List<StockReservation> selectExpiredByStatus(@Param("status") Integer status,
-                                                  @Param("limit") Integer limit);
+                                                 @Param("limit") Integer limit);
 
     /**
      * 检查订单是否存在预占记录（任意状态）
@@ -70,8 +68,6 @@ public interface StockReservationDao {
      * @return 记录数量
      */
     int countByOrderNo(@Param("orderNo") String orderNo);
-
-    // ==================== 写入方法 ====================
 
     /**
      * 插入预占记录
@@ -107,10 +103,8 @@ public interface StockReservationDao {
      * @return 影响行数
      */
     int updateStatusByOrderNo(@Param("orderNo") String orderNo,
-                               @Param("oldStatus") Integer oldStatus,
-                               @Param("newStatus") Integer newStatus);
-
-    // ==================== 删除方法（通常不使用，保留审计记录）====================
+                              @Param("oldStatus") Integer oldStatus,
+                              @Param("newStatus") Integer newStatus);
 
     /**
      * 根据主键删除（慎用，建议保留记录用于审计）
@@ -119,4 +113,22 @@ public interface StockReservationDao {
      * @return 影响行数
      */
     int deleteByPrimaryKey(Long id);
+
+    /**
+     * 按预约记录ID批量更新状态
+     *
+     * @param ids    预约记录ID列表
+     * @param status 新状态
+     * @return 影响行数
+     */
+    int updateStatusByIds(@Param("ids") List<Long> ids, @Param("status") Integer status);
+
+    /**
+     * 按订单号和状态查询预约记录
+     *
+     * @param orderNos 订单编号列表
+     * @param status   预约状态
+     * @return 预约记录列表
+     */
+    List<StockReservation> listByOrderNosAndStatus(@Param("orderNos") List<String> orderNos, @Param("status") Integer status);
 }

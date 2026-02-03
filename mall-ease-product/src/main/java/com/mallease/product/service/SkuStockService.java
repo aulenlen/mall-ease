@@ -2,6 +2,7 @@ package com.mallease.product.service;
 
 import com.mallease.product.model.data.entity.SkuStock;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -46,16 +47,6 @@ public interface SkuStockService {
     SkuStock getBySkuId(Long skuId);
 
     /**
-     * 扣减库存（原子操作）
-     *
-     * @param productId 商品ID（用于定位Hash key）
-     * @param skuId SKU ID（用于定位Hash field）
-     * @param quantity 扣减数量
-     * @return true=扣减成功, false=库存不足
-     */
-    boolean deductStock(Long productId, Long skuId, Integer quantity);
-
-    /**
      * 手动调整库存（入库/出库）
      *
      * @param skuId SKU ID
@@ -98,8 +89,23 @@ public interface SkuStockService {
 
     /**
      * 批量锁定库存（下单时使用）
+     * 先通过 Redis 快速校验库存，拦截库存不足的请求
      *
-     * @param skuQuantityMap SKU数量映射（skuId → 锁定数量）
+     * @param spuSkuQuantityMap SPU 维度库存映射（spuId → skuId → quantity）
+     * @param orderNo           订单编号
+     * @param expireTime        订单过期时间
      */
-    void lockStock(Map<Long, Integer> skuQuantityMap);
+    void lockStock(Map<Long, Map<Long, Integer>> spuSkuQuantityMap, String orderNo, LocalDateTime expireTime);
+
+    List<String> unlockStock(List<String> orderNos);
+
+
+    /**
+     * 释放过期的库存预占（定时任务调用）
+     * 逐条处理确保原子性：每条预占记录的库存释放和状态更新在同一事务中完成
+     *
+     * @param limit 每次处理的最大数量
+     * @return 成功释放的记录数
+     */
+    int releaseExpiredReservations(int limit);
 }

@@ -1,6 +1,7 @@
 package com.mallease.product.dao;
 
 import com.mallease.product.model.client.cmd.LockStockItem;
+import com.mallease.product.model.client.cmd.UnlockStockItem;
 import com.mallease.product.model.data.entity.SkuStock;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -162,6 +163,14 @@ public interface SkuStockDao {
      * @return 影响行数
      */
     int unlockStock(@Param("skuId") Long skuId, @Param("quantity") Integer quantity);
+
+    /**
+     * 批量解锁库存
+     *
+     * @param items 解锁项列表（skuId, quantity）
+     * @return 影响行数（应等于 items.size()，否则表示部分失败）
+     */
+    int batchUnlockStock(@Param("items") List<UnlockStockItem> items);
 
     /**
      * 确认扣减库存（支付成功后，锁定库存转为实际扣减）
