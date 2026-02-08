@@ -55,24 +55,57 @@
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
     </select>
 
-    <!-- 更新支付状态（仅待支付状态可更新，CAS 防并发） -->
+    <!-- 根据用户ID和订单号查询 -->
+    <select id="selectByUserIdAndOrderNo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_payment_order
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+          AND order_no = #{orderNo,jdbcType=VARCHAR}
+    </select>
+
+    <select id="findPending" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM trade_payment_order
+        WHERE payment_no = #{paymentNo,jdbcType=VARCHAR}
+        and user_id = #{userId,jdbcType=BIGINT}
+        and status = 1
+    </select>
+
+    <!-- 更新支付状态 -->
     <update id="updateStatus">
         UPDATE trade_payment_order
-        SET status = #{status,jdbcType=TINYINT},
-            paid_time = #{paidTime,jdbcType=TIMESTAMP},
+        SET status         = #{status,jdbcType=TINYINT},
+            pay_channel    = #{payChannel,jdbcType=TINYINT},
+            paid_time      = #{paidTime,jdbcType=TIMESTAMP},
             third_trade_no = #{thirdTradeNo,jdbcType=VARCHAR},
-            update_time = NOW()
+            update_time    = NOW()
         WHERE id = #{id,jdbcType=BIGINT}
           AND status = 1
     </update>
 
-    <!-- 根据订单号关闭支付单（仅待支付状态可关闭） -->
+    <!-- 根据订单号关闭支付单 -->
     <update id="closeByOrderNo">
         UPDATE trade_payment_order
         SET status = #{status,jdbcType=TINYINT},
             update_time = NOW()
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+          AND user_id = #{userId,jdbcType=BIGINT}
           AND status = 1
+    </update>
+
+    <!-- 重置失败支付单为待支付 -->
+    <update id="resetForRetry">
+        UPDATE trade_payment_order
+        SET status = 1,
+            payment_no = #{paymentNo,jdbcType=VARCHAR},
+            expire_time = #{expireTime,jdbcType=TIMESTAMP},
+            paid_time = NULL,
+            third_trade_no = NULL,
+            third_buyer_id = NULL,
+            update_time = NOW()
+        WHERE id = #{id,jdbcType=BIGINT}
+          AND status = 4
     </update>
 
 </mapper>

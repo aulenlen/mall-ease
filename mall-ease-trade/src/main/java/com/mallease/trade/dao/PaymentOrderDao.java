@@ -1,6 +1,7 @@
 package com.mallease.trade.dao;
 
 import com.mallease.trade.model.data.entity.PaymentOrder;
+import jakarta.validation.constraints.NotBlank;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -40,6 +41,16 @@ public interface PaymentOrderDao {
     PaymentOrder selectByOrderNo(@Param("orderNo") String orderNo);
 
     /**
+     * 根据用户ID和订单号查询支付单
+     *
+     * @param userId  用户ID
+     * @param orderNo 订单号
+     * @return 支付单
+     */
+    PaymentOrder selectByUserIdAndOrderNo(@Param("userId") Long userId,
+                                          @Param("orderNo") String orderNo);
+
+    /**
      * 更新支付状态（支付成功/失败时调用）
      *
      * @param id           主键ID
@@ -50,6 +61,7 @@ public interface PaymentOrderDao {
      */
     int updateStatus(@Param("id") Long id,
                      @Param("status") Integer status,
+                     @Param("payChannel") Integer payChannel,
                      @Param("paidTime") LocalDateTime paidTime,
                      @Param("thirdTradeNo") String thirdTradeNo);
 
@@ -60,6 +72,21 @@ public interface PaymentOrderDao {
      * @param status  关闭状态
      * @return 影响行数
      */
-    int closeByOrderNo(@Param("orderNo") String orderNo,
+    int closeByOrderNo(@Param("userId") Long userId,
+                       @Param("orderNo") String orderNo,
                        @Param("status") Integer status);
+
+    /**
+     * 重置失败支付单为待支付
+     *
+     * @param id         主键ID
+     * @param paymentNo  新支付单号
+     * @param expireTime 过期时间
+     * @return 影响行数
+     */
+    int resetForRetry(@Param("id") Long id,
+                      @Param("paymentNo") String paymentNo,
+                      @Param("expireTime") LocalDateTime expireTime);
+
+    PaymentOrder findPending(@Param("userId") Long userId, @Param("paymentNo") String paymentNo);
 }

@@ -78,7 +78,8 @@ public class SaTokenConfig {
             "/mall-ease-auth/auth/portal/logout",
             "/mall-ease-user/user/member/portal/**",
             "/mall-ease-trade/trade/cart/portal/**",
-            "/mall-ease-trade/trade/order/portal/**"
+            "/mall-ease-trade/trade/order/portal/**",
+            "/mall-ease-trade/trade/payment/portal/**"
     );
 
     /**
@@ -196,6 +197,8 @@ public class SaTokenConfig {
         HttpStatus status;
 
         if (e instanceof NotLoginException) {
+            String requestPath = exchange.getRequest().getPath().value();
+            log.error("认证失败: path={}, loginType={}, message={}", requestPath, ((NotLoginException) e).getType(), e.getMessage());
             result = R.unauthorized(null);
             status = HttpStatus.UNAUTHORIZED;
         } else if (e instanceof NotPermissionException) {

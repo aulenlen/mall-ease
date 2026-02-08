@@ -4,6 +4,7 @@ import com.mallease.common.enums.StockReleaseStatus;
 import com.mallease.trade.model.aggregate.OrderAggregate;
 import com.mallease.trade.model.client.vo.OrderConfirmVO;
 import com.mallease.trade.model.data.entity.Order;
+import jakarta.validation.constraints.NotBlank;
 
 import java.util.List;
 import java.util.Map;
@@ -73,4 +74,8 @@ public interface OrderService {
     int orderReleaseSuccess(List<String> released);
 
     int orderReleaseFailed(List<String> failed);
+
+    Order findPending(Long userId, String orderNo);
+
+    int updateStatus(String orderNo, int status);
 }

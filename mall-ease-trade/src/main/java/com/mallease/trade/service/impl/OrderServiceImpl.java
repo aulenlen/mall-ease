@@ -1,12 +1,12 @@
 package com.mallease.trade.service.impl;
 
-import com.alibaba.nacos.common.notify.EventPublisher;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.StockLockDTO;
 import com.mallease.common.enums.OrderStatus;
 import com.mallease.common.enums.StockReleaseStatus;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.RedisService;
+import com.mallease.common.util.NoGeneratorUtil;
 import com.mallease.trade.dao.OrderDao;
 import com.mallease.trade.dao.OrderItemDao;
 import com.mallease.trade.evnent.OrderCancelledEvent;
@@ -19,13 +19,12 @@ import com.mallease.trade.model.data.entity.Order;
 import com.mallease.trade.model.data.entity.OrderItem;
 import com.mallease.trade.service.CartItemService;
 import com.mallease.trade.service.OrderService;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -139,6 +138,17 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Order findPending(Long userId, String orderNo) {
+        return orderDao.selectByConditions(userId, orderNo, OrderStatus.PENDING_PAYMENT.getCode());
+    }
+
+    @Override
+    public int updateStatus(String orderNo, int status) {
+
+        return orderDao.updateStatusByOrderNo(orderNo,status);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public String submit(Long userId, Order order, String requestId) {
 
@@ -169,7 +179,7 @@ public class OrderServiceImpl implements OrderService {
                         Collectors.toMap(OrderItemVO::getSkuId, OrderItemVO::getQuantity)
                 ));
 
-        String orderNo = orderNumberGenerator(userId);
+        String orderNo = NoGeneratorUtil.generate(userId);
 
         R<Void> lockResult = productFeignClient.lockStock(StockLockDTO.builder()
                 .orderNo(orderNo)
@@ -337,13 +347,5 @@ public class OrderServiceImpl implements OrderService {
             orderNos.forEach(orderNo -> resultMap.put(orderNo, StockReleaseStatus.RELEASE_FAILED));
         }
         return resultMap;
-    }
-
-    private String orderNumberGenerator(Long userId) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
-        String timestamp = LocalDateTime.now().format(formatter);
-        String userIdSuffix = String.format("%04d", userId % 10000);
-        String randomSuffix = String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
-        return timestamp + userIdSuffix + randomSuffix;
     }
 }
