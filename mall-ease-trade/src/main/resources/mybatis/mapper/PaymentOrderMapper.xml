@@ -27,6 +27,13 @@
         notify_time, notify_count, remark, create_time, update_time
     </sql>
 
+    <!-- 根据主键查询 -->
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_payment_order
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
     <!-- 插入支付单 -->
     <insert id="insert" parameterType="com.mallease.trade.model.data.entity.PaymentOrder"
             useGeneratedKeys="true" keyProperty="id">
@@ -107,5 +114,32 @@
         WHERE id = #{id,jdbcType=BIGINT}
           AND status = 4
     </update>
+
+    <!-- 根据主键选择性更新 -->
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.trade.model.data.entity.PaymentOrder">
+        UPDATE trade_payment_order
+        <set>
+            <if test="paymentNo != null">payment_no = #{paymentNo,jdbcType=VARCHAR},</if>
+            <if test="orderNo != null">order_no = #{orderNo,jdbcType=VARCHAR},</if>
+            <if test="userId != null">user_id = #{userId,jdbcType=BIGINT},</if>
+            <if test="payAmount != null">pay_amount = #{payAmount,jdbcType=DECIMAL},</if>
+            <if test="payChannel != null">pay_channel = #{payChannel,jdbcType=TINYINT},</if>
+            <if test="status != null">status = #{status,jdbcType=TINYINT},</if>
+            <if test="thirdTradeNo != null">third_trade_no = #{thirdTradeNo,jdbcType=VARCHAR},</if>
+            <if test="thirdBuyerId != null">third_buyer_id = #{thirdBuyerId,jdbcType=VARCHAR},</if>
+            <if test="expireTime != null">expire_time = #{expireTime,jdbcType=TIMESTAMP},</if>
+            <if test="paidTime != null">paid_time = #{paidTime,jdbcType=TIMESTAMP},</if>
+            <if test="notifyTime != null">notify_time = #{notifyTime,jdbcType=TIMESTAMP},</if>
+            <if test="notifyCount != null">notify_count = #{notifyCount,jdbcType=INTEGER},</if>
+            <if test="remark != null">remark = #{remark,jdbcType=VARCHAR},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 根据主键删除 -->
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        DELETE FROM trade_payment_order
+        WHERE id = #{id,jdbcType=BIGINT}
+    </delete>
 
 </mapper>

@@ -16,6 +16,15 @@ import java.time.LocalDateTime;
 @Mapper
 public interface PaymentOrderDao {
 
+
+    /**
+     * 根据主键查询
+     *
+     * @param id 主键ID
+     * @return 支付单
+     */
+    PaymentOrder selectByPrimaryKey(@Param("id") Long id);
+
     /**
      * 插入支付单
      *
@@ -89,4 +98,20 @@ public interface PaymentOrderDao {
                       @Param("expireTime") LocalDateTime expireTime);
 
     PaymentOrder findPending(@Param("userId") Long userId, @Param("paymentNo") String paymentNo);
+
+    /**
+     * 根据主键选择性更新（只更新非null字段）
+     *
+     * @param record 支付单
+     * @return 影响行数
+     */
+    int updateByPrimaryKeySelective(PaymentOrder record);
+
+    /**
+     * 根据主键删除
+     *
+     * @param id 主键ID
+     * @return 影响行数
+     */
+    int deleteByPrimaryKey(@Param("id") Long id);
 }
