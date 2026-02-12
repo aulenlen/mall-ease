@@ -47,7 +47,6 @@ public class HomeController {
         List<EditorialDTO> editorials = safeGetData(() -> contentFeignClient.listPublishedEditorials(10));
         List<SpuRecommendDTO> recommendProducts = safeGetData(() -> searchFeignClient.listRecommend(20));
 
-        // DTO -> VO 转换并组装
         HomePageVO homePageVO = HomePageVO.builder()
                 .banners(homeConverter.bannerDTOListToVOList(banners))
                 .navCategories(homeConverter.categoryDTOListToVOList(categories))

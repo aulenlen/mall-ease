@@ -68,7 +68,8 @@ public class SaTokenConfig {
             "/mall-ease-auth/auth/admin/login",
             "/mall-ease-product/product/spu/portal/*",
             "/mall-ease-search/search/suggest",
-            "/mall-ease-search/search/portal/product"
+            "/mall-ease-search/search/portal/product",
+            "/mall-ease-trade/trade/payment/notify/**"
     );
 
     /**
