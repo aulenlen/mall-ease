@@ -8,7 +8,20 @@ public enum PayChannel {
     WECHAT(2, "微信支付"),
     MOCK(9, "模拟支付");
 
-    private Integer code;
-    private String desc;
-    PayChannel(Integer code, String desc) {}
+    private final Integer code;
+    private final String desc;
+
+    PayChannel(Integer code, String desc) {
+        this.code = code;
+        this.desc = desc;
+    }
+
+    public static PayChannel of(Integer code) {
+        for (PayChannel channel : values()) {
+            if (channel.code.equals(code)) {
+                return channel;
+            }
+        }
+        return null;
+    }
 }
