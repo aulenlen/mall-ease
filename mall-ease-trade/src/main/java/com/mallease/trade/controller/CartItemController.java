@@ -105,7 +105,7 @@ public class CartItemController {
         cartItem.setSpuName(skuInfo.getSpuName());
         cartItem.setSkuPic(skuInfo.getSkuPic() != null ? skuInfo.getSkuPic() : skuInfo.getSpuPic());
         cartItem.setSkuAttrs(skuInfo.getAttrValues());
-        cartItem.setPrice(skuInfo.getOriginalPrice());
+        cartItem.setPrice(skuInfo.getPrice() != null ? skuInfo.getPrice() : BigDecimal.ZERO);
         cartItem.setChecked(1);
 
         return R.success(cartItemService.add(cartItem));
