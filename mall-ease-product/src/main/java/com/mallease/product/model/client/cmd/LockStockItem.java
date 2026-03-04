@@ -23,9 +23,4 @@ public class LockStockItem {
      * 锁定数量
      */
     private Integer quantity;
-
-    /**
-     * 当前版本号（乐观锁）
-     */
-    private Integer version;
 }

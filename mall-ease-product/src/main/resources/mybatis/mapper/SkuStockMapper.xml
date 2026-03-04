@@ -198,17 +198,35 @@
           AND stock >= #{quantity,jdbcType=INTEGER}
     </update>
 
-    <!-- 批量锁定库存 -->
+    <!-- 批量锁定库存（单条 CASE WHEN 语句，返回值为实际锁定行数） -->
     <update id="batchLockStock">
-        <foreach collection="items" item="item" separator=";">
-            UPDATE product_sku_stock
-            SET stock = stock - #{item.quantity,jdbcType=INTEGER},
-                lock_stock = lock_stock + #{item.quantity,jdbcType=INTEGER},
-                version = version + 1
-            WHERE sku_id = #{item.skuId,jdbcType=BIGINT}
-              AND version = #{item.version,jdbcType=INTEGER}
-              AND stock >= #{item.quantity,jdbcType=INTEGER}
+        UPDATE product_sku_stock
+        SET stock = stock - (
+                CASE sku_id
+                <foreach collection="items" item="item">
+                    WHEN #{item.skuId,jdbcType=BIGINT} THEN #{item.quantity,jdbcType=INTEGER}
+                </foreach>
+                END
+            ),
+            lock_stock = lock_stock + (
+                CASE sku_id
+                <foreach collection="items" item="item">
+                    WHEN #{item.skuId,jdbcType=BIGINT} THEN #{item.quantity,jdbcType=INTEGER}
+                </foreach>
+                END
+            ),
+            version = version + 1
+        WHERE sku_id IN
+        <foreach collection="items" item="item" open="(" separator="," close=")">
+            #{item.skuId,jdbcType=BIGINT}
         </foreach>
+        AND stock >= (
+            CASE sku_id
+            <foreach collection="items" item="item">
+                WHEN #{item.skuId,jdbcType=BIGINT} THEN #{item.quantity,jdbcType=INTEGER}
+            </foreach>
+            END
+        )
     </update>
 
     <!-- 解锁库存（支付超时或取消订单） -->

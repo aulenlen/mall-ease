@@ -188,7 +188,7 @@ public class OrderServiceImpl implements OrderService {
                 .build());
 
         if (!lockResult.isSuccess()) {
-            throw new ApiException("系统繁忙！");
+            throw new ApiException(lockResult.getMessage());
         }
 
         order.setOrderNo(orderNo);

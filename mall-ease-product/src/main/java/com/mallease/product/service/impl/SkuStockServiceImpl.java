@@ -216,7 +216,7 @@ public class SkuStockServiceImpl implements SkuStockService {
                         .quantity(quantity)
                         .build());
 
-                lockItems.add(new LockStockItem(skuId, quantity, stock.getVersion()));
+                lockItems.add(new LockStockItem(skuId, quantity));
 
                 reservations.add(StockReservation.builder()
                         .orderNo(orderNo)
