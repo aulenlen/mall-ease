@@ -21,6 +21,8 @@ public class OrderTask {
      */
     @Scheduled(cron = "0 0/1 * * * ?")
     public void processOrders() {
+        log.info("进入Order定时任务...");
+
         List<Order> orders = orderService.listNeedProcess();
         if (orders == null || orders.isEmpty()) {
             return;

@@ -11,7 +11,6 @@ import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 
 /**
@@ -34,11 +33,9 @@ public class AuditFieldInterceptor implements Interceptor {
         }
         SqlCommandType sqlCommandType = ms.getSqlCommandType();
 
-        // 注意：批量写入/脚本初始化等场景可能没有登录上下文，此时使用 system 兜底避免审计字段为空
-        String username = Optional.ofNullable(LoginContextUtil.getUserName()).orElse("system");
         LocalDateTime now = LocalDateTime.now();
 
-        fillAuditFields(parameter, sqlCommandType, username, now);
+        fillAuditFields(parameter, sqlCommandType, LoginContextUtil.getOperatorNameOrSystem(), now);
         return invocation.proceed();
     }
 

@@ -19,7 +19,6 @@ import com.mallease.trade.model.data.entity.Order;
 import com.mallease.trade.model.data.entity.OrderItem;
 import com.mallease.trade.service.CartItemService;
 import com.mallease.trade.service.OrderService;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -28,9 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static com.mallease.trade.constant.OrderConstant.PAYMENT_TIMEOUT_MINUTES;
@@ -145,7 +142,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public int updateStatus(String orderNo, int status) {
 
-        return orderDao.updateStatusByOrderNo(orderNo,status);
+        return orderDao.updateStatusByOrderNo(orderNo, status);
     }
 
     @Override
