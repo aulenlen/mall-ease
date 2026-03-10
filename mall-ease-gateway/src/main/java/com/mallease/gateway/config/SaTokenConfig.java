@@ -78,6 +78,7 @@ public class SaTokenConfig {
     private static final List<String> PORTAL_AUTH_PATHS = List.of(
             "/mall-ease-auth/auth/portal/logout",
             "/mall-ease-user/user/member/portal/**",
+            "/mall-ease-user/user/address/portal/**",
             "/mall-ease-trade/trade/cart/portal/**",
             "/mall-ease-trade/trade/order/portal/**",
             "/mall-ease-trade/trade/payment/portal/**"
