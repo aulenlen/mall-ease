@@ -1,5 +1,6 @@
 package com.mallease.trade.controller;
 
+import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.LoginContextUtil;
@@ -51,10 +52,21 @@ public class OrderController {
 
     @Operation(summary = "我的订单列表")
     @GetMapping("/portal/list")
-    public R<List<OrderVO>> portalList(@RequestParam(required = false) Integer status) {
+    public R<Page<OrderVO>> portalList(
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
         Long userId = LoginContextUtil.getUserId();
-        List<OrderAggregate> aggregates = orderService.listByUserId(userId, status);
-        return R.success(orderConverter.aggregatesToVOs(aggregates));
+        Page<OrderAggregate> aggregatePage = orderService.listByUserId(userId, status, pageNum, pageSize);
+        List<OrderVO> voList = orderConverter.aggregatesToVOs(aggregatePage.getList());
+
+        Page<OrderVO> result = new Page<>();
+        result.setPageNum(aggregatePage.getPageNum());
+        result.setPageSize(aggregatePage.getPageSize());
+        result.setTotal(aggregatePage.getTotal());
+        result.setTotalPage(aggregatePage.getTotalPage());
+        result.setList(voList);
+        return R.success(result);
     }
 
     @Operation(summary = "订单详情")

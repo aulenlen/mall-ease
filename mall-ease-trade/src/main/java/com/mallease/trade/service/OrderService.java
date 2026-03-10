@@ -1,5 +1,6 @@
 package com.mallease.trade.service;
 
+import com.mallease.common.api.Page;
 import com.mallease.common.enums.StockReleaseStatus;
 import com.mallease.trade.model.aggregate.OrderAggregate;
 import com.mallease.trade.model.client.query.OrderQuery;
@@ -43,9 +44,9 @@ public interface OrderService {
     OrderAggregate getByOrderNo(String orderNo);
 
     /**
-     * 查询用户订单列表
+     * 查询用户订单列表（分页）
      */
-    List<OrderAggregate> listByUserId(Long userId, Integer status);
+    Page<OrderAggregate> listByUserId(Long userId, Integer status, int pageNum, int pageSize);
 
     /**
      * 取消订单（用户主动取消）

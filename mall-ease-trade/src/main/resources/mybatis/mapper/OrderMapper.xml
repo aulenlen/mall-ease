@@ -76,12 +76,16 @@
         WHERE user_id = #{userId,jdbcType=BIGINT}
     </select>
 
-    <!-- 根据用户id和订单状态查询订单 -->
+    <!-- 根据用户id和订单状态查询订单（status 为空时查全部） -->
     <select id="listByUserId" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
         from trade_order
-        where user_id = #{userId,jdbcType=BIGINT} and status = #{status,jdbcType=TINYINT}
+        where user_id = #{userId,jdbcType=BIGINT}
+        <if test="status != null">
+            and status = #{status,jdbcType=TINYINT}
+        </if>
+        order by create_time desc
     </select>
 
     <select id="listByStatusAndTime" resultMap="BaseResultMap">

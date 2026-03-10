@@ -1,5 +1,8 @@
 package com.mallease.trade.service.impl;
 
+import com.github.pagehelper.PageHelper;
+import com.mallease.common.api.Page;
+import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.StockLockDTO;
 import com.mallease.common.enums.OrderStatus;
@@ -258,10 +261,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderAggregate> listByUserId(Long userId, Integer status) {
+    public Page<OrderAggregate> listByUserId(Long userId, Integer status, int pageNum, int pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
         List<Order> orders = orderDao.listByUserId(userId, status);
         if (orders.isEmpty()) {
-            return Collections.emptyList();
+            return PageUtils.buildPage(orders, Collections.emptyList());
         }
 
         List<Long> orderIds = orders.stream().map(Order::getId).toList();
@@ -269,10 +273,12 @@ public class OrderServiceImpl implements OrderService {
         Map<Long, List<OrderItem>> itemsMap = orderItems.stream()
                 .collect(Collectors.groupingBy(OrderItem::getOrderId));
 
-        return orders.stream().map(order -> OrderAggregate.builder()
+        List<OrderAggregate> aggregates = orders.stream().map(order -> OrderAggregate.builder()
                 .order(order)
                 .items(itemsMap.get(order.getId()))
                 .build()).toList();
+
+        return PageUtils.buildPage(orders, aggregates);
     }
 
     @Override
