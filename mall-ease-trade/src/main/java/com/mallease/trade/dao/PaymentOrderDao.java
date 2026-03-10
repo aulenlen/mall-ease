@@ -1,11 +1,13 @@
 package com.mallease.trade.dao;
 
+import com.mallease.trade.model.client.query.PaymentQuery;
 import com.mallease.trade.model.data.entity.PaymentOrder;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 支付单 Mapper 接口
@@ -114,4 +116,12 @@ public interface PaymentOrderDao {
      * @return 影响行数
      */
     int deleteByPrimaryKey(@Param("id") Long id);
+
+    /**
+     * 管理端支付单分页查询
+     *
+     * @param query 查询条件
+     * @return 支付单列表
+     */
+    List<PaymentOrder> adminList(PaymentQuery query);
 }

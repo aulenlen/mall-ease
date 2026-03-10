@@ -31,6 +31,13 @@ public class R<T> {
     }
 
     /**
+     * 返回成功结果（无数据）
+     */
+    public static R<Void> success() {
+        return new R<>(ResultCode.SUCCESS.getCode(), ResultCode.SUCCESS.getMessage(), null);
+    }
+
+    /**
      * @param data    获取数据
      * @param message 提示信息
      * @param <T>

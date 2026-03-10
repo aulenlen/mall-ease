@@ -267,4 +267,88 @@
         OR (status = #{cancelledStatus} AND stock_release_status IN (#{pendingReleaseStatus}, #{releaseFailedStatus}))
     </select>
 
+    <!-- 管理端订单分页查询（多条件筛选） -->
+    <select id="adminList" parameterType="com.mallease.trade.model.client.query.OrderQuery" resultMap="BaseResultMap">
+        SELECT o.id, o.order_no, o.request_id, o.user_id, o.receiver_name, o.receiver_phone,
+               o.receiver_province, o.receiver_city, o.receiver_district, o.receiver_address,
+               o.total_amount, o.freight_amount, o.discount_amount, o.pay_amount,
+               o.status, o.remark, o.stock_release_status, o.create_time, o.update_time
+        FROM trade_order o
+        <if test="payChannel != null or paymentStatus != null">
+            LEFT JOIN trade_payment_order p ON o.order_no = p.order_no
+        </if>
+        <where>
+            <if test="orderNo != null and orderNo != ''">
+                AND o.order_no = #{orderNo}
+            </if>
+            <if test="userId != null">
+                AND o.user_id = #{userId}
+            </if>
+            <if test="receiverPhone != null and receiverPhone != ''">
+                AND o.receiver_phone LIKE CONCAT('%', #{receiverPhone}, '%')
+            </if>
+            <if test="status != null">
+                AND o.status = #{status}
+            </if>
+            <if test="createTimeStart != null">
+                AND o.create_time &gt;= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null">
+                AND o.create_time &lt;= #{createTimeEnd}
+            </if>
+            <if test="payAmountMin != null">
+                AND o.pay_amount &gt;= #{payAmountMin}
+            </if>
+            <if test="payAmountMax != null">
+                AND o.pay_amount &lt;= #{payAmountMax}
+            </if>
+            <if test="payChannel != null">
+                AND p.pay_channel = #{payChannel}
+            </if>
+            <if test="paymentStatus != null">
+                AND p.status = #{paymentStatus}
+            </if>
+        </where>
+        ORDER BY o.create_time DESC
+    </select>
+
+    <!-- 今日订单统计 -->
+    <select id="statsTodayOverview" resultType="java.util.HashMap">
+        SELECT COUNT(*) AS orderCount, COALESCE(SUM(pay_amount), 0) AS orderAmount
+        FROM trade_order
+        WHERE create_time &gt;= #{todayStart}
+    </select>
+
+    <!-- 按状态统计订单数量 -->
+    <select id="countByStatus" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM trade_order
+        WHERE status = #{status}
+    </select>
+
+    <!-- 全量订单统计 -->
+    <select id="statsTotalOverview" resultType="java.util.HashMap">
+        SELECT COUNT(*) AS orderCount, COALESCE(SUM(pay_amount), 0) AS orderAmount
+        FROM trade_order
+    </select>
+
+    <!-- 订单趋势统计（按日期聚合） -->
+    <select id="statsTrend" resultType="com.mallease.trade.model.client.vo.OrderStatsTrendVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS date,
+               COUNT(*) AS orderCount,
+               COALESCE(SUM(pay_amount), 0) AS orderAmount
+        FROM trade_order
+        WHERE create_time &gt;= #{startDate} AND create_time &lt;= #{endDate}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY date ASC
+    </select>
+
+    <!-- 订单状态分布统计 -->
+    <select id="statsStatusDistribution" resultType="com.mallease.trade.model.client.vo.OrderStatusDistributionVO">
+        SELECT status, COUNT(*) AS count
+        FROM trade_order
+        GROUP BY status
+        ORDER BY status
+    </select>
+
 </mapper>

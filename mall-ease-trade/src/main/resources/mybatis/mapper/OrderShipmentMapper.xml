@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.trade.dao.OrderShipmentDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.trade.model.data.entity.OrderShipment">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
+        <result column="logistics_company" property="logisticsCompany" jdbcType="VARCHAR"/>
+        <result column="logistics_code" property="logisticsCode" jdbcType="VARCHAR"/>
+        <result column="logistics_no" property="logisticsNo" jdbcType="VARCHAR"/>
+        <result column="shipper_name" property="shipperName" jdbcType="VARCHAR"/>
+        <result column="ship_time" property="shipTime" jdbcType="TIMESTAMP"/>
+        <result column="receive_time" property="receiveTime" jdbcType="TIMESTAMP"/>
+        <result column="status" property="status" jdbcType="TINYINT"/>
+        <result column="logistics_info" property="logisticsInfo" jdbcType="VARCHAR"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="updater" property="updater" jdbcType="VARCHAR"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, order_no, logistics_company, logistics_code, logistics_no, shipper_name,
+        ship_time, receive_time, status, logistics_info, creator, create_time, updater, update_time
+    </sql>
+
+    <!-- 插入物流记录 -->
+    <insert id="insert" parameterType="com.mallease.trade.model.data.entity.OrderShipment"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO trade_order_shipment (
+            order_no, logistics_company, logistics_code, logistics_no,
+            shipper_name, ship_time, status, creator
+        ) VALUES (
+            #{orderNo,jdbcType=VARCHAR}, #{logisticsCompany,jdbcType=VARCHAR},
+            #{logisticsCode,jdbcType=VARCHAR}, #{logisticsNo,jdbcType=VARCHAR},
+            #{shipperName,jdbcType=VARCHAR}, #{shipTime,jdbcType=TIMESTAMP},
+            #{status,jdbcType=TINYINT}, #{creator,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 根据订单编号查询物流信息 -->
+    <select id="selectByOrderNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_order_shipment
+        WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+    </select>
+
+</mapper>

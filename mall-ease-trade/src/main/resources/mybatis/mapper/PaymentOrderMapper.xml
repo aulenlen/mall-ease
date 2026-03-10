@@ -142,4 +142,31 @@
         WHERE id = #{id,jdbcType=BIGINT}
     </delete>
 
+    <!-- 管理端支付单分页查询 -->
+    <select id="adminList" parameterType="com.mallease.trade.model.client.query.PaymentQuery" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_payment_order
+        <where>
+            <if test="paymentNo != null and paymentNo != ''">
+                AND payment_no = #{paymentNo}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                AND order_no = #{orderNo}
+            </if>
+            <if test="payChannel != null">
+                AND pay_channel = #{payChannel}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="createTimeStart != null">
+                AND create_time &gt;= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null">
+                AND create_time &lt;= #{createTimeEnd}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
 </mapper>

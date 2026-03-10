@@ -12,8 +12,11 @@ import com.mallease.trade.dao.OrderItemDao;
 import com.mallease.trade.evnent.OrderCancelledEvent;
 import com.mallease.trade.feign.ProductFeignClient;
 import com.mallease.trade.model.aggregate.OrderAggregate;
+import com.mallease.trade.model.client.query.OrderQuery;
 import com.mallease.trade.model.client.vo.OrderConfirmVO;
 import com.mallease.trade.model.client.vo.OrderItemVO;
+import com.mallease.trade.model.client.vo.OrderStatusDistributionVO;
+import com.mallease.trade.model.client.vo.OrderStatsTrendVO;
 import com.mallease.trade.model.data.entity.CartItem;
 import com.mallease.trade.model.data.entity.Order;
 import com.mallease.trade.model.data.entity.OrderItem;
@@ -344,5 +347,60 @@ public class OrderServiceImpl implements OrderService {
             orderNos.forEach(orderNo -> resultMap.put(orderNo, StockReleaseStatus.RELEASE_FAILED));
         }
         return resultMap;
+    }
+
+    // ==================== 管理端方法 ====================
+
+    @Override
+    public Order findByOrderNo(String orderNo) {
+        return orderDao.selectByOrderNo(orderNo);
+    }
+
+    @Override
+    public List<Order> adminList(OrderQuery query) {
+        return orderDao.adminList(query);
+    }
+
+    @Override
+    public List<OrderItem> listItemsByOrderIds(List<Long> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return orderItemDao.selectByOrderIds(orderIds);
+    }
+
+    @Override
+    public List<OrderItem> listItemsByOrderNo(String orderNo) {
+        return orderItemDao.selectByOrderNo(orderNo);
+    }
+
+    @Override
+    public int updateOrderSelective(Order order) {
+        return orderDao.updateByPrimaryKeySelective(order);
+    }
+
+    @Override
+    public Map<String, Object> statsTodayOverview(LocalDateTime todayStart) {
+        return orderDao.statsTodayOverview(todayStart);
+    }
+
+    @Override
+    public Long countByStatus(Integer status) {
+        return orderDao.countByStatus(status);
+    }
+
+    @Override
+    public Map<String, Object> statsTotalOverview() {
+        return orderDao.statsTotalOverview();
+    }
+
+    @Override
+    public List<OrderStatsTrendVO> statsTrend(LocalDateTime startDate, LocalDateTime endDate) {
+        return orderDao.statsTrend(startDate, endDate);
+    }
+
+    @Override
+    public List<OrderStatusDistributionVO> statsStatusDistribution() {
+        return orderDao.statsStatusDistribution();
     }
 }

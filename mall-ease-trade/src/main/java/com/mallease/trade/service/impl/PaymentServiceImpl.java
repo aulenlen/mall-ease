@@ -7,6 +7,7 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.NoGeneratorUtil;
 import com.mallease.trade.dao.PaymentOrderDao;
 import com.mallease.trade.model.client.cmd.PaymentCmd;
+import com.mallease.trade.model.client.query.PaymentQuery;
 import com.mallease.trade.model.data.entity.Order;
 import com.mallease.trade.model.data.entity.PaymentOrder;
 import com.mallease.trade.service.OrderService;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -180,7 +182,7 @@ public class PaymentServiceImpl implements PaymentService {
         notifyUpdate.setNotifyCount(payment.getNotifyCount() == null ? 1 : payment.getNotifyCount() + 1);
         paymentOrderDao.updateByPrimaryKeySelective(notifyUpdate);
 
-        orderService.updateStatus(payment.getOrderNo(), OrderStatus.PAID.getCode());
+        orderService.updateStatus(payment.getOrderNo(), OrderStatus.PENDING_SHIPMENT.getCode());
 
         log.info("支付宝回调处理成功: paymentNo={}, tradeNo={}, buyerId={}", payment.getPaymentNo(), tradeNo, buyerId);
 
@@ -214,5 +216,17 @@ public class PaymentServiceImpl implements PaymentService {
             case ALIPAY -> alipayHandler;
             default -> throw new ApiException("不支持的支付渠道: " + channel.getDesc());
         };
+    }
+
+    // ==================== 管理端方法 ====================
+
+    @Override
+    public PaymentOrder findByOrderNo(String orderNo) {
+        return paymentOrderDao.selectByOrderNo(orderNo);
+    }
+
+    @Override
+    public List<PaymentOrder> adminList(PaymentQuery query) {
+        return paymentOrderDao.adminList(query);
     }
 }

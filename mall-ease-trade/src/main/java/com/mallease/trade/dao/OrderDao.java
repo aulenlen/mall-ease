@@ -1,11 +1,15 @@
 package com.mallease.trade.dao;
 
+import com.mallease.trade.model.client.query.OrderQuery;
+import com.mallease.trade.model.client.vo.OrderStatusDistributionVO;
+import com.mallease.trade.model.client.vo.OrderStatsTrendVO;
 import com.mallease.trade.model.data.entity.Order;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单 Mapper 接口
@@ -166,6 +170,15 @@ public interface OrderDao {
                                     @Param("orderStatus") Integer orderStatus,
                                     @Param("stockReleaseStatus") Integer stockReleaseStatus);
 
+
+    /**
+     * 管理端订单分页查询（多条件筛选）
+     *
+     * @param query 查询条件
+     * @return 订单列表
+     */
+    List<Order> adminList(OrderQuery query);
+
     /**
      * 批量更新库存释放状态（根据订单编号）
      *
@@ -175,5 +188,45 @@ public interface OrderDao {
      */
     int updateStockReleaseStatusByOrderNos(@Param("orderNos") List<String> orderNos,
                                            @Param("stockReleaseStatus") Integer stockReleaseStatus);
+
+    /**
+     * 今日订单统计（订单数量 + 订单金额）
+     *
+     * @param todayStart 今日开始时间
+     * @return [count, sum_amount]
+     */
+    Map<String, Object> statsTodayOverview(@Param("todayStart") LocalDateTime todayStart);
+
+    /**
+     * 按状态统计订单数量
+     *
+     * @param status 订单状态
+     * @return 数量
+     */
+    Long countByStatus(@Param("status") Integer status);
+
+    /**
+     * 全量订单统计
+     *
+     * @return [count, sum_amount]
+     */
+    Map<String, Object> statsTotalOverview();
+
+    /**
+     * 订单趋势统计（按日期聚合）
+     *
+     * @param startDate 开始日期
+     * @param endDate   结束日期
+     * @return 趋势数据
+     */
+    List<OrderStatsTrendVO> statsTrend(@Param("startDate") LocalDateTime startDate,
+                                       @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * 订单状态分布统计
+     *
+     * @return 各状态订单数量
+     */
+    List<OrderStatusDistributionVO> statsStatusDistribution();
 
 }

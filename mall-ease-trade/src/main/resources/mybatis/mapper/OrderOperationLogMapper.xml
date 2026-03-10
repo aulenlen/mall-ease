@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.trade.dao.OrderOperationLogDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.trade.model.data.entity.OrderOperationLog">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
+        <result column="operator_id" property="operatorId" jdbcType="BIGINT"/>
+        <result column="operator_name" property="operatorName" jdbcType="VARCHAR"/>
+        <result column="operation_type" property="operationType" jdbcType="TINYINT"/>
+        <result column="detail" property="detail" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, order_no, operator_id, operator_name, operation_type, detail, create_time
+    </sql>
+
+    <!-- 插入操作日志 -->
+    <insert id="insert" parameterType="com.mallease.trade.model.data.entity.OrderOperationLog"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO trade_order_operation_log (
+            order_no, operator_id, operator_name, operation_type, detail
+        ) VALUES (
+            #{orderNo,jdbcType=VARCHAR}, #{operatorId,jdbcType=BIGINT},
+            #{operatorName,jdbcType=VARCHAR}, #{operationType,jdbcType=TINYINT},
+            #{detail,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 根据订单编号查询操作日志 -->
+    <select id="selectByOrderNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_order_operation_log
+        WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>
