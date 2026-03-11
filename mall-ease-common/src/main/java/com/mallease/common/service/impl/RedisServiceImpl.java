@@ -157,6 +157,19 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
+    public List<Object> hMultiGet(String key, List<Object> hashKeys) {
+        try {
+            if (key == null || hashKeys == null || hashKeys.isEmpty()) {
+                return Collections.emptyList();
+            }
+            List<Object> values = redisTemplate.opsForHash().multiGet(key, hashKeys);
+            return values != null ? values : Collections.emptyList();
+        } catch (Exception e) {
+            return Collections.emptyList(); // 缓存降级
+        }
+    }
+
+    @Override
     public Boolean hSet(String key, String hashKey, Object value, long time) {
         try {
             redisTemplate.opsForHash().put(key, hashKey, value);

@@ -120,6 +120,15 @@ public interface RedisService {
     Object hGet(String key, String hashKey);
 
     /**
+     * 批量获取 Hash 结构中的多个字段值
+     *
+     * @param key Hash 键
+     * @param hashKeys Hash 字段列表
+     * @return 字段值列表
+     */
+    List<Object> hMultiGet(String key, List<Object> hashKeys);
+
+    /**
      * 向Hash结构中放入一个属性
      */
     Boolean hSet(String key, String hashKey, Object value, long time);
