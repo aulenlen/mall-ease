@@ -2,6 +2,8 @@ package com.mallease.product.controller;
 
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.common.dto.remote.SkuAvailabilityDTO;
+import com.mallease.common.dto.remote.SkuStockQueryDTO;
 import com.mallease.common.dto.remote.StockLockDTO;
 import com.mallease.product.converter.SkuStockConverter;
 import com.mallease.product.model.client.cmd.SkuStockCmd;
@@ -142,5 +144,11 @@ public class SkuStockController {
     @PutMapping("/internal/unlock")
     R<List<String>> releaseStock(@RequestBody List<String> orderNos) {
         return R.success(skuStockService.unlockStock(orderNos));
+    }
+
+    @Operation(summary = "批量查询 SKU 是否有货", description = "内部调用，购物车/下单页获取实时库存状态")
+    @PostMapping("/internal/availability")
+    public R<List<SkuAvailabilityDTO>> listAvailability(@RequestBody List<SkuStockQueryDTO> queries) {
+        return R.success(skuStockService.listAvailabilityBySkuIds(queries));
     }
 }

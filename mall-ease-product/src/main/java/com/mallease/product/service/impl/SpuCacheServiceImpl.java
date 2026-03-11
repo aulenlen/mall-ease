@@ -1,6 +1,7 @@
 package com.mallease.product.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import com.mallease.common.dto.remote.SkuStockQueryDTO;
 import com.mallease.product.component.CacheService;
 import com.mallease.product.constant.RedisKey;
 import com.mallease.product.converter.SpuCacheConverter;
@@ -156,6 +157,62 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                         entry -> Long.valueOf(entry.getKey().toString()),
                         entry -> (Integer) entry.getValue()
                 ));
+    }
+
+    @Override
+    public Map<Long, Integer> getSkuStockBatch(List<SkuStockQueryDTO> skuQueries) {
+        if (CollUtil.isEmpty(skuQueries)) {
+            return Collections.emptyMap();
+        }
+
+        Map<Long, List<String>> groupedHashKeys = skuQueries.stream()
+                .filter(query -> query.getSpuId() != null && query.getSkuId() != null)
+                .collect(Collectors.groupingBy(
+                        SkuStockQueryDTO::getSpuId,
+                        Collectors.mapping(query -> String.valueOf(query.getSkuId()), Collectors.toList())
+                ));
+        if (groupedHashKeys.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<Long, Integer> result = new HashMap<>();
+        groupedHashKeys.forEach((spuId, hashKeys) -> {
+            Map<String, Object> cacheValues = cacheService.hMultiGet(RedisKey.SPU_SKU_STOCK, spuId, hashKeys);
+            cacheValues.forEach((skuId, stock) -> {
+                if (stock instanceof Integer stockValue) {
+                    result.put(Long.valueOf(skuId), stockValue);
+                }
+            });
+        });
+        return result;
+    }
+
+    @Override
+    public void setSkuStockBatch(Map<Long, Map<Long, Integer>> skuStockMap) {
+        if (CollUtil.isEmpty(skuStockMap)) {
+            return;
+        }
+
+        Map<Long, Map<String, Integer>> cachePayload = skuStockMap.entrySet().stream()
+                .filter(entry -> entry.getKey() != null && CollUtil.isNotEmpty(entry.getValue()))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().entrySet().stream()
+                                .filter(item -> item.getKey() != null && item.getValue() != null)
+                                .collect(Collectors.toMap(
+                                        item -> String.valueOf(item.getKey()),
+                                        Map.Entry::getValue
+                                ))
+                ));
+        if (cachePayload.isEmpty()) {
+            return;
+        }
+
+        cacheService.batchSetHashMap(
+                RedisKey.SPU_SKU_STOCK.getPrefix(),
+                cachePayload,
+                RedisKey.SPU_SKU_STOCK.getTtl()
+        );
     }
 
     @Override

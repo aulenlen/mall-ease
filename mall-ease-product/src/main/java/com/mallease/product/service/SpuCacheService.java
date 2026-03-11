@@ -1,5 +1,6 @@
 package com.mallease.product.service;
 
+import com.mallease.common.dto.remote.SkuStockQueryDTO;
 import com.mallease.product.model.data.cache.SpuCache;
 
 import java.util.List;
@@ -69,6 +70,21 @@ public interface SpuCacheService {
      * @return SKU ID到库存的映射
      */
     Map<Long, Integer> getSkuStockBySpu(Long spuId);
+
+    /**
+     * 按指定 SPU 和 SKU 精确获取库存。
+     *
+     * @param skuQueries SPU 和 SKU 查询参数
+     * @return SKU ID到库存的映射
+     */
+    Map<Long, Integer> getSkuStockBatch(List<SkuStockQueryDTO> skuQueries);
+
+    /**
+     * 按指定 SPU 和 SKU 批量回填库存缓存。
+     *
+     * @param skuStockMap SPU ID -> (SKU ID -> 库存) 映射
+     */
+    void setSkuStockBatch(Map<Long, Map<Long, Integer>> skuStockMap);
 
     // ==================== 缓存失效 ====================
 

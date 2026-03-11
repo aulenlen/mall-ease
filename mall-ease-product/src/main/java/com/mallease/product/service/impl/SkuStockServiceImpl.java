@@ -1,5 +1,7 @@
 package com.mallease.product.service.impl;
 
+import com.mallease.common.dto.remote.SkuAvailabilityDTO;
+import com.mallease.common.dto.remote.SkuStockQueryDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.product.dao.SkuStockDao;
 import com.mallease.product.event.StockLockRollbackEvent;
@@ -136,6 +138,66 @@ public class SkuStockServiceImpl implements SkuStockService {
             return List.of();
         }
         return skuStockDao.selectBySkuIds(skuIds);
+    }
+
+    @Override
+    public List<SkuAvailabilityDTO> listAvailabilityBySkuIds(List<SkuStockQueryDTO> queries) {
+        if (queries == null || queries.isEmpty()) {
+            return List.of();
+        }
+
+        List<SkuStockQueryDTO> validQueries = queries.stream()
+                .filter(query -> query.getSpuId() != null && query.getSkuId() != null)
+                .distinct()
+                .toList();
+        if (validQueries.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Integer> cacheStockMap = spuCacheService.getSkuStockBatch(validQueries);
+        List<Long> missedSkuIds = validQueries.stream()
+                .map(SkuStockQueryDTO::getSkuId)
+                .filter(Objects::nonNull)
+                .filter(skuId -> !cacheStockMap.containsKey(skuId))
+                .distinct()
+                .toList();
+
+        Map<Long, Integer> dbStockMap = missedSkuIds.isEmpty()
+                ? Collections.emptyMap()
+                : skuStockDao.selectBySkuIds(missedSkuIds).stream()
+                .collect(Collectors.toMap(SkuStock::getSkuId, SkuStock::getStock, (left, right) -> left));
+        if (!dbStockMap.isEmpty()) {
+            Map<Long, Long> skuSpuMap = validQueries.stream()
+                    .filter(query -> dbStockMap.containsKey(query.getSkuId()))
+                    .collect(Collectors.toMap(
+                            SkuStockQueryDTO::getSkuId,
+                            SkuStockQueryDTO::getSpuId,
+                            (left, right) -> left
+                    ));
+            Map<Long, Map<Long, Integer>> refillStockMap = new HashMap<>();
+            dbStockMap.forEach((skuId, stock) -> {
+                Long spuId = skuSpuMap.get(skuId);
+                if (spuId != null) {
+                    refillStockMap.computeIfAbsent(spuId, key -> new HashMap<>())
+                            .put(skuId, stock);
+                }
+            });
+            spuCacheService.setSkuStockBatch(refillStockMap);
+        }
+
+        return validQueries.stream()
+                .map(SkuStockQueryDTO::getSkuId)
+                .distinct()
+                .map(skuId -> {
+                    Integer stock = cacheStockMap.containsKey(skuId)
+                            ? cacheStockMap.get(skuId)
+                            : dbStockMap.get(skuId);
+                    return SkuAvailabilityDTO.builder()
+                            .skuId(skuId)
+                            .inStock(Objects.requireNonNullElse(stock, 0) > 0)
+                            .build();
+                })
+                .toList();
     }
 
     @Override

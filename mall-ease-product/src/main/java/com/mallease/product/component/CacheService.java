@@ -278,6 +278,41 @@ public class CacheService {
     }
 
     /**
+     * 获取 Hash 结构中的多个字段值。
+     *
+     * @param redisKey Redis Key 枚举
+     * @param id       业务ID（用于构建 key）
+     * @param hashKeys Hash 字段列表
+     * @return 字段值映射
+     */
+    public Map<String, Object> hMultiGet(RedisKey redisKey, Long id, List<String> hashKeys) {
+        if (id == null || hashKeys == null || hashKeys.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            String key = redisKey.key(id);
+            List<Object> values = redisService.hMultiGet(key, new ArrayList<>(hashKeys));
+            if (values == null || values.isEmpty()) {
+                return Collections.emptyMap();
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            for (int i = 0; i < hashKeys.size() && i < values.size(); i++) {
+                Object value = values.get(i);
+                if (value != null) {
+                    result.put(hashKeys.get(i), value);
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("批量获取Hash字段失败，redisKey: {}, id: {}, hashKeys: {}",
+                    redisKey.name(), id, hashKeys, e);
+            return Collections.emptyMap();
+        }
+    }
+
+    /**
      * 获取 Hash 结构的所有字段
      *
      * @param redisKey Redis Key 枚举
