@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 前台添加购物车命令
+ * 前台添加购物车命令。
  *
  * @author: Aulen
  * @create: 2026-01-28
@@ -20,10 +20,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class AddCartItemCmd {
-
-    @Schema(description = "用户ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "用户ID不能为空")
-    private Long userId;
 
     @Schema(description = "SKU ID", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "SKU ID不能为空")
