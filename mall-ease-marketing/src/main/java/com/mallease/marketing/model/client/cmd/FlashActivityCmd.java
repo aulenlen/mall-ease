@@ -43,12 +43,12 @@ public class FlashActivityCmd {
 
     @Schema(description = "活动开始日期")
     @NotNull(groups = Create.class, message = "活动开始日期不能为空")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
 
     @Schema(description = "活动结束日期")
     @NotNull(groups = Create.class, message = "活动结束日期不能为空")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
 
     @Schema(description = "状态: 0-禁用, 1-启用")
