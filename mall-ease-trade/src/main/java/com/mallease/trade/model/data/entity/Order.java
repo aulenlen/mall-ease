@@ -24,7 +24,7 @@ public class Order {
     private String orderNo;
 
     /**
-     * 幂等请求ID（防重复提交）
+     * 幂等请求ID，防止重复提交
      */
     private String requestId;
 
@@ -84,7 +84,12 @@ public class Order {
     private BigDecimal payAmount;
 
     /**
-     * 订单状态: 1-待发货 2-待收货 3-已完成 4-已取消
+     * 订单支付截止时间
+     */
+    private LocalDateTime payExpireTime;
+
+    /**
+     * 订单状态：1-待发货 2-待收货 3-已完成 4-已取消 5-待支付 6-已支付
      */
     private Integer status;
 
@@ -94,7 +99,7 @@ public class Order {
     private String remark;
 
     /**
-     * 库存释放状态：0-未触发, 1-待释放, 2-已释放, 3-释放失败
+     * 库存释放状态：0-未触发 1-待释放 2-已释放 3-释放失败
      *
      * @see com.mallease.common.enums.StockReleaseStatus
      */
