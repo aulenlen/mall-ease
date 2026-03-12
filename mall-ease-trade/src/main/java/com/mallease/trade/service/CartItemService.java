@@ -1,11 +1,14 @@
 package com.mallease.trade.service;
 
+import com.mallease.common.api.Page;
+import com.mallease.trade.model.client.vo.CartPageVO;
+import com.mallease.trade.model.client.vo.CartSummaryVO;
 import com.mallease.trade.model.data.entity.CartItem;
 
 import java.util.List;
 
 /**
- * 购物车服务接口
+ * 购物车服务接口。
  *
  * @author: Aulen
  * @create: 2026-01-27
@@ -13,7 +16,26 @@ import java.util.List;
 public interface CartItemService {
 
     /**
-     * 根据ID获取购物车项
+     * 前台分页获取购物车，并返回整车汇总。
+     *
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 购物车分页结果
+     */
+    CartPageVO getCartPage(Integer pageNum, Integer pageSize);
+
+    /**
+     * 前台添加商品到购物车。
+     *
+     * @param userId 用户ID
+     * @param skuId SKU ID
+     * @param quantity 数量
+     * @return 购物车项ID
+     */
+    Long addToCart(Long userId, Long skuId, Integer quantity);
+
+    /**
+     * 根据ID获取购物车项。
      *
      * @param id 主键ID
      * @return 购物车项
@@ -21,7 +43,7 @@ public interface CartItemService {
     CartItem getById(Long id);
 
     /**
-     * 根据ID列表批量获取购物车项
+     * 根据ID列表批量获取购物车项。
      *
      * @param ids 主键ID列表
      * @return 购物车项列表
@@ -29,7 +51,7 @@ public interface CartItemService {
     List<CartItem> listByIds(List<Long> ids);
 
     /**
-     * 获取用户购物车列表
+     * 获取用户购物车列表。
      *
      * @param userId 用户ID
      * @return 购物车项列表
@@ -37,7 +59,17 @@ public interface CartItemService {
     List<CartItem> listByUserId(Long userId);
 
     /**
-     * 获取用户已选中的购物车项
+     * 分页获取用户购物车列表。
+     *
+     * @param userId 用户ID
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    Page<CartItem> pageByUserId(Long userId, int pageNum, int pageSize);
+
+    /**
+     * 获取用户已选中的购物车项。
      *
      * @param userId 用户ID
      * @return 购物车项列表
@@ -45,15 +77,15 @@ public interface CartItemService {
     List<CartItem> listCheckedByUserId(Long userId);
 
     /**
-     * 统计用户购物车商品数量
+     * 统计用户购物车 SKU 条目数。
      *
      * @param userId 用户ID
-     * @return 商品数量
+     * @return SKU 条目数
      */
     int countByUserId(Long userId);
 
     /**
-     * 添加商品到购物车（已存在则增加数量）
+     * 添加商品到购物车，已存在则增加数量。
      *
      * @param cartItem 购物车项
      * @return 购物车项ID
@@ -61,34 +93,35 @@ public interface CartItemService {
     Long add(CartItem cartItem);
 
     /**
-     * 更新购物车项数量
+     * 更新购物车项数量。
      *
-     * @param id       主键ID
+     * @param id 主键ID
      * @param quantity 新数量
-     * @return 影响行数
+     * @return 最新购物车汇总
      */
-    int updateQuantity(Long id, Integer quantity);
+    CartSummaryVO updateQuantity(Long id, Integer quantity);
 
     /**
-     * 更新选中状态
+     * 批量更新选中状态，并返回最新结算金额。
      *
-     * @param ids     主键ID列表
+     * @param userId 用户ID
+     * @param ids 主键ID列表
      * @param checked 选中状态
-     * @return 影响行数
+     * @return 最新购物车汇总
      */
-    int updateChecked(List<Long> ids, Integer checked);
+    CartSummaryVO updateChecked(Long userId, List<Long> ids, Integer checked);
 
     /**
-     * 全选/取消全选
+     * 全选/取消全选，并返回最新结算金额。
      *
-     * @param userId  用户ID
+     * @param userId 用户ID
      * @param checked 选中状态
-     * @return 影响行数
+     * @return 最新购物车汇总
      */
-    int updateCheckedAll(Long userId, Integer checked);
+    CartSummaryVO updateCheckedAll(Long userId, Integer checked);
 
     /**
-     * 删除购物车项
+     * 删除购物车项。
      *
      * @param id 主键ID
      * @return 影响行数
@@ -96,7 +129,7 @@ public interface CartItemService {
     int delete(Long id);
 
     /**
-     * 批量删除购物车项
+     * 批量删除购物车项。
      *
      * @param ids 主键ID列表
      * @return 影响行数
@@ -104,7 +137,7 @@ public interface CartItemService {
     int deleteBatch(List<Long> ids);
 
     /**
-     * 清空用户购物车
+     * 清空用户购物车。
      *
      * @param userId 用户ID
      * @return 影响行数
@@ -112,7 +145,7 @@ public interface CartItemService {
     int clearByUserId(Long userId);
 
     /**
-     * 删除用户已选中的购物车项（下单后调用）
+     * 删除用户已选中的购物车项，下单后调用。
      *
      * @param userId 用户ID
      * @return 影响行数
@@ -120,7 +153,8 @@ public interface CartItemService {
     int deleteCheckedByUserId(Long userId);
 
     /**
-     * 获取用户勾选的购物车项
+     * 获取当前登录用户已选中的购物车项。
+     *
      * @return 购物车项列表
      */
     List<CartItem> listChecked();
