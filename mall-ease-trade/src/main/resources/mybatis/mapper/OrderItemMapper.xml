@@ -56,6 +56,34 @@
         ORDER BY order_id, id ASC
     </select>
 
+    <!-- 按订单批量查询列表页预览商品 -->
+    <select id="selectPreviewByOrderIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM (
+            SELECT <include refid="Base_Column_List"/>,
+                   ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY id ASC) AS rn
+            FROM trade_order_item
+            WHERE order_id IN
+            <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+                #{orderId,jdbcType=BIGINT}
+            </foreach>
+        ) preview
+        WHERE preview.rn &lt;= #{previewLimit,jdbcType=INTEGER}
+        ORDER BY preview.order_id, preview.id ASC
+    </select>
+
+    <!-- 按订单批量统计商品总件数 -->
+    <select id="sumQuantityByOrderIds" resultType="java.util.HashMap">
+        SELECT order_id AS orderId,
+               COALESCE(SUM(quantity), 0) AS totalQuantity
+        FROM trade_order_item
+        WHERE order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId,jdbcType=BIGINT}
+        </foreach>
+        GROUP BY order_id
+    </select>
+
     <!-- 插入订单商品 -->
     <insert id="insert" parameterType="com.mallease.trade.model.data.entity.OrderItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_order_item (

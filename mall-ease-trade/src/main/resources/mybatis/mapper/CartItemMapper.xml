@@ -29,7 +29,7 @@
         WHERE id = #{id,jdbcType=BIGINT}
     </select>
 
-    <!-- 根据ID列表批量查询购物车项 -->
+    <!-- 根据主键列表批量查询购物车项 -->
     <select id="selectByIds" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM trade_cart_item
@@ -48,7 +48,7 @@
         ORDER BY create_time DESC
     </select>
 
-    <!-- 鎵归噺鏍规嵁鐢ㄦ埛ID鏌ヨ璐墿杞﹀垪琛?-->
+    <!-- 根据用户ID列表批量查询购物车项 -->
     <select id="selectByUserIds" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM trade_cart_item
@@ -68,7 +68,7 @@
         WHERE user_id = #{userId,jdbcType=BIGINT}
     </select>
 
-    <!-- 根据用户ID和SKU ID查询购物车项 -->
+    <!-- 根据用户ID和 SKU ID 查询购物车项 -->
     <select id="selectByUserIdAndSkuId" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM trade_cart_item
@@ -85,7 +85,7 @@
         ORDER BY create_time DESC
     </select>
 
-    <!-- 统计用户购物车SKU条目数 -->
+    <!-- 统计用户购物车 SKU 条目数 -->
     <select id="countByUserId" parameterType="java.lang.Long" resultType="int">
         SELECT COUNT(1)
         FROM trade_cart_item
@@ -190,14 +190,14 @@
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
 
-    <!-- 累加购物车商品数量 -->
+    <!-- 增加购物车商品数量 -->
     <update id="updateQuantity">
         UPDATE trade_cart_item
         SET quantity = quantity + #{quantity,jdbcType=INTEGER}
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
 
-    <!-- 鎵归噺绱姞璐墿杞﹀晢鍝佹暟閲?-->
+    <!-- 批量增加购物车商品数量 -->
     <update id="batchIncreaseQuantity">
         UPDATE trade_cart_item
         SET quantity = CASE id

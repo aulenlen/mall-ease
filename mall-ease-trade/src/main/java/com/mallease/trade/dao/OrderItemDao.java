@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单商品 Mapper 接口
@@ -46,6 +47,24 @@ public interface OrderItemDao {
      * @return 订单商品列表
      */
     List<OrderItem> selectByOrderIds(@Param("orderIds") List<Long> orderIds);
+
+    /**
+     * 按订单ID批量查询列表页预览商品。
+     *
+     * @param orderIds      订单ID列表
+     * @param previewLimit  每个订单返回的预览商品数量上限
+     * @return 预览商品列表
+     */
+    List<OrderItem> selectPreviewByOrderIds(@Param("orderIds") List<Long> orderIds,
+                                            @Param("previewLimit") Integer previewLimit);
+
+    /**
+     * 按订单ID批量统计商品总件数。
+     *
+     * @param orderIds 订单ID列表
+     * @return 统计结果，包含 orderId 和 totalQuantity
+     */
+    List<Map<String, Object>> sumQuantityByOrderIds(@Param("orderIds") List<Long> orderIds);
 
     /**
      * 插入订单商品
