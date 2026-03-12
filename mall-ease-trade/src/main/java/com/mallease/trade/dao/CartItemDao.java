@@ -1,5 +1,6 @@
 package com.mallease.trade.dao;
 
+import com.mallease.trade.model.aggregate.CartCheckedSummary;
 import com.mallease.trade.model.data.entity.CartItem;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -7,7 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 购物车 Mapper 接口
+ * 购物车项 Mapper 接口。
  *
  * @author: Aulen
  * @create: 2026-01-27
@@ -16,7 +17,7 @@ import java.util.List;
 public interface CartItemDao {
 
     /**
-     * 根据主键查询
+     * 根据主键查询购物车项。
      *
      * @param id 主键ID
      * @return 购物车项
@@ -24,7 +25,7 @@ public interface CartItemDao {
     CartItem selectByPrimaryKey(Long id);
 
     /**
-     * 根据主键列表批量查询
+     * 根据ID列表批量查询购物车项。
      *
      * @param ids 主键ID列表
      * @return 购物车项列表
@@ -32,7 +33,7 @@ public interface CartItemDao {
     List<CartItem> selectByIds(@Param("ids") List<Long> ids);
 
     /**
-     * 根据用户ID查询购物车列表
+     * 根据用户ID查询购物车列表。
      *
      * @param userId 用户ID
      * @return 购物车项列表
@@ -40,7 +41,15 @@ public interface CartItemDao {
     List<CartItem> selectByUserId(@Param("userId") Long userId);
 
     /**
-     * 根据用户ID和SKU ID查询（用于判断是否已存在）
+     * 查询已选中商品总金额。
+     *
+     * @param userId 用户ID
+     * @return 已选中汇总
+     */
+    CartCheckedSummary selectCheckedSummaryByUserId(@Param("userId") Long userId);
+
+    /**
+     * 根据用户ID和SKU ID查询购物车项。
      *
      * @param userId 用户ID
      * @param skuId  SKU ID
@@ -49,7 +58,7 @@ public interface CartItemDao {
     CartItem selectByUserIdAndSkuId(@Param("userId") Long userId, @Param("skuId") Long skuId);
 
     /**
-     * 根据用户ID和选中状态查询
+     * 根据用户ID和选中状态查询购物车项。
      *
      * @param userId  用户ID
      * @param checked 选中状态
@@ -58,15 +67,15 @@ public interface CartItemDao {
     List<CartItem> selectByUserIdAndChecked(@Param("userId") Long userId, @Param("checked") Integer checked);
 
     /**
-     * 统计用户购物车商品数量
+     * 统计用户购物车SKU条目数。
      *
      * @param userId 用户ID
-     * @return 商品数量
+     * @return SKU条目数
      */
     int countByUserId(@Param("userId") Long userId);
 
     /**
-     * 插入记录
+     * 新增购物车项。
      *
      * @param record 购物车项
      * @return 影响行数
@@ -74,7 +83,7 @@ public interface CartItemDao {
     int insert(CartItem record);
 
     /**
-     * 选择性插入记录（只插入非空字段）
+     * 按条件新增购物车项。
      *
      * @param record 购物车项
      * @return 影响行数
@@ -82,7 +91,7 @@ public interface CartItemDao {
     int insertSelective(CartItem record);
 
     /**
-     * 批量插入
+     * 批量新增购物车项。
      *
      * @param list 购物车项列表
      * @return 影响行数
@@ -90,7 +99,7 @@ public interface CartItemDao {
     int insertBatch(@Param("list") List<CartItem> list);
 
     /**
-     * 根据主键更新（全字段）
+     * 根据主键更新购物车项。
      *
      * @param record 购物车项
      * @return 影响行数
@@ -98,7 +107,7 @@ public interface CartItemDao {
     int updateByPrimaryKey(CartItem record);
 
     /**
-     * 根据主键选择性更新（只更新非空字段）
+     * 按条件更新购物车项。
      *
      * @param record 购物车项
      * @return 影响行数
@@ -106,16 +115,16 @@ public interface CartItemDao {
     int updateByPrimaryKeySelective(CartItem record);
 
     /**
-     * 更新数量（增量更新）
+     * 累加购物车商品数量。
      *
      * @param id       主键ID
-     * @param quantity 增量数量（可为负数）
+     * @param quantity 需要累加的数量
      * @return 影响行数
      */
     int updateQuantity(@Param("id") Long id, @Param("quantity") Integer quantity);
 
     /**
-     * 批量更新选中状态
+     * 批量更新选中状态。
      *
      * @param ids     主键ID列表
      * @param checked 选中状态
@@ -124,7 +133,7 @@ public interface CartItemDao {
     int updateCheckedBatch(@Param("ids") List<Long> ids, @Param("checked") Integer checked);
 
     /**
-     * 更新用户所有购物车项的选中状态
+     * 根据用户ID更新全选状态。
      *
      * @param userId  用户ID
      * @param checked 选中状态
@@ -133,7 +142,7 @@ public interface CartItemDao {
     int updateCheckedByUserId(@Param("userId") Long userId, @Param("checked") Integer checked);
 
     /**
-     * 根据主键删除
+     * 根据主键删除购物车项。
      *
      * @param id 主键ID
      * @return 影响行数
@@ -141,7 +150,7 @@ public interface CartItemDao {
     int deleteByPrimaryKey(Long id);
 
     /**
-     * 批量删除
+     * 批量删除购物车项。
      *
      * @param ids 主键ID列表
      * @return 影响行数
@@ -149,7 +158,7 @@ public interface CartItemDao {
     int deleteBatch(@Param("ids") List<Long> ids);
 
     /**
-     * 根据用户ID删除所有购物车项
+     * 根据用户ID清空购物车。
      *
      * @param userId 用户ID
      * @return 影响行数
@@ -157,7 +166,7 @@ public interface CartItemDao {
     int deleteByUserId(@Param("userId") Long userId);
 
     /**
-     * 删除用户已选中的购物车项（下单后清理）
+     * 删除用户已选中的购物车项。
      *
      * @param userId 用户ID
      * @return 影响行数
@@ -165,8 +174,9 @@ public interface CartItemDao {
     int deleteCheckedByUserId(@Param("userId") Long userId);
 
     /**
-     * 获取用户勾选的购物车项
-     * @param userId 会员ID
+     * 查询当前用户已选中的购物车项。
+     *
+     * @param userId 用户ID
      * @return 购物车项列表
      */
     List<CartItem> listChecked(Long userId);

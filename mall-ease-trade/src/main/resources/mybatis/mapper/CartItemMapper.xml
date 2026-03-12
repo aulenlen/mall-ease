@@ -22,14 +22,14 @@
         spu_name, sku_pic, sku_attrs, price, create_time, update_time
     </sql>
 
-    <!-- 根据主键查询 -->
+    <!-- 根据主键查询购物车项 -->
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM trade_cart_item
         WHERE id = #{id,jdbcType=BIGINT}
     </select>
 
-    <!-- 根据ID列表批量查询 -->
+    <!-- 根据ID列表批量查询购物车项 -->
     <select id="selectByIds" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM trade_cart_item
@@ -48,7 +48,16 @@
         ORDER BY create_time DESC
     </select>
 
-    <!-- 根据用户ID和SKU ID查询 -->
+    <!-- 查询已选中商品总金额 -->
+    <select id="selectCheckedSummaryByUserId" parameterType="java.lang.Long"
+            resultType="com.mallease.trade.model.aggregate.CartCheckedSummary">
+        SELECT
+            COALESCE(SUM(CASE WHEN checked = 1 THEN quantity * price ELSE 0 END), 0) AS checkedAmount
+        FROM trade_cart_item
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+    </select>
+
+    <!-- 根据用户ID和SKU ID查询购物车项 -->
     <select id="selectByUserIdAndSkuId" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM trade_cart_item
@@ -56,7 +65,7 @@
           AND sku_id = #{skuId,jdbcType=BIGINT}
     </select>
 
-    <!-- 根据用户ID和选中状态查询 -->
+    <!-- 根据用户ID和选中状态查询购物车项 -->
     <select id="selectByUserIdAndChecked" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM trade_cart_item
@@ -65,14 +74,14 @@
         ORDER BY create_time DESC
     </select>
 
-    <!-- 统计用户购物车商品数量 -->
+    <!-- 统计用户购物车SKU条目数 -->
     <select id="countByUserId" parameterType="java.lang.Long" resultType="int">
-        SELECT COALESCE(SUM(quantity), 0)
+        SELECT COUNT(1)
         FROM trade_cart_item
         WHERE user_id = #{userId,jdbcType=BIGINT}
     </select>
 
-    <!-- 获取用户已选择的购物车项目 -->
+    <!-- 查询当前用户已选中的购物车项 -->
     <select id="listChecked" resultType="com.mallease.trade.model.data.entity.CartItem">
         select
         <include refid="Base_Column_List"/>
@@ -81,7 +90,7 @@
         and checked = 1
     </select>
 
-    <!-- 插入 -->
+    <!-- 新增购物车项 -->
     <insert id="insert" parameterType="com.mallease.trade.model.data.entity.CartItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_cart_item (
             user_id, sku_id, spu_id, quantity, checked,
@@ -94,7 +103,7 @@
         )
     </insert>
 
-    <!-- 选择性插入 -->
+    <!-- 按条件新增购物车项 -->
     <insert id="insertSelective" parameterType="com.mallease.trade.model.data.entity.CartItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_cart_item
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -121,7 +130,7 @@
         </trim>
     </insert>
 
-    <!-- 批量插入 -->
+    <!-- 批量新增购物车项 -->
     <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_cart_item (
             user_id, sku_id, spu_id, quantity, checked,
@@ -138,7 +147,7 @@
         </foreach>
     </insert>
 
-    <!-- 根据主键更新 -->
+    <!-- 根据主键更新购物车项 -->
     <update id="updateByPrimaryKey" parameterType="com.mallease.trade.model.data.entity.CartItem">
         UPDATE trade_cart_item
         SET user_id = #{userId,jdbcType=BIGINT},
@@ -153,7 +162,7 @@
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
 
-    <!-- 根据主键选择性更新 -->
+    <!-- 按条件更新购物车项 -->
     <update id="updateByPrimaryKeySelective" parameterType="com.mallease.trade.model.data.entity.CartItem">
         UPDATE trade_cart_item
         <set>
@@ -170,7 +179,7 @@
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
 
-    <!-- 更新数量（增量更新） -->
+    <!-- 累加购物车商品数量 -->
     <update id="updateQuantity">
         UPDATE trade_cart_item
         SET quantity = quantity + #{quantity,jdbcType=INTEGER}
@@ -187,20 +196,20 @@
         </foreach>
     </update>
 
-    <!-- 更新用户所有购物车项的选中状态 -->
+    <!-- 根据用户ID更新全选状态 -->
     <update id="updateCheckedByUserId">
         UPDATE trade_cart_item
         SET checked = #{checked,jdbcType=TINYINT}
         WHERE user_id = #{userId,jdbcType=BIGINT}
     </update>
 
-    <!-- 根据主键删除 -->
+    <!-- 根据主键删除购物车项 -->
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         DELETE FROM trade_cart_item
         WHERE id = #{id,jdbcType=BIGINT}
     </delete>
 
-    <!-- 批量删除 -->
+    <!-- 批量删除购物车项 -->
     <delete id="deleteBatch">
         DELETE FROM trade_cart_item
         WHERE id IN
@@ -209,7 +218,7 @@
         </foreach>
     </delete>
 
-    <!-- 根据用户ID删除所有购物车项 -->
+    <!-- 根据用户ID清空购物车 -->
     <delete id="deleteByUserId" parameterType="java.lang.Long">
         DELETE FROM trade_cart_item
         WHERE user_id = #{userId,jdbcType=BIGINT}
