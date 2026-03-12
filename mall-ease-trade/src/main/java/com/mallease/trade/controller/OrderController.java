@@ -8,22 +8,27 @@ import com.mallease.trade.converter.OrderConverter;
 import com.mallease.trade.model.aggregate.OrderAggregate;
 import com.mallease.trade.model.client.cmd.SubmitOrderCmd;
 import com.mallease.trade.model.client.vo.OrderConfirmVO;
+import com.mallease.trade.model.client.vo.OrderListPageVO;
 import com.mallease.trade.model.client.vo.OrderVO;
+import com.mallease.trade.model.client.vo.SubmitOrderVO;
 import com.mallease.trade.model.data.entity.Order;
 import com.mallease.trade.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * 订单控制器
- *
- * @author: Aulen
- * @create: 2026-01-30
  */
 @Tag(name = "订单管理")
 @RestController
@@ -34,7 +39,7 @@ public class OrderController {
     private final OrderService orderService;
     private final OrderConverter orderConverter;
 
-    @Operation(summary = "订单确认页", description = "根据已选中的购物车项生成结算快照，返回确认页数据")
+    @Operation(summary = "订单确认页", description = "根据当前选中的购物车商品生成确认页快照")
     @GetMapping("/portal/confirm")
     public R<OrderConfirmVO> confirm() {
         return R.success(orderService.generateSnapshot());
@@ -42,16 +47,15 @@ public class OrderController {
 
     @Operation(summary = "提交订单")
     @PostMapping("/portal/submit")
-    public R<String> submit(@Validated @RequestBody SubmitOrderCmd cmd) {
+    public R<SubmitOrderVO> submit(@Validated @RequestBody SubmitOrderCmd cmd) {
         Long userId = LoginContextUtil.getUserId();
         Order order = orderConverter.cmdToEntity(cmd);
-        String orderNo = orderService.submit(userId, order, cmd.getRequestId());
-        return R.success(orderNo);
+        return R.success(orderService.submit(userId, order, cmd.getRequestId()));
     }
 
     @Operation(summary = "我的订单列表")
     @GetMapping("/portal/list")
-    public R<Page<OrderVO>> portalList(
+    public R<OrderListPageVO> portalList(
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
@@ -59,12 +63,14 @@ public class OrderController {
         Page<OrderAggregate> aggregatePage = orderService.listByUserId(userId, status, pageNum, pageSize);
         List<OrderVO> voList = orderConverter.aggregatesToVOs(aggregatePage.getList());
 
-        Page<OrderVO> result = new Page<>();
-        result.setPageNum(aggregatePage.getPageNum());
-        result.setPageSize(aggregatePage.getPageSize());
-        result.setTotal(aggregatePage.getTotal());
-        result.setTotalPage(aggregatePage.getTotalPage());
-        result.setList(voList);
+        OrderListPageVO result = OrderListPageVO.builder()
+                .pageNum(aggregatePage.getPageNum())
+                .pageSize(aggregatePage.getPageSize())
+                .total(aggregatePage.getTotal())
+                .totalPage(aggregatePage.getTotalPage())
+                .list(voList)
+                .serverTime(LocalDateTime.now())
+                .build();
         return R.success(result);
     }
 
