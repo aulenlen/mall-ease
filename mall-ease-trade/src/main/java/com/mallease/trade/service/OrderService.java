@@ -24,9 +24,9 @@ import java.util.Map;
 public interface OrderService {
 
     /**
-     * 生成结算快照
+     * 根据当前用户已勾选购物车项生成结算快照。
      */
-    OrderConfirmVO generateSnapshot(Long userId, List<Long> cartItemIds);
+    OrderConfirmVO generateSnapshot();
 
     /**
      * 提交订单

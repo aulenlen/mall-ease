@@ -9,6 +9,7 @@ import com.mallease.common.enums.OrderStatus;
 import com.mallease.common.enums.StockReleaseStatus;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.RedisService;
+import com.mallease.common.util.LoginContextUtil;
 import com.mallease.common.util.NoGeneratorUtil;
 import com.mallease.trade.dao.OrderDao;
 import com.mallease.trade.dao.OrderItemDao;
@@ -54,18 +55,11 @@ public class OrderServiceImpl implements OrderService {
     private static final String SNAPSHOT_KEY_PREFIX = "order:snapshot:";
 
     @Override
-    public OrderConfirmVO generateSnapshot(Long userId, List<Long> cartItemIds) {
-        if (cartItemIds == null || cartItemIds.isEmpty()) {
-            throw new ApiException("请选择要结算的商品");
-        }
-
-        List<CartItem> cartItems = cartItemService.listByIds(cartItemIds);
-        List<CartItem> userItems = cartItems.stream()
-                .filter(item -> item.getUserId().equals(userId))
-                .toList();
-
+    public OrderConfirmVO generateSnapshot() {
+        Long userId = LoginContextUtil.getUserId();
+        List<CartItem> userItems = cartItemService.listCheckedByUserId(userId);
         if (userItems.isEmpty()) {
-            throw new ApiException("购物车商品不存在或已失效");
+            throw new ApiException("请选择要结算的商品");
         }
 
         String requestId = UUID.randomUUID().toString().replace("-", "");

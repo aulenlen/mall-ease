@@ -34,11 +34,10 @@ public class OrderController {
     private final OrderService orderService;
     private final OrderConverter orderConverter;
 
-    @Operation(summary = "订单确认页", description = "生成结算快照，返回确认页数据")
+    @Operation(summary = "订单确认页", description = "根据已选中的购物车项生成结算快照，返回确认页数据")
     @GetMapping("/portal/confirm")
-    public R<OrderConfirmVO> confirm(@RequestParam List<Long> cartItemIds) {
-        Long userId = LoginContextUtil.getUserId();
-        return R.success(orderService.generateSnapshot(userId, cartItemIds));
+    public R<OrderConfirmVO> confirm() {
+        return R.success(orderService.generateSnapshot());
     }
 
     @Operation(summary = "提交订单")
