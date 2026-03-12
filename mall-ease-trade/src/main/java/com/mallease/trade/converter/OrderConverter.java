@@ -10,8 +10,11 @@ import com.mallease.trade.model.data.entity.OrderItem;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+
+import static com.mallease.trade.constant.OrderConstant.PAYMENT_TIMEOUT_MINUTES;
 
 /**
  * 订单对象转换器
@@ -33,6 +36,7 @@ public interface OrderConverter {
     @Mapping(target = "freightAmount", ignore = true)
     @Mapping(target = "discountAmount", ignore = true)
     @Mapping(target = "payAmount", ignore = true)
+    @Mapping(target = "payExpireTime", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "stockReleaseStatus", ignore = true)
     @Mapping(target = "createTime", ignore = true)
@@ -56,7 +60,9 @@ public interface OrderConverter {
         if (aggregate == null || aggregate.getOrder() == null) {
             return null;
         }
+
         Order order = aggregate.getOrder();
+        Integer totalQuantity = resolveTotalQuantity(aggregate);
         List<OrderItemVO> itemVOs = aggregate.getItems() == null
                 ? Collections.emptyList()
                 : itemsToItemVOs(aggregate.getItems());
@@ -74,10 +80,12 @@ public interface OrderConverter {
                 .freightAmount(order.getFreightAmount())
                 .discountAmount(order.getDiscountAmount())
                 .payAmount(order.getPayAmount())
+                .payExpireTime(resolvePayExpireTime(order))
                 .status(order.getStatus())
                 .statusDesc(OrderStatus.getDescriptionByCode(order.getStatus()))
                 .remark(order.getRemark())
                 .createTime(order.getCreateTime())
+                .totalQuantity(totalQuantity)
                 .items(itemVOs)
                 .build();
     }
@@ -90,5 +98,28 @@ public interface OrderConverter {
             return Collections.emptyList();
         }
         return aggregates.stream().map(this::aggregateToVO).toList();
+    }
+
+    private Integer resolveTotalQuantity(OrderAggregate aggregate) {
+        if (aggregate.getTotalQuantity() != null) {
+            return aggregate.getTotalQuantity();
+        }
+        if (aggregate.getItems() == null || aggregate.getItems().isEmpty()) {
+            return 0;
+        }
+        return aggregate.getItems().stream()
+                .map(OrderItem::getQuantity)
+                .filter(quantity -> quantity != null)
+                .reduce(0, Integer::sum);
+    }
+
+    private LocalDateTime resolvePayExpireTime(Order order) {
+        if (order.getPayExpireTime() != null) {
+            return order.getPayExpireTime();
+        }
+        if (order.getCreateTime() != null) {
+            return order.getCreateTime().plusMinutes(PAYMENT_TIMEOUT_MINUTES);
+        }
+        return null;
     }
 }
