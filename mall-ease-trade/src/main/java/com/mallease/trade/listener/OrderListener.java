@@ -21,6 +21,7 @@ public class OrderListener {
     public void handleOrderCancelled(OrderCancelledEvent event) {
 
         List<String> orderNos = event.getOrderNos();
+        boolean restoreCart = event.isRestoreCart();
         Map<String, StockReleaseStatus> resultMap = orderService.tryReleaseStock(orderNos);
 
         List<String> released = new ArrayList<>();
@@ -34,7 +35,7 @@ public class OrderListener {
         });
 
         if (!released.isEmpty()) {
-            orderService.orderReleaseSuccess(released);
+            orderService.orderReleaseSuccess(released, restoreCart);
         }
         if (!failed.isEmpty()) {
             orderService.orderReleaseFailed(failed);

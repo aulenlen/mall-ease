@@ -51,7 +51,7 @@ public interface OrderService {
     /**
      * 取消订单（用户主动取消）
      */
-    boolean cancel(String orderNo, Long userId);
+    boolean cancel(String orderNo, Long userId, boolean restoreCart);
 
     /**
      * 批量取消订单（定时任务/内部调用）
@@ -77,7 +77,7 @@ public interface OrderService {
 
     Map<String, StockReleaseStatus> tryReleaseStock(List<String> orderNos);
 
-    int orderReleaseSuccess(List<String> released);
+    int orderReleaseSuccess(List<String> released, boolean restoreCart);
 
     int orderReleaseFailed(List<String> failed);
 

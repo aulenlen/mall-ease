@@ -41,6 +41,14 @@ public interface CartItemDao {
     List<CartItem> selectByUserId(@Param("userId") Long userId);
 
     /**
+     * 鎵归噺鏍规嵁鐢ㄦ埛ID鏌ヨ璐墿杞﹂」銆?
+     *
+     * @param userIds 鐢ㄦ埛ID鍒楄〃
+     * @return 璐墿杞﹂」鍒楄〃
+     */
+    List<CartItem> selectByUserIds(@Param("userIds") List<Long> userIds);
+
+    /**
      * 查询已选中商品总金额。
      *
      * @param userId 用户ID
@@ -122,6 +130,14 @@ public interface CartItemDao {
      * @return 影响行数
      */
     int updateQuantity(@Param("id") Long id, @Param("quantity") Integer quantity);
+
+    /**
+     * 鎵归噺绱姞璐墿杞﹀晢鍝佹暟閲忋€?
+     *
+     * @param list 闇€瑕佺疮鍔犳暟閲忕殑璐墿杞﹂」鍒楄〃
+     * @return 褰卞搷琛屾暟
+     */
+    int batchIncreaseQuantity(@Param("list") List<CartItem> list);
 
     /**
      * 批量更新选中状态。

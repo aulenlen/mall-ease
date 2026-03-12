@@ -48,6 +48,17 @@
         ORDER BY create_time DESC
     </select>
 
+    <!-- 鎵归噺鏍规嵁鐢ㄦ埛ID鏌ヨ璐墿杞﹀垪琛?-->
+    <select id="selectByUserIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_cart_item
+        WHERE user_id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId,jdbcType=BIGINT}
+        </foreach>
+        ORDER BY user_id ASC, create_time DESC
+    </select>
+
     <!-- 查询已选中商品总金额 -->
     <select id="selectCheckedSummaryByUserId" parameterType="java.lang.Long"
             resultType="com.mallease.trade.model.aggregate.CartCheckedSummary">
@@ -184,6 +195,20 @@
         UPDATE trade_cart_item
         SET quantity = quantity + #{quantity,jdbcType=INTEGER}
         WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <!-- 鎵归噺绱姞璐墿杞﹀晢鍝佹暟閲?-->
+    <update id="batchIncreaseQuantity">
+        UPDATE trade_cart_item
+        SET quantity = CASE id
+        <foreach collection="list" item="item">
+            WHEN #{item.id,jdbcType=BIGINT} THEN quantity + #{item.quantity,jdbcType=INTEGER}
+        </foreach>
+        END
+        WHERE id IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.id,jdbcType=BIGINT}
+        </foreach>
     </update>
 
     <!-- 批量更新选中状态 -->

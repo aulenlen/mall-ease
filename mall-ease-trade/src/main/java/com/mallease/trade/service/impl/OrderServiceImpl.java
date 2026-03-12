@@ -11,6 +11,7 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.RedisService;
 import com.mallease.common.util.LoginContextUtil;
 import com.mallease.common.util.NoGeneratorUtil;
+import com.mallease.trade.dao.CartItemDao;
 import com.mallease.trade.dao.OrderDao;
 import com.mallease.trade.dao.OrderItemDao;
 import com.mallease.trade.evnent.OrderCancelledEvent;
@@ -45,6 +46,7 @@ import static com.mallease.trade.constant.OrderConstant.SNAPSHOT_EXPIRE_SECONDS;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    private final CartItemDao cartItemDao;
     private final OrderDao orderDao;
     private final OrderItemDao orderItemDao;
     private final CartItemService cartItemService;
@@ -125,8 +127,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public int orderReleaseSuccess(List<String> released) {
-        return orderDao.updateStockReleaseStatusByOrderNos(released, StockReleaseStatus.RELEASED.getCode());
+    public int orderReleaseSuccess(List<String> released, boolean restoreCart) {
+        int updated = orderDao.updateStockReleaseStatusByOrderNos(released, StockReleaseStatus.RELEASED.getCode());
+        if (restoreCart) {
+            refillCartItems(released);
+        }
+        return updated;
     }
 
     @Override
@@ -217,6 +223,7 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderNo = create(aggregate);
+        removeSubmittedCartItems(userId, snapshotItems);
 
         deleteSnapshot(requestId);
 
@@ -277,15 +284,19 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean cancel(String orderNo, Long userId) {
+    public boolean cancel(String orderNo, Long userId, boolean restoreCart) {
         validateAndGetOrder(orderNo, userId);
-        cancelByOrderNos(List.of(orderNo));
+        cancelByOrderNos(List.of(orderNo), restoreCart);
         return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelByOrderNos(List<String> orderNos) {
+        cancelByOrderNos(orderNos, false);
+    }
+
+    private void cancelByOrderNos(List<String> orderNos, boolean restoreCart) {
         if (orderNos == null || orderNos.isEmpty()) {
             return;
         }
@@ -296,7 +307,7 @@ public class OrderServiceImpl implements OrderService {
                 StockReleaseStatus.PENDING_RELEASE.getCode()
         );
 
-        eventPublisher.publishEvent(new OrderCancelledEvent(orderNos));
+        eventPublisher.publishEvent(new OrderCancelledEvent(orderNos, restoreCart));
 
         log.info("批量取消订单完成，orderNos={}", orderNos);
     }
@@ -314,6 +325,138 @@ public class OrderServiceImpl implements OrderService {
             throw new ApiException("无权操作此订单");
         }
         return order;
+    }
+
+    /**
+     * 未支付订单取消后，根据订单项回填购物车。
+     */
+    private void refillCartItems(List<String> orderNos) {
+        if (orderNos == null || orderNos.isEmpty()) {
+            return;
+        }
+        List<Order> orders = orderDao.selectByOrderNos(orderNos);
+        if (orders == null || orders.isEmpty()) {
+            return;
+        }
+
+        Map<String, Order> orderMap = orders.stream()
+                .filter(order -> order.getOrderNo() != null)
+                .collect(Collectors.toMap(Order::getOrderNo, order -> order, (left, right) -> left));
+        if (orderMap.isEmpty()) {
+            return;
+        }
+
+        List<Long> orderIds = orders.stream()
+                .map(Order::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (orderIds.isEmpty()) {
+            return;
+        }
+
+        List<OrderItem> orderItems = orderItemDao.selectByOrderIds(orderIds);
+        if (orderItems == null || orderItems.isEmpty()) {
+            return;
+        }
+
+        List<Long> userIds = orders.stream()
+                .map(Order::getUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (userIds.isEmpty()) {
+            return;
+        }
+
+        Map<String, CartItem> existingCartMap = cartItemDao.selectByUserIds(userIds).stream()
+                .collect(Collectors.toMap(
+                        item -> buildCartKey(item.getUserId(), item.getSkuId()),
+                        item -> item,
+                        (left, right) -> left
+                ));
+
+        Map<String, CartItem> insertMap = new LinkedHashMap<>();
+        Map<Long, Integer> increaseQuantityMap = new LinkedHashMap<>();
+
+        for (OrderItem orderItem : orderItems) {
+            Order order = orderMap.get(orderItem.getOrderNo());
+            if (order == null || order.getUserId() == null || orderItem.getSkuId() == null) {
+                continue;
+            }
+
+            String cartKey = buildCartKey(order.getUserId(), orderItem.getSkuId());
+            CartItem existing = existingCartMap.get(cartKey);
+            if (existing != null && existing.getId() != null) {
+                increaseQuantityMap.merge(existing.getId(), orderItem.getQuantity(), Integer::sum);
+                continue;
+            }
+
+            CartItem pendingInsert = insertMap.get(cartKey);
+            if (pendingInsert != null) {
+                pendingInsert.setQuantity(pendingInsert.getQuantity() + orderItem.getQuantity());
+                continue;
+            }
+
+            insertMap.put(cartKey, buildRefillCartItem(order, orderItem));
+        }
+
+        if (!insertMap.isEmpty()) {
+            cartItemDao.insertBatch(new ArrayList<>(insertMap.values()));
+        }
+
+        if (!increaseQuantityMap.isEmpty()) {
+            List<CartItem> updateList = increaseQuantityMap.entrySet().stream()
+                    .map(entry -> {
+                        CartItem cartItem = new CartItem();
+                        cartItem.setId(entry.getKey());
+                        cartItem.setQuantity(entry.getValue());
+                        return cartItem;
+                    })
+                    .toList();
+            cartItemDao.batchIncreaseQuantity(updateList);
+        }
+    }
+
+    private CartItem buildRefillCartItem(Order order, OrderItem orderItem) {
+        CartItem cartItem = new CartItem();
+        cartItem.setUserId(order.getUserId());
+        cartItem.setSpuId(orderItem.getSpuId());
+        cartItem.setSkuId(orderItem.getSkuId());
+        cartItem.setQuantity(orderItem.getQuantity());
+        cartItem.setChecked(1);
+        cartItem.setSpuName(orderItem.getSpuName());
+        cartItem.setSkuPic(orderItem.getSkuPic());
+        cartItem.setSkuAttrs(orderItem.getSkuAttrs());
+        cartItem.setPrice(orderItem.getPrice());
+        return cartItem;
+    }
+
+    private String buildCartKey(Long userId, Long skuId) {
+        return userId + "_" + skuId;
+    }
+
+    /**
+     * 仅删除当前快照中已下单的购物车项，避免误删其他新勾选商品。
+     */
+    private void removeSubmittedCartItems(Long userId, List<OrderItemVO> snapshotItems) {
+        if (snapshotItems == null || snapshotItems.isEmpty()) {
+            return;
+        }
+        Set<Long> submittedSkuIds = snapshotItems.stream()
+                .map(OrderItemVO::getSkuId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (submittedSkuIds.isEmpty()) {
+            return;
+        }
+        List<Long> deleteIds = cartItemService.listByUserId(userId).stream()
+                .filter(item -> submittedSkuIds.contains(item.getSkuId()))
+                .map(CartItem::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (!deleteIds.isEmpty()) {
+            cartItemService.deleteBatch(deleteIds);
+        }
     }
 
     /**

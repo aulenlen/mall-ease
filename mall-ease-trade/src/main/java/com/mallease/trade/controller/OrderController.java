@@ -84,8 +84,9 @@ public class OrderController {
 
     @Operation(summary = "取消订单")
     @PostMapping("/portal/cancel")
-    public R<Boolean> portalCancel(@RequestParam String orderNo) {
+    public R<Boolean> portalCancel(@RequestParam String orderNo,
+                                   @RequestParam(defaultValue = "0") Integer restoreCart) {
         Long userId = LoginContextUtil.getUserId();
-        return R.success(orderService.cancel(orderNo, userId));
+        return R.success(orderService.cancel(orderNo, userId, restoreCart != null && restoreCart == 1));
     }
 }

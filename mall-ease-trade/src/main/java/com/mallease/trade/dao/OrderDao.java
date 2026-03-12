@@ -37,6 +37,14 @@ public interface OrderDao {
     Order selectByOrderNo(@Param("orderNo") String orderNo);
 
     /**
+     * 鎵归噺鏍规嵁璁㈠崟缂栧彿鏌ヨ
+     *
+     * @param orderNos 璁㈠崟缂栧彿鍒楄〃
+     * @return 璁㈠崟鍒楄〃
+     */
+    List<Order> selectByOrderNos(@Param("orderNos") List<String> orderNos);
+
+    /**
      * 根据幂等请求ID查询（防重复提交）
      *
      * @param requestId 幂等请求ID

@@ -45,6 +45,16 @@
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
     </select>
 
+    <!-- 鎵归噺鏍规嵁璁㈠崟缂栧彿鏌ヨ -->
+    <select id="selectByOrderNos" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM trade_order
+        WHERE order_no IN
+        <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
+            #{orderNo,jdbcType=VARCHAR}
+        </foreach>
+    </select>
+
     <!-- 根据幂等请求ID查询 -->
     <select id="selectByRequestId" parameterType="java.lang.String" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
