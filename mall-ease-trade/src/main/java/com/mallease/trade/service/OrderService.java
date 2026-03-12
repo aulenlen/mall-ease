@@ -7,6 +7,7 @@ import com.mallease.trade.model.client.query.OrderQuery;
 import com.mallease.trade.model.client.vo.OrderConfirmVO;
 import com.mallease.trade.model.client.vo.OrderStatusDistributionVO;
 import com.mallease.trade.model.client.vo.OrderStatsTrendVO;
+import com.mallease.trade.model.client.vo.SubmitOrderVO;
 import com.mallease.trade.model.data.entity.Order;
 import com.mallease.trade.model.data.entity.OrderItem;
 import jakarta.validation.constraints.NotBlank;
@@ -31,7 +32,7 @@ public interface OrderService {
     /**
      * 提交订单
      */
-    String submit(Long userId, Order order, String requestId);
+    SubmitOrderVO submit(Long userId, Order order, String requestId);
 
     /**
      * 创建订单（内部使用）

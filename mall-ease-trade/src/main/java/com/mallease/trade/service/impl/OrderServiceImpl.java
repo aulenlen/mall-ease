@@ -20,8 +20,9 @@ import com.mallease.trade.model.aggregate.OrderAggregate;
 import com.mallease.trade.model.client.query.OrderQuery;
 import com.mallease.trade.model.client.vo.OrderConfirmVO;
 import com.mallease.trade.model.client.vo.OrderItemVO;
-import com.mallease.trade.model.client.vo.OrderStatusDistributionVO;
 import com.mallease.trade.model.client.vo.OrderStatsTrendVO;
+import com.mallease.trade.model.client.vo.OrderStatusDistributionVO;
+import com.mallease.trade.model.client.vo.SubmitOrderVO;
 import com.mallease.trade.model.data.entity.CartItem;
 import com.mallease.trade.model.data.entity.Order;
 import com.mallease.trade.model.data.entity.OrderItem;
@@ -35,7 +36,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.mallease.trade.constant.OrderConstant.PAYMENT_TIMEOUT_MINUTES;
@@ -55,6 +65,7 @@ public class OrderServiceImpl implements OrderService {
     private final ApplicationEventPublisher eventPublisher;
 
     private static final String SNAPSHOT_KEY_PREFIX = "order:snapshot:";
+    private static final int ORDER_LIST_PREVIEW_LIMIT = 2;
 
     @Override
     public OrderConfirmVO generateSnapshot() {
@@ -65,7 +76,6 @@ public class OrderServiceImpl implements OrderService {
         }
 
         String requestId = UUID.randomUUID().toString().replace("-", "");
-
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItemVO> items = new ArrayList<>();
 
@@ -97,29 +107,25 @@ public class OrderServiceImpl implements OrderService {
                 .createTime(LocalDateTime.now())
                 .build();
 
-        String key = SNAPSHOT_KEY_PREFIX + requestId;
-        redisService.set(key, snapshot, SNAPSHOT_EXPIRE_SECONDS);
-
+        redisService.set(SNAPSHOT_KEY_PREFIX + requestId, snapshot, SNAPSHOT_EXPIRE_SECONDS);
         return snapshot;
     }
 
     @Override
     public OrderConfirmVO getSnapshot(String requestId) {
-        String key = SNAPSHOT_KEY_PREFIX + requestId;
-        return (OrderConfirmVO) redisService.get(key);
+        return (OrderConfirmVO) redisService.get(SNAPSHOT_KEY_PREFIX + requestId);
     }
 
     @Override
     public void deleteSnapshot(String requestId) {
-        String key = SNAPSHOT_KEY_PREFIX + requestId;
-        redisService.del(key);
+        redisService.del(SNAPSHOT_KEY_PREFIX + requestId);
     }
 
     @Override
     public List<Order> listNeedProcess() {
         return orderDao.listNeedProcess(
                 OrderStatus.PENDING_PAYMENT.getCode(),
-                LocalDateTime.now().minusMinutes(PAYMENT_TIMEOUT_MINUTES),
+                LocalDateTime.now(),
                 OrderStatus.CANCELLED.getCode(),
                 StockReleaseStatus.PENDING_RELEASE.getCode(),
                 StockReleaseStatus.RELEASE_FAILED.getCode()
@@ -147,20 +153,16 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public int updateStatus(String orderNo, int status) {
-
         return orderDao.updateStatusByOrderNo(orderNo, status);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String submit(Long userId, Order order, String requestId) {
-
+    public SubmitOrderVO submit(Long userId, Order order, String requestId) {
         OrderConfirmVO snapshot = getSnapshot(requestId);
-
         if (snapshot == null) {
             throw new ApiException("订单已过期，请重新结算");
         }
-
         if (!snapshot.getUserId().equals(userId)) {
             throw new ApiException("非法请求");
         }
@@ -168,7 +170,7 @@ public class OrderServiceImpl implements OrderService {
         Order existOrder = orderDao.selectByRequestId(requestId);
         if (existOrder != null) {
             log.info("订单已存在，返回已有订单号: requestId={}, orderNo={}", requestId, existOrder.getOrderNo());
-            return existOrder.getOrderNo();
+            return buildSubmitOrderVO(existOrder);
         }
 
         List<OrderItemVO> snapshotItems = snapshot.getItems();
@@ -183,13 +185,13 @@ public class OrderServiceImpl implements OrderService {
                 ));
 
         String orderNo = NoGeneratorUtil.generate(userId);
+        LocalDateTime payExpireTime = LocalDateTime.now().plusMinutes(PAYMENT_TIMEOUT_MINUTES);
 
         R<Void> lockResult = productFeignClient.lockStock(StockLockDTO.builder()
                 .orderNo(orderNo)
                 .spuSkuQuantityMap(spuSkuQuantityMap)
-                .expireTime(LocalDateTime.now().plusMinutes(PAYMENT_TIMEOUT_MINUTES))
+                .expireTime(payExpireTime)
                 .build());
-
         if (!lockResult.isSuccess()) {
             throw new ApiException(lockResult.getMessage());
         }
@@ -201,6 +203,7 @@ public class OrderServiceImpl implements OrderService {
         order.setFreightAmount(snapshot.getFreightAmount());
         order.setDiscountAmount(snapshot.getDiscountAmount());
         order.setPayAmount(snapshot.getPayAmount());
+        order.setPayExpireTime(payExpireTime);
         order.setStatus(OrderStatus.PENDING_PAYMENT.getCode());
         order.setStockReleaseStatus(StockReleaseStatus.NOT_TRIGGERED.getCode());
 
@@ -222,14 +225,12 @@ public class OrderServiceImpl implements OrderService {
                 .items(orderItems)
                 .build();
 
-        orderNo = create(aggregate);
+        create(aggregate);
         removeSubmittedCartItems(userId, snapshotItems);
-
         deleteSnapshot(requestId);
 
         log.info("订单创建成功, requestId={}, orderNo={}, userId={}", requestId, orderNo, userId);
-
-        return orderNo;
+        return buildSubmitOrderVO(order);
     }
 
     @Override
@@ -239,16 +240,14 @@ public class OrderServiceImpl implements OrderService {
         List<OrderItem> orderItems = aggregate.getItems();
 
         if (orderItems == null || orderItems.isEmpty()) {
-            throw new ApiException("未选择商品！");
+            throw new ApiException("未选择商品");
         }
 
         orderDao.insert(order);
-
         orderItems.forEach(item -> {
             item.setOrderId(order.getId());
             item.setOrderNo(order.getOrderNo());
         });
-
         orderItemDao.insertBatch(orderItems);
 
         return order.getOrderNo();
@@ -258,7 +257,11 @@ public class OrderServiceImpl implements OrderService {
     public OrderAggregate getByOrderNo(String orderNo) {
         Order order = orderDao.selectByOrderNo(orderNo);
         List<OrderItem> orderItems = orderItemDao.selectByOrderNo(orderNo);
-        return OrderAggregate.builder().order(order).items(orderItems).build();
+        return OrderAggregate.builder()
+                .order(order)
+                .items(orderItems)
+                .totalQuantity(calculateTotalQuantity(orderItems))
+                .build();
     }
 
     @Override
@@ -270,15 +273,18 @@ public class OrderServiceImpl implements OrderService {
         }
 
         List<Long> orderIds = orders.stream().map(Order::getId).toList();
-        List<OrderItem> orderItems = orderItemDao.selectByOrderIds(orderIds);
-        Map<Long, List<OrderItem>> itemsMap = orderItems.stream()
+        List<OrderItem> previewItems = orderItemDao.selectPreviewByOrderIds(orderIds, ORDER_LIST_PREVIEW_LIMIT);
+        Map<Long, List<OrderItem>> itemsMap = previewItems.stream()
                 .collect(Collectors.groupingBy(OrderItem::getOrderId));
+        Map<Long, Integer> totalQuantityMap = buildOrderQuantityMap(orderItemDao.sumQuantityByOrderIds(orderIds));
 
-        List<OrderAggregate> aggregates = orders.stream().map(order -> OrderAggregate.builder()
-                .order(order)
-                .items(itemsMap.get(order.getId()))
-                .build()).toList();
-
+        List<OrderAggregate> aggregates = orders.stream()
+                .map(item -> OrderAggregate.builder()
+                        .order(item)
+                        .items(itemsMap.getOrDefault(item.getId(), Collections.emptyList()))
+                        .totalQuantity(totalQuantityMap.getOrDefault(item.getId(), 0))
+                        .build())
+                .toList();
         return PageUtils.buildPage(orders, aggregates);
     }
 
@@ -308,14 +314,9 @@ public class OrderServiceImpl implements OrderService {
         );
 
         eventPublisher.publishEvent(new OrderCancelledEvent(orderNos, restoreCart));
-
         log.info("批量取消订单完成，orderNos={}", orderNos);
     }
 
-
-    /**
-     * 校验并获取订单
-     */
     private Order validateAndGetOrder(String orderNo, Long userId) {
         Order order = orderDao.selectByConditions(userId, orderNo, OrderStatus.PENDING_PAYMENT.getCode());
         if (order == null) {
@@ -327,9 +328,6 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-    /**
-     * 未支付订单取消后，根据订单项回填购物车。
-     */
     private void refillCartItems(List<String> orderNos) {
         if (orderNos == null || orderNos.isEmpty()) {
             return;
@@ -340,8 +338,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Map<String, Order> orderMap = orders.stream()
-                .filter(order -> order.getOrderNo() != null)
-                .collect(Collectors.toMap(Order::getOrderNo, order -> order, (left, right) -> left));
+                .filter(item -> item.getOrderNo() != null)
+                .collect(Collectors.toMap(Order::getOrderNo, item -> item, (left, right) -> left));
         if (orderMap.isEmpty()) {
             return;
         }
@@ -435,9 +433,6 @@ public class OrderServiceImpl implements OrderService {
         return userId + "_" + skuId;
     }
 
-    /**
-     * 仅删除当前快照中已下单的购物车项，避免误删其他新勾选商品。
-     */
     private void removeSubmittedCartItems(Long userId, List<OrderItemVO> snapshotItems) {
         if (snapshotItems == null || snapshotItems.isEmpty()) {
             return;
@@ -449,6 +444,7 @@ public class OrderServiceImpl implements OrderService {
         if (submittedSkuIds.isEmpty()) {
             return;
         }
+
         List<Long> deleteIds = cartItemService.listByUserId(userId).stream()
                 .filter(item -> submittedSkuIds.contains(item.getSkuId()))
                 .map(CartItem::getId)
@@ -459,9 +455,27 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    /**
-     * 尝试释放库存
-     */
+    private SubmitOrderVO buildSubmitOrderVO(Order order) {
+        return SubmitOrderVO.builder()
+                .orderNo(order.getOrderNo())
+                .payAmount(order.getPayAmount())
+                .payExpireTime(resolvePayExpireTime(order))
+                .orderStatus(order.getStatus())
+                .serverTime(LocalDateTime.now())
+                .build();
+    }
+
+    private LocalDateTime resolvePayExpireTime(Order order) {
+        if (order.getPayExpireTime() != null) {
+            return order.getPayExpireTime();
+        }
+        if (order.getCreateTime() != null) {
+            return order.getCreateTime().plusMinutes(PAYMENT_TIMEOUT_MINUTES);
+        }
+        return LocalDateTime.now().plusMinutes(PAYMENT_TIMEOUT_MINUTES);
+    }
+
+    @Override
     public Map<String, StockReleaseStatus> tryReleaseStock(List<String> orderNos) {
         Map<String, StockReleaseStatus> resultMap = new HashMap<>();
         try {
@@ -469,7 +483,9 @@ public class OrderServiceImpl implements OrderService {
 
             Set<String> failedSet;
             if (r.isSuccess()) {
-                failedSet = (r.getData() != null && !r.getData().isEmpty()) ? new HashSet<>(r.getData()) : Collections.emptySet();
+                failedSet = (r.getData() != null && !r.getData().isEmpty())
+                        ? new HashSet<>(r.getData())
+                        : Collections.emptySet();
             } else {
                 failedSet = new HashSet<>(orderNos);
             }
@@ -492,8 +508,6 @@ public class OrderServiceImpl implements OrderService {
         return resultMap;
     }
 
-    // ==================== 管理端方法 ====================
-
     @Override
     public Order findByOrderNo(String orderNo) {
         return orderDao.selectByOrderNo(orderNo);
@@ -515,6 +529,35 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<OrderItem> listItemsByOrderNo(String orderNo) {
         return orderItemDao.selectByOrderNo(orderNo);
+    }
+
+    private Map<Long, Integer> buildOrderQuantityMap(List<Map<String, Object>> quantityStats) {
+        if (quantityStats == null || quantityStats.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Integer> result = new HashMap<>(quantityStats.size());
+        for (Map<String, Object> stat : quantityStats) {
+            if (stat == null) {
+                continue;
+            }
+            Number orderId = (Number) stat.get("orderId");
+            Number totalQuantity = (Number) stat.get("totalQuantity");
+            if (orderId == null) {
+                continue;
+            }
+            result.put(orderId.longValue(), totalQuantity == null ? 0 : totalQuantity.intValue());
+        }
+        return result;
+    }
+
+    private Integer calculateTotalQuantity(List<OrderItem> orderItems) {
+        if (orderItems == null || orderItems.isEmpty()) {
+            return 0;
+        }
+        return orderItems.stream()
+                .map(OrderItem::getQuantity)
+                .filter(Objects::nonNull)
+                .reduce(0, Integer::sum);
     }
 
     @Override
