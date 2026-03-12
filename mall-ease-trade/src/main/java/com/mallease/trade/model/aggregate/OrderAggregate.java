@@ -34,6 +34,11 @@ public class OrderAggregate {
     private List<OrderItem> items;
 
     /**
+     * 订单商品总件数（sum(quantity)）
+     */
+    private Integer totalQuantity;
+
+    /**
      * 判断是否为创建操作
      */
     public boolean isCreate() {

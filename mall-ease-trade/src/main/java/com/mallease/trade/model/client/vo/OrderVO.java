@@ -29,9 +29,6 @@ public class OrderVO {
     @Schema(description = "订单编号")
     private String orderNo;
 
-    @Schema(description = "用户ID")
-    private Long userId;
-
     @Schema(description = "收货人姓名")
     private String receiverName;
 
@@ -62,7 +59,10 @@ public class OrderVO {
     @Schema(description = "应付金额")
     private BigDecimal payAmount;
 
-    @Schema(description = "订单状态: 1-待发货 2-待收货 3-已完成 4-已取消")
+    @Schema(description = "订单支付截止时间")
+    private LocalDateTime payExpireTime;
+
+    @Schema(description = "订单状态：1-待发货 2-待收货 3-已完成 4-已取消 5-待支付 6-已支付")
     private Integer status;
 
     @Schema(description = "订单状态描述")
@@ -73,6 +73,9 @@ public class OrderVO {
 
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
+
+    @Schema(description = "商品总件数")
+    private Integer totalQuantity;
 
     @Schema(description = "订单商品列表")
     private List<OrderItemVO> items;
