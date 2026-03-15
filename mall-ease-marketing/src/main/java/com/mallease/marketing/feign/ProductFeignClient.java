@@ -2,6 +2,7 @@ package com.mallease.marketing.feign;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SkuSimpleDTO;
+import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,4 +26,13 @@ public interface ProductFeignClient {
      */
     @PostMapping("/product/sku/internal/listSimpleByIds")
     R<List<SkuSimpleDTO>> listSkuSimpleByIds(@RequestBody List<Long> skuIds);
+
+    /**
+     * 在候选SPU范围内匹配商品ID
+     *
+     * @param query 匹配条件
+     * @return 匹配成功的SPU ID列表
+     */
+    @PostMapping("/product/spu/internal/matchIds")
+    R<List<Long>> matchSpuIds(@RequestBody SpuMatchQueryDTO query);
 }

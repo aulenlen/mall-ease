@@ -18,11 +18,6 @@ public class FlashSession {
     private Long id;
 
     /**
-     * 所属活动ID
-     */
-    private Long flashActivityId;
-
-    /**
      * 场次名称
      */
     private String name;

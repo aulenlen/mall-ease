@@ -4,7 +4,6 @@ import com.mallease.marketing.model.data.entity.FlashSession;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,6 +32,11 @@ public interface FlashSessionDao {
     FlashSession selectByPrimaryKey(Long id);
 
     /**
+     * 根据主键列表批量查询
+     */
+    List<FlashSession> selectByIds(@Param("ids") List<Long> ids);
+
+    /**
      * 根据主键选择性更新
      */
     int updateByPrimaryKeySelective(FlashSession record);
@@ -43,52 +47,18 @@ public interface FlashSessionDao {
     int deleteByPrimaryKey(Long id);
 
     /**
-     * 查询所有场次
+     * 条件查询场次
      */
-    List<FlashSession> selectAll();
+    List<FlashSession> listByConditions(@Param("name") String name,
+                                        @Param("status") Integer status,
+                                        @Param("startTimeFrom") LocalDateTime startTimeFrom,
+                                        @Param("startTimeTo") LocalDateTime startTimeTo);
 
     /**
-     * 根据活动ID查询场次列表
-     *
-     * @param flashActivityId 活动ID
-     * @return 场次列表
+     * 查询已发布且未结束的场次
      */
-    List<FlashSession> selectByFlashActivityId(@Param("flashActivityId") Long flashActivityId);
-
-    /**
-     * 根据活动ID和状态查询场次列表
-     *
-     * @param flashActivityId 活动ID
-     * @param status           状态
-     * @return 场次列表
-     */
-    List<FlashSession> selectByFlashActivityIdAndStatus(
-            @Param("flashActivityId") Long flashActivityId,
-            @Param("status") Integer status);
-
-    /**
-     * 查询当前时间正在进行的场次
-     *
-     * @param flashActivityId 活动ID
-     * @param currentTime      当前时间
-     * @return 进行中的场次
-     */
-    FlashSession selectCurrentSession(
-            @Param("flashActivityId") Long flashActivityId,
-            @Param("currentTime") LocalDateTime currentTime);
-
-    /**
-     * 查询指定活动在指定时间范围内的场次
-     *
-     * @param flashActivityId 活动ID
-     * @param startTime        开始时间
-     * @param endTime          结束时间
-     * @return 场次列表
-     */
-    List<FlashSession> selectByTimeRange(
-            @Param("flashActivityId") Long flashActivityId,
-            @Param("startTime") LocalDateTime startTime,
-            @Param("endTime") LocalDateTime endTime);
+    List<FlashSession> selectPublishedSessions(@Param("status") Integer status,
+                                               @Param("nowDateTime") LocalDateTime nowDateTime);
 
     /**
      * 批量删除
@@ -97,14 +67,6 @@ public interface FlashSessionDao {
      * @return 影响行数
      */
     int deleteBatch(@Param("ids") List<Long> ids);
-
-    /**
-     * 根据活动ID删除所有场次
-     *
-     * @param flashActivityId 活动ID
-     * @return 影响行数
-     */
-    int deleteByFlashActivityId(@Param("flashActivityId") Long flashActivityId);
 
     /**
      * 批量更新状态
@@ -118,9 +80,18 @@ public interface FlashSessionDao {
     /**
      * 获取当前生效的场次
      *
+     * @param status 启用状态
      * @param nowDateTime
-     * @param nowDate
      * @return
      */
-    FlashSession getCurrentSession(@Param("nowDateTime") LocalDateTime nowDateTime, @Param("nowDate") LocalDate nowDate);
+    FlashSession getCurrentSession(@Param("status") Integer status,
+                                   @Param("nowDateTime") LocalDateTime nowDateTime);
+
+    /**
+     * 查询和指定时间区间重叠的启用场次
+     */
+    List<FlashSession> selectOverlappingEnabledSessions(@Param("status") Integer status,
+                                                        @Param("excludeId") Long excludeId,
+                                                        @Param("startTime") LocalDateTime startTime,
+                                                        @Param("endTime") LocalDateTime endTime);
 }

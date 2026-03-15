@@ -24,23 +24,19 @@ public class FlashSessionCmd {
     @NotNull(groups = Update.class, message = "更新时主键ID不能为空")
     private Long id;
 
-    @Schema(description = "所属活动ID")
-    @NotNull(groups = Create.class, message = "所属活动ID不能为空")
-    private Long flashActivityId;
-
     @Schema(description = "场次名称")
     @NotBlank(groups = {Create.class, Update.class}, message = "场次名称不能为空")
     @Size(max = 32, message = "场次名称长度不能超过32个字符")
     private String name;
 
-    @Schema(description = "开始时间")
+    @Schema(description = "开始时间，格式：yyyy-MM-dd HH:mm:ss 或 yyyy-MM-ddTHH:mm:ss")
     @NotNull(groups = Create.class, message = "开始时间不能为空")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", shape = JsonFormat.Shape.STRING)
     private LocalDateTime startTime;
 
-    @Schema(description = "结束时间")
+    @Schema(description = "结束时间，格式：yyyy-MM-dd HH:mm:ss 或 yyyy-MM-ddTHH:mm:ss")
     @NotNull(groups = Create.class, message = "结束时间不能为空")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", shape = JsonFormat.Shape.STRING)
     private LocalDateTime endTime;
 
     @Schema(description = "状态: 0-禁用, 1-启用")

@@ -19,11 +19,6 @@ public class FlashProduct {
     private Long id;
 
     /**
-     * 秒杀活动ID
-     */
-    private Long flashActivityId;
-
-    /**
      * 秒杀场次ID
      */
     private Long flashSessionId;

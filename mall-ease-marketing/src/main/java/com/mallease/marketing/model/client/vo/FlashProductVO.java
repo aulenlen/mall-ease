@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 秒杀商品视图对象
@@ -24,11 +25,23 @@ public class FlashProductVO {
     @Schema(description = "主键ID")
     private Long id;
 
-    @Schema(description = "秒杀活动ID")
-    private Long flashActivityId;
-
     @Schema(description = "秒杀场次ID")
     private Long flashSessionId;
+
+    @Schema(description = "秒杀场次名称")
+    private String sessionName;
+
+    @Schema(description = "场次开始时间")
+    private LocalDateTime sessionStartTime;
+
+    @Schema(description = "场次结束时间")
+    private LocalDateTime sessionEndTime;
+
+    @Schema(description = "场次状态：0-禁用 1-启用")
+    private Integer sessionStatus;
+
+    @Schema(description = "场次时间状态：0-未开始 1-进行中 2-已结束")
+    private Integer timeStatus;
 
     @Schema(description = "SPU ID")
     private Long spuId;

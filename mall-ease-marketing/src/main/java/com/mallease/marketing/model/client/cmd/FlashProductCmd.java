@@ -29,10 +29,6 @@ public class FlashProductCmd {
     @NotNull(groups = Update.class, message = "更新时主键ID不能为空")
     private Long id;
 
-    @Schema(description = "秒杀活动ID")
-    @NotNull(groups = Create.class, message = "秒杀活动ID不能为空")
-    private Long flashActivityId;
-
     @Schema(description = "秒杀场次ID")
     @NotNull(groups = Create.class, message = "秒杀场次ID不能为空")
     private Long flashSessionId;

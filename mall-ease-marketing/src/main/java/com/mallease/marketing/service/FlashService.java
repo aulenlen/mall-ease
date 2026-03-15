@@ -1,26 +1,16 @@
 package com.mallease.marketing.service;
 
 import com.mallease.common.dto.remote.FlashCurrentDTO;
-import com.mallease.marketing.model.client.query.FlashActivityQuery;
+import com.mallease.marketing.model.client.query.FlashProductQuery;
+import com.mallease.marketing.model.client.query.FlashSessionQuery;
 import com.mallease.marketing.model.client.vo.FlashProductVO;
-import com.mallease.marketing.model.data.entity.FlashActivity;
 import com.mallease.marketing.model.data.entity.FlashProduct;
 import com.mallease.marketing.model.data.entity.FlashSession;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-public interface FlashActivityService {
-    //活动
-    int createFlashActivity(FlashActivity flashActivity);
-
-    int updateFlashActivity(FlashActivity flashActivity);
-
-    int deleteFlashActivity(Long id);
-
-    FlashActivity getFlashActivityById(Long id);
-
-    List<FlashActivity> listFlashActivity(FlashActivityQuery query);
-
+public interface FlashService {
     // 场次
     int createFlashSession(FlashSession session);
 
@@ -28,7 +18,11 @@ public interface FlashActivityService {
 
     int deleteFlashSession(Long id);
 
-    List<FlashSession> listFlashSessionByActivityId(Long activityId);
+    FlashSession getFlashSessionById(Long id);
+
+    List<FlashSession> listFlashSessions(FlashSessionQuery query);
+
+    List<FlashSession> listPublishedFlashSessions(LocalDateTime nowDateTime);
 
     //商品
     int addFlashProduct(FlashProduct flashProduct);
@@ -53,12 +47,11 @@ public interface FlashActivityService {
      */
     int deleteFlashProductBatch(List<Long> ids);
 
-    List<FlashProduct> listFlashProductBySessionId(Long sessionId);
+    FlashProduct getFlashProductById(Long id);
 
-    /**
-     * 根据活动ID查询所有关联商品
-     */
-    List<FlashProduct> listFlashProductByActivityId(Long activityId);
+    List<FlashProduct> listFlashProducts(FlashProductQuery query);
+
+    List<FlashProduct> listFlashProductBySessionId(Long sessionId);
 
     /**
      * 批量补齐商品展示信息（Feign 查询 SKU 信息，降级容错）
@@ -67,15 +60,6 @@ public interface FlashActivityService {
      * @return 包含商品展示信息的 VO 列表
      */
     List<FlashProductVO> enrichWithSkuInfo(List<FlashProduct> products);
-
-    /**
-     * 批量更新活动状态
-     *
-     * @param ids    活动ID列表
-     * @param status 目标状态
-     * @return 影响行数
-     */
-    int updateActivityStatusBatch(List<Long> ids, Integer status);
 
     /**
      * 批量更新场次状态
@@ -97,10 +81,5 @@ public interface FlashActivityService {
      * @return 包含场次信息和商品列表的 DTO
      */
     FlashCurrentDTO getCurrentFlashData();
-
-    //前台查询
-    //  FlashActivityVO getCurrentActivity();
-
-    //  FlashSessionVO getCurrentSession(Long promotionId);
 
 }

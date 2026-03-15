@@ -49,31 +49,22 @@ public interface FlashProductDao {
     int deleteByPrimaryKey(Long id);
 
     /**
+     * 条件查询商品列表
+     */
+    List<FlashProduct> listByConditions(@Param("flashSessionId") Long flashSessionId,
+                                        @Param("spuIds") List<Long> spuIds,
+                                        @Param("spuId") Long spuId,
+                                        @Param("skuId") Long skuId);
+
+    /**
+     * 查询候选SPU ID列表
+     */
+    List<Long> selectDistinctSpuIds(@Param("flashSessionId") Long flashSessionId);
+
+    /**
      * 根据场次ID查询商品列表
-     *
-     * @param flashSessionId 场次ID
-     * @return 商品关联列表
      */
     List<FlashProduct> selectBySessionId(@Param("flashSessionId") Long flashSessionId);
-
-    /**
-     * 根据活动ID查询商品列表
-     *
-     * @param flashActivityId 活动ID
-     * @return 商品关联列表
-     */
-    List<FlashProduct> selectByFlashActivityId(@Param("flashActivityId") Long flashActivityId);
-
-    /**
-     * 根据活动ID和场次ID查询商品列表
-     *
-     * @param flashActivityId        活动ID
-     * @param flashSessionId 场次ID
-     * @return 商品关联列表
-     */
-    List<FlashProduct> selectByActivityAndSession(
-            @Param("flashActivityId") Long flashActivityId,
-            @Param("flashSessionId") Long flashSessionId);
 
     /**
      * 检查SKU是否已存在于指定场次
@@ -102,14 +93,6 @@ public interface FlashProductDao {
      * @return 影响行数
      */
     int deleteBySessionId(@Param("flashSessionId") Long flashSessionId);
-
-    /**
-     * 根据活动ID删除所有商品关联
-     *
-     * @param flashActivityId 活动ID
-     * @return 影响行数
-     */
-    int deleteByFlashActivityId(@Param("flashActivityId") Long flashActivityId);
 
     /**
      * 批量删除
