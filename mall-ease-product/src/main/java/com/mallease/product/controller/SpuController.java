@@ -7,6 +7,7 @@ import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
+import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.product.assembler.SpuDetailAssembler;
 import com.mallease.product.assembler.SpuSaveAssembler;
 import com.mallease.product.converter.SkuConverter;
@@ -146,5 +147,11 @@ public class SpuController {
         PageHelper.startPage(query.getPageNum(), query.getPageSize());
         SpuSearchResultDTO result = spuService.advancedSearch(query);
         return R.success(result);
+    }
+
+    @Operation(summary = "按条件匹配SPU ID", description = "内部调用，在候选商品范围内返回匹配的SPU ID列表")
+    @PostMapping("/internal/matchIds")
+    public R<List<Long>> matchIds(@RequestBody SpuMatchQueryDTO query) {
+        return R.success(spuService.listMatchedIds(query));
     }
 }

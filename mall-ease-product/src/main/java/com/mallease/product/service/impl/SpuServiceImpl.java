@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SearchFilterDTO;
+import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
@@ -838,6 +839,14 @@ public class SpuServiceImpl implements SpuService {
                 .products(productPage)
                 .filters(filters)
                 .build();
+    }
+
+    @Override
+    public List<Long> listMatchedIds(SpuMatchQueryDTO query) {
+        if (query == null || query.getCandidateSpuIds() == null || query.getCandidateSpuIds().isEmpty()) {
+            return List.of();
+        }
+        return spuDao.selectMatchedIds(query);
     }
 
     /**

@@ -2,6 +2,7 @@ package com.mallease.product.service;
 
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
+import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.query.SpuQuery;
 import com.mallease.product.model.client.vo.SpuPublishVO;
@@ -103,4 +104,12 @@ public interface SpuService {
      * @return 搜索结果（商品列表 + 聚合筛选项）
      */
     SpuSearchResultDTO advancedSearch(SpuSearchQuery query);
+
+    /**
+     * 在候选SPU范围内按条件匹配商品ID
+     *
+     * @param query 匹配条件
+     * @return 匹配成功的SPU ID列表
+     */
+    List<Long> listMatchedIds(SpuMatchQueryDTO query);
 }

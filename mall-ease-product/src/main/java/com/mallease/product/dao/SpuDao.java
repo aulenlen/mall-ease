@@ -1,6 +1,7 @@
 package com.mallease.product.dao;
 
 import com.mallease.common.dto.remote.SearchFilterDTO;
+import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.product.model.data.entity.AttrValueAggregation;
 import com.mallease.product.model.data.entity.Spu;
@@ -226,4 +227,12 @@ public interface SpuDao {
      * @return 价格区间
      */
     SearchFilterDTO.PriceRange aggregatePriceRange(@Param("query") SpuSearchQuery query);
+
+    /**
+     * 在候选商品范围内查询匹配的SPU ID
+     *
+     * @param query 匹配条件
+     * @return SPU ID列表
+     */
+    List<Long> selectMatchedIds(@Param("query") SpuMatchQueryDTO query);
 }

@@ -187,6 +187,26 @@
         </choose>
     </select>
 
+    <select id="selectMatchedIds" resultType="java.lang.Long">
+        SELECT ps.id
+        FROM product_spu ps
+        WHERE ps.deleted = 0
+          AND ps.id IN
+          <foreach collection="query.candidateSpuIds" item="spuId" open="(" separator="," close=")">
+              #{spuId}
+          </foreach>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND ps.name LIKE CONCAT('%', #{query.keyword}, '%')
+        </if>
+        <if test="query.brandId != null">
+            AND ps.brand_id = #{query.brandId}
+        </if>
+        <if test="query.categoryId != null">
+            AND ps.category_id = #{query.categoryId}
+        </if>
+        ORDER BY ps.sort DESC, ps.id DESC
+    </select>
+
     <!-- 聚合品牌 -->
     <select id="aggregateBrands" resultType="com.mallease.common.dto.remote.SearchFilterDTO$FilterItem">
         SELECT ps.brand_id as id, ps.brand_name as name, COUNT(*) as count
