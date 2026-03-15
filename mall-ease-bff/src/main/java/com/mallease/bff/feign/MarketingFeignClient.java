@@ -19,6 +19,6 @@ public interface MarketingFeignClient {
      *
      * @return 当前秒杀场次及商品列表
      */
-    @GetMapping("/marketing/flash/internal/current")
+    @GetMapping("/internal/marketing/flash/current")
     R<FlashCurrentDTO> getCurrentFlashData();
 }
