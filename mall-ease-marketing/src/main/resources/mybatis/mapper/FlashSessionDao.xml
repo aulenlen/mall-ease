@@ -103,6 +103,12 @@
         </foreach>
     </delete>
 
+    <!-- 根据活动ID删除 -->
+    <delete id="deleteByFlashActivityId">
+        DELETE FROM marketing_flash_session
+        WHERE flash_activity_id = #{flashActivityId,jdbcType=BIGINT}
+    </delete>
+
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.marketing.model.data.entity.FlashSession" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO marketing_flash_session (flash_activity_id, name, start_time, end_time, status,

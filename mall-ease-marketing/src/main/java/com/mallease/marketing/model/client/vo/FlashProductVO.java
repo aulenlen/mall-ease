@@ -45,6 +45,9 @@ public class FlashProductVO {
     @Schema(description = "SKU 图片")
     private String skuPic;
 
+    @Schema(description = "SKU 规格属性")
+    private String attrValues;
+
     @Schema(description = "市场价（原价）")
     private BigDecimal originalPrice;
 

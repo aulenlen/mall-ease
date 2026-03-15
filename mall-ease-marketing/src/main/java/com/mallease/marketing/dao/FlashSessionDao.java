@@ -99,6 +99,14 @@ public interface FlashSessionDao {
     int deleteBatch(@Param("ids") List<Long> ids);
 
     /**
+     * 根据活动ID删除所有场次
+     *
+     * @param flashActivityId 活动ID
+     * @return 影响行数
+     */
+    int deleteByFlashActivityId(@Param("flashActivityId") Long flashActivityId);
+
+    /**
      * 批量更新状态
      *
      * @param ids    场次ID列表

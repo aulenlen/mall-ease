@@ -137,6 +137,21 @@ public class FlashActivityController {
         return R.success(flashActivityService.deleteFlashProduct(id));
     }
 
+    @Operation(summary = "批量添加秒杀商品")
+    @PostMapping("/product/batch")
+    public R<Integer> createProductBatch(@RequestBody List<FlashProductCmd> cmdList) {
+        List<FlashProduct> products = cmdList.stream()
+                .map(flashConverter::cmdToProduct)
+                .toList();
+        return R.success(flashActivityService.addFlashProductBatch(products));
+    }
+
+    @Operation(summary = "批量删除秒杀商品")
+    @DeleteMapping("/product/batch")
+    public R<Integer> deleteProductBatch(@RequestBody List<Long> ids) {
+        return R.success(flashActivityService.deleteFlashProductBatch(ids));
+    }
+
     @Operation(summary = "根据场次分页查询商品")
     @GetMapping("/product/{sessionId}")
     public R<Page<FlashProductVO>> listProduct(
@@ -145,7 +160,7 @@ public class FlashActivityController {
             @RequestParam(defaultValue = "10") Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         List<FlashProduct> list = flashActivityService.listFlashProductBySessionId(sessionId);
-        return R.success(PageUtils.convertPage(list, flashConverter::productListToVoList));
+        return R.success(PageUtils.convertPage(list, flashActivityService::enrichWithSkuInfo));
     }
 
     // 内部调用
