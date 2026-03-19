@@ -1,4 +1,4 @@
-package com.mallease.gateway.config;
+package com.mallease.gateway.utils;
 
 import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.SaTokenInfo;

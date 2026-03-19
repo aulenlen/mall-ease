@@ -1,5 +1,6 @@
 package com.mallease.product.service;
 
+import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import com.mallease.common.dto.remote.SpuMatchQueryDTO;
@@ -13,6 +14,7 @@ import com.mallease.product.model.data.entity.SpuDetail;
 import com.mallease.product.model.data.entity.SpuFullReduction;
 
 import java.util.List;
+import java.util.Map;
 
 public interface SpuService {
 
@@ -96,6 +98,22 @@ public interface SpuService {
      * @return 完整的商品信息
      */
     SpuCache getProduct(Long spuId);
+
+    /**
+     * 根据 SPU ID 列表批量获取完整商品信息（带缓存）
+     *
+     * @param spuIds SPU ID列表
+     * @return SPU ID到商品缓存对象的映射
+     */
+    Map<Long, SpuCache> getProducts(List<Long> spuIds);
+
+    /**
+     * 批量获取商品详情快照（带缓存）
+     *
+     * @param spuIds SPU ID列表
+     * @return 商品详情快照列表
+     */
+    List<ProductDTO> listProductSnapshots(List<Long> spuIds);
 
     /**
      * MySQL 搜索商品

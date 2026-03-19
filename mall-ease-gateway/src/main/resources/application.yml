@@ -56,6 +56,10 @@ spring:
             - Path=/mall-ease-trade/**
           filters:
             - StripPrefix=1
+        - id: mall-ease-detail
+          uri: no://op
+          predicates:
+            - Path=/mall-ease-detail/spu/*
 
   data:
     redis:

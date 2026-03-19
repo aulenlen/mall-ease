@@ -61,6 +61,13 @@ public interface FlashSessionDao {
                                                @Param("nowDateTime") LocalDateTime nowDateTime);
 
     /**
+     * 查询待预热场次
+     */
+    List<FlashSession> selectSessionsToWarmUp(@Param("status") Integer status,
+                                              @Param("from") LocalDateTime from,
+                                              @Param("to") LocalDateTime to);
+
+    /**
      * 批量删除
      *
      * @param ids 场次ID列表

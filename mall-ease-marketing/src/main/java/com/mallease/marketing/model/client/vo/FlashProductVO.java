@@ -73,6 +73,9 @@ public class FlashProductVO {
     @Schema(description = "每人限购数量")
     private Integer flashLimit;
 
+    @Schema(description = "路由类型：0-非热点秒杀 1-热点秒杀")
+    private Integer routeType;
+
     @Schema(description = "排序")
     private Integer sort;
 }

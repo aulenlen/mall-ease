@@ -24,6 +24,8 @@ public interface FlashService {
 
     List<FlashSession> listPublishedFlashSessions(LocalDateTime nowDateTime);
 
+    List<FlashSession> listSessionsToWarmUp(LocalDateTime from, LocalDateTime to);
+
     //商品
     int addFlashProduct(FlashProduct flashProduct);
 
@@ -82,4 +84,7 @@ public interface FlashService {
      */
     FlashCurrentDTO getCurrentFlashData();
 
+    List<FlashProduct> listFlashProductBySessionIds(List<Long> sessionIds);
+
+    FlashSession getCurrentFlashSessions();
 }

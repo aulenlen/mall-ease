@@ -68,6 +68,11 @@ public interface SpuCacheConverter {
      */
     ProductDTO cacheToDTO(SpuCache cache);
 
+    /**
+     * SpuCache 列表 → ProductDTO 列表（服务间调用）
+     */
+    List<ProductDTO> cacheListToDTOList(List<SpuCache> caches);
+
     // Cache → VO（前台接口）
 
     /**

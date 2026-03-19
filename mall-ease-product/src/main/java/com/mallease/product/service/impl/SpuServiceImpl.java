@@ -3,6 +3,7 @@ package com.mallease.product.service.impl;
 import cn.hutool.core.util.IdUtil;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.common.dto.remote.SearchFilterDTO;
 import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
@@ -21,6 +22,7 @@ import com.mallease.product.model.client.vo.PublishFailDetailVO;
 import com.mallease.product.event.SpuPublishEvent;
 import com.mallease.product.feign.ContentPreferenceAreaFeignClient;
 import com.mallease.product.feign.ContentSubjectFeignClient;
+import com.mallease.product.converter.SpuCacheConverter;
 import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.*;
 import com.mallease.product.model.data.entity.AttrValueAggregation;
@@ -67,6 +69,8 @@ public class SpuServiceImpl implements SpuService {
     @Autowired
     @Lazy
     private SpuCacheService spuCacheService;
+    @Autowired
+    private SpuCacheConverter spuCacheConverter;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -754,13 +758,49 @@ public class SpuServiceImpl implements SpuService {
     @Override
     public SpuCache getProduct(Long spuId) {
         SpuCache spuCache = spuCacheService.get(spuId);
-
-        if (spuCache == null) {
-            spuCacheService.warmUpBatch(Collections.singletonList(spuId));
+        if (spuCache != null) {
+            return spuCache;
         }
 
-        return spuCacheService.get(spuId);
+        return spuCacheService.loadAndCache(spuId);
     }
+
+    @Override
+    public Map<Long, SpuCache> getProducts(List<Long> spuIds) {
+        if (spuIds == null || spuIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<Long, SpuCache> cacheMap = spuCacheService.getBatch(spuIds);
+        List<Long> missIds = spuIds.stream()
+                .filter(Objects::nonNull)
+                .filter(spuId -> cacheMap.get(spuId) == null)
+                .distinct()
+                .toList();
+        if (!missIds.isEmpty()) {
+            cacheMap.putAll(spuCacheService.loadAndCacheBatch(missIds));
+        }
+        return cacheMap;
+    }
+
+    @Override
+public List<ProductDTO> listProductSnapshots(List<Long> spuIds) {
+    if (spuIds == null || spuIds.isEmpty()) {
+        return Collections.emptyList();
+    }
+
+    Map<Long, SpuCache> cacheMap = getProducts(spuIds);
+    List<SpuCache> caches = spuIds.stream()
+            .filter(Objects::nonNull)
+            .map(cacheMap::get)
+            .filter(Objects::nonNull)
+            .toList();
+    if (caches.isEmpty()) {
+        return Collections.emptyList();
+    }
+
+    return spuCacheConverter.cacheListToDTOList(caches);
+}
 
     @Override
     public SpuSearchResultDTO advancedSearch(SpuSearchQuery query) {

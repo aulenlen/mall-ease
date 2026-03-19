@@ -49,6 +49,11 @@ public class FlashProduct {
     private Integer flashLimit;
 
     /**
+     * 路由类型：0-非热点秒杀 1-热点秒杀
+     */
+    private Integer routeType;
+
+    /**
      * 排序（越小越靠前）
      */
     private Integer sort;

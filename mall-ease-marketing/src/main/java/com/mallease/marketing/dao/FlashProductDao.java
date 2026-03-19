@@ -54,7 +54,8 @@ public interface FlashProductDao {
     List<FlashProduct> listByConditions(@Param("flashSessionId") Long flashSessionId,
                                         @Param("spuIds") List<Long> spuIds,
                                         @Param("spuId") Long spuId,
-                                        @Param("skuId") Long skuId);
+                                        @Param("skuId") Long skuId,
+                                        @Param("routeType") Integer routeType);
 
     /**
      * 查询候选SPU ID列表
@@ -101,4 +102,6 @@ public interface FlashProductDao {
      * @return 影响行数
      */
     int deleteBatch(@Param("ids") List<Long> ids);
+
+    List<FlashProduct> selectBySessionIds(@Param("sessionIds") List<Long> sessionIds);
 }

@@ -14,6 +14,8 @@ import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.common.constant.AuthConstant;
 import com.mallease.common.service.RedisService;
+import com.mallease.gateway.utils.StpAdminUtil;
+import com.mallease.gateway.utils.StpMemberUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -67,6 +69,7 @@ public class SaTokenConfig {
             "/mall-ease-auth/auth/portal/register",
             "/mall-ease-auth/auth/admin/login",
             "/mall-ease-product/product/spu/portal/*",
+            "/mall-ease-detail/spu/*",
             "/mall-ease-search/search/suggest",
             "/mall-ease-search/search/portal/product",
             "/mall-ease-trade/trade/payment/notify/**"

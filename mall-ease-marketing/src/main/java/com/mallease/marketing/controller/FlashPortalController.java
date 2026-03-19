@@ -1,6 +1,7 @@
 package com.mallease.marketing.controller;
 
 import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.common.dto.remote.FlashCurrentDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.marketing.converter.FlashConverter;
@@ -10,6 +11,7 @@ import com.mallease.marketing.model.client.vo.FlashProductVO;
 import com.mallease.marketing.model.data.entity.FlashProduct;
 import com.mallease.marketing.model.data.entity.FlashSession;
 import com.mallease.marketing.model.enums.FlashSessionStatus;
+import com.mallease.marketing.service.FlashCacheService;
 import com.mallease.marketing.service.FlashService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
@@ -31,6 +34,7 @@ public class FlashPortalController {
 
     private final FlashService flashService;
     private final FlashConverter flashConverter;
+    private final FlashCacheService flashCacheService;
 
     @Operation(summary = "获取当前秒杀数据")
     @GetMapping("/current")
@@ -62,6 +66,13 @@ public class FlashPortalController {
         ensurePublishedSession(product.getFlashSessionId());
         List<FlashPortalProductVO> products = toPortalProducts(List.of(product));
         return R.success(products.isEmpty() ? null : products.get(0));
+    }
+
+    @Operation(summary = "获取热点秒杀商品详情")
+    @GetMapping("/detail/{spuId:\\d+}")
+    public R<ProductDTO> getHotDetail(@Parameter(description = "SPU ID", required = true) @PathVariable Long spuId,
+                                      @Parameter(description = "秒杀场次ID", required = true) @RequestParam Long sessionId) {
+        return R.success(flashCacheService.getHotDetail(sessionId, spuId));
     }
 
     private void ensurePublishedSession(Long sessionId) {

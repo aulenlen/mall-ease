@@ -61,46 +61,7 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                 log.warn("未查询到SPU数据，spuIds: {}", spuIds);
                 return;
             }
-
-            // 批量写入SPU详情缓存（String结构）
-            cacheService.batchSetList(
-                    cacheDTOList,
-                    RedisKey.SPU_DETAIL.getPrefix(),
-                    SpuCache::getId,
-                    RedisKey.SPU_DETAIL.getTtl()
-            );
-
-            // 批量写入SKU库存缓存（Hash结构）
-            List<Long> allSkuIds = cacheDTOList.stream()
-                    .flatMap(dto -> dto.getSkuList().stream())
-                    .map(sku -> sku.getBasic().getId())
-                    .collect(Collectors.toList());
-            if (!CollUtil.isEmpty(allSkuIds)) {
-                List<SkuStock> stockList = skuStockService.listStockBySpuIds(
-                        cacheDTOList.stream().map(SpuCache::getId).collect(Collectors.toList())
-                );
-                Map<Long, SkuStock> stockMap = stockList.stream()
-                        .collect(Collectors.toMap(SkuStock::getSkuId, stock -> stock));
-
-                // 按SPU分组
-                Map<Long, Map<String, Integer>> skuStockMap = cacheDTOList.stream()
-                        .collect(Collectors.toMap(
-                                SpuCache::getId,
-                                dto -> dto.getSkuList().stream()
-                                        .collect(Collectors.toMap(
-                                                sku -> String.valueOf(sku.getBasic().getId()),
-                                                sku -> {
-                                                    SkuStock stock = stockMap.get(sku.getBasic().getId());
-                                                    return stock != null ? stock.getStock() : 0;
-                                                }
-                                        ))
-                        ));
-                cacheService.batchSetHashMap(
-                        RedisKey.SPU_SKU_STOCK.getPrefix(),
-                        skuStockMap,
-                        RedisKey.SPU_SKU_STOCK.getTtl()
-                );
-            }
+            persistCaches(cacheDTOList);
 
             log.info("批量预热SPU缓存完成，成功: {} 个", cacheDTOList.size());
 
@@ -119,12 +80,46 @@ public class SpuCacheServiceImpl implements SpuCacheService {
     }
 
     @Override
+    public SpuCache loadAndCache(Long spuId) {
+        if (spuId == null) {
+            return null;
+        }
+
+        Map<Long, SpuCache> cacheMap = loadAndCacheBatch(Collections.singletonList(spuId));
+        return cacheMap.get(spuId);
+    }
+
+    @Override
     public Map<Long, SpuCache> getBatch(List<Long> spuIds) {
         if (CollUtil.isEmpty(spuIds)) {
             return Collections.emptyMap();
         }
 
         return cacheService.batchGet(spuIds, RedisKey.SPU_DETAIL.getPrefix(), SpuCache.class);
+    }
+
+    @Override
+    public Map<Long, SpuCache> loadAndCacheBatch(List<Long> spuIds) {
+        if (CollUtil.isEmpty(spuIds)) {
+            return Collections.emptyMap();
+        }
+
+        List<Long> distinctSpuIds = spuIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (distinctSpuIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<SpuCache> cacheDTOList = buildSpuCacheBatch(distinctSpuIds);
+        if (CollUtil.isEmpty(cacheDTOList)) {
+            log.warn("数据库构建SPU失败，spuIds: {}", distinctSpuIds);
+            return Collections.emptyMap();
+        }
+
+        persistCaches(cacheDTOList);
+        return cacheDTOList.stream().collect(Collectors.toMap(SpuCache::getId, cache -> cache));
     }
 
     @Override
@@ -394,6 +389,47 @@ public class SpuCacheServiceImpl implements SpuCacheService {
         }
 
         return cacheDTOList;
+    }
+
+    private void persistCaches(List<SpuCache> cacheDTOList) {
+        cacheService.batchSetList(
+                cacheDTOList,
+                RedisKey.SPU_DETAIL.getPrefix(),
+                SpuCache::getId,
+                RedisKey.SPU_DETAIL.getTtl()
+        );
+
+        List<Long> allSkuIds = cacheDTOList.stream()
+                .flatMap(dto -> dto.getSkuList().stream())
+                .map(sku -> sku.getBasic().getId())
+                .collect(Collectors.toList());
+        if (CollUtil.isEmpty(allSkuIds)) {
+            return;
+        }
+
+        List<SkuStock> stockList = skuStockService.listStockBySpuIds(
+                cacheDTOList.stream().map(SpuCache::getId).collect(Collectors.toList())
+        );
+        Map<Long, SkuStock> stockMap = stockList.stream()
+                .collect(Collectors.toMap(SkuStock::getSkuId, stock -> stock));
+
+        Map<Long, Map<String, Integer>> skuStockMap = cacheDTOList.stream()
+                .collect(Collectors.toMap(
+                        SpuCache::getId,
+                        dto -> dto.getSkuList().stream()
+                                .collect(Collectors.toMap(
+                                        sku -> String.valueOf(sku.getBasic().getId()),
+                                        sku -> {
+                                            SkuStock stock = stockMap.get(sku.getBasic().getId());
+                                            return stock != null ? stock.getStock() : 0;
+                                        }
+                                ))
+                ));
+        cacheService.batchSetHashMap(
+                RedisKey.SPU_SKU_STOCK.getPrefix(),
+                skuStockMap,
+                RedisKey.SPU_SKU_STOCK.getTtl()
+        );
     }
 
     private SpuCache buildSingleSpuCache(Spu spu,

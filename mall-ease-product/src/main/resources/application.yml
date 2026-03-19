@@ -113,4 +113,7 @@ springdoc:
     enabled: true
   group-configs:
     - group: '商品管理'
-      paths-to-match: '/product/**'
+      paths-to-match:
+        - /admin/marketing/flash/**
+        - /portal/marketing/flash/**
+        - /internal/marketing/flash/**

@@ -55,6 +55,9 @@ public class FlashProductCmd {
     @Min(value = 1, message = "限购数量必须大于0")
     private Integer flashLimit = 1;
 
+    @Schema(description = "路由类型：0-非热点秒杀 1-热点秒杀")
+    private Integer routeType = 0;
+
     @Schema(description = "排序（越小越靠前）")
     @Min(value = 0, message = "排序值不能为负数")
     private Integer sort = 0;

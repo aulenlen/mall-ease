@@ -5,6 +5,8 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
+import com.mallease.common.dto.remote.ProductDTO;
+import com.mallease.common.dto.remote.SpuFlashOverlayDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import com.mallease.common.dto.remote.SpuMatchQueryDTO;
@@ -13,6 +15,7 @@ import com.mallease.product.assembler.SpuSaveAssembler;
 import com.mallease.product.converter.SkuConverter;
 import com.mallease.product.converter.SpuCacheConverter;
 import com.mallease.product.converter.SpuConverter;
+import com.mallease.product.feign.MarketingFlashFeignClient;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.cmd.PublishSpuCmd;
 import com.mallease.product.model.client.cmd.SpuCmd;
@@ -33,8 +36,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Tag(name = "商品SPU管理", description = "SPU增删改查")
@@ -44,6 +51,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/product/spu")
 public class SpuController {
 
+    private static final int FLASH_PROMOTION_TYPE = 5;
+
     private final SpuService spuService;
     private final SpuConverter spuConverter;
     private final SpuSaveAssembler spuSaveAssembler;
@@ -52,6 +61,7 @@ public class SpuController {
     private final SkuConverter skuConverter;
     private final SkuStockService skuStockService;
     private final SpuCacheConverter spuCacheConverter;
+    private final MarketingFlashFeignClient marketingFlashFeignClient;
 
     @Operation(summary = "创建商品")
     @PostMapping("/create")
@@ -140,6 +150,31 @@ public class SpuController {
         return R.success(spuCacheConverter.cacheToVO(cache));
     }
 
+    @Operation(summary = "前台秒杀商品详情", description = "获取非热点秒杀商品详情并覆盖秒杀价格")
+    @GetMapping("/flash-portal/{spuId}")
+    public R<ProductVO> flashPortalDetail(@PathVariable Long spuId, @RequestParam Long sessionId) {
+        SpuCache cache = spuService.getProduct(spuId);
+        if (cache == null) {
+            return R.success(null);
+        }
+
+        ProductVO product = spuCacheConverter.cacheToVO(cache);
+        R<SpuFlashOverlayDTO> overlayResponse = marketingFlashFeignClient.getOverlay(spuId, sessionId);
+        if (overlayResponse == null || !overlayResponse.isSuccess()) {
+            log.warn("获取秒杀价格覆盖信息失败，spuId: {}, sessionId: {}, response: {}",
+                    spuId, sessionId, overlayResponse != null ? overlayResponse.getMessage() : "null");
+            return R.success(product);
+        }
+
+        SpuFlashOverlayDTO overlay = overlayResponse.getData();
+        if (overlay == null) {
+            return R.success(product);
+        }
+
+        mergeFlashOverlay(product, overlay);
+        return R.success(product);
+    }
+
     // 内部调用
     @Operation(summary = "MySQL搜索商品", description = "内部调用")
     @PostMapping("/internal/advancedSearch")
@@ -153,5 +188,102 @@ public class SpuController {
     @PostMapping("/internal/matchIds")
     public R<List<Long>> matchIds(@RequestBody SpuMatchQueryDTO query) {
         return R.success(spuService.listMatchedIds(query));
+    }
+
+    @Operation(summary = "批量获取商品详情快照", description = "内部调用，返回商品详情缓存快照")
+    @PostMapping("/internal/detailSnapshots")
+    public R<List<ProductDTO>> detailSnapshots(@RequestBody List<Long> spuIds) {
+        if (spuIds == null || spuIds.isEmpty()) {
+            return R.success(Collections.emptyList());
+        }
+        return R.success(spuService.listProductSnapshots(spuIds));
+    }
+
+    private void mergeFlashOverlay(ProductVO product, SpuFlashOverlayDTO overlay) {
+        if (product == null
+                || product.getSkuList() == null
+                || product.getSkuList().isEmpty()
+                || overlay == null
+                || overlay.getSkuFlashList() == null
+                || overlay.getSkuFlashList().isEmpty()) {
+            return;
+        }
+
+        Map<Long, SpuFlashOverlayDTO.SkuFlashOverlayDTO> overlaySkuMap = overlay.getSkuFlashList().stream()
+                .filter(sku -> sku.getSkuId() != null)
+                .collect(Collectors.toMap(SpuFlashOverlayDTO.SkuFlashOverlayDTO::getSkuId, sku -> sku, (left, right) -> left));
+
+        LocalDateTime now = LocalDateTime.now();
+        for (ProductVO.SkuInfo skuInfo : product.getSkuList()) {
+            if (skuInfo == null || skuInfo.getBasic() == null || skuInfo.getBasic().getId() == null) {
+                continue;
+            }
+
+            SpuFlashOverlayDTO.SkuFlashOverlayDTO overlaySku = overlaySkuMap.get(skuInfo.getBasic().getId());
+            if (overlaySku == null) {
+                continue;
+            }
+
+            if (skuInfo.getPrice() == null) {
+                skuInfo.setPrice(new ProductVO.SkuPriceInfo());
+            }
+            if (overlaySku.getOriginalPrice() != null && skuInfo.getPrice().getOriginalPrice() == null) {
+                skuInfo.getPrice().setOriginalPrice(overlaySku.getOriginalPrice());
+            }
+
+            ProductVO.SkuPromotionInfo promotionInfo = skuInfo.getPromotion();
+            if (promotionInfo == null) {
+                promotionInfo = new ProductVO.SkuPromotionInfo();
+                skuInfo.setPromotion(promotionInfo);
+            }
+            promotionInfo.setType(FLASH_PROMOTION_TYPE);
+            promotionInfo.setPrice(overlaySku.getFlashPrice());
+            promotionInfo.setStartTime(overlay.getStartTime());
+            promotionInfo.setEndTime(overlay.getEndTime());
+            promotionInfo.setPerLimit(overlaySku.getFlashLimit());
+
+            if (shouldUseFlashPrice(overlay, overlaySku, now)) {
+                skuInfo.getPrice().setPrice(overlaySku.getFlashPrice());
+            }
+        }
+
+        refreshSpuPriceRange(product);
+    }
+
+    private boolean shouldUseFlashPrice(SpuFlashOverlayDTO overlay,
+                                        SpuFlashOverlayDTO.SkuFlashOverlayDTO overlaySku,
+                                        LocalDateTime now) {
+        if (overlay == null || overlaySku == null || overlaySku.getFlashPrice() == null) {
+            return false;
+        }
+        if (overlaySku.getFlashStock() != null && overlaySku.getFlashStock() <= 0) {
+            return false;
+        }
+        if (overlay.getStartTime() != null && now.isBefore(overlay.getStartTime())) {
+            return false;
+        }
+        return overlay.getEndTime() == null || now.isBefore(overlay.getEndTime());
+    }
+
+    private void refreshSpuPriceRange(ProductVO product) {
+        if (product.getSkuList() == null || product.getSkuList().isEmpty()) {
+            return;
+        }
+
+        List<BigDecimal> prices = product.getSkuList().stream()
+                .map(ProductVO.SkuInfo::getPrice)
+                .filter(Objects::nonNull)
+                .map(ProductVO.SkuPriceInfo::getPrice)
+                .filter(Objects::nonNull)
+                .toList();
+        if (prices.isEmpty()) {
+            return;
+        }
+
+        if (product.getSpuDetail() == null) {
+            product.setSpuDetail(new ProductVO.SpuDetailInfo());
+        }
+        product.getSpuDetail().setMinPrice(prices.stream().min(BigDecimal::compareTo).orElse(null));
+        product.getSpuDetail().setMaxPrice(prices.stream().max(BigDecimal::compareTo).orElse(null));
     }
 }

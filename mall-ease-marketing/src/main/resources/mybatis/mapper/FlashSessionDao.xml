@@ -65,7 +65,16 @@
         ORDER BY start_time ASC, id ASC
     </select>
 
-    <select id="getCurrentSession" resultType="com.mallease.marketing.model.data.entity.FlashSession">
+    <select id="selectSessionsToWarmUp" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_flash_session
+        WHERE status = #{status,jdbcType=TINYINT}
+          AND start_time &gt;= #{from,jdbcType=TIMESTAMP}
+          AND start_time &lt;= #{to,jdbcType=TIMESTAMP}
+        ORDER BY start_time ASC, id ASC
+    </select>
+
+    <select id="getCurrentSession" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM marketing_flash_session
         WHERE status = #{status,jdbcType=TINYINT}

@@ -27,4 +27,7 @@ public class FlashProductQuery extends BaseQuery {
 
     @Schema(description = "SKU ID")
     private Long skuId;
+
+    @Schema(description = "路由类型：0-非热点秒杀，1-热点秒杀")
+    private Integer routeType;
 }

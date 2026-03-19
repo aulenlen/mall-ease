@@ -47,12 +47,28 @@ public interface SpuCacheService {
     SpuCache get(Long spuId);
 
     /**
+     * 缓存未命中时回源数据库并回填缓存，返回最新结果。
+     *
+     * @param spuId SPU ID
+     * @return SPU缓存对象，不存在时返回null
+     */
+    SpuCache loadAndCache(Long spuId);
+
+    /**
      * 批量获取SPU缓存详情
      *
      * @param spuIds SPU ID列表
      * @return SPU ID到缓存对象的映射（只包含命中的记录）
      */
     Map<Long, SpuCache> getBatch(List<Long> spuIds);
+
+    /**
+     * 批量回源数据库并回填缓存，返回成功加载的缓存对象映射。
+     *
+     * @param spuIds SPU ID列表
+     * @return SPU ID到缓存对象的映射
+     */
+    Map<Long, SpuCache> loadAndCacheBatch(List<Long> spuIds);
 
     /**
      * 获取SKU库存

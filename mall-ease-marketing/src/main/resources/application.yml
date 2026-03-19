@@ -85,5 +85,8 @@ springdoc:
     enabled: true
   group-configs:
     - group: '营销管理'
-      paths-to-match: '/marketing/**'
+      paths-to-match:
+        - '/admin/marketing/flash/**'
+        - '/portal/marketing/flash/**'
+        - '/internal/marketing/flash/**'
 

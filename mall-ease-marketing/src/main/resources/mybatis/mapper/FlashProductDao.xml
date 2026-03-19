@@ -10,6 +10,7 @@
         <result column="flash_price" property="flashPrice" jdbcType="DECIMAL"/>
         <result column="flash_stock" property="flashStock" jdbcType="INTEGER"/>
         <result column="flash_limit" property="flashLimit" jdbcType="INTEGER"/>
+        <result column="route_type" property="routeType" jdbcType="INTEGER"/>
         <result column="sort" property="sort" jdbcType="INTEGER"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
@@ -19,7 +20,7 @@
 
     <sql id="Base_Column_List">
         id, flash_session_id, spu_id,
-        sku_id, flash_price, flash_stock, flash_limit, sort,
+        sku_id, flash_price, flash_stock, flash_limit, route_type, sort,
         create_time, update_time, creator, updater
     </sql>
 
@@ -49,6 +50,9 @@
             </if>
             <if test="skuId != null">
                 AND sku_id = #{skuId,jdbcType=BIGINT}
+            </if>
+            <if test="routeType != null">
+                AND route_type = #{routeType,jdbcType=INTEGER}
             </if>
         </where>
         ORDER BY flash_session_id DESC, sort ASC, id DESC
@@ -82,6 +86,16 @@
         LIMIT 1
     </select>
 
+    <select id="selectBySessionIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        FROM marketing_flash_product
+        WHERE flash_session_id in
+        <foreach collection="sessionIds" item="sessionId" open="(" close=")" separator=",">
+            #{sessionId,jdbcType=BIGINT}
+        </foreach>
+    </select>
+
     <!-- 删除 -->
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         DELETE FROM marketing_flash_product
@@ -107,12 +121,12 @@
     <insert id="insert" parameterType="com.mallease.marketing.model.data.entity.FlashProduct" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO marketing_flash_product
             (flash_session_id, spu_id,
-             sku_id, flash_price, flash_stock, flash_limit, sort,
+             sku_id, flash_price, flash_stock, flash_limit, route_type, sort,
              create_time, update_time, creator, updater)
         VALUES (#{flashSessionId,jdbcType=BIGINT}, #{spuId,jdbcType=BIGINT},
                 #{skuId,jdbcType=BIGINT},
                 #{flashPrice,jdbcType=DECIMAL}, #{flashStock,jdbcType=INTEGER},
-                #{flashLimit,jdbcType=INTEGER}, #{sort,jdbcType=INTEGER},
+                #{flashLimit,jdbcType=INTEGER}, #{routeType,jdbcType=INTEGER}, #{sort,jdbcType=INTEGER},
                 #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP},
                 #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR})
     </insert>
@@ -127,6 +141,7 @@
             <if test="flashPrice != null">flash_price,</if>
             <if test="flashStock != null">flash_stock,</if>
             <if test="flashLimit != null">flash_limit,</if>
+            <if test="routeType != null">route_type,</if>
             <if test="sort != null">sort,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
@@ -140,6 +155,7 @@
             <if test="flashPrice != null">#{flashPrice,jdbcType=DECIMAL},</if>
             <if test="flashStock != null">#{flashStock,jdbcType=INTEGER},</if>
             <if test="flashLimit != null">#{flashLimit,jdbcType=INTEGER},</if>
+            <if test="routeType != null">#{routeType,jdbcType=INTEGER},</if>
             <if test="sort != null">#{sort,jdbcType=INTEGER},</if>
             <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
             <if test="updateTime != null">#{updateTime,jdbcType=TIMESTAMP},</if>
@@ -152,14 +168,14 @@
     <insert id="insertBatch" parameterType="java.util.List">
         INSERT INTO marketing_flash_product
             (flash_session_id, spu_id,
-             sku_id, flash_price, flash_stock, flash_limit, sort,
+             sku_id, flash_price, flash_stock, flash_limit, route_type, sort,
              create_time, update_time, creator, updater)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (#{item.flashSessionId,jdbcType=BIGINT}, #{item.spuId,jdbcType=BIGINT},
              #{item.skuId,jdbcType=BIGINT},
              #{item.flashPrice,jdbcType=DECIMAL}, #{item.flashStock,jdbcType=INTEGER},
-             #{item.flashLimit,jdbcType=INTEGER}, #{item.sort,jdbcType=INTEGER},
+             #{item.flashLimit,jdbcType=INTEGER}, #{item.routeType,jdbcType=INTEGER}, #{item.sort,jdbcType=INTEGER},
              #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP},
              #{item.creator,jdbcType=VARCHAR}, #{item.updater,jdbcType=VARCHAR})
         </foreach>
@@ -175,6 +191,7 @@
             <if test="flashPrice != null">flash_price = #{flashPrice,jdbcType=DECIMAL},</if>
             <if test="flashStock != null">flash_stock = #{flashStock,jdbcType=INTEGER},</if>
             <if test="flashLimit != null">flash_limit = #{flashLimit,jdbcType=INTEGER},</if>
+            <if test="routeType != null">route_type = #{routeType,jdbcType=INTEGER},</if>
             <if test="sort != null">sort = #{sort,jdbcType=INTEGER},</if>
             update_time = NOW(),
             <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>

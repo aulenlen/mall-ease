@@ -4,6 +4,7 @@ import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.FlashCurrentDTO;
 import com.mallease.common.dto.remote.SkuSimpleDTO;
 import com.mallease.common.dto.remote.SpuMatchQueryDTO;
+import com.mallease.common.enums.FlashRouteType;
 import com.mallease.common.exception.ApiException;
 import com.mallease.marketing.converter.FlashConverter;
 import com.mallease.marketing.dao.FlashProductDao;
@@ -25,6 +26,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +90,17 @@ public class FlashServiceImpl implements FlashService {
         return flashSessionDao.selectPublishedSessions(FlashSessionStatus.ENABLED.getCode(), nowDateTime);
     }
 
+    @Override
+    public List<FlashSession> listSessionsToWarmUp(LocalDateTime from, LocalDateTime to) {
+        if (from == null || to == null) {
+            throw new ApiException("预热时间范围不能为空");
+        }
+        if (from.isAfter(to)) {
+            throw new ApiException("预热开始时间不能晚于结束时间");
+        }
+        return flashSessionDao.selectSessionsToWarmUp(FlashSessionStatus.ENABLED.getCode(), from, to);
+    }
+
     // 活动、场次关联商品
 
     @Override
@@ -116,12 +129,14 @@ public class FlashServiceImpl implements FlashService {
                 .collect(Collectors.toMap(SkuSimpleDTO::getId, dto -> dto, (a, b) -> a));
 
         Set<String> sessionSkuKeys = new HashSet<>();
+        Map<String, Integer> batchRouteTypeMap = new HashMap<>();
         for (FlashProduct fp : flashProducts) {
             String sessionSkuKey = fp.getFlashSessionId() + "_" + fp.getSkuId();
             if (!sessionSkuKeys.add(sessionSkuKey)) {
                 throw new ApiException("批量添加中存在重复的场次SKU，sessionId=" + fp.getFlashSessionId() + ", skuId=" + fp.getSkuId());
             }
             validateProduct(fp, null, skuMap);
+            ensureBatchRouteTypeConsistent(fp, batchRouteTypeMap);
         }
         return flashProductDao.insertBatch(flashProducts);
     }
@@ -161,7 +176,13 @@ public class FlashServiceImpl implements FlashService {
         if (matchedSpuIds != null && matchedSpuIds.isEmpty()) {
             return emptyFlashProductPage(query);
         }
-        return flashProductDao.listByConditions(query.getSessionId(), matchedSpuIds, query.getSpuId(), query.getSkuId());
+        return flashProductDao.listByConditions(
+                query.getSessionId(),
+                matchedSpuIds,
+                query.getSpuId(),
+                query.getSkuId(),
+                query.getRouteType()
+        );
     }
 
     @Override
@@ -270,6 +291,16 @@ public class FlashServiceImpl implements FlashService {
                 .build();
     }
 
+    @Override
+    public List<FlashProduct> listFlashProductBySessionIds(List<Long> sessionIds) {
+        return flashProductDao.selectBySessionIds(sessionIds);
+    }
+
+    @Override
+    public FlashSession getCurrentFlashSessions() {
+        return flashSessionDao.getCurrentSession(FlashSessionStatus.ENABLED.getCode(), LocalDateTime.now());
+    }
+
     /**
      * 批量查询 SKU 信息
      */
@@ -357,6 +388,7 @@ public class FlashServiceImpl implements FlashService {
         merged.setFlashPrice(incoming.getFlashPrice() != null ? incoming.getFlashPrice() : current.getFlashPrice());
         merged.setFlashStock(incoming.getFlashStock() != null ? incoming.getFlashStock() : current.getFlashStock());
         merged.setFlashLimit(incoming.getFlashLimit() != null ? incoming.getFlashLimit() : current.getFlashLimit());
+        merged.setRouteType(incoming.getRouteType() != null ? incoming.getRouteType() : current.getRouteType());
         merged.setSort(incoming.getSort() != null ? incoming.getSort() : current.getSort());
         return merged;
     }
@@ -421,12 +453,54 @@ public class FlashServiceImpl implements FlashService {
         if (product.getFlashLimit() != null && product.getFlashLimit() < 1) {
             throw new ApiException("限购数量必须大于0");
         }
+        Integer routeType = normalizeRouteType(product);
+        if (!FlashRouteType.isValid(routeType)) {
+            throw new ApiException("路由类型非法，仅支持 0-非热点秒杀 或 1-热点秒杀");
+        }
         FlashProduct existed = flashProductDao.selectBySessionAndSku(product.getFlashSessionId(), product.getSkuId());
         if (existed != null && !Objects.equals(existed.getId(), excludeId)) {
             throw new ApiException("同一场次下SKU不能重复配置");
         }
         product.setSpuId(sku.getSpuId());
+        product.setRouteType(routeType);
+        ensureStoredRouteTypeConsistent(product, excludeId);
         return sku;
+    }
+
+    private Integer normalizeRouteType(FlashProduct product) {
+        return product.getRouteType() != null ? product.getRouteType() : FlashRouteType.NORMAL.getCode();
+    }
+
+    private void ensureStoredRouteTypeConsistent(FlashProduct product, Long excludeId) {
+        List<FlashProduct> sameSpuProducts = flashProductDao.listByConditions(
+                product.getFlashSessionId(),
+                null,
+                product.getSpuId(),
+                null,
+                null
+        );
+        if (sameSpuProducts == null || sameSpuProducts.isEmpty()) {
+            return;
+        }
+        for (FlashProduct sameSpuProduct : sameSpuProducts) {
+            if (Objects.equals(sameSpuProduct.getId(), excludeId)) {
+                continue;
+            }
+            Integer sameRouteType = sameSpuProduct.getRouteType() != null
+                    ? sameSpuProduct.getRouteType()
+                    : FlashRouteType.NORMAL.getCode();
+            if (!Objects.equals(sameRouteType, product.getRouteType())) {
+                throw new ApiException("同一场次下同一SPU的多个SKU必须使用相同的路由类型");
+            }
+        }
+    }
+
+    private void ensureBatchRouteTypeConsistent(FlashProduct product, Map<String, Integer> batchRouteTypeMap) {
+        String sessionSpuKey = product.getFlashSessionId() + "_" + product.getSpuId();
+        Integer existingRouteType = batchRouteTypeMap.putIfAbsent(sessionSpuKey, product.getRouteType());
+        if (existingRouteType != null && !Objects.equals(existingRouteType, product.getRouteType())) {
+            throw new ApiException("批量添加中同一场次下同一SPU的多个SKU必须使用相同的路由类型");
+        }
     }
 
     private SkuSimpleDTO getSku(Long skuId) {
