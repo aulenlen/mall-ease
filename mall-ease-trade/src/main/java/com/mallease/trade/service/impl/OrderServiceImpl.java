@@ -8,9 +8,9 @@ import com.mallease.common.dto.remote.StockLockDTO;
 import com.mallease.common.enums.OrderStatus;
 import com.mallease.common.enums.StockReleaseStatus;
 import com.mallease.common.exception.ApiException;
-import com.mallease.common.service.RedisService;
 import com.mallease.common.util.LoginContextUtil;
 import com.mallease.common.util.NoGeneratorUtil;
+import com.mallease.trade.cache.OrderSnapshotCacheService;
 import com.mallease.trade.dao.CartItemDao;
 import com.mallease.trade.dao.OrderDao;
 import com.mallease.trade.dao.OrderItemDao;
@@ -49,7 +49,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.mallease.trade.constant.OrderConstant.PAYMENT_TIMEOUT_MINUTES;
-import static com.mallease.trade.constant.OrderConstant.SNAPSHOT_EXPIRE_SECONDS;
 
 @Slf4j
 @Service
@@ -60,11 +59,10 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDao orderDao;
     private final OrderItemDao orderItemDao;
     private final CartItemService cartItemService;
-    private final RedisService redisService;
+    private final OrderSnapshotCacheService orderSnapshotCacheService;
     private final ProductFeignClient productFeignClient;
     private final ApplicationEventPublisher eventPublisher;
 
-    private static final String SNAPSHOT_KEY_PREFIX = "order:snapshot:";
     private static final int ORDER_LIST_PREVIEW_LIMIT = 2;
 
     @Override
@@ -107,18 +105,18 @@ public class OrderServiceImpl implements OrderService {
                 .createTime(LocalDateTime.now())
                 .build();
 
-        redisService.set(SNAPSHOT_KEY_PREFIX + requestId, snapshot, SNAPSHOT_EXPIRE_SECONDS);
+        orderSnapshotCacheService.save(requestId, snapshot);
         return snapshot;
     }
 
     @Override
     public OrderConfirmVO getSnapshot(String requestId) {
-        return (OrderConfirmVO) redisService.get(SNAPSHOT_KEY_PREFIX + requestId);
+        return orderSnapshotCacheService.get(requestId);
     }
 
     @Override
     public void deleteSnapshot(String requestId) {
-        redisService.del(SNAPSHOT_KEY_PREFIX + requestId);
+        orderSnapshotCacheService.delete(requestId);
     }
 
     @Override

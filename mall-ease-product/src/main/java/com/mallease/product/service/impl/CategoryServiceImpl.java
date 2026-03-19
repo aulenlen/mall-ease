@@ -4,7 +4,6 @@ import cn.hutool.core.util.IdUtil;
 import com.mallease.common.dto.remote.CategoryDTO;
 import com.mallease.common.dto.remote.CategoryTreeDTO;
 import com.mallease.common.exception.ApiException;
-import com.mallease.product.component.CacheService;
 import com.mallease.product.converter.AttributeConverter;
 import com.mallease.product.converter.BrandConverter;
 import com.mallease.product.converter.CategoryConverter;
@@ -50,8 +49,6 @@ public class CategoryServiceImpl implements CategoryService {
      */
     private static final int MAX_LEVEL = 2;
 
-    @Autowired
-    private CacheService cacheService;
     @Autowired
     private CategoryDao categoryDao;
     @Autowired

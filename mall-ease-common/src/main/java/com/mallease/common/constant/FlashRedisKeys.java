@@ -1,7 +1,7 @@
 package com.mallease.common.constant;
 
 /**
- * 秒杀缓存 Redis Key 规则。
+ * 秒杀缓存 Redis Key
  */
 public final class FlashRedisKeys {
 

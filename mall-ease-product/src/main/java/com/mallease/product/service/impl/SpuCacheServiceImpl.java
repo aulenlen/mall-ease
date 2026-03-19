@@ -2,15 +2,14 @@ package com.mallease.product.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import com.mallease.common.dto.remote.SkuStockQueryDTO;
-import com.mallease.product.component.CacheService;
-import com.mallease.product.constant.RedisKey;
+import com.mallease.product.cache.ProductDetailCacheService;
+import com.mallease.product.cache.ProductStockCacheService;
 import com.mallease.product.converter.SpuCacheConverter;
 import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.*;
 import com.mallease.product.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -27,7 +26,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SpuCacheServiceImpl implements SpuCacheService {
 
-    private final CacheService cacheService;
+    private final ProductDetailCacheService productDetailCacheService;
+    private final ProductStockCacheService productStockCacheService;
     private final SpuService spuService;
     private final BrandService brandService;
     private final CategoryService categoryService;
@@ -76,7 +76,7 @@ public class SpuCacheServiceImpl implements SpuCacheService {
         if (spuId == null) {
             return null;
         }
-        return cacheService.get(RedisKey.SPU_DETAIL, spuId, SpuCache.class);
+        return productDetailCacheService.get(spuId);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class SpuCacheServiceImpl implements SpuCacheService {
             return Collections.emptyMap();
         }
 
-        return cacheService.batchGet(spuIds, RedisKey.SPU_DETAIL.getPrefix(), SpuCache.class);
+        return productDetailCacheService.batchGet(spuIds);
     }
 
     @Override
@@ -127,87 +127,22 @@ public class SpuCacheServiceImpl implements SpuCacheService {
         if (spuId == null || skuId == null) {
             return null;
         }
-
-        String hashKey = String.valueOf(skuId);
-        Object value = cacheService.hGet(RedisKey.SPU_SKU_STOCK, spuId, hashKey);
-        if (value instanceof Integer) {
-            return (Integer) value;
-        }
-        return null;
+        return productStockCacheService.getStock(spuId, skuId);
     }
 
     @Override
     public Map<Long, Integer> getSkuStockBySpu(Long spuId) {
-        if (spuId == null) {
-            return Collections.emptyMap();
-        }
-
-        Map<Object, Object> hashMap = cacheService.hGetAll(RedisKey.SPU_SKU_STOCK, spuId);
-        if (CollUtil.isEmpty(hashMap)) {
-            return Collections.emptyMap();
-        }
-
-        return hashMap.entrySet().stream()
-                .collect(Collectors.toMap(
-                        entry -> Long.valueOf(entry.getKey().toString()),
-                        entry -> (Integer) entry.getValue()
-                ));
+        return productStockCacheService.getStockBySpu(spuId);
     }
 
     @Override
     public Map<Long, Integer> getSkuStockBatch(List<SkuStockQueryDTO> skuQueries) {
-        if (CollUtil.isEmpty(skuQueries)) {
-            return Collections.emptyMap();
-        }
-
-        Map<Long, List<String>> groupedHashKeys = skuQueries.stream()
-                .filter(query -> query.getSpuId() != null && query.getSkuId() != null)
-                .collect(Collectors.groupingBy(
-                        SkuStockQueryDTO::getSpuId,
-                        Collectors.mapping(query -> String.valueOf(query.getSkuId()), Collectors.toList())
-                ));
-        if (groupedHashKeys.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        Map<Long, Integer> result = new HashMap<>();
-        groupedHashKeys.forEach((spuId, hashKeys) -> {
-            Map<String, Object> cacheValues = cacheService.hMultiGet(RedisKey.SPU_SKU_STOCK, spuId, hashKeys);
-            cacheValues.forEach((skuId, stock) -> {
-                if (stock instanceof Integer stockValue) {
-                    result.put(Long.valueOf(skuId), stockValue);
-                }
-            });
-        });
-        return result;
+        return productStockCacheService.batchGet(skuQueries);
     }
 
     @Override
     public void setSkuStockBatch(Map<Long, Map<Long, Integer>> skuStockMap) {
-        if (CollUtil.isEmpty(skuStockMap)) {
-            return;
-        }
-
-        Map<Long, Map<String, Integer>> cachePayload = skuStockMap.entrySet().stream()
-                .filter(entry -> entry.getKey() != null && CollUtil.isNotEmpty(entry.getValue()))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> entry.getValue().entrySet().stream()
-                                .filter(item -> item.getKey() != null && item.getValue() != null)
-                                .collect(Collectors.toMap(
-                                        item -> String.valueOf(item.getKey()),
-                                        Map.Entry::getValue
-                                ))
-                ));
-        if (cachePayload.isEmpty()) {
-            return;
-        }
-
-        cacheService.batchSetHashMap(
-                RedisKey.SPU_SKU_STOCK.getPrefix(),
-                cachePayload,
-                RedisKey.SPU_SKU_STOCK.getTtl()
-        );
+        productStockCacheService.batchSet(skuStockMap);
     }
 
     @Override
@@ -226,9 +161,8 @@ public class SpuCacheServiceImpl implements SpuCacheService {
         }
 
         try {
-            cacheService.deleteBatch(spuIds, RedisKey.SPU_DETAIL.getPrefix());
-
-            cacheService.deleteBatch(spuIds, RedisKey.SPU_SKU_STOCK.getPrefix());
+            productDetailCacheService.deleteBatch(spuIds);
+            productStockCacheService.deleteBatch(spuIds);
             log.info("批量删除SPU缓存完成，数量: {}", spuIds.size());
         } catch (Exception e) {
             log.error("批量删除SPU缓存失败，spuIds: {}", spuIds, e);
@@ -244,19 +178,18 @@ public class SpuCacheServiceImpl implements SpuCacheService {
             return null;
         }
 
-        String hashKey = String.valueOf(skuId);
-        Long result = cacheService.deductStockAtomic(RedisKey.SPU_SKU_STOCK, spuId, hashKey, quantity);
+        Long result = productStockCacheService.deduct(spuId, skuId, quantity);
 
         if (result == null) {
             log.error("SKU库存扣减系统异常，spuId: {}, skuId: {}", spuId, skuId);
             return null;
         }
 
-        if (result == -2L) {
+        if (result == ProductStockCacheService.STOCK_CACHE_MISS) {
             log.info("缓存不存在，触发回源重建，spuId: {}", spuId);
             try {
                 warmUpBatch(Collections.singletonList(spuId));
-                result = cacheService.deductStockAtomic(RedisKey.SPU_SKU_STOCK, spuId, hashKey, quantity);
+                result = productStockCacheService.deduct(spuId, skuId, quantity);
                 if (result == null || result < 0) {
                     log.warn("回源后扣减仍失败，spuId: {}, skuId: {}, result: {}", spuId, skuId, result);
                     return null;
@@ -269,7 +202,7 @@ public class SpuCacheServiceImpl implements SpuCacheService {
             }
         }
 
-        if (result == -1L) {
+        if (result == ProductStockCacheService.STOCK_NOT_ENOUGH) {
             log.warn("SKU库存不足，spuId: {}, skuId: {}, 尝试扣减: {}", spuId, skuId, quantity);
             return null;
         }
@@ -286,8 +219,12 @@ public class SpuCacheServiceImpl implements SpuCacheService {
             return null;
         }
 
-        String hashKey = String.valueOf(skuId);
-        Long newStock = cacheService.hIncr(RedisKey.SPU_SKU_STOCK, spuId, hashKey, quantity);
+        Long newStock = productStockCacheService.release(spuId, skuId, quantity);
+        if (newStock == null) {
+            log.info("恢复库存时缓存缺失，触发回源重建，spuId: {}", spuId);
+            warmUpBatch(Collections.singletonList(spuId));
+            newStock = productStockCacheService.release(spuId, skuId, quantity);
+        }
         if (newStock != null) {
             log.debug("SKU库存恢复成功，spuId: {}, skuId: {}, 恢复: {}, 当前: {}",
                     spuId, skuId, quantity, newStock);
@@ -392,12 +329,7 @@ public class SpuCacheServiceImpl implements SpuCacheService {
     }
 
     private void persistCaches(List<SpuCache> cacheDTOList) {
-        cacheService.batchSetList(
-                cacheDTOList,
-                RedisKey.SPU_DETAIL.getPrefix(),
-                SpuCache::getId,
-                RedisKey.SPU_DETAIL.getTtl()
-        );
+        productDetailCacheService.batchSet(cacheDTOList);
 
         List<Long> allSkuIds = cacheDTOList.stream()
                 .flatMap(dto -> dto.getSkuList().stream())
@@ -425,11 +357,16 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                                         }
                                 ))
                 ));
-        cacheService.batchSetHashMap(
-                RedisKey.SPU_SKU_STOCK.getPrefix(),
-                skuStockMap,
-                RedisKey.SPU_SKU_STOCK.getTtl()
-        );
+        Map<Long, Map<Long, Integer>> normalizedStockMap = skuStockMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().entrySet().stream()
+                                .collect(Collectors.toMap(
+                                        stockEntry -> Long.valueOf(stockEntry.getKey()),
+                                        Map.Entry::getValue
+                                ))
+                ));
+        productStockCacheService.batchSet(normalizedStockMap);
     }
 
     private SpuCache buildSingleSpuCache(Spu spu,

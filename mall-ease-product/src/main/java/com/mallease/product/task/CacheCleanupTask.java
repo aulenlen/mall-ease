@@ -1,7 +1,7 @@
 package com.mallease.product.task;
 
 import com.mallease.common.service.RedisService;
-import com.mallease.product.constant.RedisKey;
+import com.mallease.product.constant.ProductCacheKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -32,7 +32,7 @@ public class CacheCleanupTask {
         log.info("开始清理PMS异常缓存任务");
         try {
             // 扫描所有 sku:stock:* 的 key
-            Set<String> keys = redisService.scan(RedisKey.SPU_SKU_STOCK.getPrefix() + "*");
+            Set<String> keys = redisService.scan(ProductCacheKeys.spuStockPattern());
             int cleaned = 0;
             for (String key : keys) {
                 Long ttl = redisService.getExpire(key);
@@ -40,7 +40,7 @@ public class CacheCleanupTask {
                 // 发现未设置过期时间的异常数据
                 if (ttl != null && ttl == -1) {
                     // 补救设置过期时间（而非直接删除，避免误伤）
-                    redisService.expire(key, RedisKey.SPU_SKU_STOCK.getTtl());
+                    redisService.expire(key, ProductCacheKeys.spuStockTtlSeconds());
                     log.warn("修复未设置过期时间的缓存: {}", key);
                     cleaned++;
                 }

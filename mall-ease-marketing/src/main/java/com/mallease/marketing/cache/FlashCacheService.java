@@ -1,4 +1,4 @@
-package com.mallease.marketing.service.impl;
+package com.mallease.marketing.cache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.common.api.R;
@@ -13,7 +13,6 @@ import com.mallease.marketing.model.client.query.FlashProductQuery;
 import com.mallease.marketing.model.client.vo.FlashProductVO;
 import com.mallease.marketing.model.data.entity.FlashProduct;
 import com.mallease.marketing.model.data.entity.FlashSession;
-import com.mallease.marketing.service.FlashCacheService;
 import com.mallease.marketing.service.FlashService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class FlashCacheServiceImpl implements FlashCacheService {
+public class FlashCacheService {
 
     private static final int FLASH_PROMOTION_TYPE = 5;
     private static final long CACHE_BUFFER_MINUTES = 15L;
@@ -43,7 +42,6 @@ public class FlashCacheServiceImpl implements FlashCacheService {
     private final ProductFeignClient productFeignClient;
     private final ObjectMapper objectMapper;
 
-    @Override
     public void warmUpCurrentSession() {
         FlashSession currentSession = flashService.getCurrentFlashSessions();
         if (currentSession == null || currentSession.getId() == null) {
@@ -53,7 +51,6 @@ public class FlashCacheServiceImpl implements FlashCacheService {
         warmUpSessions(Collections.singletonMap(currentSession.getId(), currentSession));
     }
 
-    @Override
     public void warmUpUpcomingSessions() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime deadline = now.plusMinutes(CACHE_BUFFER_MINUTES);
@@ -70,7 +67,6 @@ public class FlashCacheServiceImpl implements FlashCacheService {
         warmUpSessions(sessionMap);
     }
 
-    @Override
     public void warmUpSessions(Map<Long, FlashSession> sessionMap) {
 
         if (sessionMap == null || sessionMap.isEmpty()) {
@@ -120,7 +116,6 @@ public class FlashCacheServiceImpl implements FlashCacheService {
         }
     }
 
-    @Override
     public ProductDTO getHotDetail(Long sessionId, Long spuId) {
         ProductDTO snapshot = getHotSnapshot(sessionId, spuId);
         if (snapshot == null) {
@@ -133,7 +128,6 @@ public class FlashCacheServiceImpl implements FlashCacheService {
         return mergeSnapshotWithOverlay(snapshot, overlay);
     }
 
-    @Override
     public SpuFlashOverlayDTO getOverlay(Long sessionId, Long spuId) {
 
         if (sessionId == null || spuId == null) {
