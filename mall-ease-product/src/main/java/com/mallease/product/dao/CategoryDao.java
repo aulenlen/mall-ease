@@ -66,12 +66,12 @@ public interface CategoryDao {
     List<Category> selectByLevel(@Param("level") Integer level);
 
     /**
-     * 根据状态查询
+     * 根据启用状态查询
      *
-     * @param status 状态：0-禁用 1-启用
+     * @param enableStatus 启用状态：0-禁用 1-启用
      * @return 分类列表
      */
-    List<Category> selectByStatus(@Param("status") Integer status);
+    List<Category> selectByEnableStatus(@Param("enableStatus") Integer enableStatus);
 
     /**
      * 查询导航分类
@@ -128,13 +128,13 @@ public interface CategoryDao {
     int updateByPrimaryKeySelective(Category record);
 
     /**
-     * 批量更新状态
+     * 批量更新启用状态
      *
-     * @param ids ID列表
-     * @param status 状态
+     * @param ids          ID列表
+     * @param enableStatus 启用状态
      * @return 影响行数
      */
-    int updateStatusBatch(@Param("ids") List<Long> ids, @Param("status") Integer status);
+    int updateEnableStatusBatch(@Param("ids") List<Long> ids, @Param("enableStatus") Integer enableStatus);
 
     /**
      * 批量更新路径（移动分类时使用）

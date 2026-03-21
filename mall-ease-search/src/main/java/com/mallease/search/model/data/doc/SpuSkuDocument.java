@@ -37,8 +37,8 @@ public class SpuSkuDocument implements Serializable {
     private String skuCode;
 
     /**
-     * SKU 价格
+     * SKU 基础成交价
      */
     @Field(type = FieldType.Double)
-    private BigDecimal price;
+    private BigDecimal basePrice;
 }

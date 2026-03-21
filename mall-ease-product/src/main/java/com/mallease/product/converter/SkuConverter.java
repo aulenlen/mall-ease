@@ -6,7 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.cmd.SkuCmd;
 import com.mallease.product.model.client.vo.SkuVO;
-import com.mallease.product.model.data.entity.*;
+import com.mallease.product.model.data.entity.Sku;
+import com.mallease.product.model.data.entity.SkuStock;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -37,13 +38,6 @@ public interface SkuConverter {
     @Mapping(target = "spuId", ignore = true)
     void mergeSkuStockToVo(@MappingTarget SkuVO vo, SkuStock stock);
 
-    @Mapping(target = "id", ignore = true)
-    void mergeSkuPromotionToVo(@MappingTarget SkuVO vo, SkuPromotion promotion);
-    SkuVO.SkuLadderVO ladderEntityToVo(SkuLadder entity);
-    List<SkuVO.SkuLadderVO> ladderEntityListToVoList(List<SkuLadder> entities);
-    SkuVO.SkuMemberPriceVO memberPriceEntityToVo(SkuMemberPrice entity);
-    List<SkuVO.SkuMemberPriceVO> memberPriceEntityListToVoList(List<SkuMemberPrice> entities);
-
     // Cmd → Entity
 
     @Mapping(target = "deleted", constant = "0")
@@ -58,14 +52,6 @@ public interface SkuConverter {
     @Mapping(target = "version", constant = "1")
     SkuStock stockCmdToEntity(SkuCmd.SkuStockCmd cmd);
 
-    @Mapping(target = "version", constant = "1")
-    @Mapping(target = "previewStatus", constant = "0")
-    SkuPromotion promotionCmdToEntity(SkuCmd.SkuPromotionCmd cmd);
-    SkuMemberPrice memberPriceCmdToEntity(SkuCmd.SkuMemberPriceCmd cmd);
-    List<SkuMemberPrice> memberPriceCmdListToEntityList(List<SkuCmd.SkuMemberPriceCmd> cmdList);
-    SkuLadder ladderCmdToEntity(SkuCmd.SkuLadderCmd cmd);
-    List<SkuLadder> ladderCmdListToEntityList(List<SkuCmd.SkuLadderCmd> cmdList);
-
     // Cmd → SkuData（聚合对象）
 
     /**
@@ -78,9 +64,6 @@ public interface SkuConverter {
         return SpuAggregate.SkuData.builder()
                 .sku(saveCmdToEntity(cmd))
                 .stock(cmd.getStock() != null ? stockCmdToEntity(cmd.getStock()) : null)
-                .promotion(cmd.getPromotion() != null ? promotionCmdToEntity(cmd.getPromotion()) : null)
-                .ladderList(cmd.getLadderList() != null ? ladderCmdListToEntityList(cmd.getLadderList()) : null)
-                .memberPriceList(cmd.getMemberPriceList() != null ? memberPriceCmdListToEntityList(cmd.getMemberPriceList()) : null)
                 .build();
     }
 

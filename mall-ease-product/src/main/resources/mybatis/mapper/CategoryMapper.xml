@@ -8,7 +8,7 @@
         <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="path" property="path" jdbcType="VARCHAR"/>
         <result column="level" property="level" jdbcType="INTEGER"/>
-        <result column="status" property="status" jdbcType="TINYINT"/>
+        <result column="enable_status" property="enableStatus" jdbcType="TINYINT"/>
         <result column="is_nav" property="isNav" jdbcType="TINYINT"/>
         <result column="sort" property="sort" jdbcType="INTEGER"/>
         <result column="icon" property="icon" jdbcType="VARCHAR"/>
@@ -23,7 +23,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, parent_id, name, path, level, status, is_nav, sort, icon, image,
+        id, parent_id, name, path, level, enable_status, is_nav, sort, icon, image,
         keywords, description, deleted, create_time, update_time, creator, updater
     </sql>
 
@@ -80,11 +80,11 @@
         ORDER BY sort, id
     </select>
 
-    <!-- 根据状态查询 -->
-    <select id="selectByStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    <!-- 根据启用状态查询 -->
+    <select id="selectByEnableStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM product_category
-        WHERE status = #{status,jdbcType=TINYINT} AND deleted = 0
+        WHERE enable_status = #{enableStatus,jdbcType=TINYINT} AND deleted = 0
         ORDER BY level, sort, id
     </select>
 
@@ -92,7 +92,7 @@
     <select id="selectNavCategories" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM product_category
-        WHERE is_nav = 1 AND status = 1 AND deleted = 0
+        WHERE is_nav = 1 AND enable_status = 1 AND deleted = 0
         ORDER BY level, sort, id
     </select>
 
@@ -115,11 +115,11 @@
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.product.model.data.entity.Category" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_category (
-            parent_id, name, path, level, status, is_nav, sort, icon, image,
+            parent_id, name, path, level, enable_status, is_nav, sort, icon, image,
             keywords, description, deleted, creator, updater
         ) VALUES (
             #{parentId,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{path,jdbcType=VARCHAR},
-            #{level,jdbcType=INTEGER}, #{status,jdbcType=TINYINT}, #{isNav,jdbcType=TINYINT},
+            #{level,jdbcType=INTEGER}, #{enableStatus,jdbcType=TINYINT}, #{isNav,jdbcType=TINYINT},
             #{sort,jdbcType=INTEGER}, #{icon,jdbcType=VARCHAR}, #{image,jdbcType=VARCHAR},
             #{keywords,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, 0,
             #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}
@@ -134,7 +134,7 @@
             <if test="name != null">name,</if>
             <if test="path != null">path,</if>
             <if test="level != null">level,</if>
-            <if test="status != null">status,</if>
+            <if test="enableStatus != null">enable_status,</if>
             <if test="isNav != null">is_nav,</if>
             <if test="sort != null">sort,</if>
             <if test="icon != null">icon,</if>
@@ -149,7 +149,7 @@
             <if test="name != null">#{name,jdbcType=VARCHAR},</if>
             <if test="path != null">#{path,jdbcType=VARCHAR},</if>
             <if test="level != null">#{level,jdbcType=INTEGER},</if>
-            <if test="status != null">#{status,jdbcType=TINYINT},</if>
+            <if test="enableStatus != null">#{enableStatus,jdbcType=TINYINT},</if>
             <if test="isNav != null">#{isNav,jdbcType=TINYINT},</if>
             <if test="sort != null">#{sort,jdbcType=INTEGER},</if>
             <if test="icon != null">#{icon,jdbcType=VARCHAR},</if>
@@ -168,7 +168,7 @@
             name = #{name,jdbcType=VARCHAR},
             path = #{path,jdbcType=VARCHAR},
             level = #{level,jdbcType=INTEGER},
-            status = #{status,jdbcType=TINYINT},
+            enable_status = #{enableStatus,jdbcType=TINYINT},
             is_nav = #{isNav,jdbcType=TINYINT},
             sort = #{sort,jdbcType=INTEGER},
             icon = #{icon,jdbcType=VARCHAR},
@@ -187,7 +187,7 @@
             <if test="name != null">name = #{name,jdbcType=VARCHAR},</if>
             <if test="path != null">path = #{path,jdbcType=VARCHAR},</if>
             <if test="level != null">level = #{level,jdbcType=INTEGER},</if>
-            <if test="status != null">status = #{status,jdbcType=TINYINT},</if>
+            <if test="enableStatus != null">enable_status = #{enableStatus,jdbcType=TINYINT},</if>
             <if test="isNav != null">is_nav = #{isNav,jdbcType=TINYINT},</if>
             <if test="sort != null">sort = #{sort,jdbcType=INTEGER},</if>
             <if test="icon != null">icon = #{icon,jdbcType=VARCHAR},</if>
@@ -199,10 +199,10 @@
         WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
     </update>
 
-    <!-- 批量更新状态 -->
-    <update id="updateStatusBatch">
+    <!-- 批量更新启用状态 -->
+    <update id="updateEnableStatusBatch">
         UPDATE product_category
-        SET status = #{status,jdbcType=TINYINT}
+        SET enable_status = #{enableStatus,jdbcType=TINYINT}
         WHERE deleted = 0 AND id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id,jdbcType=BIGINT}

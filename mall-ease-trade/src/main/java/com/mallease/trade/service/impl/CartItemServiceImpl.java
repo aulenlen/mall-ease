@@ -91,7 +91,7 @@ public class CartItemServiceImpl implements CartItemService {
         cartItem.setSpuName(skuInfo.getSpuName());
         cartItem.setSkuPic(skuInfo.getSkuPic() != null ? skuInfo.getSkuPic() : skuInfo.getSpuPic());
         cartItem.setSkuAttrs(skuInfo.getAttrValues());
-        cartItem.setPrice(skuInfo.getPrice() != null ? skuInfo.getPrice() : BigDecimal.ZERO);
+        cartItem.setPrice(skuInfo.getBasePrice() != null ? skuInfo.getBasePrice() : BigDecimal.ZERO);
         cartItem.setChecked(1);
         return add(cartItem);
     }
@@ -352,8 +352,8 @@ public class CartItemServiceImpl implements CartItemService {
                                                Map<Long, SkuSimpleDTO> skuMap,
                                                Map<Long, Boolean> availabilityMap) {
         SkuSimpleDTO skuInfo = skuMap.get(item.getSkuId());
-        BigDecimal currentPrice = skuInfo != null && skuInfo.getPrice() != null
-                ? skuInfo.getPrice()
+        BigDecimal currentPrice = skuInfo != null && skuInfo.getBasePrice() != null
+                ? skuInfo.getBasePrice()
                 : item.getPrice();
         boolean inStock = Boolean.TRUE.equals(availabilityMap.getOrDefault(item.getSkuId(), Boolean.FALSE));
 

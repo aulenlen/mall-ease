@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 保存SPU命令（创建/更新统一）
@@ -49,9 +48,6 @@ public class SpuCmd {
     @NotNull(groups = Create.class, message = "创建时商品分类ID不能为空")
     private Long categoryId;
 
-    @Schema(description = "运费模板ID")
-    private Long freightTemplateId;
-
     @Schema(description = "SPU名称", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(groups = Create.class, message = "创建时SPU名称不能为空")
     @Size(max = 200, message = "SPU名称长度不能超过200个字符")
@@ -68,10 +64,6 @@ public class SpuCmd {
     @Schema(description = "关键字")
     @Size(max = 255, message = "关键字长度不能超过255个字符")
     private String keywords;
-
-    @Schema(description = "备注")
-    @Size(max = 500, message = "备注长度不能超过500个字符")
-    private String note;
 
     @Schema(description = "SPU主图URL")
     @Size(max = 255, message = "主图URL长度不能超过255个字符")
@@ -119,16 +111,6 @@ public class SpuCmd {
     @Schema(description = "SPU属性值列表（参数）")
     @Valid
     private List<AttrValueCmd> attrValueList;
-
-    @Schema(description = "满减规则列表（可选）")
-    @Valid
-    private List<SpuFullReductionCmd> fullReductionList;
-
-    @Schema(description = "专题关联ID列表")
-    private List<Long> subjectIds;
-
-    @Schema(description = "优选专区关联ID列表")
-    private List<Long> preferenceAreaIds;
 
     /**
      * SPU详情命令（内部类）
@@ -190,44 +172,4 @@ public class SpuCmd {
         private String attrValue;
     }
 
-    /**
-     * 满减规则
-     */
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @Schema(description = "满减规则")
-    public static class SpuFullReductionCmd {
-
-        @Schema(description = "满足金额")
-        @DecimalMin(value = "0.01", message = "满足金额必须大于0")
-        private BigDecimal fullPrice;
-
-        @Schema(description = "减少金额")
-        @DecimalMin(value = "0.01", message = "减少金额必须大于0")
-        private BigDecimal reducePrice;
-
-        /**
-         * 判断是否为有效的满减规则
-         */
-        public boolean isValid() {
-            return fullPrice != null && reducePrice != null
-                    && fullPrice.compareTo(BigDecimal.ZERO) > 0
-                    && reducePrice.compareTo(BigDecimal.ZERO) > 0;
-        }
-    }
-
-    /**
-     * 获取满减规则列表（自动过滤无效数据）
-     */
-    public List<SpuFullReductionCmd> getFullReductionList() {
-        if (fullReductionList == null || fullReductionList.isEmpty()) {
-            return null;
-        }
-        List<SpuFullReductionCmd> validList = fullReductionList.stream()
-                .filter(SpuFullReductionCmd::isValid)
-                .collect(Collectors.toList());
-        return validList.isEmpty() ? null : validList;
-    }
 }

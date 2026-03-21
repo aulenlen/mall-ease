@@ -77,9 +77,9 @@ public class FlashAdminController {
     public R<Integer> updateSessionStatusBatch(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "需要批量更新状态的场次ID列表", required = true)
             @RequestBody List<Long> ids,
-            @Parameter(description = "目标状态：0-禁用，1-启用", required = true)
-            @RequestParam Integer status) {
-        return R.success(flashService.updateSessionStatusBatch(ids, status));
+            @Parameter(description = "目标场次状态：0-禁用，1-启用", required = true)
+            @RequestParam Integer sessionStatus) {
+        return R.success(flashService.updateSessionStatusBatch(ids, sessionStatus));
     }
 
     @Operation(summary = "添加秒杀商品")

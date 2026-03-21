@@ -49,9 +49,6 @@ public class SpuDetailVO {
     @Schema(description = "分类路径(如 /1/7/8/)")
     private String categoryIds;
 
-    @Schema(description = "运费模板ID")
-    private Long freightTemplateId;
-
     @Schema(description = "SPU名称")
     private String name;
 
@@ -63,9 +60,6 @@ public class SpuDetailVO {
 
     @Schema(description = "关键字")
     private String keywords;
-
-    @Schema(description = "备注")
-    private String note;
 
     @Schema(description = "SPU主图URL")
     private String pic;
@@ -106,8 +100,8 @@ public class SpuDetailVO {
     @Schema(description = "最高价格")
     private BigDecimal maxPrice;
 
-    @Schema(description = "总库存")
-    private Integer stock;
+    @Schema(description = "是否有货")
+    private Boolean inStock;
 
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
@@ -158,15 +152,6 @@ public class SpuDetailVO {
     @Schema(description = "属性值列表（参数）")
     private List<AttrValueVO> attrValueList;
 
-    @Schema(description = "满减规则列表")
-    private List<SpuFullReductionVO> fullReductionList;
-
-    @Schema(description = "关联的专题ID列表")
-    private List<Long> subjectIds;
-
-    @Schema(description = "关联的优选专区ID列表")
-    private List<Long> preferenceAreaIds;
-
     // 嵌套VO对象
 
     /**
@@ -192,26 +177,4 @@ public class SpuDetailVO {
         private String attrValue;
     }
 
-    /**
-     * 满减规则VO
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "满减规则")
-    public static class SpuFullReductionVO {
-
-        @Schema(description = "主键ID")
-        private Long id;
-
-        @Schema(description = "满足金额")
-        private BigDecimal fullPrice;
-
-        @Schema(description = "减少金额")
-        private BigDecimal reducePrice;
-
-        @Schema(description = "优惠描述")
-        private String description;
-    }
 }

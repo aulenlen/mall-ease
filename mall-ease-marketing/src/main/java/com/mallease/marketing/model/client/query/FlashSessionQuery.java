@@ -16,8 +16,8 @@ public class FlashSessionQuery extends BaseQuery {
     @Schema(description = "场次名称")
     private String name;
 
-    @Schema(description = "状态：0-禁用 1-启用")
-    private Integer status;
+    @Schema(description = "场次启用状态：0-禁用 1-启用")
+    private Integer sessionStatus;
 
     @Schema(description = "开始时间下限")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

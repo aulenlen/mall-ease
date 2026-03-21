@@ -4,29 +4,40 @@ import cn.hutool.core.util.IdUtil;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.ProductDTO;
+import com.mallease.common.exception.ApiException;
+import com.mallease.common.exception.Asserts;
+import com.mallease.common.util.LoginContextUtil;
 import com.mallease.common.dto.remote.SearchFilterDTO;
 import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
-import com.mallease.common.exception.ApiException;
-import com.mallease.common.exception.Asserts;
-import com.mallease.common.util.LoginContextUtil;
-import com.mallease.product.dao.*;
-import com.mallease.common.dto.remote.ContentPreferenceAreaSpuRelationDTO;
-import com.mallease.common.dto.remote.ContentSubjectSpuRelationDTO;
-import com.mallease.product.model.aggregate.*;
+import com.mallease.product.dao.AttributeValueDao;
+import com.mallease.product.dao.SpuDao;
+import com.mallease.product.dao.SpuDetailDao;
+import com.mallease.product.dao.SpuPublishRecordDao;
+import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.query.SpuQuery;
-import com.mallease.product.model.client.vo.SpuPublishVO;
 import com.mallease.product.model.client.vo.PublishFailDetailVO;
-import com.mallease.product.event.SpuPublishEvent;
-import com.mallease.product.feign.ContentPreferenceAreaFeignClient;
-import com.mallease.product.feign.ContentSubjectFeignClient;
 import com.mallease.product.converter.SpuCacheConverter;
+import com.mallease.product.event.SpuPublishEvent;
 import com.mallease.product.model.data.cache.SpuCache;
-import com.mallease.product.model.data.entity.*;
 import com.mallease.product.model.data.entity.AttrValueAggregation;
-import com.mallease.product.service.*;
+import com.mallease.product.model.data.entity.AttributeValue;
+import com.mallease.product.model.data.entity.Brand;
+import com.mallease.product.model.data.entity.Category;
+import com.mallease.product.model.data.entity.Sku;
+import com.mallease.product.model.data.entity.SkuStock;
+import com.mallease.product.model.data.entity.Spu;
+import com.mallease.product.model.data.entity.SpuDetail;
+import com.mallease.product.model.data.entity.SpuPublishRecord;
+import com.mallease.product.model.client.vo.SpuPublishVO;
+import com.mallease.product.service.BrandService;
+import com.mallease.product.service.CategoryService;
+import com.mallease.product.service.SkuService;
+import com.mallease.product.service.SkuStockService;
+import com.mallease.product.service.SpuCacheService;
+import com.mallease.product.service.SpuService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -53,15 +64,9 @@ public class SpuServiceImpl implements SpuService {
     @Autowired
     private AttributeValueDao attributeValueDao;
     @Autowired
-    private SpuFullReductionDao fullReductionDao;
-    @Autowired
     private SkuService skuService;
     @Autowired
     private SkuStockService skuStockService;
-    @Autowired
-    private ContentSubjectFeignClient subjectFeignClient;
-    @Autowired
-    private ContentPreferenceAreaFeignClient preferenceAreaFeignClient;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
     @Autowired
@@ -96,10 +101,6 @@ public class SpuServiceImpl implements SpuService {
         spu.setCategoryIds(category.getPath());
         spu.setCategoryName(category.getName());
         spu.setBrandName(brand.getName());
-        if (spu.getFreightTemplateId() == null) {
-            spu.setFreightTemplateId(0L);
-        }
-
         if (spu.getSpuCode() == null || spu.getSpuCode().isEmpty()) {
             spu.setSpuCode("SN" + IdUtil.getSnowflakeNextIdStr());
         }
@@ -109,20 +110,15 @@ public class SpuServiceImpl implements SpuService {
             throw new ApiException("SKU为空");
         }
 
-        int totalStock = skuDataList.stream()
-                .map(SpuAggregate.SkuData::getStock)
-                .filter(stock -> stock != null && stock.getStock() != null)
-                .mapToInt(SkuStock::getStock)
-                .sum();
-        spu.setStock(totalStock);
+        spu.setInStock(calcInStockFromSkuData(skuDataList));
         BigDecimal minPrice = skuDataList.stream()
                 .map(SpuAggregate.SkuData::getSku)
-                .map(Sku::getPrice)
+                .map(Sku::getBasePrice)
                 .min(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
         BigDecimal maxPrice = skuDataList.stream()
                 .map(SpuAggregate.SkuData::getSku)
-                .map(Sku::getPrice)
+                .map(Sku::getBasePrice)
                 .max(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
         spu.setMinPrice(minPrice);
@@ -150,42 +146,6 @@ public class SpuServiceImpl implements SpuService {
         if (context.getAttrValueList() != null && !context.getAttrValueList().isEmpty()) {
             context.getAttrValueList().forEach(attr -> attr.setSpuId(spuId));
             attributeValueDao.insertBatch(context.getAttrValueList());
-        }
-
-        // 保存满减规则
-        if (context.getFullReductionList() != null && !context.getFullReductionList().isEmpty()) {
-            context.getFullReductionList().forEach(r -> r.setSpuId(spuId));
-            fullReductionDao.insertBatch(context.getFullReductionList());
-        }
-
-        // 专题关联（Feign）
-        if (context.getSubjectIds() != null && !context.getSubjectIds().isEmpty()) {
-            try {
-                List<ContentSubjectSpuRelationDTO> subjectRelations = context.getSubjectIds().stream()
-                        .map(subjectId -> ContentSubjectSpuRelationDTO.builder()
-                                .spuId(spuId)
-                                .subjectId(subjectId)
-                                .build())
-                        .collect(Collectors.toList());
-                subjectFeignClient.batchAddSpuRelation(subjectRelations);
-            } catch (Exception e) {
-                log.warn("专题关联失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
-            }
-        }
-
-        // 优选专区关联（Feign）
-        if (context.getPreferenceAreaIds() != null && !context.getPreferenceAreaIds().isEmpty()) {
-            try {
-                List<ContentPreferenceAreaSpuRelationDTO> areaRelations = context.getPreferenceAreaIds().stream()
-                        .map(areaId -> ContentPreferenceAreaSpuRelationDTO.builder()
-                                .spuId(spuId)
-                                .preferenceAreaId(areaId)
-                                .build())
-                        .collect(Collectors.toList());
-                preferenceAreaFeignClient.batchAddSpuRelation(areaRelations);
-            } catch (Exception e) {
-                log.warn("优选专区关联失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
-            }
         }
 
         return spuId;
@@ -262,20 +222,6 @@ public class SpuServiceImpl implements SpuService {
             List<Sku> skusToUpdate = new ArrayList<>();
             Set<Long> updatedSkuIds = new HashSet<>();
 
-            // 促销信息批量操作的数据收集
-            List<Long> skuIdsToQueryPromotion = new ArrayList<>();
-            List<SkuPromotion> promotionsToInsert = new ArrayList<>();
-            List<SkuPromotion> promotionsToUpdate = new ArrayList<>();
-            List<Long> promotionSkuIdsToDelete = new ArrayList<>();
-
-            // 阶梯价批量操作的数据收集
-            List<Long> ladderSkuIdsToDelete = new ArrayList<>();
-            List<SkuLadder> laddersToInsert = new ArrayList<>();
-
-            // 会员价批量操作的数据收集
-            List<Long> memberPriceSkuIdsToDelete = new ArrayList<>();
-            List<SkuMemberPrice> memberPricesToInsert = new ArrayList<>();
-
             // 第一阶段：分类收集数据
             for (SpuAggregate.SkuData skuData : context.getSkuList()) {
                 if (skuData == null || skuData.getSku() == null) {
@@ -295,36 +241,6 @@ public class SpuServiceImpl implements SpuService {
                     if (!updatedSkuIds.add(skuId)) {
                         throw new ApiException("SKU ID重复: " + skuId);
                     }
-
-                    // 收集促销信息相关操作
-                    if (skuData.isUpdatePromotion()) {
-                        skuIdsToQueryPromotion.add(skuId);
-                        if (skuData.getPromotion() != null) {
-                            SkuPromotion promotion = skuData.getPromotion();
-                            promotion.setSkuId(skuId);
-                            promotionsToUpdate.add(promotion);
-                        } else {
-                            promotionSkuIdsToDelete.add(skuId);
-                        }
-                    }
-
-                    // 收集阶梯价相关操作
-                    if (skuData.isUpdateLadders()) {
-                        ladderSkuIdsToDelete.add(skuId);
-                        if (skuData.getLadderList() != null && !skuData.getLadderList().isEmpty()) {
-                            skuData.getLadderList().forEach(ladder -> ladder.setSkuId(skuId));
-                            laddersToInsert.addAll(skuData.getLadderList());
-                        }
-                    }
-
-                    // 收集会员价相关操作
-                    if (skuData.isUpdateMemberPrices()) {
-                        memberPriceSkuIdsToDelete.add(skuId);
-                        if (skuData.getMemberPriceList() != null && !skuData.getMemberPriceList().isEmpty()) {
-                            skuData.getMemberPriceList().forEach(memberPrice -> memberPrice.setSkuId(skuId));
-                            memberPricesToInsert.addAll(skuData.getMemberPriceList());
-                        }
-                    }
                 } else if (skuId != null && !existingSkuIds.contains(skuId)) {
                     log.error("SKU ID " + skuId + " 不属于 SPU " + spuId);
                     throw new ApiException("SKU ID " + skuId + " 不属于 SPU " + spuId);
@@ -337,56 +253,6 @@ public class SpuServiceImpl implements SpuService {
                     skuService.update(sku);
                 }
             }
-
-            // 批量处理促销信息
-            if (!skuIdsToQueryPromotion.isEmpty()) {
-                // 批量查询现有促销信息
-                List<SkuPromotion> existingPromotions = skuService.listPromotionBySkuIds(skuIdsToQueryPromotion);
-                Set<Long> existingPromotionSkuIds = existingPromotions.stream()
-                        .map(SkuPromotion::getSkuId)
-                        .collect(Collectors.toSet());
-
-                // 分类：插入还是更新
-                List<SkuPromotion> finalPromotionsToInsert = new ArrayList<>();
-                List<SkuPromotion> finalPromotionsToUpdate = new ArrayList<>();
-                for (SkuPromotion promotion : promotionsToUpdate) {
-                    if (existingPromotionSkuIds.contains(promotion.getSkuId())) {
-                        // 存在：需要更新，设置 ID
-                        SkuPromotion existing = existingPromotions.stream()
-                                .filter(p -> p.getSkuId().equals(promotion.getSkuId()))
-                                .findFirst()
-                                .orElse(null);
-                        if (existing != null) {
-                            promotion.setId(existing.getId());
-                            finalPromotionsToUpdate.add(promotion);
-                        }
-                    } else {
-                        // 不存在：需要插入
-                        finalPromotionsToInsert.add(promotion);
-                    }
-                }
-
-                // 批量插入促销信息
-                if (!finalPromotionsToInsert.isEmpty()) {
-                    skuService.savePromotionBatch(Collections.emptyList(), finalPromotionsToInsert);
-                }
-
-                // 批量更新促销信息
-                if (!finalPromotionsToUpdate.isEmpty()) {
-                    skuService.updatePromotionBatch(finalPromotionsToUpdate);
-                }
-            }
-
-            // 批量删除促销信息（删除那些在已存在列表中但新数据为空的）
-            if (!promotionSkuIdsToDelete.isEmpty()) {
-                skuService.savePromotionBatch(promotionSkuIdsToDelete, Collections.emptyList());
-            }
-
-            // 批量处理阶梯价：使用 skuService 的聚合方法
-            skuService.saveLadderBatch(ladderSkuIdsToDelete, laddersToInsert);
-
-            // 批量处理会员价：使用 skuService 的聚合方法
-            skuService.saveMemberPriceBatch(memberPriceSkuIdsToDelete, memberPricesToInsert);
 
             // 删除缺失的 SKU
             Set<Long> skuIdsToDelete = existingSkuIds.stream()
@@ -407,28 +273,25 @@ public class SpuServiceImpl implements SpuService {
             List<Long> remainingSkuIds = remainingSkus.stream()
                     .map(Sku::getId)
                     .collect(Collectors.toList());
-            int totalStock = 0;
+            Boolean inStock = Boolean.FALSE;
             if (!remainingSkuIds.isEmpty()) {
                 List<SkuStock> skuStockList = skuStockService.listStockBySkuIds(remainingSkuIds);
-                totalStock = skuStockList.stream()
-                        .filter(s -> s != null && s.getStock() != null)
-                        .mapToInt(s -> s.getStock())
-                        .sum();
+                inStock = calcInStock(skuStockList);
             }
 
             BigDecimal minPrice = remainingSkus.stream()
-                    .map(Sku::getPrice)
+                    .map(Sku::getBasePrice)
                     .filter(p -> p != null)
                     .min(BigDecimal::compareTo)
                     .orElse(BigDecimal.ZERO);
             BigDecimal maxPrice = remainingSkus.stream()
-                    .map(Sku::getPrice)
+                    .map(Sku::getBasePrice)
                     .filter(p -> p != null)
                     .max(BigDecimal::compareTo)
                     .orElse(BigDecimal.ZERO);
             Spu aggregate = new Spu();
             aggregate.setId(spuId);
-            aggregate.setStock(totalStock);
+            aggregate.setInStock(inStock);
             aggregate.setMinPrice(minPrice);
             aggregate.setMaxPrice(maxPrice);
             spuDao.updateByPrimaryKeySelective(aggregate);
@@ -441,54 +304,6 @@ public class SpuServiceImpl implements SpuService {
             if (context.getAttrValueList() != null && !context.getAttrValueList().isEmpty()) {
                 context.getAttrValueList().forEach(attr -> attr.setSpuId(spuId));
                 attributeValueDao.insertBatch(context.getAttrValueList());
-            }
-        }
-
-        // 更新满减规则
-        if (context.isUpdateFullReductions()) {
-            fullReductionDao.deleteBySpuId(spuId);
-
-            if (context.getFullReductionList() != null && !context.getFullReductionList().isEmpty()) {
-                context.getFullReductionList().forEach(r -> r.setSpuId(spuId));
-                fullReductionDao.insertBatch(context.getFullReductionList());
-            }
-        }
-
-        // 更新专题关联（全量替换，通过 Feign 调用 CMS 服务）
-        if (context.isUpdateSubjects()) {
-            try {
-                subjectFeignClient.deleteRelationsBySpuId(spuId);
-
-                if (context.getSubjectIds() != null && !context.getSubjectIds().isEmpty()) {
-                    List<ContentSubjectSpuRelationDTO> subjectRelations = context.getSubjectIds().stream()
-                            .map(subjectId -> ContentSubjectSpuRelationDTO.builder()
-                                    .spuId(spuId)
-                                    .subjectId(subjectId)
-                                    .build())
-                            .collect(Collectors.toList());
-                    subjectFeignClient.batchAddSpuRelation(subjectRelations);
-                }
-            } catch (Exception e) {
-                log.warn("专题关联更新失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
-            }
-        }
-
-        // 更新优选专区关联（全量替换，通过 Feign 调用 CMS 服务）
-        if (context.isUpdatePreferenceAreas()) {
-            try {
-                preferenceAreaFeignClient.deleteRelationsBySpuId(spuId);
-
-                if (context.getPreferenceAreaIds() != null && !context.getPreferenceAreaIds().isEmpty()) {
-                    List<ContentPreferenceAreaSpuRelationDTO> areaRelations = context.getPreferenceAreaIds().stream()
-                            .map(areaId -> ContentPreferenceAreaSpuRelationDTO.builder()
-                                    .spuId(spuId)
-                                    .preferenceAreaId(areaId)
-                                    .build())
-                            .collect(Collectors.toList());
-                    preferenceAreaFeignClient.batchAddSpuRelation(areaRelations);
-                }
-            } catch (Exception e) {
-                log.warn("优选专区关联更新失败，SPU ID: {}, 原因: {}", spuId, e.getMessage());
             }
         }
 
@@ -535,21 +350,11 @@ public class SpuServiceImpl implements SpuService {
             // 批量查询关联数据
             Map<Long, SkuStock> stockMap = skuStockService.listStockBySkuIds(skuIds).stream()
                     .collect(Collectors.toMap(SkuStock::getSkuId, s -> s, (a, b) -> a));
-            Map<Long, SkuPromotion> promotionMap = skuService.listPromotionBySkuIds(skuIds).stream()
-                    .collect(Collectors.toMap(SkuPromotion::getSkuId, p -> p, (a, b) -> a));
-            Map<Long, List<SkuLadder>> ladderMap = skuService.listLadderBySkuIds(skuIds).stream()
-                    .collect(Collectors.groupingBy(SkuLadder::getSkuId));
-            Map<Long, List<SkuMemberPrice>> memberPriceMap = skuService.listMemberPriceBySkuIds(skuIds).stream()
-                    .collect(Collectors.groupingBy(SkuMemberPrice::getSkuId));
-
             // 组装嵌套结构
             skuList = skuEntityList.stream()
                     .map(sku -> SpuAggregate.SkuData.builder()
                             .sku(sku)
                             .stock(stockMap.get(sku.getId()))
-                            .promotion(promotionMap.get(sku.getId()))
-                            .ladderList(ladderMap.get(sku.getId()))
-                            .memberPriceList(memberPriceMap.get(sku.getId()))
                             .build())
                     .collect(Collectors.toList());
         }
@@ -557,43 +362,11 @@ public class SpuServiceImpl implements SpuService {
         // 4. 查询属性值列表（参数）
         List<AttributeValue> attrValueList = attributeValueDao.selectParamsBySpuId(id);
 
-        // 5. 查询满减规则列表
-        List<SpuFullReduction> fullReductionList = fullReductionDao.selectBySpuId(id);
-
-        // 6. 查询关联的专题ID列表（通过 Feign 调用 CMS 服务）
-        List<Long> subjectIds = new ArrayList<>();
-        try {
-            R<List<ContentSubjectSpuRelationDTO>> subjectResult = subjectFeignClient.getRelationsBySpuId(id);
-            if (subjectResult != null && subjectResult.getData() != null) {
-                subjectIds = subjectResult.getData().stream()
-                        .map(ContentSubjectSpuRelationDTO::getSubjectId)
-                        .collect(Collectors.toList());
-            }
-        } catch (Exception e) {
-            log.warn("获取专题关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
-        }
-
-        // 7. 查询关联的优选专区ID列表（通过 Feign 调用 CMS 服务）
-        List<Long> preferenceAreaIds = new ArrayList<>();
-        try {
-            R<List<ContentPreferenceAreaSpuRelationDTO>> areaResult = preferenceAreaFeignClient.getRelationsBySpuId(id);
-            if (areaResult != null && areaResult.getData() != null) {
-                preferenceAreaIds = areaResult.getData().stream()
-                        .map(ContentPreferenceAreaSpuRelationDTO::getPreferenceAreaId)
-                        .collect(Collectors.toList());
-            }
-        } catch (Exception e) {
-            log.warn("获取优选专区关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
-        }
-
         return SpuAggregate.builder()
                 .spu(spu)
                 .spuDetail(detail)
                 .skuList(skuList)
                 .attrValueList(attrValueList)
-                .fullReductionList(fullReductionList)
-                .subjectIds(subjectIds)
-                .preferenceAreaIds(preferenceAreaIds)
                 .build();
     }
 
@@ -612,7 +385,7 @@ public class SpuServiceImpl implements SpuService {
 
         log.info("开始删除商品，SPU ID: {}", id);
 
-        // 2. 删除关联的 SKU 及其子表数据（库存、促销、阶梯价、会员价）
+        // 2. 删除关联的 SKU 及其子表数据（库存）
         skuService.deleteBySpuId(id);
 
         // 3. 删除 SPU 详情
@@ -621,24 +394,7 @@ public class SpuServiceImpl implements SpuService {
         // 4. 删除 SPU 属性值
         attributeValueDao.deleteBySpuId(id);
 
-        // 5. 删除 SPU 满减规则
-        fullReductionDao.deleteBySpuId(id);
-
-        // 6. 删除 CMS 专题关联（通过 Feign）
-        try {
-            subjectFeignClient.deleteRelationsBySpuId(id);
-        } catch (Exception e) {
-            log.warn("删除专题关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
-        }
-
-        // 7. 删除 CMS 优选专区关联（通过 Feign）
-        try {
-            preferenceAreaFeignClient.deleteRelationsBySpuId(id);
-        } catch (Exception e) {
-            log.warn("删除优选专区关联失败，SPU ID: {}, 原因: {}", id, e.getMessage());
-        }
-
-        // 8. 删除 SPU 本身
+        // 5. 删除 SPU 本身
         int count = spuDao.deleteBatch(List.of(id));
         log.info("商品删除完成，SPU ID: {}", id);
         return count;
@@ -748,14 +504,6 @@ public class SpuServiceImpl implements SpuService {
     }
 
     @Override
-    public List<SpuFullReduction> listFullReductionBySpuIds(List<Long> spuIds) {
-        if (spuIds == null || spuIds.isEmpty()) {
-            return List.of();
-        }
-        return fullReductionDao.selectBySpuIds(spuIds);
-    }
-
-    @Override
     public SpuCache getProduct(Long spuId) {
         SpuCache spuCache = spuCacheService.get(spuId);
         if (spuCache != null) {
@@ -784,23 +532,23 @@ public class SpuServiceImpl implements SpuService {
     }
 
     @Override
-public List<ProductDTO> listProductSnapshots(List<Long> spuIds) {
-    if (spuIds == null || spuIds.isEmpty()) {
-        return Collections.emptyList();
-    }
+    public List<ProductDTO> listProductSnapshots(List<Long> spuIds) {
+        if (spuIds == null || spuIds.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-    Map<Long, SpuCache> cacheMap = getProducts(spuIds);
-    List<SpuCache> caches = spuIds.stream()
-            .filter(Objects::nonNull)
-            .map(cacheMap::get)
-            .filter(Objects::nonNull)
-            .toList();
-    if (caches.isEmpty()) {
-        return Collections.emptyList();
-    }
+        Map<Long, SpuCache> cacheMap = getProducts(spuIds);
+        List<SpuCache> caches = spuIds.stream()
+                .filter(Objects::nonNull)
+                .map(cacheMap::get)
+                .filter(Objects::nonNull)
+                .toList();
+        if (caches.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-    return spuCacheConverter.cacheListToDTOList(caches);
-}
+        return spuCacheConverter.cacheListToDTOList(caches);
+    }
 
     @Override
     public SpuSearchResultDTO advancedSearch(SpuSearchQuery query) {
@@ -820,7 +568,7 @@ public List<ProductDTO> listProductSnapshots(List<Long> spuIds) {
                         .minPrice(spu.getMinPrice())
                         .maxPrice(spu.getMaxPrice())
                         .sale(spu.getSale())
-                        .inStock(spu.getStock() != null && spu.getStock() > 0)
+                        .inStock(Boolean.TRUE.equals(spu.getInStock()))
                         .isNew(spu.getNewStatus() != null && spu.getNewStatus() == 1)
                         .build())
                 .toList();
@@ -972,8 +720,8 @@ public List<ProductDTO> listProductSnapshots(List<Long> spuIds) {
             return "商品库存不足，无法上架";
         }
 
-        if (spu.getStock() == null || spu.getStock() <= 0) {
-            return "商品总库存不足";
+        if (!Boolean.TRUE.equals(spu.getInStock())) {
+            return "商品当前无货";
         }
 
         return null;
@@ -996,5 +744,22 @@ public List<ProductDTO> listProductSnapshots(List<Long> spuIds) {
         // - 检查是否有预售状态
         // 这里暂时只做基础检查
         return null;
+    }
+
+    private Boolean calcInStockFromSkuData(List<SpuAggregate.SkuData> skuDataList) {
+        if (skuDataList == null || skuDataList.isEmpty()) {
+            return Boolean.FALSE;
+        }
+        return skuDataList.stream()
+                .map(SpuAggregate.SkuData::getStock)
+                .anyMatch(stock -> stock != null && stock.getStock() != null && stock.getStock() > 0);
+    }
+
+    private Boolean calcInStock(List<SkuStock> skuStockList) {
+        if (skuStockList == null || skuStockList.isEmpty()) {
+            return Boolean.FALSE;
+        }
+        return skuStockList.stream()
+                .anyMatch(stock -> stock != null && stock.getStock() != null && stock.getStock() > 0);
     }
 }

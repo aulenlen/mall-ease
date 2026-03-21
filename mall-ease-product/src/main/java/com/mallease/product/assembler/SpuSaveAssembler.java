@@ -45,19 +45,13 @@ public class SpuSaveAssembler {
         // 属性值列表（参数）
         List<AttributeValue> attrValueList = convertAttrValues(cmd);
 
-        // 满减规则列表
-        List<SpuFullReduction> fullReductionList = convertFullReductions(cmd);
-
         // SKU列表（创建场景，包含库存）
         List<SpuAggregate.SkuData> skuList = convertSkuListForCreate(cmd.getSkuList());
         return SpuAggregate.builder()
                 .spu(spu)
                 .spuDetail(spuDetail)
                 .attrValueList(attrValueList)
-                .fullReductionList(fullReductionList)
                 .skuList(skuList)
-                .subjectIds(cmd.getSubjectIds())
-                .preferenceAreaIds(cmd.getPreferenceAreaIds())
                 .build();
     }
 
@@ -95,33 +89,9 @@ public class SpuSaveAssembler {
             updateAttrValues = true;
         }
 
-        // 满减规则列表
-        boolean updateFullReductions = false;
-        if (cmd.getFullReductionList() != null) {
-            builder.fullReductionList(spuConverter.fullReductionCmdListToEntityList(cmd.getFullReductionList()));
-            updateFullReductions = true;
-        }
-
-        // 专题关联ID
-        boolean updateSubjects = false;
-        if (cmd.getSubjectIds() != null) {
-            builder.subjectIds(cmd.getSubjectIds());
-            updateSubjects = true;
-        }
-
-        // 优选专区关联ID
-        boolean updatePreferenceAreas = false;
-        if (cmd.getPreferenceAreaIds() != null) {
-            builder.preferenceAreaIds(cmd.getPreferenceAreaIds());
-            updatePreferenceAreas = true;
-        }
-
         return builder
                 .updateSkus(updateSkus)
                 .updateAttrValues(updateAttrValues)
-                .updateFullReductions(updateFullReductions)
-                .updateSubjects(updateSubjects)
-                .updatePreferenceAreas(updatePreferenceAreas)
                 .build();
     }
 
@@ -147,13 +117,6 @@ public class SpuSaveAssembler {
                     return value;
                 })
                 .collect(Collectors.toList());
-    }
-
-    private List<SpuFullReduction> convertFullReductions(SpuCmd cmd) {
-        if (cmd.getFullReductionList() == null) {
-            return null;
-        }
-        return spuConverter.fullReductionCmdListToEntityList(cmd.getFullReductionList());
     }
 
     // ========================================================================
@@ -200,26 +163,9 @@ public class SpuSaveAssembler {
         // SKU库存（创建时必需）
         SkuStock stock = skuConverter.stockCmdToEntity(cmd.getStock());
 
-        // SKU促销
-        SkuPromotion promotion = cmd.getPromotion() != null
-                ? skuConverter.promotionCmdToEntity(cmd.getPromotion())
-                : null;
-
-        // 阶梯价列表
-        List<SkuLadder> ladderList = cmd.getLadderList() != null
-                ? skuConverter.ladderCmdListToEntityList(cmd.getLadderList())
-                : null;
-
-        // 会员价列表
-        List<SkuMemberPrice> memberPriceList = cmd.getMemberPriceList() != null
-                ? skuConverter.memberPriceCmdListToEntityList(cmd.getMemberPriceList())
-                : null;
         return SpuAggregate.SkuData.builder()
                 .sku(sku)
                 .stock(stock)
-                .promotion(promotion)
-                .ladderList(ladderList)
-                .memberPriceList(memberPriceList)
                 .build();
     }
 
@@ -241,31 +187,8 @@ public class SpuSaveAssembler {
         sku.setId(cmd.getId());
         skuConverter.updateEntityFromCmd(sku, cmd);
 
-        // SKU促销
-        boolean updatePromotion = cmd.getPromotion() != null;
-        SkuPromotion promotion = updatePromotion
-                ? skuConverter.promotionCmdToEntity(cmd.getPromotion())
-                : null;
-
-        // 阶梯价列表
-        boolean updateLadders = cmd.getLadderList() != null;
-        List<SkuLadder> ladderList = updateLadders
-                ? skuConverter.ladderCmdListToEntityList(cmd.getLadderList())
-                : null;
-
-        // 会员价列表
-        boolean updateMemberPrices = cmd.getMemberPriceList() != null;
-        List<SkuMemberPrice> memberPriceList = updateMemberPrices
-                ? skuConverter.memberPriceCmdListToEntityList(cmd.getMemberPriceList())
-                : null;
         return SpuAggregate.SkuData.builder()
                 .sku(sku)
-                .promotion(promotion)
-                .ladderList(ladderList)
-                .memberPriceList(memberPriceList)
-                .updatePromotion(updatePromotion)
-                .updateLadders(updateLadders)
-                .updateMemberPrices(updateMemberPrices)
                 .build();
     }
 }

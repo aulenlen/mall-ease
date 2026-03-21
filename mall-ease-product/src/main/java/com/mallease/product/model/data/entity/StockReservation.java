@@ -50,7 +50,7 @@ public class StockReservation {
      *
      * @see ReservationStatus
      */
-    private Integer status;
+    private Integer reservationStatus;
 
     /**
      * 过期时间（创建时间 + 30分钟）

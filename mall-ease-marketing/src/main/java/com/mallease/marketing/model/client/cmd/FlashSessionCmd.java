@@ -39,8 +39,8 @@ public class FlashSessionCmd {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", shape = JsonFormat.Shape.STRING)
     private LocalDateTime endTime;
 
-    @Schema(description = "状态: 0-禁用, 1-启用")
+    @Schema(description = "场次启用状态: 0-禁用, 1-启用")
     @Min(value = 0, message = "状态值必须为0或1")
     @Max(value = 1, message = "状态值必须为0或1")
-    private Integer status = 0;
+    private Integer sessionStatus = 0;
 }

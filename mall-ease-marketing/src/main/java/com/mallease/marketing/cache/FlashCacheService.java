@@ -33,8 +33,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class FlashCacheService {
-
-    private static final int FLASH_PROMOTION_TYPE = 5;
     private static final long CACHE_BUFFER_MINUTES = 15L;
 
     private final RedisService redisService;
@@ -323,7 +321,7 @@ public class FlashCacheService {
                         .thenComparing(FlashProductVO::getSkuId, Comparator.nullsLast(Long::compareTo)))
                 .map(product -> SpuFlashOverlayDTO.SkuFlashOverlayDTO.builder()
                         .skuId(product.getSkuId())
-                        .originalPrice(product.getOriginalPrice())
+                        .compareAtPrice(product.getCompareAtPrice())
                         .flashPrice(product.getFlashPrice())
                         .flashStock(product.getFlashStock())
                         .flashLimit(product.getFlashLimit())
@@ -455,23 +453,12 @@ public class FlashCacheService {
             if (skuInfo.getPrice() == null) {
                 skuInfo.setPrice(new ProductDTO.SkuPriceInfo());
             }
-            if (overlaySku.getOriginalPrice() != null && skuInfo.getPrice().getOriginalPrice() == null) {
-                skuInfo.getPrice().setOriginalPrice(overlaySku.getOriginalPrice());
+            if (overlaySku.getCompareAtPrice() != null && skuInfo.getPrice().getCompareAtPrice() == null) {
+                skuInfo.getPrice().setCompareAtPrice(overlaySku.getCompareAtPrice());
             }
-
-            ProductDTO.SkuPromotionInfo promotionInfo = skuInfo.getPromotion();
-            if (promotionInfo == null) {
-                promotionInfo = new ProductDTO.SkuPromotionInfo();
-                skuInfo.setPromotion(promotionInfo);
-            }
-            promotionInfo.setType(FLASH_PROMOTION_TYPE);
-            promotionInfo.setPrice(overlaySku.getFlashPrice());
-            promotionInfo.setStartTime(overlay.getStartTime());
-            promotionInfo.setEndTime(overlay.getEndTime());
-            promotionInfo.setPerLimit(overlaySku.getFlashLimit());
 
             if (shouldUseFlashPrice(overlay, overlaySku, now)) {
-                skuInfo.getPrice().setPrice(overlaySku.getFlashPrice());
+                skuInfo.getPrice().setPromotionPrice(overlaySku.getFlashPrice());
             }
         }
 
@@ -502,7 +489,7 @@ public class FlashCacheService {
         List<BigDecimal> prices = product.getSkuList().stream()
                 .map(ProductDTO.SkuInfo::getPrice)
                 .filter(Objects::nonNull)
-                .map(ProductDTO.SkuPriceInfo::getPrice)
+                .map(this::resolveDisplayPrice)
                 .filter(Objects::nonNull)
                 .toList();
         if (prices.isEmpty()) {
@@ -517,6 +504,13 @@ public class FlashCacheService {
         }
         product.getSpuDetail().setMinPrice(minPrice);
         product.getSpuDetail().setMaxPrice(maxPrice);
+    }
+
+    private BigDecimal resolveDisplayPrice(ProductDTO.SkuPriceInfo priceInfo) {
+        if (priceInfo == null) {
+            return null;
+        }
+        return priceInfo.getPromotionPrice() != null ? priceInfo.getPromotionPrice() : priceInfo.getBasePrice();
     }
 
     private ProductDTO copyProduct(ProductDTO snapshot) {

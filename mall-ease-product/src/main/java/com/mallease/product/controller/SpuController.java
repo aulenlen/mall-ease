@@ -51,8 +51,6 @@ import java.util.stream.Collectors;
 @RequestMapping("/product/spu")
 public class SpuController {
 
-    private static final int FLASH_PROMOTION_TYPE = 5;
-
     private final SpuService spuService;
     private final SpuConverter spuConverter;
     private final SpuSaveAssembler spuSaveAssembler;
@@ -97,7 +95,7 @@ public class SpuController {
         return R.success(vo);
     }
 
-    @Operation(summary = "删除商品", description = "级联删除SKU、详情、属性值、满减规则及CMS关联")
+    @Operation(summary = "删除商品", description = "级联删除SKU、详情、属性值")
     @DeleteMapping("/{id}")
     public R<Integer> delete(@Parameter(description = "SPU ID") @PathVariable Long id) {
         int count = spuService.delete(id);
@@ -227,23 +225,12 @@ public class SpuController {
             if (skuInfo.getPrice() == null) {
                 skuInfo.setPrice(new ProductVO.SkuPriceInfo());
             }
-            if (overlaySku.getOriginalPrice() != null && skuInfo.getPrice().getOriginalPrice() == null) {
-                skuInfo.getPrice().setOriginalPrice(overlaySku.getOriginalPrice());
+            if (overlaySku.getCompareAtPrice() != null && skuInfo.getPrice().getCompareAtPrice() == null) {
+                skuInfo.getPrice().setCompareAtPrice(overlaySku.getCompareAtPrice());
             }
-
-            ProductVO.SkuPromotionInfo promotionInfo = skuInfo.getPromotion();
-            if (promotionInfo == null) {
-                promotionInfo = new ProductVO.SkuPromotionInfo();
-                skuInfo.setPromotion(promotionInfo);
-            }
-            promotionInfo.setType(FLASH_PROMOTION_TYPE);
-            promotionInfo.setPrice(overlaySku.getFlashPrice());
-            promotionInfo.setStartTime(overlay.getStartTime());
-            promotionInfo.setEndTime(overlay.getEndTime());
-            promotionInfo.setPerLimit(overlaySku.getFlashLimit());
 
             if (shouldUseFlashPrice(overlay, overlaySku, now)) {
-                skuInfo.getPrice().setPrice(overlaySku.getFlashPrice());
+                skuInfo.getPrice().setPromotionPrice(overlaySku.getFlashPrice());
             }
         }
 
@@ -273,7 +260,7 @@ public class SpuController {
         List<BigDecimal> prices = product.getSkuList().stream()
                 .map(ProductVO.SkuInfo::getPrice)
                 .filter(Objects::nonNull)
-                .map(ProductVO.SkuPriceInfo::getPrice)
+                .map(this::resolveDisplayPrice)
                 .filter(Objects::nonNull)
                 .toList();
         if (prices.isEmpty()) {
@@ -285,5 +272,12 @@ public class SpuController {
         }
         product.getSpuDetail().setMinPrice(prices.stream().min(BigDecimal::compareTo).orElse(null));
         product.getSpuDetail().setMaxPrice(prices.stream().max(BigDecimal::compareTo).orElse(null));
+    }
+
+    private BigDecimal resolveDisplayPrice(ProductVO.SkuPriceInfo priceInfo) {
+        if (priceInfo == null) {
+            return null;
+        }
+        return priceInfo.getPromotionPrice() != null ? priceInfo.getPromotionPrice() : priceInfo.getBasePrice();
     }
 }

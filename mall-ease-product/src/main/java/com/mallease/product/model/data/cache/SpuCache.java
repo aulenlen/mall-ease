@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -41,9 +40,6 @@ public class SpuCache implements Serializable {
 
     @Schema(description = "SKU列表")
     private List<SkuInfo> skuList;
-
-    @Schema(description = "满减规则列表")
-    private List<FullReductionInfo> fullReductionList;
 
     // 缓存元数据
 
@@ -133,9 +129,6 @@ public class SpuCache implements Serializable {
         @Schema(description = "产品服务列表")
         private List<String> serviceList;
 
-        @Schema(description = "运费模板ID")
-        private Long freightTemplateId;
-
         @Schema(description = "总销量")
         private Integer totalSale;
 
@@ -145,8 +138,8 @@ public class SpuCache implements Serializable {
         @Schema(description = "最高价格")
         private BigDecimal maxPrice;
 
-        @Schema(description = "总库存（快照值）")
-        private Integer totalStock;
+        @Schema(description = "是否有货")
+        private Boolean inStock;
     }
 
     // 品牌信息
@@ -217,12 +210,6 @@ public class SpuCache implements Serializable {
         @Schema(description = "SKU价格信息")
         private SkuPriceInfo price;
 
-        @Schema(description = "SKU促销信息")
-        private SkuPromotionInfo promotion;
-
-        @Schema(description = "SKU会员权益")
-        private SkuBenefitInfo benefit;
-
         @Schema(description = "SKU配置信息")
         private SkuConfigInfo config;
     }
@@ -271,63 +258,14 @@ public class SpuCache implements Serializable {
 
         private static final long serialVersionUID = 1L;
 
-        @Schema(description = "SKU售价")
-        private BigDecimal price;
+        @Schema(description = "SKU基础成交价")
+        private BigDecimal basePrice;
 
-        @Schema(description = "市场价")
-        private BigDecimal originalPrice;
-    }
+        @Schema(description = "SKU划线参考价")
+        private BigDecimal compareAtPrice;
 
-    // SKU 促销信息
-
-    /**
-     * SKU促销信息
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "SKU促销信息")
-    public static class SkuPromotionInfo implements Serializable {
-
-        private static final long serialVersionUID = 1L;
-
-        @Schema(description = "促销类型: 0-无, 1-促销价, 2-会员价, 3-阶梯价, 4-满减, 5-限时购")
-        private Integer type;
-
-        @Schema(description = "促销价格")
-        private BigDecimal price;
-
-        @Schema(description = "促销开始时间")
-        private LocalDateTime startTime;
-
-        @Schema(description = "促销结束时间")
-        private LocalDateTime endTime;
-
-        @Schema(description = "活动限购数量")
-        private Integer perLimit;
-    }
-
-    // SKU 会员权益
-
-    /**
-     * SKU会员权益
-     * <p>低频变化（会员策略调整）
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "SKU会员权益")
-    public static class SkuBenefitInfo implements Serializable {
-
-        private static final long serialVersionUID = 1L;
-
-        @Schema(description = "赠送积分")
-        private Integer giftPoint;
-
-        @Schema(description = "赠送成长值")
-        private Integer giftGrowth;
+        @Schema(description = "SKU活动价")
+        private BigDecimal promotionPrice;
     }
 
     // SKU 配置信息
@@ -346,27 +284,6 @@ public class SpuCache implements Serializable {
 
         @Schema(description = "库存预警值")
         private Integer lowStock;
-    }
-
-    // 满减规则
-
-    /**
-     * 满减规则
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "满减规则")
-    public static class FullReductionInfo implements Serializable {
-
-        private static final long serialVersionUID = 1L;
-
-        @Schema(description = "满足金额")
-        private BigDecimal fullPrice;
-
-        @Schema(description = "减少金额")
-        private BigDecimal reducePrice;
     }
 
     // 辅助方法

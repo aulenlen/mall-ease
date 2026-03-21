@@ -116,22 +116,22 @@ public interface CategoryService {
     List<Category> listAncestors(Long id);
 
     /**
-     * 更新分类状态
+     * 更新分类启用状态
      *
-     * @param id     分类ID
-     * @param status 状态：0-禁用，1-启用
+     * @param id           分类ID
+     * @param enableStatus 启用状态：0-禁用，1-启用
      * @return 影响行数
      */
-    int updateStatus(Long id, Integer status);
+    int updateEnableStatus(Long id, Integer enableStatus);
 
     /**
-     * 批量更新分类状态
+     * 批量更新分类启用状态
      *
-     * @param ids    ID列表
-     * @param status 状态：0-禁用，1-启用
+     * @param ids          ID列表
+     * @param enableStatus 启用状态：0-禁用，1-启用
      * @return 影响行数
      */
-    int updateStatusBatch(List<Long> ids, Integer status);
+    int updateEnableStatusBatch(List<Long> ids, Integer enableStatus);
 
     /**
      * 更新导航显示状态

@@ -133,7 +133,7 @@ public class SpuPublishListener {
         Map<Long, Attribute> finalAttrMap = attrMap;
         for (Spu spu : pmsSpuList) {
             SpuIndexDTO dto = indexMap.get(spu.getId());
-            dto.setInStock(spu.getStock() != null && spu.getStock() > 0);
+            dto.setInStock(Boolean.TRUE.equals(spu.getInStock()));
             dto.setCategoryPath(categoryPathMap.get(spu.getCategoryId()));
 
             List<Sku> spuSkuList = skuGroupMap.getOrDefault(spu.getId(), Collections.emptyList());
@@ -141,7 +141,7 @@ public class SpuPublishListener {
                     sku -> SpuIndexDTO.Sku.builder()
                             .skuId(sku.getId())
                             .skuCode(sku.getSkuCode())
-                            .price(sku.getPrice())
+                            .basePrice(sku.getBasePrice())
                             .build()
             ).toList();
             dto.setSkuList(dtoSkuList);

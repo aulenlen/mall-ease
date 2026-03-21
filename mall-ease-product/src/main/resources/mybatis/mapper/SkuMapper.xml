@@ -8,8 +8,8 @@
         <result column="sku_code" property="skuCode" jdbcType="VARCHAR"/>
         <result column="attr_values" property="attrValues" jdbcType="VARCHAR"/>
         <result column="pic" property="pic" jdbcType="VARCHAR"/>
-        <result column="price" property="price" jdbcType="DECIMAL"/>
-        <result column="original_price" property="originalPrice" jdbcType="DECIMAL"/>
+        <result column="base_price" property="basePrice" jdbcType="DECIMAL"/>
+        <result column="compare_at_price" property="compareAtPrice" jdbcType="DECIMAL"/>
         <result column="deleted" property="deleted" jdbcType="TINYINT"/>
         <result column="enable_status" property="enableStatus" jdbcType="TINYINT"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
@@ -20,7 +20,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, spu_id, sku_code, attr_values, pic, price, original_price,
+        id, spu_id, sku_code, attr_values, pic, base_price, compare_at_price,
         deleted, enable_status, create_time, update_time, creator, updater, version
     </sql>
 
@@ -100,11 +100,11 @@
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.product.model.data.entity.Sku" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_sku (
-            spu_id, sku_code, attr_values, pic, price, original_price,
+            spu_id, sku_code, attr_values, pic, base_price, compare_at_price,
             deleted, enable_status, creator, updater, version
         ) VALUES (
             #{spuId,jdbcType=BIGINT}, #{skuCode,jdbcType=VARCHAR}, #{attrValues,jdbcType=VARCHAR},
-            #{pic,jdbcType=VARCHAR}, #{price,jdbcType=DECIMAL}, #{originalPrice,jdbcType=DECIMAL},
+            #{pic,jdbcType=VARCHAR}, #{basePrice,jdbcType=DECIMAL}, #{compareAtPrice,jdbcType=DECIMAL},
             0, #{enableStatus,jdbcType=TINYINT}, #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}, 0
         )
     </insert>
@@ -117,8 +117,8 @@
             <if test="skuCode != null">sku_code,</if>
             <if test="attrValues != null">attr_values,</if>
             <if test="pic != null">pic,</if>
-            <if test="price != null">price,</if>
-            <if test="originalPrice != null">original_price,</if>
+            <if test="basePrice != null">base_price,</if>
+            <if test="compareAtPrice != null">compare_at_price,</if>
             <if test="enableStatus != null">enable_status,</if>
             <if test="creator != null">creator,</if>
             deleted, version,
@@ -128,8 +128,8 @@
             <if test="skuCode != null">#{skuCode,jdbcType=VARCHAR},</if>
             <if test="attrValues != null">#{attrValues,jdbcType=VARCHAR},</if>
             <if test="pic != null">#{pic,jdbcType=VARCHAR},</if>
-            <if test="price != null">#{price,jdbcType=DECIMAL},</if>
-            <if test="originalPrice != null">#{originalPrice,jdbcType=DECIMAL},</if>
+            <if test="basePrice != null">#{basePrice,jdbcType=DECIMAL},</if>
+            <if test="compareAtPrice != null">#{compareAtPrice,jdbcType=DECIMAL},</if>
             <if test="enableStatus != null">#{enableStatus,jdbcType=TINYINT},</if>
             <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
             0, 0,
@@ -139,14 +139,14 @@
     <!-- 批量插入 -->
     <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_sku (
-            spu_id, sku_code, attr_values, pic, price, original_price,
+            spu_id, sku_code, attr_values, pic, base_price, compare_at_price,
             deleted, enable_status, creator, version
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
                 #{item.spuId,jdbcType=BIGINT}, #{item.skuCode,jdbcType=VARCHAR},
                 #{item.attrValues,jdbcType=VARCHAR}, #{item.pic,jdbcType=VARCHAR},
-                #{item.price,jdbcType=DECIMAL}, #{item.originalPrice,jdbcType=DECIMAL},
+                #{item.basePrice,jdbcType=DECIMAL}, #{item.compareAtPrice,jdbcType=DECIMAL},
                 0, #{item.enableStatus,jdbcType=TINYINT}, #{item.creator,jdbcType=VARCHAR}, 0
             )
         </foreach>
@@ -159,8 +159,8 @@
             sku_code = #{skuCode,jdbcType=VARCHAR},
             attr_values = #{attrValues,jdbcType=VARCHAR},
             pic = #{pic,jdbcType=VARCHAR},
-            price = #{price,jdbcType=DECIMAL},
-            original_price = #{originalPrice,jdbcType=DECIMAL},
+            base_price = #{basePrice,jdbcType=DECIMAL},
+            compare_at_price = #{compareAtPrice,jdbcType=DECIMAL},
             enable_status = #{enableStatus,jdbcType=TINYINT},
             updater = #{updater,jdbcType=VARCHAR},
             version = version + 1
@@ -175,8 +175,8 @@
             <if test="skuCode != null">sku_code = #{skuCode,jdbcType=VARCHAR},</if>
             <if test="attrValues != null">attr_values = #{attrValues,jdbcType=VARCHAR},</if>
             <if test="pic != null">pic = #{pic,jdbcType=VARCHAR},</if>
-            <if test="price != null">price = #{price,jdbcType=DECIMAL},</if>
-            <if test="originalPrice != null">original_price = #{originalPrice,jdbcType=DECIMAL},</if>
+            <if test="basePrice != null">base_price = #{basePrice,jdbcType=DECIMAL},</if>
+            <if test="compareAtPrice != null">compare_at_price = #{compareAtPrice,jdbcType=DECIMAL},</if>
             <if test="enableStatus != null">enable_status = #{enableStatus,jdbcType=TINYINT},</if>
             <if test="updater != null">updater = #{updater,jdbcType=VARCHAR},</if>
             version = version + 1,
@@ -226,11 +226,11 @@
             <if test="query.enableStatus != null">
                 AND enable_status = #{query.enableStatus,jdbcType=TINYINT}
             </if>
-            <if test="query.priceStart != null">
-                AND price &gt;= #{query.priceStart,jdbcType=DECIMAL}
+            <if test="query.basePriceStart != null">
+                AND base_price &gt;= #{query.basePriceStart,jdbcType=DECIMAL}
             </if>
-            <if test="query.priceEnd != null">
-                AND price &lt;= #{query.priceEnd,jdbcType=DECIMAL}
+            <if test="query.basePriceEnd != null">
+                AND base_price &lt;= #{query.basePriceEnd,jdbcType=DECIMAL}
             </if>
             <if test="query.specKeyword != null and query.specKeyword != ''">
                 AND attr_values LIKE CONCAT('%', #{query.specKeyword,jdbcType=VARCHAR}, '%')

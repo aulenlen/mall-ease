@@ -47,11 +47,11 @@ public class CategoryCmd {
     @Size(max = 64, message = "分类名称长度不能超过64个字符")
     private String name;
 
-    @Schema(description = "状态: 0-禁用, 1-启用")
+    @Schema(description = "启用状态: 0-禁用, 1-启用")
     @Min(value = 0, message = "状态值必须为0或1")
     @Max(value = 1, message = "状态值必须为0或1")
     @Builder.Default
-    private Integer status = 1;
+    private Integer enableStatus = 1;
 
     @Schema(description = "是否导航栏显示: 0-否, 1-是")
     @Min(value = 0, message = "导航显示值必须为0或1")

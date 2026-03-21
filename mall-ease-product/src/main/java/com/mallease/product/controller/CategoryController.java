@@ -146,7 +146,7 @@ public class CategoryController {
     @Operation(summary = "获取导航分类树")
     @GetMapping("/tree/nav")
     public R<List<CategoryTreeVO>> getNavTree() {
-        List<Category> navCategories = categoryService.listByQuery(CategoryQuery.builder().isNav(1).status(1).build());
+        List<Category> navCategories = categoryService.listByQuery(CategoryQuery.builder().isNav(1).enableStatus(1).build());
         List<CategoryTreeVO> tree = categoryConverter.buildTree(navCategories);
         return R.success(tree);
     }
@@ -160,21 +160,21 @@ public class CategoryController {
         return R.success(breadcrumb);
     }
 
-    @Operation(summary = "更新分类状态")
-    @PostMapping("/status/{id}")
-    public R<Integer> updateStatus(
+    @Operation(summary = "更新分类启用状态")
+    @PostMapping("/enable-status/{id}")
+    public R<Integer> updateEnableStatus(
             @Parameter(description = "分类ID") @PathVariable Long id,
-            @Parameter(description = "状态：0-禁用，1-启用") @RequestParam Integer status) {
-        int count = categoryService.updateStatus(id, status);
+            @Parameter(description = "启用状态：0-禁用，1-启用") @RequestParam Integer enableStatus) {
+        int count = categoryService.updateEnableStatus(id, enableStatus);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
-    @Operation(summary = "批量更新分类状态")
-    @PostMapping("/status/batch")
-    public R<Integer> updateStatusBatch(
+    @Operation(summary = "批量更新分类启用状态")
+    @PostMapping("/enable-status/batch")
+    public R<Integer> updateEnableStatusBatch(
             @RequestBody List<Long> ids,
-            @Parameter(description = "状态：0-禁用，1-启用") @RequestParam Integer status) {
-        int count = categoryService.updateStatusBatch(ids, status);
+            @Parameter(description = "启用状态：0-禁用，1-启用") @RequestParam Integer enableStatus) {
+        int count = categoryService.updateEnableStatusBatch(ids, enableStatus);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 

@@ -35,8 +35,8 @@ public class HomeFlashVO {
     @Schema(description = "结束时间")
     private LocalDateTime endTime;
 
-    @Schema(description = "状态：0-未开始 1-进行中 2-已结束")
-    private Integer status;
+    @Schema(description = "时间状态：0-未开始 1-进行中 2-已结束")
+    private Integer timeStatus;
 
     @Schema(description = "服务器时间戳")
     private Long serverTime;
@@ -63,8 +63,8 @@ public class HomeFlashVO {
         @Schema(description = "商品图片")
         private String spuPic;
 
-        @Schema(description = "原价")
-        private BigDecimal originalPrice;
+        @Schema(description = "划线参考价")
+        private BigDecimal compareAtPrice;
 
         @Schema(description = "秒杀价")
         private BigDecimal flashPrice;

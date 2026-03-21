@@ -23,14 +23,14 @@ public interface StockReservationService {
     List<StockReservation> listLockedByOrderNo(String orderNo);
 
     /**
-     * 按订单号批量更新状态（释放/确认时使用）
+     * 按订单号批量更新预占状态（释放/确认时使用）
      *
-     * @param orderNo   订单编号
-     * @param oldStatus 原状态（防止重复操作）
-     * @param newStatus 新状态
+     * @param orderNo              订单编号
+     * @param oldReservationStatus 原状态（防止重复操作）
+     * @param newReservationStatus 新状态
      * @return 影响行数
      */
-    int updateStatusByOrderNo(String orderNo, Integer oldStatus, Integer newStatus);
+    int updateReservationStatusByOrderNo(String orderNo, Integer oldReservationStatus, Integer newReservationStatus);
 
     /**
      * 按预占记录ID批量更新状态为已释放
@@ -38,7 +38,7 @@ public interface StockReservationService {
      * @param ids 预占记录ID列表
      * @return 影响行数
      */
-    int updateStatusToReleasedByIds(List<Long> ids);
+    int updateReservationStatusToReleasedByIds(List<Long> ids);
 
     /**
      * 按订单号查询预约记录

@@ -6,7 +6,12 @@ import com.mallease.product.cache.ProductDetailCacheService;
 import com.mallease.product.cache.ProductStockCacheService;
 import com.mallease.product.converter.SpuCacheConverter;
 import com.mallease.product.model.data.cache.SpuCache;
-import com.mallease.product.model.data.entity.*;
+import com.mallease.product.model.data.entity.Brand;
+import com.mallease.product.model.data.entity.Category;
+import com.mallease.product.model.data.entity.Sku;
+import com.mallease.product.model.data.entity.SkuStock;
+import com.mallease.product.model.data.entity.Spu;
+import com.mallease.product.model.data.entity.SpuDetail;
 import com.mallease.product.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -303,14 +308,6 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                 skuStockService.listStockBySpuIds(spuIds).stream()
                         .collect(Collectors.toMap(SkuStock::getSkuId, stock -> stock));
 
-        Map<Long, SkuPromotion> promotionMap = CollUtil.isEmpty(skuIds) ? Collections.emptyMap() :
-                skuService.listPromotionBySkuIds(new ArrayList<>(skuIds)).stream()
-                        .collect(Collectors.toMap(SkuPromotion::getSkuId, promotion -> promotion));
-
-        List<SpuFullReduction> reductionList = spuService.listFullReductionBySpuIds(spuIds);
-        Map<Long, List<SpuFullReduction>> reductionGroupMap = reductionList.stream()
-                .collect(Collectors.groupingBy(SpuFullReduction::getSpuId));
-
         List<SpuCache> cacheDTOList = new ArrayList<>();
         long cacheTime = System.currentTimeMillis();
         for (Spu spu : spuList) {
@@ -318,9 +315,8 @@ public class SpuCacheServiceImpl implements SpuCacheService {
             Brand brand = brandMap.get(spu.getBrandId());
             Category category = categoryMap.get(spu.getCategoryId());
             List<Sku> spuSkuList = skuGroupMap.getOrDefault(spu.getId(), Collections.emptyList());
-            List<SpuFullReduction> spuReductions = reductionGroupMap.getOrDefault(spu.getId(), Collections.emptyList());
             SpuCache cacheDTO = buildSingleSpuCache(
-                    spu, detail, brand, category, spuSkuList, stockMap, promotionMap, spuReductions, cacheTime
+                    spu, detail, brand, category, spuSkuList, stockMap, cacheTime
             );
             cacheDTOList.add(cacheDTO);
         }
@@ -375,8 +371,6 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                                          Category category,
                                          List<Sku> skuList,
                                          Map<Long, SkuStock> stockMap,
-                                         Map<Long, SkuPromotion> promotionMap,
-                                         List<SpuFullReduction> reductionList,
                                          long cacheTime) {
 
         SpuCache.SpuBasicInfo spuBasic = cacheConverter.toSpuBasicInfo(spu);
@@ -396,19 +390,13 @@ public class SpuCacheServiceImpl implements SpuCacheService {
         List<SpuCache.SkuInfo> skuInfoList = skuList.stream()
                 .map(sku -> {
                     SkuStock stock = stockMap.get(sku.getId());
-                    SkuPromotion promotion = promotionMap.get(sku.getId());
                     return SpuCache.SkuInfo.builder()
                             .basic(cacheConverter.toSkuBasicInfo(sku))
                             .price(cacheConverter.toSkuPriceInfo(sku))
-                            .promotion(promotion != null ? cacheConverter.toSkuPromotionInfo(promotion) : null)
-                            .benefit(promotion != null ? cacheConverter.toSkuBenefitInfo(promotion) : null)
                             .config(stock != null ? cacheConverter.toSkuConfigInfo(stock) : null)
                             .build();
                 })
                 .collect(Collectors.toList());
-
-        List<SpuCache.FullReductionInfo> fullReductionInfoList =
-                cacheConverter.toFullReductionInfoList(reductionList);
 
         return SpuCache.builder()
                 .spuBasic(spuBasic)
@@ -416,7 +404,6 @@ public class SpuCacheServiceImpl implements SpuCacheService {
                 .brand(brandInfo)
                 .category(categoryInfo)
                 .skuList(skuInfoList)
-                .fullReductionList(fullReductionInfoList)
                 .cacheTime(cacheTime)
                 .version(spu.getVersion())
                 .build();

@@ -42,21 +42,6 @@ public class SpuAggregate {
      */
     private List<AttributeValue> attrValueList;
 
-    /**
-     * 满减规则列表（可选）
-     */
-    private List<SpuFullReduction> fullReductionList;
-
-    /**
-     * 专题关联ID列表
-     */
-    private List<Long> subjectIds;
-
-    /**
-     * 优选专区关联ID列表
-     */
-    private List<Long> preferenceAreaIds;
-
     // 更新标记（创建时忽略）
 
     /**
@@ -68,21 +53,6 @@ public class SpuAggregate {
      * 是否更新属性值
      */
     private boolean updateAttrValues;
-
-    /**
-     * 是否更新满减规则
-     */
-    private boolean updateFullReductions;
-
-    /**
-     * 是否更新专题关联
-     */
-    private boolean updateSubjects;
-
-    /**
-     * 是否更新优选专区关联
-     */
-    private boolean updatePreferenceAreas;
 
     /**
      * 判断是否为创建操作
@@ -118,38 +88,6 @@ public class SpuAggregate {
          * SKU库存（创建时必需）
          */
         private SkuStock stock;
-
-        /**
-         * SKU促销信息（可选）
-         */
-        private SkuPromotion promotion;
-
-        /**
-         * SKU阶梯价列表（可选）
-         */
-        private List<SkuLadder> ladderList;
-
-        /**
-         * SKU会员价列表（可选）
-         */
-        private List<SkuMemberPrice> memberPriceList;
-
-        // 更新标记
-
-        /**
-         * 是否更新促销信息
-         */
-        private boolean updatePromotion;
-
-        /**
-         * 是否更新阶梯价
-         */
-        private boolean updateLadders;
-
-        /**
-         * 是否更新会员价
-         */
-        private boolean updateMemberPrices;
 
         /**
          * 判断是否为新增SKU

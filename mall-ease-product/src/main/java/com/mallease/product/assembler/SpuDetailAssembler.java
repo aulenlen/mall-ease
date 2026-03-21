@@ -49,13 +49,6 @@ public class SpuDetailAssembler {
         vo.setAttrValueList(
                 spuConverter.attrValueEntityListToVoList(aggregate.getAttrValueList()));
 
-        // 5. 转换满减规则
-        vo.setFullReductionList(
-                spuConverter.fullReductionEntityListToVoList(aggregate.getFullReductionList()));
-
-        // 6. 设置关联 ID
-        vo.setSubjectIds(aggregate.getSubjectIds());
-        vo.setPreferenceAreaIds(aggregate.getPreferenceAreaIds());
         return vo;
     }
 
@@ -82,21 +75,6 @@ public class SpuDetailAssembler {
         // 合并库存
         if (skuData.getStock() != null) {
             skuConverter.mergeSkuStockToVo(skuVO, skuData.getStock());
-        }
-
-        // 合并促销
-        if (skuData.getPromotion() != null) {
-            skuConverter.mergeSkuPromotionToVo(skuVO, skuData.getPromotion());
-        }
-
-        // 合并阶梯价
-        if (skuData.getLadderList() != null && !skuData.getLadderList().isEmpty()) {
-            skuVO.setLadderList(skuConverter.ladderEntityListToVoList(skuData.getLadderList()));
-        }
-
-        // 合并会员价
-        if (skuData.getMemberPriceList() != null && !skuData.getMemberPriceList().isEmpty()) {
-            skuVO.setMemberPriceList(skuConverter.memberPriceEntityListToVoList(skuData.getMemberPriceList()));
         }
 
         return skuVO;

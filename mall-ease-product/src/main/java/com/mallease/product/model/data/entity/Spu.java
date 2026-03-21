@@ -34,11 +34,6 @@ public class Spu {
     private Long categoryId;
 
     /**
-     * 运费模板ID
-     */
-    private Long freightTemplateId;
-
-    /**
      * 分类路径，格式如 /1/7/8/，与分类表 path 一致
      */
     private String categoryIds;
@@ -62,11 +57,6 @@ public class Spu {
      * 关键字
      */
     private String keywords;
-
-    /**
-     * 备注
-     */
-    private String note;
 
     /**
      * SPU主图URL
@@ -134,9 +124,9 @@ public class Spu {
     private BigDecimal maxPrice;
 
     /**
-     * 总库存（所有 SKU 库存之和）
+     * 是否有货（任一 SKU 有库存即为 true）
      */
-    private Integer stock;
+    private Boolean inStock;
 
     /**
      * 品牌名称（冗余）

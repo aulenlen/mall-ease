@@ -50,20 +50,20 @@ public interface FlashSessionDao {
      * 条件查询场次
      */
     List<FlashSession> listByConditions(@Param("name") String name,
-                                        @Param("status") Integer status,
+                                        @Param("sessionStatus") Integer sessionStatus,
                                         @Param("startTimeFrom") LocalDateTime startTimeFrom,
                                         @Param("startTimeTo") LocalDateTime startTimeTo);
 
     /**
      * 查询已发布且未结束的场次
      */
-    List<FlashSession> selectPublishedSessions(@Param("status") Integer status,
+    List<FlashSession> selectPublishedSessions(@Param("sessionStatus") Integer sessionStatus,
                                                @Param("nowDateTime") LocalDateTime nowDateTime);
 
     /**
      * 查询待预热场次
      */
-    List<FlashSession> selectSessionsToWarmUp(@Param("status") Integer status,
+    List<FlashSession> selectSessionsToWarmUp(@Param("sessionStatus") Integer sessionStatus,
                                               @Param("from") LocalDateTime from,
                                               @Param("to") LocalDateTime to);
 
@@ -78,26 +78,26 @@ public interface FlashSessionDao {
     /**
      * 批量更新状态
      *
-     * @param ids    场次ID列表
-     * @param status 目标状态
+     * @param ids           场次ID列表
+     * @param sessionStatus 目标状态
      * @return 影响行数
      */
-    int updateStatusBatch(@Param("ids") List<Long> ids, @Param("status") Integer status);
+    int updateSessionStatusBatch(@Param("ids") List<Long> ids, @Param("sessionStatus") Integer sessionStatus);
 
     /**
      * 获取当前生效的场次
      *
-     * @param status 启用状态
+     * @param sessionStatus 启用状态
      * @param nowDateTime
      * @return
      */
-    FlashSession getCurrentSession(@Param("status") Integer status,
+    FlashSession getCurrentSession(@Param("sessionStatus") Integer sessionStatus,
                                    @Param("nowDateTime") LocalDateTime nowDateTime);
 
     /**
      * 查询和指定时间区间重叠的启用场次
      */
-    List<FlashSession> selectOverlappingEnabledSessions(@Param("status") Integer status,
+    List<FlashSession> selectOverlappingEnabledSessions(@Param("sessionStatus") Integer sessionStatus,
                                                         @Param("excludeId") Long excludeId,
                                                         @Param("startTime") LocalDateTime startTime,
                                                         @Param("endTime") LocalDateTime endTime);

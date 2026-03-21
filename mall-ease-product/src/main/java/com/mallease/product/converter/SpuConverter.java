@@ -7,16 +7,14 @@ import com.mallease.product.model.client.vo.SpuVO;
 import com.mallease.product.model.data.entity.AttributeValue;
 import com.mallease.product.model.data.entity.Spu;
 import com.mallease.product.model.data.entity.SpuDetail;
-import com.mallease.product.model.data.entity.SpuFullReduction;
 import org.mapstruct.*;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * SPU转换器（含搜索索引、参数值、满减规则转换）
+ * SPU转换器（含搜索索引、参数值转换）
  *
  * @author: Aulen
  * @create: 2025-12-12
@@ -44,12 +42,10 @@ public interface SpuConverter {
     @BeanMapping(ignoreByDefault = true)
     @Mapping(source = "brandId", target = "brandId")
     @Mapping(source = "categoryId", target = "categoryId")
-    @Mapping(source = "freightTemplateId", target = "freightTemplateId")
     @Mapping(source = "name", target = "name")
     @Mapping(source = "subTitle", target = "subTitle")
     @Mapping(source = "description", target = "description")
     @Mapping(source = "keywords", target = "keywords")
-    @Mapping(source = "note", target = "note")
     @Mapping(source = "pic", target = "pic")
     @Mapping(source = "albumPics", target = "albumPics")
     @Mapping(source = "unit", target = "unit")
@@ -96,35 +92,6 @@ public interface SpuConverter {
 
     List<SpuDetailVO.AttrValueVO> attrValueEntityListToVoList(List<AttributeValue> entityList);
 
-    // 满减规则转换
-
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(source = "fullPrice", target = "fullPrice")
-    @Mapping(source = "reducePrice", target = "reducePrice")
-    SpuFullReduction fullReductionCmdToEntity(SpuCmd.SpuFullReductionCmd cmd);
-
-    List<SpuFullReduction> fullReductionCmdListToEntityList(List<SpuCmd.SpuFullReductionCmd> cmdList);
-
-    default SpuDetailVO.SpuFullReductionVO fullReductionEntityToVo(SpuFullReduction entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        return SpuDetailVO.SpuFullReductionVO.builder()
-                .id(entity.getId())
-                .fullPrice(entity.getFullPrice())
-                .reducePrice(entity.getReducePrice())
-                .description(formatFullReductionDesc(entity.getFullPrice(), entity.getReducePrice()))
-                .build();
-    }
-
-    default List<SpuDetailVO.SpuFullReductionVO> fullReductionEntityListToVoList(List<SpuFullReduction> entityList) {
-        if (entityList == null) {
-            return null;
-        }
-        return entityList.stream().map(this::fullReductionEntityToVo).collect(Collectors.toList());
-    }
-
     // 工具方法
 
     @Named("splitAlbumPics")
@@ -147,12 +114,5 @@ public interface SpuConverter {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
-    }
-
-    default String formatFullReductionDesc(BigDecimal fullPrice, BigDecimal reducePrice) {
-        if (fullPrice == null || reducePrice == null) {
-            return "";
-        }
-        return String.format("满 ¥%s 减 ¥%s", fullPrice, reducePrice);
     }
 }

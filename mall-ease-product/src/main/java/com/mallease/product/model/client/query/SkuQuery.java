@@ -29,11 +29,11 @@ public class SkuQuery extends BaseQuery {
     @Schema(description = "启用状态: 0-禁用, 1-启用")
     private Integer enableStatus;
 
-    @Schema(description = "价格下限（区间查询）")
-    private BigDecimal priceStart;
+    @Schema(description = "基础成交价下限（区间查询）")
+    private BigDecimal basePriceStart;
 
-    @Schema(description = "价格上限（区间查询）")
-    private BigDecimal priceEnd;
+    @Schema(description = "基础成交价上限（区间查询）")
+    private BigDecimal basePriceEnd;
 
     @Schema(description = "库存状态: 0-无货, 1-有货, 2-预售")
     private Integer stockStatus;

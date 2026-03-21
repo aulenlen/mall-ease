@@ -66,11 +66,11 @@ public interface FlashService {
     /**
      * 批量更新场次状态
      *
-     * @param ids    场次ID列表
-     * @param status 目标状态
+     * @param ids           场次ID列表
+     * @param sessionStatus 目标状态
      * @return 影响行数
      */
-    int updateSessionStatusBatch(List<Long> ids, Integer status);
+    int updateSessionStatusBatch(List<Long> ids, Integer sessionStatus);
 
     /**
      * 获取当前生效场次的秒杀商品

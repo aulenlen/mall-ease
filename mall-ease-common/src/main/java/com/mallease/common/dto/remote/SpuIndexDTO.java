@@ -142,9 +142,9 @@ public class SpuIndexDTO {
         private String skuCode;
 
         /**
-         * SKU 价格
+         * SKU 基础成交价
          */
-        private BigDecimal price;
+        private BigDecimal basePrice;
     }
 
     /**

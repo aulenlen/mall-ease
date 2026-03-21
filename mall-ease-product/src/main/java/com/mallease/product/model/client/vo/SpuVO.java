@@ -94,8 +94,8 @@ public class SpuVO {
     @Schema(description = "最高价格")
     private BigDecimal maxPrice;
 
-    @Schema(description = "总库存")
-    private Integer stock;
+    @Schema(description = "是否有货")
+    private Boolean inStock;
 
     @Schema(description = "创建时间")
     private LocalDateTime createTime;

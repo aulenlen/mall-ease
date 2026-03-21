@@ -39,9 +39,9 @@ public class Category {
     private Integer level;
 
     /**
-     * 状态：0-禁用 1-启用
+     * 启用状态：0-禁用 1-启用
      */
-    private Integer status;
+    private Integer enableStatus;
 
     /**
      * 是否导航栏显示：0-否 1-是

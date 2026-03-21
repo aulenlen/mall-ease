@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -24,8 +23,6 @@ public class ProductDTO {
     private CategoryInfo category;
 
     private List<SkuInfo> skuList;
-
-    private List<FullReductionInfo> fullReductionList;
 
     private Long cacheTime;
 
@@ -84,15 +81,13 @@ public class ProductDTO {
 
         private List<String> serviceList;
 
-        private Long freightTemplateId;
-
         private Integer totalSale;
 
         private BigDecimal minPrice;
 
         private BigDecimal maxPrice;
 
-        private Integer totalStock;
+        private Boolean inStock;
     }
 
     /**
@@ -140,10 +135,6 @@ public class ProductDTO {
 
         private SkuPriceInfo price;
 
-        private SkuPromotionInfo promotion;
-
-        private SkuBenefitInfo benefit;
-
         private SkuConfigInfo config;
     }
 
@@ -176,44 +167,11 @@ public class ProductDTO {
     @AllArgsConstructor
     public static class SkuPriceInfo {
 
-        private BigDecimal price;
+        private BigDecimal basePrice;
 
-        private BigDecimal originalPrice;
-    }
+        private BigDecimal compareAtPrice;
 
-    /**
-     * SKU促销信息
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SkuPromotionInfo {
-
-        private Integer type;
-
-        private BigDecimal price;
-
-        private LocalDateTime startTime;
-
-        private LocalDateTime endTime;
-
-        private Integer perLimit;
-    }
-
-    /**
-     * SKU会员权益
-     * <p>低频变化（会员策略调整）
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SkuBenefitInfo {
-
-        private Integer giftPoint;
-
-        private Integer giftGrowth;
+        private BigDecimal promotionPrice;
     }
 
     /**
@@ -226,20 +184,6 @@ public class ProductDTO {
     public static class SkuConfigInfo {
 
         private Integer lowStock;
-    }
-
-    /**
-     * 满减规则
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FullReductionInfo {
-
-        private BigDecimal fullPrice;
-
-        private BigDecimal reducePrice;
     }
 
     /**

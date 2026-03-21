@@ -19,7 +19,7 @@ public class StockReservationServiceImpl implements StockReservationService {
 
     @Override
     public List<StockReservation> listExpiredLocked(Integer limit) {
-        return stockReservationDao.selectExpiredByStatus(ReservationStatus.LOCKED.getCode(), limit);
+        return stockReservationDao.selectExpiredByReservationStatus(ReservationStatus.LOCKED.getCode(), limit);
     }
 
     @Override
@@ -27,20 +27,20 @@ public class StockReservationServiceImpl implements StockReservationService {
         if (orderNo == null || orderNo.isEmpty()) {
             return List.of();
         }
-        return stockReservationDao.selectByOrderNoAndStatus(orderNo, ReservationStatus.LOCKED.getCode());
+        return stockReservationDao.selectByOrderNoAndReservationStatus(orderNo, ReservationStatus.LOCKED.getCode());
     }
 
     @Override
-    public int updateStatusByOrderNo(String orderNo, Integer oldStatus, Integer newStatus) {
-        return stockReservationDao.updateStatusByOrderNo(orderNo, oldStatus, newStatus);
+    public int updateReservationStatusByOrderNo(String orderNo, Integer oldReservationStatus, Integer newReservationStatus) {
+        return stockReservationDao.updateReservationStatusByOrderNo(orderNo, oldReservationStatus, newReservationStatus);
     }
 
     @Override
-    public int updateStatusToReleasedByIds(List<Long> ids) {
+    public int updateReservationStatusToReleasedByIds(List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return 0;
         }
-        return stockReservationDao.updateStatusByIds(ids, ReservationStatus.RELEASED.getCode());
+        return stockReservationDao.updateReservationStatusByIds(ids, ReservationStatus.RELEASED.getCode());
     }
 
     @Override
@@ -58,6 +58,6 @@ public class StockReservationServiceImpl implements StockReservationService {
         if (orderNos == null || orderNos.isEmpty()) {
             return List.of();
         }
-        return stockReservationDao.listByOrderNosAndStatus(orderNos, ReservationStatus.LOCKED.getCode());
+        return stockReservationDao.listByOrderNosAndReservationStatus(orderNos, ReservationStatus.LOCKED.getCode());
     }
 }

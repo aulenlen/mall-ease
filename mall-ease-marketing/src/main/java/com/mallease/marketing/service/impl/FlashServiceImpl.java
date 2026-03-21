@@ -63,7 +63,7 @@ public class FlashServiceImpl implements FlashService {
     @Transactional(rollbackFor = Exception.class)
     public int deleteFlashSession(Long id) {
         FlashSession current = requireSession(id);
-        if (isOngoing(current, LocalDateTime.now()) && FlashSessionStatus.ENABLED.codeEquals(current.getStatus())) {
+        if (isOngoing(current, LocalDateTime.now()) && FlashSessionStatus.ENABLED.codeEquals(current.getSessionStatus())) {
             throw new ApiException("进行中的场次不能删除，请先下架");
         }
         flashProductDao.deleteBySessionId(id);
@@ -79,7 +79,7 @@ public class FlashServiceImpl implements FlashService {
     public List<FlashSession> listFlashSessions(FlashSessionQuery query) {
         return flashSessionDao.listByConditions(
                 query.getName(),
-                query.getStatus(),
+                query.getSessionStatus(),
                 query.getStartTimeFrom(),
                 query.getStartTimeTo()
         );
@@ -209,13 +209,13 @@ public class FlashServiceImpl implements FlashService {
                 vo.setSpuPic(sku.getSpuPic());
                 vo.setSkuPic(sku.getSkuPic());
                 vo.setAttrValues(sku.getAttrValues());
-                vo.setOriginalPrice(sku.getOriginalPrice());
+                vo.setCompareAtPrice(sku.getCompareAtPrice());
             }
             if (session != null) {
                 vo.setSessionName(session.getName());
                 vo.setSessionStartTime(session.getStartTime());
                 vo.setSessionEndTime(session.getEndTime());
-                vo.setSessionStatus(session.getStatus());
+                vo.setSessionStatus(session.getSessionStatus());
                 vo.setTimeStatus(flashConverter.resolveTimeStatus(session.getStartTime(), session.getEndTime()));
             }
             return vo;
@@ -223,17 +223,17 @@ public class FlashServiceImpl implements FlashService {
     }
 
     @Override
-    public int updateSessionStatusBatch(List<Long> ids, Integer status) {
+    public int updateSessionStatusBatch(List<Long> ids, Integer sessionStatus) {
         if (ids == null || ids.isEmpty()) {
             return 0;
         }
-        if (FlashSessionStatus.ENABLED.codeEquals(status)) {
+        if (FlashSessionStatus.ENABLED.codeEquals(sessionStatus)) {
             List<FlashSession> sessions = ids.stream()
                     .map(this::requireSession)
                     .toList();
             validateSessionBatchEnable(sessions);
         }
-        return flashSessionDao.updateStatusBatch(ids, status);
+        return flashSessionDao.updateSessionStatusBatch(ids, sessionStatus);
     }
 
     @Override
@@ -271,10 +271,10 @@ public class FlashServiceImpl implements FlashService {
                             .spuId(p.getSpuId())
                             .spuName(sku != null ? sku.getSpuName() : null)
                             .spuPic(sku != null ? sku.getSpuPic() : null)
-                            .originalPrice(sku != null ? sku.getOriginalPrice() : null)
+                            .compareAtPrice(sku != null ? sku.getCompareAtPrice() : null)
                             .flashPrice(p.getFlashPrice())
                             .discountPercent(sku != null
-                                    ? calculateDiscount(sku.getOriginalPrice(), p.getFlashPrice())
+                                    ? calculateDiscount(sku.getBasePrice(), p.getFlashPrice())
                                     : null)
                             .build();
                 })
@@ -285,7 +285,7 @@ public class FlashServiceImpl implements FlashService {
                 .name(currentSession.getName())
                 .startTime(currentSession.getStartTime())
                 .endTime(currentSession.getEndTime())
-                .status(FlashSessionStatus.ENABLED.getCode())
+                .timeStatus(flashConverter.resolveTimeStatus(currentSession.getStartTime(), currentSession.getEndTime()))
                 .serverTime(System.currentTimeMillis())
                 .products(productDTOList)
                 .build();
@@ -337,12 +337,12 @@ public class FlashServiceImpl implements FlashService {
     /**
      * 计算折扣百分比：(原价-秒杀价)/原价 * 100
      */
-    private Integer calculateDiscount(BigDecimal originalPrice, BigDecimal flashPrice) {
-        if (originalPrice == null || flashPrice == null || originalPrice.compareTo(BigDecimal.ZERO) == 0) {
+    private Integer calculateDiscount(BigDecimal basePrice, BigDecimal flashPrice) {
+        if (basePrice == null || flashPrice == null || basePrice.compareTo(BigDecimal.ZERO) == 0) {
             return 0;
         }
-        return originalPrice.subtract(flashPrice)
-                .divide(originalPrice, 2, RoundingMode.HALF_UP)
+        return basePrice.subtract(flashPrice)
+                .divide(basePrice, 2, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
                 .intValue();
     }
@@ -375,7 +375,7 @@ public class FlashServiceImpl implements FlashService {
         merged.setName(incoming.getName() != null ? incoming.getName() : current.getName());
         merged.setStartTime(incoming.getStartTime() != null ? incoming.getStartTime() : current.getStartTime());
         merged.setEndTime(incoming.getEndTime() != null ? incoming.getEndTime() : current.getEndTime());
-        merged.setStatus(incoming.getStatus() != null ? incoming.getStatus() : current.getStatus());
+        merged.setSessionStatus(incoming.getSessionStatus() != null ? incoming.getSessionStatus() : current.getSessionStatus());
         return merged;
     }
 
@@ -400,7 +400,7 @@ public class FlashServiceImpl implements FlashService {
         if (!session.getStartTime().isBefore(session.getEndTime())) {
             throw new ApiException("场次开始时间必须早于结束时间");
         }
-        if (FlashSessionStatus.ENABLED.codeEquals(session.getStatus())) {
+        if (FlashSessionStatus.ENABLED.codeEquals(session.getSessionStatus())) {
             List<FlashSession> overlaps = flashSessionDao.selectOverlappingEnabledSessions(
                     FlashSessionStatus.ENABLED.getCode(),
                     excludeId,
@@ -444,8 +444,8 @@ public class FlashServiceImpl implements FlashService {
         if (product.getFlashPrice() == null || product.getFlashPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ApiException("秒杀价格必须大于0");
         }
-        if (sku.getOriginalPrice() != null && product.getFlashPrice().compareTo(sku.getOriginalPrice()) >= 0) {
-            throw new ApiException("秒杀价格必须低于商品原价");
+        if (sku.getBasePrice() != null && product.getFlashPrice().compareTo(sku.getBasePrice()) >= 0) {
+            throw new ApiException("秒杀价格必须低于商品基础成交价");
         }
         if (product.getFlashStock() == null || product.getFlashStock() < 1) {
             throw new ApiException("秒杀库存必须大于0");

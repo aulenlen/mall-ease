@@ -22,7 +22,7 @@ public class FlashCurrentDTO {
 
     private LocalDateTime endTime;
 
-    private Integer status;
+    private Integer timeStatus;
 
     private Long serverTime;
 
@@ -42,7 +42,7 @@ public class FlashCurrentDTO {
 
         private String spuPic;
 
-        private BigDecimal originalPrice;
+        private BigDecimal compareAtPrice;
 
         private BigDecimal flashPrice;
 

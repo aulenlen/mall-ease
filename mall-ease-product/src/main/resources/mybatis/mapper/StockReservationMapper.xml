@@ -8,14 +8,14 @@
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
         <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
         <result column="quantity" property="quantity" jdbcType="INTEGER"/>
-        <result column="status" property="status" jdbcType="TINYINT"/>
+        <result column="reservation_status" property="reservationStatus" jdbcType="TINYINT"/>
         <result column="expire_time" property="expireTime" jdbcType="TIMESTAMP"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, order_no, spu_id, sku_id, quantity, status, expire_time, create_time, update_time
+        id, order_no, spu_id, sku_id, quantity, reservation_status, expire_time, create_time, update_time
     </sql>
 
     <!-- 根据主键查询 -->
@@ -32,12 +32,12 @@
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
     </select>
 
-    <!-- 根据订单号和状态查询 -->
-    <select id="selectByOrderNoAndStatus" resultMap="BaseResultMap">
+    <!-- 根据订单号和预占状态查询 -->
+    <select id="selectByOrderNoAndReservationStatus" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM product_stock_reservation
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
-          AND status = #{status,jdbcType=TINYINT}
+          AND reservation_status = #{reservationStatus,jdbcType=TINYINT}
     </select>
 
     <!-- 根据订单号和SKU ID查询（幂等检查） -->
@@ -49,11 +49,11 @@
     </select>
 
     <!-- 查询已过期的锁定记录（定时任务使用） -->
-    <select id="selectExpiredByStatus" resultMap="BaseResultMap">
+    <select id="selectExpiredByReservationStatus" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM product_stock_reservation
-        WHERE status = #{status,jdbcType=TINYINT}
+        WHERE reservation_status = #{reservationStatus,jdbcType=TINYINT}
         AND expire_time &lt;= NOW()
         ORDER BY expire_time ASC
         LIMIT #{limit}
@@ -66,11 +66,11 @@
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
     </select>
 
-    <select id="listByOrderNosAndStatus" resultMap="BaseResultMap">
+    <select id="listByOrderNosAndReservationStatus" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
         from product_stock_reservation
-        where status = #{status} and order_no in
+        where reservation_status = #{reservationStatus} and order_no in
         <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
             #{orderNo}
         </foreach>
@@ -80,13 +80,13 @@
     <insert id="insert" parameterType="com.mallease.product.model.data.entity.StockReservation"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_stock_reservation (
-            order_no, spu_id, sku_id, quantity, status, expire_time, create_time, update_time
+            order_no, spu_id, sku_id, quantity, reservation_status, expire_time, create_time, update_time
         ) VALUES (
             #{orderNo,jdbcType=VARCHAR},
             #{spuId,jdbcType=BIGINT},
             #{skuId,jdbcType=BIGINT},
             #{quantity,jdbcType=INTEGER},
-            #{status,jdbcType=TINYINT},
+            #{reservationStatus,jdbcType=TINYINT},
             #{expireTime,jdbcType=TIMESTAMP},
             #{createTime,jdbcType=TIMESTAMP},
             #{updateTime,jdbcType=TIMESTAMP}
@@ -96,7 +96,7 @@
     <!-- 批量插入 -->
     <insert id="insertBatch" parameterType="java.util.List">
         INSERT INTO product_stock_reservation (
-            order_no, spu_id, sku_id, quantity, status, expire_time, create_time, update_time
+            order_no, spu_id, sku_id, quantity, reservation_status, expire_time, create_time, update_time
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
@@ -104,7 +104,7 @@
                 #{item.spuId,jdbcType=BIGINT},
                 #{item.skuId,jdbcType=BIGINT},
                 #{item.quantity,jdbcType=INTEGER},
-                #{item.status,jdbcType=TINYINT},
+                #{item.reservationStatus,jdbcType=TINYINT},
                 #{item.expireTime,jdbcType=TIMESTAMP},
                 #{item.createTime,jdbcType=TIMESTAMP},
                 #{item.updateTime,jdbcType=TIMESTAMP}
@@ -112,27 +112,27 @@
         </foreach>
     </insert>
 
-    <!-- 更新单条记录状态 -->
-    <update id="updateStatus">
+    <!-- 更新单条记录预占状态 -->
+    <update id="updateReservationStatus">
         UPDATE product_stock_reservation
-        SET status = #{status,jdbcType=TINYINT},
+        SET reservation_status = #{reservationStatus,jdbcType=TINYINT},
             update_time = NOW()
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
 
-    <!-- 按订单号批量更新状态（带原状态校验，防止重复操作） -->
-    <update id="updateStatusByOrderNo">
+    <!-- 按订单号批量更新预占状态（带原状态校验，防止重复操作） -->
+    <update id="updateReservationStatusByOrderNo">
         UPDATE product_stock_reservation
-        SET status = #{newStatus,jdbcType=TINYINT},
+        SET reservation_status = #{newReservationStatus,jdbcType=TINYINT},
             update_time = NOW()
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
-          AND status = #{oldStatus,jdbcType=TINYINT}
+          AND reservation_status = #{oldReservationStatus,jdbcType=TINYINT}
     </update>
 
-    <!-- 按预约记录ID批量更新状态 -->
-    <update id="updateStatusByIds">
+    <!-- 按预约记录ID批量更新预占状态 -->
+    <update id="updateReservationStatusByIds">
         UPDATE product_stock_reservation
-        SET status = #{status,jdbcType=TINYINT}, update_time = NOW()
+        SET reservation_status = #{reservationStatus,jdbcType=TINYINT}, update_time = NOW()
         WHERE id IN
         <foreach collection="ids" item="id" open="(" close=")" separator=",">
             #{id}

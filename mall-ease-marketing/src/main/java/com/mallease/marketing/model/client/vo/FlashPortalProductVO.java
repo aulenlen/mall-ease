@@ -39,8 +39,8 @@ public class FlashPortalProductVO {
     @Schema(description = "SKU 规格属性")
     private String attrValues;
 
-    @Schema(description = "原价")
-    private BigDecimal originalPrice;
+    @Schema(description = "划线参考价")
+    private BigDecimal compareAtPrice;
 
     @Schema(description = "秒杀价")
     private BigDecimal flashPrice;

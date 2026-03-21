@@ -285,7 +285,7 @@ public class SkuStockServiceImpl implements SkuStockService {
                         .spuId(spuId)
                         .skuId(skuId)
                         .quantity(quantity)
-                        .status(ReservationStatus.LOCKED.getCode())
+                        .reservationStatus(ReservationStatus.LOCKED.getCode())
                         .expireTime(expireTime)
                         .createTime(now)
                         .updateTime(now)
@@ -402,7 +402,7 @@ public class SkuStockServiceImpl implements SkuStockService {
         }
 
         if (!successIds.isEmpty()) {
-            stockReservationService.updateStatusToReleasedByIds(successIds);
+            stockReservationService.updateReservationStatusToReleasedByIds(successIds);
             eventPublisher.publishEvent(new StockReleaseEvent(successList));
             log.info("订单预占释放落库完成，orderNo={}, successReservationCount={}", orderNo, successIds.size());
         }

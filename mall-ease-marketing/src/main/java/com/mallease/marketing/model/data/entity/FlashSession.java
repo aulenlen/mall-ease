@@ -33,9 +33,9 @@ public class FlashSession {
     private LocalDateTime endTime;
 
     /**
-     * 状态：0-禁用 1-启用
+     * 场次启用状态：0-禁用 1-启用
      */
-    private Integer status;
+    private Integer sessionStatus;
 
     /**
      * 创建时间

@@ -32,14 +32,14 @@ public interface StockReservationDao {
     List<StockReservation> selectByOrderNo(@Param("orderNo") String orderNo);
 
     /**
-     * 根据订单号和状态查询预占记录
+     * 根据订单号和预占状态查询预占记录
      *
-     * @param orderNo 订单编号
-     * @param status  预占状态
+     * @param orderNo           订单编号
+     * @param reservationStatus 预占状态
      * @return 预占记录列表
      */
-    List<StockReservation> selectByOrderNoAndStatus(@Param("orderNo") String orderNo,
-                                                    @Param("status") Integer status);
+    List<StockReservation> selectByOrderNoAndReservationStatus(@Param("orderNo") String orderNo,
+                                                               @Param("reservationStatus") Integer reservationStatus);
 
     /**
      * 根据订单号和SKU ID查询（幂等检查）
@@ -54,12 +54,12 @@ public interface StockReservationDao {
     /**
      * 查询已过期的锁定记录（用于定时任务释放库存）
      *
-     * @param status 预占状态（LOCKED=1）
-     * @param limit  每次处理的最大数量
+     * @param reservationStatus 预占状态（LOCKED=1）
+     * @param limit             每次处理的最大数量
      * @return 已过期的预占记录列表
      */
-    List<StockReservation> selectExpiredByStatus(@Param("status") Integer status,
-                                                 @Param("limit") Integer limit);
+    List<StockReservation> selectExpiredByReservationStatus(@Param("reservationStatus") Integer reservationStatus,
+                                                            @Param("limit") Integer limit);
 
     /**
      * 检查订单是否存在预占记录（任意状态）
@@ -88,23 +88,23 @@ public interface StockReservationDao {
     /**
      * 更新预占状态（通用）
      *
-     * @param id     主键ID
-     * @param status 新状态
+     * @param id                主键ID
+     * @param reservationStatus 新状态
      * @return 影响行数
      */
-    int updateStatus(@Param("id") Long id, @Param("status") Integer status);
+    int updateReservationStatus(@Param("id") Long id, @Param("reservationStatus") Integer reservationStatus);
 
     /**
-     * 按订单号批量更新状态（释放/确认时使用）
+     * 按订单号批量更新预占状态（释放/确认时使用）
      *
-     * @param orderNo   订单编号
-     * @param oldStatus 原状态（防止重复操作）
-     * @param newStatus 新状态
+     * @param orderNo              订单编号
+     * @param oldReservationStatus 原状态（防止重复操作）
+     * @param newReservationStatus 新状态
      * @return 影响行数
      */
-    int updateStatusByOrderNo(@Param("orderNo") String orderNo,
-                              @Param("oldStatus") Integer oldStatus,
-                              @Param("newStatus") Integer newStatus);
+    int updateReservationStatusByOrderNo(@Param("orderNo") String orderNo,
+                                         @Param("oldReservationStatus") Integer oldReservationStatus,
+                                         @Param("newReservationStatus") Integer newReservationStatus);
 
     /**
      * 根据主键删除（慎用，建议保留记录用于审计）
@@ -115,20 +115,21 @@ public interface StockReservationDao {
     int deleteByPrimaryKey(Long id);
 
     /**
-     * 按预约记录ID批量更新状态
+     * 按预约记录ID批量更新预占状态
      *
-     * @param ids    预约记录ID列表
-     * @param status 新状态
+     * @param ids               预约记录ID列表
+     * @param reservationStatus 新状态
      * @return 影响行数
      */
-    int updateStatusByIds(@Param("ids") List<Long> ids, @Param("status") Integer status);
+    int updateReservationStatusByIds(@Param("ids") List<Long> ids, @Param("reservationStatus") Integer reservationStatus);
 
     /**
-     * 按订单号和状态查询预约记录
+     * 按订单号和预占状态查询预约记录
      *
-     * @param orderNos 订单编号列表
-     * @param status   预约状态
+     * @param orderNos          订单编号列表
+     * @param reservationStatus 预约状态
      * @return 预约记录列表
      */
-    List<StockReservation> listByOrderNosAndStatus(@Param("orderNos") List<String> orderNos, @Param("status") Integer status);
+    List<StockReservation> listByOrderNosAndReservationStatus(@Param("orderNos") List<String> orderNos,
+                                                              @Param("reservationStatus") Integer reservationStatus);
 }

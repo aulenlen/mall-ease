@@ -39,14 +39,14 @@ public class Sku {
     private String pic;
 
     /**
-     * SKU价格
+     * SKU基础成交价
      */
-    private BigDecimal price;
+    private BigDecimal basePrice;
 
     /**
-     * 市场价
+     * SKU划线参考价
      */
-    private BigDecimal originalPrice;
+    private BigDecimal compareAtPrice;
 
     /**
      * 逻辑删除: 0-未删除, 1-已删除

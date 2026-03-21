@@ -77,7 +77,7 @@ public class FlashPortalController {
 
     private void ensurePublishedSession(Long sessionId) {
         FlashSession session = flashService.getFlashSessionById(sessionId);
-        if (!FlashSessionStatus.ENABLED.codeEquals(session.getStatus())) {
+        if (!FlashSessionStatus.ENABLED.codeEquals(session.getSessionStatus())) {
             throw new ApiException("秒杀场次未上架");
         }
         if (session.getEndTime() != null && session.getEndTime().isBefore(LocalDateTime.now())) {

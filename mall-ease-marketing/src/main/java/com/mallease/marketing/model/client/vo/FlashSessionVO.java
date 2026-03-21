@@ -33,8 +33,8 @@ public class FlashSessionVO {
     @Schema(description = "结束时间")
     private LocalDateTime endTime;
 
-    @Schema(description = "状态：0-禁用 1-启用")
-    private Integer status;
+    @Schema(description = "场次启用状态：0-禁用 1-启用")
+    private Integer sessionStatus;
 
     @Schema(description = "时间状态：0-未开始 1-进行中 2-已结束")
     private Integer timeStatus;

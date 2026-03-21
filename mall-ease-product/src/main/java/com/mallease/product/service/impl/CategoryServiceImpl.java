@@ -250,15 +250,15 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<Category> listByQuery(CategoryQuery query) {
-        // 导航分类查询（isNav=1 且 status=1）
-        if (Integer.valueOf(1).equals(query.getIsNav()) && Integer.valueOf(1).equals(query.getStatus())) {
+        // 导航分类查询（isNav=1 且 enableStatus=1）
+        if (Integer.valueOf(1).equals(query.getIsNav()) && Integer.valueOf(1).equals(query.getEnableStatus())) {
             return categoryDao.selectNavCategories();
         }
         // 根据查询条件筛选
         if (StringUtils.hasText(query.getKeyword())) {
             return categoryDao.selectByNameLike(query.getKeyword());
-        } else if (query.getStatus() != null) {
-            return categoryDao.selectByStatus(query.getStatus());
+        } else if (query.getEnableStatus() != null) {
+            return categoryDao.selectByEnableStatus(query.getEnableStatus());
         } else if (query.getLevel() != null) {
             return categoryDao.selectByLevel(query.getLevel());
         } else {
@@ -288,20 +288,20 @@ public class CategoryServiceImpl implements CategoryService {
 
     @CacheEvict(value = "product:category", allEntries = true)
     @Override
-    public int updateStatus(Long id, Integer status) {
+    public int updateEnableStatus(Long id, Integer enableStatus) {
         Category category = new Category();
         category.setId(id);
-        category.setStatus(status);
+        category.setEnableStatus(enableStatus);
         return categoryDao.updateByPrimaryKeySelective(category);
     }
 
     @CacheEvict(value = "product:category", allEntries = true)
     @Override
-    public int updateStatusBatch(List<Long> ids, Integer status) {
+    public int updateEnableStatusBatch(List<Long> ids, Integer enableStatus) {
         if (CollectionUtils.isEmpty(ids)) {
             return 0;
         }
-        return categoryDao.updateStatusBatch(ids, status);
+        return categoryDao.updateEnableStatusBatch(ids, enableStatus);
     }
 
     @CacheEvict(value = "product:category", allEntries = true)
@@ -327,10 +327,10 @@ public class CategoryServiceImpl implements CategoryService {
         log.info("缓存未命中，开始加载分类树数据");
         long start = System.currentTimeMillis();
 
-        List<Category> published = categoryDao.selectByStatus(1);
-        List<CategoryTreeDTO> tree = categoryConverter.buildTreeDTO(published);
+        List<Category> enabledCategories = categoryDao.selectByEnableStatus(1);
+        List<CategoryTreeDTO> tree = categoryConverter.buildTreeDTO(enabledCategories);
 
-        log.info("分类树数据加载完成，节点数: {}, 耗时: {}ms", published.size(), System.currentTimeMillis() - start);
+        log.info("分类树数据加载完成，节点数: {}, 耗时: {}ms", enabledCategories.size(), System.currentTimeMillis() - start);
         return tree;
     }
 

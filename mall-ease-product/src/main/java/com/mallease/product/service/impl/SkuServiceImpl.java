@@ -4,14 +4,13 @@ import cn.hutool.core.util.IdUtil;
 import com.mallease.common.dto.remote.SkuSimpleDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.product.dao.SkuDao;
-import com.mallease.product.dao.SkuLadderDao;
-import com.mallease.product.dao.SkuMemberPriceDao;
-import com.mallease.product.dao.SkuPromotionDao;
 import com.mallease.product.dao.SkuStockDao;
 import com.mallease.product.dao.SpuDao;
 import com.mallease.product.model.aggregate.SpuAggregate;
 import com.mallease.product.model.client.query.SkuQuery;
-import com.mallease.product.model.data.entity.*;
+import com.mallease.product.model.data.entity.Sku;
+import com.mallease.product.model.data.entity.SkuStock;
+import com.mallease.product.model.data.entity.Spu;
 import com.mallease.product.service.SkuService;
 import com.mallease.product.service.SkuStockService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,12 +28,6 @@ public class SkuServiceImpl implements SkuService {
     private SkuDao skuDao;
     @Autowired
     private SpuDao spuDao;
-    @Autowired
-    private SkuLadderDao ladderDao;
-    @Autowired
-    private SkuMemberPriceDao memberPriceDao;
-    @Autowired
-    private SkuPromotionDao promotionDao;
     @Autowired
     private SkuStockService skuStockService;
     @Autowired
@@ -67,8 +60,8 @@ public class SkuServiceImpl implements SkuService {
                     .spuName(spu != null ? spu.getName() : null)
                     .spuPic(spu != null ? spu.getPic() : null)
                     .skuPic(sku.getPic())
-                    .originalPrice(sku.getOriginalPrice())
-                    .price(sku.getPrice())
+                    .compareAtPrice(sku.getCompareAtPrice())
+                    .basePrice(sku.getBasePrice())
                     .attrValues(sku.getAttrValues())
                     .build();
         }).toList();
@@ -100,25 +93,6 @@ public class SkuServiceImpl implements SkuService {
         stock.setSpuId(spuId);
         skuStockService.createBatch(List.of(stock));
 
-        // 促销（可选）
-        if (skuData.getPromotion() != null) {
-            SkuPromotion promotion = skuData.getPromotion();
-            promotion.setSkuId(skuId);
-            promotionDao.insertSelective(promotion);
-        }
-
-        // 阶梯价（可选）
-        if (skuData.getLadderList() != null && !skuData.getLadderList().isEmpty()) {
-            skuData.getLadderList().forEach(ladder -> ladder.setSkuId(skuId));
-            ladderDao.insertBatch(skuData.getLadderList());
-        }
-
-        // 会员价（可选）
-        if (skuData.getMemberPriceList() != null && !skuData.getMemberPriceList().isEmpty()) {
-            skuData.getMemberPriceList().forEach(memberPrice -> memberPrice.setSkuId(skuId));
-            memberPriceDao.insertBatch(skuData.getMemberPriceList());
-        }
-
         return skuId;
     }
 
@@ -141,9 +115,6 @@ public class SkuServiceImpl implements SkuService {
 
         // 收集所有关联数据
         List<SkuStock> stockList = new ArrayList<>();
-        List<SkuPromotion> promotionList = new ArrayList<>();
-        List<SkuMemberPrice> memberPriceList = new ArrayList<>();
-        List<SkuLadder> ladderList = new ArrayList<>();
         for (int i = 0; i < skuList.size(); i++) {
             Long skuId = skuList.get(i).getId();
             SpuAggregate.SkuData data = skuDataList.get(i);
@@ -153,39 +124,11 @@ public class SkuServiceImpl implements SkuService {
             stock.setSkuId(skuId);
             stock.setSpuId(spuId);
             stockList.add(stock);
-
-            // 促销（可选）
-            if (data.getPromotion() != null) {
-                SkuPromotion promotion = data.getPromotion();
-                promotion.setSkuId(skuId);
-                promotionList.add(promotion);
-            }
-
-            // 阶梯价（可选）
-            if (data.getLadderList() != null && !data.getLadderList().isEmpty()) {
-                data.getLadderList().forEach(ladder -> ladder.setSkuId(skuId));
-                ladderList.addAll(data.getLadderList());
-            }
-
-            // 会员价（可选）
-            if (data.getMemberPriceList() != null && !data.getMemberPriceList().isEmpty()) {
-                data.getMemberPriceList().forEach(memberPrice -> memberPrice.setSkuId(skuId));
-                memberPriceList.addAll(data.getMemberPriceList());
-            }
         }
 
         // 批量插入所有关联数据
         if (!stockList.isEmpty()) {
             skuStockService.createBatch(stockList);
-        }
-        if (!ladderList.isEmpty()) {
-            ladderDao.insertBatch(ladderList);
-        }
-        if (!promotionList.isEmpty()) {
-            promotionDao.insertBatch(promotionList);
-        }
-        if (!memberPriceList.isEmpty()) {
-            memberPriceDao.insertBatch(memberPriceList);
         }
 
         return skuList.size();
@@ -287,102 +230,10 @@ public class SkuServiceImpl implements SkuService {
         return skuDao.selectBySpuIds(spuIds);
     }
 
-    @Override
-    public List<SkuPromotion> listPromotionBySkuIds(List<Long> skuIds) {
-        if (skuIds == null || skuIds.isEmpty()) {
-            return List.of();
-        }
-        return promotionDao.selectBySkuIds(skuIds);
-    }
-
-    @Override
-    public List<SkuLadder> listLadderBySkuIds(List<Long> skuIds) {
-        if (skuIds == null || skuIds.isEmpty()) {
-            return List.of();
-        }
-        return ladderDao.selectBySkuIds(skuIds);
-    }
-
-    @Override
-    public List<SkuMemberPrice> listMemberPriceBySkuIds(List<Long> skuIds) {
-        if (skuIds == null || skuIds.isEmpty()) {
-            return List.of();
-        }
-        return memberPriceDao.selectBySkuIds(skuIds);
-    }
-
-    @Override
-    public void savePromotionBatch(List<Long> skuIdsToDelete, List<SkuPromotion> promotions) {
-
-        if (skuIdsToDelete != null && !skuIdsToDelete.isEmpty()) {
-            List<SkuPromotion> existingPromotions = promotionDao.selectBySkuIds(skuIdsToDelete);
-            if (!existingPromotions.isEmpty()) {
-                List<Long> idsToDelete = existingPromotions.stream()
-                        .map(SkuPromotion::getId)
-                        .collect(Collectors.toList());
-                promotionDao.deleteBatch(idsToDelete);
-            }
-        }
-
-        if (promotions != null && !promotions.isEmpty()) {
-            promotionDao.insertBatch(promotions);
-        }
-    }
-
-    @Override
-    public void updatePromotionBatch(List<SkuPromotion> promotions) {
-        if (promotions == null || promotions.isEmpty()) {
-            return;
-        }
-
-        for (SkuPromotion promotion : promotions) {
-            promotionDao.updateByPrimaryKeySelective(promotion);
-        }
-    }
-
-    @Override
-    public void saveLadderBatch(List<Long> skuIdsToDelete, List<SkuLadder> ladders) {
-
-        if (skuIdsToDelete != null && !skuIdsToDelete.isEmpty()) {
-            List<SkuLadder> existingLadders = ladderDao.selectBySkuIds(skuIdsToDelete);
-            if (!existingLadders.isEmpty()) {
-                List<Long> idsToDelete = existingLadders.stream()
-                        .map(SkuLadder::getId)
-                        .collect(Collectors.toList());
-                ladderDao.deleteBatch(idsToDelete);
-            }
-        }
-
-        if (ladders != null && !ladders.isEmpty()) {
-            ladderDao.insertBatch(ladders);
-        }
-    }
-
-    @Override
-    public void saveMemberPriceBatch(List<Long> skuIdsToDelete, List<SkuMemberPrice> memberPriceList) {
-
-        if (skuIdsToDelete != null && !skuIdsToDelete.isEmpty()) {
-            List<SkuMemberPrice> existingPrices = memberPriceDao.selectBySkuIds(skuIdsToDelete);
-            if (!existingPrices.isEmpty()) {
-                List<Long> idsToDelete = existingPrices.stream()
-                        .map(SkuMemberPrice::getId)
-                        .collect(Collectors.toList());
-                memberPriceDao.deleteBatch(idsToDelete);
-            }
-        }
-
-        if (memberPriceList != null && !memberPriceList.isEmpty()) {
-            memberPriceDao.insertBatch(memberPriceList);
-        }
-    }
-
     /**
      * 级联删除SKU关联数据（不包含SKU主表）
      */
     private void deleteAssociatedDataBySkuId(Long skuId) {
-        ladderDao.deleteBySkuId(skuId);
-        memberPriceDao.deleteBySkuId(skuId);
-        promotionDao.deleteBySkuId(skuId);
         skuStockDao.deleteBySkuId(skuId);
     }
 }

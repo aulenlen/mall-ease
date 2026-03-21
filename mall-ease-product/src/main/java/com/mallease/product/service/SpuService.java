@@ -11,8 +11,6 @@ import com.mallease.product.model.data.cache.SpuCache;
 import com.mallease.product.model.data.entity.Spu;
 import com.mallease.product.model.data.entity.SpuDetail;
 
-import com.mallease.product.model.data.entity.SpuFullReduction;
-
 import java.util.List;
 import java.util.Map;
 
@@ -46,12 +44,12 @@ public interface SpuService {
      * 获取商品更新信息（用于编辑页面数据回显）
      *
      * @param id SPU ID
-     * @return SPU聚合对象（包含详情、SKU列表、属性值、满减规则等）
+     * @return SPU聚合对象（包含详情、SKU列表、属性值等）
      */
     SpuAggregate getUpdateInfo(Long id);
 
     /**
-     * 删除商品（级联删除SKU、详情、属性值、满减规则及CMS关联）
+     * 删除商品（级联删除SKU、详情、属性值）
      *
      * @param id SPU ID
      * @return 删除影响的行数
@@ -59,7 +57,7 @@ public interface SpuService {
     int delete(Long id);
 
     /**
-     * 删除商品（级联删除SKU、详情、属性值、满减规则及CMS关联）
+     * 商品上下架，支持批量操作
      *
      * @param ids           spuId列表
      * @param publishStatus 上架状态
@@ -82,14 +80,6 @@ public interface SpuService {
      * @return SPU详情列表
      */
     List<SpuDetail> listDetailBySpuIds(List<Long> spuIds);
-
-    /**
-     * 根据SPU ID列表批量获取满减规则
-     *
-     * @param spuIds SPU ID列表
-     * @return 满减规则列表
-     */
-    List<SpuFullReduction> listFullReductionBySpuIds(List<Long> spuIds);
 
     /**
      * 根据SpuId获取完整的商品信息（带缓存）

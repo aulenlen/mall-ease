@@ -33,7 +33,7 @@ public class SpuFlashOverlayDTO {
 
         private Long skuId;
 
-        private BigDecimal originalPrice;
+        private BigDecimal compareAtPrice;
 
         private BigDecimal flashPrice;
 

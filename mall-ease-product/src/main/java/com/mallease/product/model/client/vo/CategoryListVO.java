@@ -33,8 +33,8 @@ public class CategoryListVO {
     @Schema(description = "层级深度: 0-一级, 1-二级, 2-三级")
     private Integer level;
 
-    @Schema(description = "状态: 0-禁用, 1-启用")
-    private Integer status;
+    @Schema(description = "启用状态: 0-禁用, 1-启用")
+    private Integer enableStatus;
 
     @Schema(description = "是否导航栏显示: 0-否, 1-是")
     private Integer isNav;

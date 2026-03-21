@@ -165,20 +165,20 @@ public interface SpuDao {
     int deleteBatch(@Param("ids") List<Long> ids);
 
     /**
-     * 更新SPU统计信息（价格、库存、销量）
+     * 更新SPU统计信息（价格、有货状态、销量）
      * 用于SKU变更后同步更新SPU的聚合字段
      *
      * @param id       SPU ID
      * @param minPrice 最低价格
      * @param maxPrice 最高价格
-     * @param stock    总库存
+     * @param inStock  是否有货
      * @param sale     总销量
      * @return 影响行数
      */
     int updateStats(@Param("id") Long id,
                     @Param("minPrice") BigDecimal minPrice,
                     @Param("maxPrice") BigDecimal maxPrice,
-                    @Param("stock") Integer stock,
+                    @Param("inStock") Boolean inStock,
                     @Param("sale") Integer sale);
 
     /**

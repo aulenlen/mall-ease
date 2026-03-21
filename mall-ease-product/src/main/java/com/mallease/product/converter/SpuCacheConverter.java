@@ -4,7 +4,12 @@ import cn.hutool.core.util.StrUtil;
 import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.product.model.client.vo.ProductVO;
 import com.mallease.product.model.data.cache.SpuCache;
-import com.mallease.product.model.data.entity.*;
+import com.mallease.product.model.data.entity.Brand;
+import com.mallease.product.model.data.entity.Category;
+import com.mallease.product.model.data.entity.Sku;
+import com.mallease.product.model.data.entity.SkuStock;
+import com.mallease.product.model.data.entity.Spu;
+import com.mallease.product.model.data.entity.SpuDetail;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -28,11 +33,10 @@ public interface SpuCacheConverter {
     @Mapping(target = "detailTitle", source = "detail.detailTitle")
     @Mapping(target = "detailDesc", source = "detail.detailDesc")
     @Mapping(target = "serviceList", source = "detail.serviceIds", qualifiedByName = "splitServiceIds")
-    @Mapping(target = "freightTemplateId", source = "spu.freightTemplateId")
     @Mapping(target = "totalSale", source = "spu.sale")
     @Mapping(target = "minPrice", source = "spu.minPrice")
     @Mapping(target = "maxPrice", source = "spu.maxPrice")
-    @Mapping(target = "totalStock", source = "spu.stock")
+    @Mapping(target = "inStock", source = "spu.inStock")
     SpuCache.SpuDetailInfo toSpuDetailInfo(SpuDetail detail, Spu spu);
 
     SpuCache.BrandInfo toBrandInfo(Brand brand);
@@ -44,22 +48,10 @@ public interface SpuCacheConverter {
 
     SpuCache.SkuBasicInfo toSkuBasicInfo(Sku sku);
 
+    @Mapping(target = "promotionPrice", ignore = true)
     SpuCache.SkuPriceInfo toSkuPriceInfo(Sku sku);
 
-    @Mapping(target = "type", source = "promotionType")
-    @Mapping(target = "price", source = "promotionPrice")
-    @Mapping(target = "startTime", source = "promotionStartTime")
-    @Mapping(target = "endTime", source = "promotionEndTime")
-    @Mapping(target = "perLimit", source = "promotionPerLimit")
-    SpuCache.SkuPromotionInfo toSkuPromotionInfo(SkuPromotion promotion);
-
-    SpuCache.SkuBenefitInfo toSkuBenefitInfo(SkuPromotion promotion);
-
     SpuCache.SkuConfigInfo toSkuConfigInfo(SkuStock stock);
-
-    SpuCache.FullReductionInfo toFullReductionInfo(SpuFullReduction reduction);
-
-    List<SpuCache.FullReductionInfo> toFullReductionInfoList(List<SpuFullReduction> reductionList);
 
     // Cache → DTO（内部调用）
 

@@ -90,8 +90,8 @@ public class SkuController {
     @PutMapping("/enable-status")
     public R<Integer> updateEnableStatus(
             @Parameter(description = "SKU ID列表") @RequestParam List<Long> ids,
-            @Parameter(description = "状态值: 0-禁用, 1-启用") @RequestParam Integer status) {
-        int count = skuService.updateEnableStatus(ids, status);
+            @Parameter(description = "启用状态值: 0-禁用, 1-启用") @RequestParam Integer enableStatus) {
+        int count = skuService.updateEnableStatus(ids, enableStatus);
         return R.success(count);
     }
 
