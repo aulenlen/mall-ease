@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.product.dao.SpuDao">
+<mapper namespace="com.mallease.product.dal.mapper.SpuDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.Spu">
+    <resultMap id="BaseResultMap" type="com.mallease.product.dal.entity.Spu">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="spu_code" property="spuCode" jdbcType="VARCHAR"/>
         <result column="brand_id" property="brandId" jdbcType="BIGINT"/>
@@ -33,6 +33,9 @@
         <result column="creator" property="creator" jdbcType="VARCHAR"/>
         <result column="updater" property="updater" jdbcType="VARCHAR"/>
         <result column="version" property="version" jdbcType="INTEGER"/>
+        <result column="has_staged_changes" property="hasStagedChanges" jdbcType="TINYINT"/>
+        <result column="published_version" property="publishedVersion" jdbcType="INTEGER"/>
+        <result column="published_at" property="publishedAt" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -40,7 +43,7 @@
         name, sub_title, description, keywords, pic, album_pics, unit, weight,
         deleted, publish_status, new_status, recommend_status, verify_status, sort,
         sale, min_price, max_price, in_stock, brand_name, category_name,
-        create_time, update_time, creator, updater, version
+        create_time, update_time, creator, updater, version, has_staged_changes, published_version, published_at
     </sql>
 
     <sql id="AttrValuesFilter">
@@ -255,7 +258,7 @@
     </select>
 
     <!-- 聚合属性 -->
-    <select id="aggregateAttrs" resultType="com.mallease.product.model.data.entity.AttrValueAggregation">
+    <select id="aggregateAttrs" resultType="com.mallease.product.dal.entity.AttrValueAggregation">
         SELECT
             pav.attr_id as attrId,
             pav.attr_name as attrName,
@@ -309,13 +312,13 @@
     </select>
 
     <!-- 插入 -->
-    <insert id="insert" parameterType="com.mallease.product.model.data.entity.Spu" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.product.dal.entity.Spu" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_spu (
             spu_code, brand_id, category_id, category_ids,
             name, sub_title, description, keywords, pic, album_pics, unit, weight,
             deleted, publish_status, new_status, recommend_status, verify_status, sort,
             sale, min_price, max_price, in_stock, brand_name, category_name,
-            creator, updater, version
+            creator, updater, version, has_staged_changes, published_version, published_at
         ) VALUES (
             #{spuCode,jdbcType=VARCHAR}, #{brandId,jdbcType=BIGINT}, #{categoryId,jdbcType=BIGINT},
             #{categoryIds,jdbcType=VARCHAR},
@@ -326,12 +329,13 @@
             #{recommendStatus,jdbcType=TINYINT}, #{verifyStatus,jdbcType=TINYINT}, #{sort,jdbcType=INTEGER},
             #{sale,jdbcType=INTEGER}, #{minPrice,jdbcType=DECIMAL}, #{maxPrice,jdbcType=DECIMAL},
             #{inStock,jdbcType=TINYINT}, #{brandName,jdbcType=VARCHAR}, #{categoryName,jdbcType=VARCHAR},
-            #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}, 0
+            #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}, #{version,jdbcType=INTEGER},
+            #{hasStagedChanges,jdbcType=TINYINT}, #{publishedVersion,jdbcType=INTEGER}, #{publishedAt,jdbcType=TIMESTAMP}
         )
     </insert>
 
     <!-- 选择性插入 -->
-    <insert id="insertSelective" parameterType="com.mallease.product.model.data.entity.Spu" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.product.dal.entity.Spu" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_spu
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="spuCode != null">spu_code,</if>
@@ -358,7 +362,12 @@
             <if test="brandName != null">brand_name,</if>
             <if test="categoryName != null">category_name,</if>
             <if test="creator != null">creator,</if>
-            deleted, version,
+            <if test="updater != null">updater,</if>
+            deleted,
+            <if test="version != null">version,</if>
+            <if test="hasStagedChanges != null">has_staged_changes,</if>
+            <if test="publishedVersion != null">published_version,</if>
+            <if test="publishedAt != null">published_at,</if>
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
             <if test="spuCode != null">#{spuCode,jdbcType=VARCHAR},</if>
@@ -385,7 +394,12 @@
             <if test="brandName != null">#{brandName,jdbcType=VARCHAR},</if>
             <if test="categoryName != null">#{categoryName,jdbcType=VARCHAR},</if>
             <if test="creator != null">#{creator,jdbcType=VARCHAR},</if>
-            0, 0,
+            <if test="updater != null">#{updater,jdbcType=VARCHAR},</if>
+            0,
+            <if test="version != null">#{version,jdbcType=INTEGER},</if>
+            <if test="hasStagedChanges != null">#{hasStagedChanges,jdbcType=TINYINT},</if>
+            <if test="publishedVersion != null">#{publishedVersion,jdbcType=INTEGER},</if>
+            <if test="publishedAt != null">#{publishedAt,jdbcType=TIMESTAMP},</if>
         </trim>
     </insert>
 
@@ -396,7 +410,7 @@
             name, sub_title, description, keywords, pic, album_pics, unit, weight,
             deleted, publish_status, new_status, recommend_status, verify_status, sort,
             sale, min_price, max_price, in_stock, brand_name, category_name,
-            creator, version
+            creator, updater, version, has_staged_changes, published_version, published_at
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
@@ -411,13 +425,16 @@
                 #{item.sort,jdbcType=INTEGER}, #{item.sale,jdbcType=INTEGER},
                 #{item.minPrice,jdbcType=DECIMAL}, #{item.maxPrice,jdbcType=DECIMAL},
                 #{item.inStock,jdbcType=TINYINT}, #{item.brandName,jdbcType=VARCHAR},
-                #{item.categoryName,jdbcType=VARCHAR}, #{item.creator,jdbcType=VARCHAR}, 0
+                #{item.categoryName,jdbcType=VARCHAR}, #{item.creator,jdbcType=VARCHAR},
+                #{item.updater,jdbcType=VARCHAR}, #{item.version,jdbcType=INTEGER},
+                #{item.hasStagedChanges,jdbcType=TINYINT}, #{item.publishedVersion,jdbcType=INTEGER},
+                #{item.publishedAt,jdbcType=TIMESTAMP}
             )
         </foreach>
     </insert>
 
     <!-- 根据主键更新 -->
-    <update id="updateByPrimaryKey" parameterType="com.mallease.product.model.data.entity.Spu">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.dal.entity.Spu">
         UPDATE product_spu
         SET spu_code = #{spuCode,jdbcType=VARCHAR},
             brand_id = #{brandId,jdbcType=BIGINT},
@@ -443,12 +460,13 @@
             brand_name = #{brandName,jdbcType=VARCHAR},
             category_name = #{categoryName,jdbcType=VARCHAR},
             updater = #{updater,jdbcType=VARCHAR},
+            has_staged_changes = 1,
             version = version + 1
         WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
     </update>
 
     <!-- 根据主键选择性更新 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.model.data.entity.Spu">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.dal.entity.Spu">
         UPDATE product_spu
         <set>
             <if test="spuCode != null">spu_code = #{spuCode,jdbcType=VARCHAR},</if>
@@ -483,7 +501,12 @@
     <!-- 批量更新上架状态 -->
     <update id="updatePublishStatusBatch">
         UPDATE product_spu
-        SET publish_status = #{publishStatus,jdbcType=TINYINT}, version = version + 1
+        SET publish_status = #{publishStatus,jdbcType=TINYINT}
+        <if test="publishStatus == 1">
+            , published_version = CASE WHEN version IS NULL OR version &lt;= 0 THEN 1 ELSE version END
+            , has_staged_changes = 0
+            , published_at = #{publishedAt,jdbcType=TIMESTAMP}
+        </if>
         WHERE deleted = 0 AND id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id,jdbcType=BIGINT}
@@ -536,8 +559,7 @@
         SET min_price = #{minPrice,jdbcType=DECIMAL},
             max_price = #{maxPrice,jdbcType=DECIMAL},
             in_stock = #{inStock,jdbcType=TINYINT},
-            sale = #{sale,jdbcType=INTEGER},
-            version = version + 1
+            sale = #{sale,jdbcType=INTEGER}
         WHERE id = #{id,jdbcType=BIGINT} AND deleted = 0
     </update>
 

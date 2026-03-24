@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dal.mapper.SpuSnapshotDao">
+
+    <resultMap id="BaseResultMap" type="com.mallease.product.dal.entity.SpuSnapshot">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
+        <result column="version" property="version" jdbcType="INTEGER"/>
+        <result column="publish_status" property="publishStatus" jdbcType="TINYINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="sub_title" property="subTitle" jdbcType="VARCHAR"/>
+        <result column="pic" property="pic" jdbcType="VARCHAR"/>
+        <result column="min_price" property="minPrice" jdbcType="DECIMAL"/>
+        <result column="max_price" property="maxPrice" jdbcType="DECIMAL"/>
+        <result column="brand_id" property="brandId" jdbcType="BIGINT"/>
+        <result column="brand_name" property="brandName" jdbcType="VARCHAR"/>
+        <result column="category_id" property="categoryId" jdbcType="BIGINT"/>
+        <result column="category_name" property="categoryName" jdbcType="VARCHAR"/>
+        <result column="category_ids" property="categoryIds" jdbcType="VARCHAR"/>
+        <result column="snapshot_json" property="snapshotJson" jdbcType="LONGVARCHAR"/>
+        <result column="snapshot_hash" property="snapshotHash" jdbcType="VARCHAR"/>
+        <result column="published_at" property="publishedAt" jdbcType="TIMESTAMP"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, spu_id, version, publish_status, name, sub_title, pic, min_price, max_price,
+        brand_id, brand_name, category_id, category_name, category_ids,
+        snapshot_json, snapshot_hash, published_at, create_time, update_time
+    </sql>
+
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_spu_snapshot
+        WHERE id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <select id="selectBySpuId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_spu_snapshot
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+    </select>
+
+    <select id="selectBySpuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_spu_snapshot
+        WHERE spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+            #{spuId,jdbcType=BIGINT}
+        </foreach>
+    </select>
+
+    <select id="selectPublishedCacheBySpuIds" resultMap="BaseResultMap">
+        SELECT spu_id, snapshot_json
+        FROM product_spu_snapshot
+        WHERE publish_status = 1
+          AND spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+            #{spuId,jdbcType=BIGINT}
+        </foreach>
+    </select>
+
+    <insert id="insert" parameterType="com.mallease.product.dal.entity.SpuSnapshot" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_spu_snapshot (
+            spu_id, version, publish_status, name, sub_title, pic, min_price, max_price,
+            brand_id, brand_name, category_id, category_name, category_ids,
+            snapshot_json, snapshot_hash, published_at
+        ) VALUES (
+            #{spuId,jdbcType=BIGINT}, #{version,jdbcType=INTEGER}, #{publishStatus,jdbcType=TINYINT},
+            #{name,jdbcType=VARCHAR}, #{subTitle,jdbcType=VARCHAR}, #{pic,jdbcType=VARCHAR},
+            #{minPrice,jdbcType=DECIMAL}, #{maxPrice,jdbcType=DECIMAL},
+            #{brandId,jdbcType=BIGINT}, #{brandName,jdbcType=VARCHAR},
+            #{categoryId,jdbcType=BIGINT}, #{categoryName,jdbcType=VARCHAR}, #{categoryIds,jdbcType=VARCHAR},
+            #{snapshotJson,jdbcType=LONGVARCHAR}, #{snapshotHash,jdbcType=VARCHAR},
+            #{publishedAt,jdbcType=TIMESTAMP}
+        )
+    </insert>
+
+    <insert id="insertSelective" parameterType="com.mallease.product.dal.entity.SpuSnapshot" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_spu_snapshot
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="spuId != null">spu_id,</if>
+            <if test="version != null">version,</if>
+            <if test="publishStatus != null">publish_status,</if>
+            <if test="name != null">name,</if>
+            <if test="subTitle != null">sub_title,</if>
+            <if test="pic != null">pic,</if>
+            <if test="minPrice != null">min_price,</if>
+            <if test="maxPrice != null">max_price,</if>
+            <if test="brandId != null">brand_id,</if>
+            <if test="brandName != null">brand_name,</if>
+            <if test="categoryId != null">category_id,</if>
+            <if test="categoryName != null">category_name,</if>
+            <if test="categoryIds != null">category_ids,</if>
+            <if test="snapshotJson != null">snapshot_json,</if>
+            <if test="snapshotHash != null">snapshot_hash,</if>
+            <if test="publishedAt != null">published_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="spuId != null">#{spuId,jdbcType=BIGINT},</if>
+            <if test="version != null">#{version,jdbcType=INTEGER},</if>
+            <if test="publishStatus != null">#{publishStatus,jdbcType=TINYINT},</if>
+            <if test="name != null">#{name,jdbcType=VARCHAR},</if>
+            <if test="subTitle != null">#{subTitle,jdbcType=VARCHAR},</if>
+            <if test="pic != null">#{pic,jdbcType=VARCHAR},</if>
+            <if test="minPrice != null">#{minPrice,jdbcType=DECIMAL},</if>
+            <if test="maxPrice != null">#{maxPrice,jdbcType=DECIMAL},</if>
+            <if test="brandId != null">#{brandId,jdbcType=BIGINT},</if>
+            <if test="brandName != null">#{brandName,jdbcType=VARCHAR},</if>
+            <if test="categoryId != null">#{categoryId,jdbcType=BIGINT},</if>
+            <if test="categoryName != null">#{categoryName,jdbcType=VARCHAR},</if>
+            <if test="categoryIds != null">#{categoryIds,jdbcType=VARCHAR},</if>
+            <if test="snapshotJson != null">#{snapshotJson,jdbcType=LONGVARCHAR},</if>
+            <if test="snapshotHash != null">#{snapshotHash,jdbcType=VARCHAR},</if>
+            <if test="publishedAt != null">#{publishedAt,jdbcType=TIMESTAMP},</if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.dal.entity.SpuSnapshot">
+        UPDATE product_spu_snapshot
+        SET spu_id = #{spuId,jdbcType=BIGINT},
+            version = #{version,jdbcType=INTEGER},
+            publish_status = #{publishStatus,jdbcType=TINYINT},
+            name = #{name,jdbcType=VARCHAR},
+            sub_title = #{subTitle,jdbcType=VARCHAR},
+            pic = #{pic,jdbcType=VARCHAR},
+            min_price = #{minPrice,jdbcType=DECIMAL},
+            max_price = #{maxPrice,jdbcType=DECIMAL},
+            brand_id = #{brandId,jdbcType=BIGINT},
+            brand_name = #{brandName,jdbcType=VARCHAR},
+            category_id = #{categoryId,jdbcType=BIGINT},
+            category_name = #{categoryName,jdbcType=VARCHAR},
+            category_ids = #{categoryIds,jdbcType=VARCHAR},
+            snapshot_json = #{snapshotJson,jdbcType=LONGVARCHAR},
+            snapshot_hash = #{snapshotHash,jdbcType=VARCHAR},
+            published_at = #{publishedAt,jdbcType=TIMESTAMP}
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.dal.entity.SpuSnapshot">
+        UPDATE product_spu_snapshot
+        <set>
+            <if test="spuId != null">spu_id = #{spuId,jdbcType=BIGINT},</if>
+            <if test="version != null">version = #{version,jdbcType=INTEGER},</if>
+            <if test="publishStatus != null">publish_status = #{publishStatus,jdbcType=TINYINT},</if>
+            <if test="name != null">name = #{name,jdbcType=VARCHAR},</if>
+            <if test="subTitle != null">sub_title = #{subTitle,jdbcType=VARCHAR},</if>
+            <if test="pic != null">pic = #{pic,jdbcType=VARCHAR},</if>
+            <if test="minPrice != null">min_price = #{minPrice,jdbcType=DECIMAL},</if>
+            <if test="maxPrice != null">max_price = #{maxPrice,jdbcType=DECIMAL},</if>
+            <if test="brandId != null">brand_id = #{brandId,jdbcType=BIGINT},</if>
+            <if test="brandName != null">brand_name = #{brandName,jdbcType=VARCHAR},</if>
+            <if test="categoryId != null">category_id = #{categoryId,jdbcType=BIGINT},</if>
+            <if test="categoryName != null">category_name = #{categoryName,jdbcType=VARCHAR},</if>
+            <if test="categoryIds != null">category_ids = #{categoryIds,jdbcType=VARCHAR},</if>
+            <if test="snapshotJson != null">snapshot_json = #{snapshotJson,jdbcType=LONGVARCHAR},</if>
+            <if test="snapshotHash != null">snapshot_hash = #{snapshotHash,jdbcType=VARCHAR},</if>
+            <if test="publishedAt != null">published_at = #{publishedAt,jdbcType=TIMESTAMP},</if>
+        </set>
+        WHERE id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <update id="updateBySpuId" parameterType="com.mallease.product.dal.entity.SpuSnapshot">
+        UPDATE product_spu_snapshot
+        <set>
+            <if test="version != null">version = #{version,jdbcType=INTEGER},</if>
+            <if test="publishStatus != null">publish_status = #{publishStatus,jdbcType=TINYINT},</if>
+            <if test="name != null">name = #{name,jdbcType=VARCHAR},</if>
+            <if test="subTitle != null">sub_title = #{subTitle,jdbcType=VARCHAR},</if>
+            <if test="pic != null">pic = #{pic,jdbcType=VARCHAR},</if>
+            <if test="minPrice != null">min_price = #{minPrice,jdbcType=DECIMAL},</if>
+            <if test="maxPrice != null">max_price = #{maxPrice,jdbcType=DECIMAL},</if>
+            <if test="brandId != null">brand_id = #{brandId,jdbcType=BIGINT},</if>
+            <if test="brandName != null">brand_name = #{brandName,jdbcType=VARCHAR},</if>
+            <if test="categoryId != null">category_id = #{categoryId,jdbcType=BIGINT},</if>
+            <if test="categoryName != null">category_name = #{categoryName,jdbcType=VARCHAR},</if>
+            <if test="categoryIds != null">category_ids = #{categoryIds,jdbcType=VARCHAR},</if>
+            <if test="snapshotJson != null">snapshot_json = #{snapshotJson,jdbcType=LONGVARCHAR},</if>
+            <if test="snapshotHash != null">snapshot_hash = #{snapshotHash,jdbcType=VARCHAR},</if>
+            <if test="publishedAt != null">published_at = #{publishedAt,jdbcType=TIMESTAMP},</if>
+        </set>
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+    </update>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        DELETE FROM product_spu_snapshot
+        WHERE id = #{id,jdbcType=BIGINT}
+    </delete>
+
+    <delete id="deleteBySpuId" parameterType="java.lang.Long">
+        DELETE FROM product_spu_snapshot
+        WHERE spu_id = #{spuId,jdbcType=BIGINT}
+    </delete>
+
+    <insert id="upsertBySpuId" parameterType="com.mallease.product.dal.entity.SpuSnapshot">
+        INSERT INTO product_spu_snapshot (
+            spu_id, version, publish_status, name, sub_title, pic, min_price, max_price,
+            brand_id, brand_name, category_id, category_name, category_ids,
+            snapshot_json, snapshot_hash, published_at
+        ) VALUES (
+            #{spuId,jdbcType=BIGINT}, #{version,jdbcType=INTEGER}, #{publishStatus,jdbcType=TINYINT},
+            #{name,jdbcType=VARCHAR}, #{subTitle,jdbcType=VARCHAR}, #{pic,jdbcType=VARCHAR},
+            #{minPrice,jdbcType=DECIMAL}, #{maxPrice,jdbcType=DECIMAL},
+            #{brandId,jdbcType=BIGINT}, #{brandName,jdbcType=VARCHAR},
+            #{categoryId,jdbcType=BIGINT}, #{categoryName,jdbcType=VARCHAR}, #{categoryIds,jdbcType=VARCHAR},
+            #{snapshotJson,jdbcType=LONGVARCHAR}, #{snapshotHash,jdbcType=VARCHAR},
+            #{publishedAt,jdbcType=TIMESTAMP}
+        )
+        ON DUPLICATE KEY UPDATE
+            version = VALUES(version),
+            publish_status = VALUES(publish_status),
+            name = VALUES(name),
+            sub_title = VALUES(sub_title),
+            pic = VALUES(pic),
+            min_price = VALUES(min_price),
+            max_price = VALUES(max_price),
+            brand_id = VALUES(brand_id),
+            brand_name = VALUES(brand_name),
+            category_id = VALUES(category_id),
+            category_name = VALUES(category_name),
+            category_ids = VALUES(category_ids),
+            snapshot_json = VALUES(snapshot_json),
+            snapshot_hash = VALUES(snapshot_hash),
+            published_at = VALUES(published_at),
+            update_time = NOW()
+    </insert>
+
+    <insert id="upsertBySpuIds">
+        INSERT INTO product_spu_snapshot (
+            spu_id, version, publish_status, name, sub_title, pic, min_price, max_price,
+            brand_id, brand_name, category_id, category_name, category_ids,
+            snapshot_json, snapshot_hash, published_at
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.spuId,jdbcType=BIGINT}, #{item.version,jdbcType=INTEGER}, #{item.publishStatus,jdbcType=TINYINT},
+                #{item.name,jdbcType=VARCHAR}, #{item.subTitle,jdbcType=VARCHAR}, #{item.pic,jdbcType=VARCHAR},
+                #{item.minPrice,jdbcType=DECIMAL}, #{item.maxPrice,jdbcType=DECIMAL},
+                #{item.brandId,jdbcType=BIGINT}, #{item.brandName,jdbcType=VARCHAR},
+                #{item.categoryId,jdbcType=BIGINT}, #{item.categoryName,jdbcType=VARCHAR}, #{item.categoryIds,jdbcType=VARCHAR},
+                #{item.snapshotJson,jdbcType=LONGVARCHAR}, #{item.snapshotHash,jdbcType=VARCHAR},
+                #{item.publishedAt,jdbcType=TIMESTAMP}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            version = VALUES(version),
+            publish_status = VALUES(publish_status),
+            name = VALUES(name),
+            sub_title = VALUES(sub_title),
+            pic = VALUES(pic),
+            min_price = VALUES(min_price),
+            max_price = VALUES(max_price),
+            brand_id = VALUES(brand_id),
+            brand_name = VALUES(brand_name),
+            category_id = VALUES(category_id),
+            category_name = VALUES(category_name),
+            category_ids = VALUES(category_ids),
+            snapshot_json = VALUES(snapshot_json),
+            snapshot_hash = VALUES(snapshot_hash),
+            published_at = VALUES(published_at),
+            update_time = NOW()
+    </insert>
+
+    <update id="updatePublishStatusBatch">
+        UPDATE product_spu_snapshot
+        SET publish_status = #{publishStatus,jdbcType=TINYINT},
+            update_time = NOW()
+        WHERE spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+            #{spuId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+</mapper>

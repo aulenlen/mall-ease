@@ -25,7 +25,7 @@ public interface ProductFeignClient {
      * @param skuIds SKU ID列表
      * @return SKU简要信息列表
      */
-    @PostMapping("/product/sku/internal/listSimpleByIds")
+    @PostMapping("/product/admin/sku/internal/listSimpleByIds")
     R<List<SkuSimpleDTO>> listSkuSimpleByIds(@RequestBody List<Long> skuIds);
 
     /**

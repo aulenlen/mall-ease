@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.product.dao.CategoryDao">
+<mapper namespace="com.mallease.product.dal.mapper.CategoryDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.Category">
+    <resultMap id="BaseResultMap" type="com.mallease.product.dal.entity.Category">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="parent_id" property="parentId" jdbcType="BIGINT"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
@@ -113,7 +113,7 @@
     </select>
 
     <!-- 插入 -->
-    <insert id="insert" parameterType="com.mallease.product.model.data.entity.Category" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.product.dal.entity.Category" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_category (
             parent_id, name, path, level, enable_status, is_nav, sort, icon, image,
             keywords, description, deleted, creator, updater
@@ -127,7 +127,7 @@
     </insert>
 
     <!-- 选择性插入 -->
-    <insert id="insertSelective" parameterType="com.mallease.product.model.data.entity.Category" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.product.dal.entity.Category" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_category
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="parentId != null">parent_id,</if>
@@ -162,7 +162,7 @@
     </insert>
 
     <!-- 根据主键更新 -->
-    <update id="updateByPrimaryKey" parameterType="com.mallease.product.model.data.entity.Category">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.dal.entity.Category">
         UPDATE product_category
         SET parent_id = #{parentId,jdbcType=BIGINT},
             name = #{name,jdbcType=VARCHAR},
@@ -180,7 +180,7 @@
     </update>
 
     <!-- 根据主键选择性更新 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.model.data.entity.Category">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.dal.entity.Category">
         UPDATE product_category
         <set>
             <if test="parentId != null">parent_id = #{parentId,jdbcType=BIGINT},</if>

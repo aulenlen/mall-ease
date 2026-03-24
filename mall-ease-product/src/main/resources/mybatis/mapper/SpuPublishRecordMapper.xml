@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.product.dao.SpuPublishRecordDao">
+<mapper namespace="com.mallease.product.dal.mapper.SpuPublishRecordDao">
 
     <insert id="insertBatch" parameterType="java.util.List">
         INSERT INTO product_spu_publish_record (spu_id, spu_name, operator_id, operator_name, action, from_status, to_status, reason)

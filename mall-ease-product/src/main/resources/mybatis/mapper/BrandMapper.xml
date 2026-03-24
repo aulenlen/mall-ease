@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.product.dao.BrandDao">
-    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.Brand">
+<mapper namespace="com.mallease.product.dal.mapper.BrandDao">
+    <resultMap id="BaseResultMap" type="com.mallease.product.dal.entity.Brand">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="first_letter" property="firstLetter" jdbcType="VARCHAR"/>
@@ -72,7 +72,7 @@
         where id = #{id,jdbcType=BIGINT}
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.product.model.data.entity.Brand" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.product.dal.entity.Brand" useGeneratedKeys="true" keyProperty="id">
         insert into product_brand (id, name, first_letter,
                                sort, factory_status, show_status,
                                spu_count, spu_comment_count, logo,
@@ -83,7 +83,7 @@
                 #{bigPic,jdbcType=VARCHAR}, #{brandStory,jdbcType=LONGVARCHAR}, #{createTime,jdbcType=TIMESTAMP}, #{creator,jdbcType=VARCHAR})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.product.model.data.entity.Brand" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.product.dal.entity.Brand" useGeneratedKeys="true" keyProperty="id">
         insert into product_brand
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
@@ -169,7 +169,7 @@
         </trim>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.model.data.entity.Brand">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.dal.entity.Brand">
         update product_brand
         <set>
             <if test="name != null">
@@ -209,7 +209,7 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.product.model.data.entity.Brand">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.dal.entity.Brand">
         update product_brand
         set name = #{name,jdbcType=VARCHAR},
             first_letter = #{firstLetter,jdbcType=VARCHAR},

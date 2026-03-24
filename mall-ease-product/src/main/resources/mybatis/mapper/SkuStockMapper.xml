@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.product.dao.SkuStockDao">
+<mapper namespace="com.mallease.product.dal.mapper.SkuStockDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.SkuStock">
+    <resultMap id="BaseResultMap" type="com.mallease.product.dal.entity.SkuStock">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
@@ -86,7 +86,7 @@
     </select>
 
     <!-- 插入 -->
-    <insert id="insert" parameterType="com.mallease.product.model.data.entity.SkuStock" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.product.dal.entity.SkuStock" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_sku_stock (
             sku_id, spu_id, stock, lock_stock, sale, low_stock, stock_status, version, creator
         ) VALUES (
@@ -97,7 +97,7 @@
     </insert>
 
     <!-- 选择性插入 -->
-    <insert id="insertSelective" parameterType="com.mallease.product.model.data.entity.SkuStock" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.product.dal.entity.SkuStock" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_sku_stock
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="skuId != null">sku_id,</if>
@@ -139,7 +139,7 @@
     </insert>
 
     <!-- 根据主键更新 -->
-    <update id="updateByPrimaryKey" parameterType="com.mallease.product.model.data.entity.SkuStock">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.dal.entity.SkuStock">
         UPDATE product_sku_stock
         SET sku_id = #{skuId,jdbcType=BIGINT},
             stock = #{stock,jdbcType=INTEGER},
@@ -152,7 +152,7 @@
     </update>
 
     <!-- 根据主键选择性更新 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.model.data.entity.SkuStock">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.dal.entity.SkuStock">
         UPDATE product_sku_stock
         <set>
             <if test="skuId != null">sku_id = #{skuId,jdbcType=BIGINT},</if>
@@ -285,6 +285,15 @@
     <delete id="deleteBySkuId" parameterType="java.lang.Long">
         DELETE FROM product_sku_stock
         WHERE sku_id = #{skuId,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 根据SKU ID列表批量删除库存 -->
+    <delete id="deleteBySkuIds">
+        DELETE FROM product_sku_stock
+        WHERE sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+            #{skuId,jdbcType=BIGINT}
+        </foreach>
     </delete>
 
 </mapper>

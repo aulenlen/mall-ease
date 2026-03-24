@@ -1,11 +1,13 @@
 package com.mallease.trade.service.impl;
 
+import com.mallease.common.api.R;
 import com.mallease.common.enums.OrderStatus;
 import com.mallease.common.enums.PayChannel;
 import com.mallease.common.enums.PaymentStatus;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.NoGeneratorUtil;
 import com.mallease.trade.dao.PaymentOrderDao;
+import com.mallease.trade.feign.ProductFeignClient;
 import com.mallease.trade.model.client.cmd.PaymentCmd;
 import com.mallease.trade.model.client.query.PaymentQuery;
 import com.mallease.trade.model.data.entity.Order;
@@ -36,6 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentOrderDao paymentOrderDao;
     private final OrderService orderService;
+    private final ProductFeignClient productFeignClient;
     private final AlipayHandler alipayHandler;
 
     @Override
@@ -95,8 +98,6 @@ public class PaymentServiceImpl implements PaymentService {
             throw new ApiException("支付单不存在或已过期");
         }
 
-        PayChannelHandler handler = getHandler(payChannel);
-
         if (PayChannel.MOCK.getCode().equals(payChannel)) {
             paymentOrderDao.updateStatus(
                     payment.getId(),
@@ -105,10 +106,12 @@ public class PaymentServiceImpl implements PaymentService {
                     LocalDateTime.now(),
                     "mock"
             );
-            orderService.updateStatus(payment.getOrderNo(), OrderStatus.PAID.getCode());
+            confirmProductStock(payment.getOrderNo());
+            orderService.updateStatus(payment.getOrderNo(), OrderStatus.PENDING_SHIPMENT.getCode());
             return null;
         }
 
+        PayChannelHandler handler = getHandler(payChannel);
         return handler.prepay(payment);
     }
 
@@ -182,6 +185,7 @@ public class PaymentServiceImpl implements PaymentService {
         notifyUpdate.setNotifyCount(payment.getNotifyCount() == null ? 1 : payment.getNotifyCount() + 1);
         paymentOrderDao.updateByPrimaryKeySelective(notifyUpdate);
 
+        confirmProductStock(payment.getOrderNo());
         orderService.updateStatus(payment.getOrderNo(), OrderStatus.PENDING_SHIPMENT.getCode());
 
         log.info("支付宝回调处理成功: paymentNo={}, tradeNo={}, buyerId={}", payment.getPaymentNo(), tradeNo, buyerId);
@@ -216,6 +220,18 @@ public class PaymentServiceImpl implements PaymentService {
             case ALIPAY -> alipayHandler;
             default -> throw new ApiException("不支持的支付渠道: " + channel.getDesc());
         };
+    }
+
+    private void confirmProductStock(String orderNo) {
+        R<Void> result = productFeignClient.confirmStock(orderNo);
+        if (result == null) {
+            throw new ApiException("确认扣减库存失败");
+        }
+        if (!result.isSuccess()) {
+            throw new ApiException(result.getMessage() == null || result.getMessage().isBlank()
+                    ? "确认扣减库存失败"
+                    : result.getMessage());
+        }
     }
 
     // ==================== 管理端方法 ====================

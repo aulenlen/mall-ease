@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.product.dao.SkuDao">
+<mapper namespace="com.mallease.product.dal.mapper.SkuDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.Sku">
+    <resultMap id="BaseResultMap" type="com.mallease.product.dal.entity.Sku">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
         <result column="sku_code" property="skuCode" jdbcType="VARCHAR"/>
@@ -98,7 +98,7 @@
     </select>
 
     <!-- 插入 -->
-    <insert id="insert" parameterType="com.mallease.product.model.data.entity.Sku" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.product.dal.entity.Sku" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_sku (
             spu_id, sku_code, attr_values, pic, base_price, compare_at_price,
             deleted, enable_status, creator, updater, version
@@ -110,7 +110,7 @@
     </insert>
 
     <!-- 选择性插入 -->
-    <insert id="insertSelective" parameterType="com.mallease.product.model.data.entity.Sku" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.product.dal.entity.Sku" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_sku
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="spuId != null">spu_id,</if>
@@ -153,7 +153,7 @@
     </insert>
 
     <!-- 根据主键更新 -->
-    <update id="updateByPrimaryKey" parameterType="com.mallease.product.model.data.entity.Sku">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.dal.entity.Sku">
         UPDATE product_sku
         SET spu_id = #{spuId,jdbcType=BIGINT},
             sku_code = #{skuCode,jdbcType=VARCHAR},
@@ -168,7 +168,7 @@
     </update>
 
     <!-- 根据主键选择性更新 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.model.data.entity.Sku">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.dal.entity.Sku">
         UPDATE product_sku
         <set>
             <if test="spuId != null">spu_id = #{spuId,jdbcType=BIGINT},</if>

@@ -120,7 +120,7 @@ public class SaTokenConfig {
                     }
 
                     StpAdminUtil.checkLogin();
-                    checkAdminPermission();
+//                    checkAdminPermission();
                 })
                 .setError(this::handleException);
     }

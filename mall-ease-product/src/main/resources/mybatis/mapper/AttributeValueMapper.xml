@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.product.dao.AttributeValueDao">
+<mapper namespace="com.mallease.product.dal.mapper.AttributeValueDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.AttributeValue">
+    <resultMap id="BaseResultMap" type="com.mallease.product.dal.entity.AttributeValue">
         <id column="id" property="id"/>
         <result column="spu_id" property="spuId"/>
         <result column="sku_id" property="skuId"/>
@@ -101,10 +101,20 @@
         WHERE spu_id = #{spuId} AND sku_id IS NULL
     </update>
 
+    <delete id="removeParamsBySpuId">
+        DELETE FROM product_attribute_value
+        WHERE spu_id = #{spuId} AND sku_id IS NULL
+    </delete>
+
     <update id="deleteSpecsBySkuId">
         UPDATE product_attribute_value SET deleted = 1, update_time = NOW()
         WHERE sku_id = #{skuId}
     </update>
+
+    <delete id="removeSpecsBySkuId">
+        DELETE FROM product_attribute_value
+        WHERE sku_id = #{skuId}
+    </delete>
 
     <update id="deleteSpecsBySkuIds">
         UPDATE product_attribute_value SET deleted = 1, update_time = NOW()
@@ -114,9 +124,22 @@
         </foreach>
     </update>
 
+    <delete id="removeSpecsBySkuIds">
+        DELETE FROM product_attribute_value
+        WHERE sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+            #{skuId}
+        </foreach>
+    </delete>
+
     <update id="deleteBySpuId">
         UPDATE product_attribute_value SET deleted = 1, update_time = NOW()
         WHERE spu_id = #{spuId}
     </update>
+
+    <delete id="removeBySpuId">
+        DELETE FROM product_attribute_value
+        WHERE spu_id = #{spuId}
+    </delete>
 
 </mapper>

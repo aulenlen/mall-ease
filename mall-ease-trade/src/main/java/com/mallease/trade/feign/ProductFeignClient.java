@@ -9,14 +9,12 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
 /**
  * 商品服务 Feign 客户端。
- *
- * @author: Aulen
- * @create: 2026-01-27
  */
 @FeignClient(name = "mall-ease-product")
 public interface ProductFeignClient {
@@ -27,7 +25,7 @@ public interface ProductFeignClient {
      * @param skuIds SKU ID 列表
      * @return SKU 简要信息列表
      */
-    @PostMapping("/product/sku/internal/listSimpleByIds")
+    @PostMapping("/product/admin/sku/internal/listSimpleByIds")
     R<List<SkuSimpleDTO>> listSkuSimpleByIds(@RequestBody List<Long> skuIds);
 
     /**
@@ -36,7 +34,7 @@ public interface ProductFeignClient {
      * @param queries SPU 和 SKU 查询参数
      * @return SKU 可售状态列表
      */
-    @PostMapping("/product/stock/internal/availability")
+    @PostMapping("/product/admin/stock/internal/availability")
     R<List<SkuAvailabilityDTO>> listSkuAvailability(@RequestBody List<SkuStockQueryDTO> queries);
 
     /**
@@ -45,7 +43,7 @@ public interface ProductFeignClient {
      * @param stockLockDTO 锁库存请求
      * @return 调用结果
      */
-    @PutMapping("/product/stock/internal/lock")
+    @PutMapping("/product/admin/stock/internal/lock")
     R<Void> lockStock(@RequestBody StockLockDTO stockLockDTO);
 
     /**
@@ -54,6 +52,15 @@ public interface ProductFeignClient {
      * @param orderNos 订单号列表
      * @return 释放失败的订单号列表，空列表表示全部成功
      */
-    @PutMapping("/product/stock/internal/unlock")
+    @PutMapping("/product/admin/stock/internal/unlock")
     R<List<String>> unlock(@RequestBody List<String> orderNos);
+
+    /**
+     * 支付成功后确认扣减库存。
+     *
+     * @param orderNo 订单号
+     * @return 调用结果
+     */
+    @PutMapping("/product/admin/stock/internal/confirm")
+    R<Void> confirmStock(@RequestParam("orderNo") String orderNo);
 }

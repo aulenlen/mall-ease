@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.product.dao.SpuDetailDao">
+<mapper namespace="com.mallease.product.dal.mapper.SpuDetailDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.product.model.data.entity.SpuDetail">
+    <resultMap id="BaseResultMap" type="com.mallease.product.dal.entity.SpuDetail">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
         <result column="detail_title" property="detailTitle" jdbcType="VARCHAR"/>
@@ -48,7 +48,7 @@
     </select>
 
     <!-- 插入 -->
-    <insert id="insert" parameterType="com.mallease.product.model.data.entity.SpuDetail" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.product.dal.entity.SpuDetail" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_spu_detail (
             spu_id, detail_title, detail_desc, detail_html, detail_mobile_html,
             service_ids, packing_list, after_sale_service, creator, updater
@@ -61,7 +61,7 @@
     </insert>
 
     <!-- 选择性插入 -->
-    <insert id="insertSelective" parameterType="com.mallease.product.model.data.entity.SpuDetail" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.product.dal.entity.SpuDetail" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_spu_detail
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="spuId != null">spu_id,</if>
@@ -88,7 +88,7 @@
     </insert>
 
     <!-- 根据主键更新 -->
-    <update id="updateByPrimaryKey" parameterType="com.mallease.product.model.data.entity.SpuDetail">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.product.dal.entity.SpuDetail">
         UPDATE product_spu_detail
         SET spu_id = #{spuId,jdbcType=BIGINT},
             detail_title = #{detailTitle,jdbcType=VARCHAR},
@@ -103,7 +103,7 @@
     </update>
 
     <!-- 根据主键选择性更新 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.model.data.entity.SpuDetail">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.product.dal.entity.SpuDetail">
         UPDATE product_spu_detail
         <set>
             <if test="spuId != null">spu_id = #{spuId,jdbcType=BIGINT},</if>
@@ -120,7 +120,7 @@
     </update>
 
     <!-- 根据SPU ID更新 -->
-    <update id="updateBySpuId" parameterType="com.mallease.product.model.data.entity.SpuDetail">
+    <update id="updateBySpuId" parameterType="com.mallease.product.dal.entity.SpuDetail">
         UPDATE product_spu_detail
         <set>
             <if test="detailTitle != null">detail_title = #{detailTitle,jdbcType=VARCHAR},</if>

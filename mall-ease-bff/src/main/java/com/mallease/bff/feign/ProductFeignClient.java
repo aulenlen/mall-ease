@@ -22,7 +22,7 @@ public interface ProductFeignClient {
      *
      * @return 分类列表
      */
-    @GetMapping("/product/category/internal/nav")
+    @GetMapping("/product/admin/category/internal/nav")
     R<List<CategoryDTO>> listNavCategories();
 
     /**
@@ -30,7 +30,7 @@ public interface ProductFeignClient {
      *
      * @return 分类树列表
      */
-    @GetMapping("/product/category/internal/portalTree")
+    @GetMapping("/product/admin/category/internal/portalTree")
     R<List<CategoryTreeDTO>> portalTree();
 
     /**
@@ -57,6 +57,6 @@ public interface ProductFeignClient {
      * @param skuIds SKU ID列表
      * @return SKU简要信息列表
      */
-    @PostMapping("/product/sku/internal/listSimpleByIds")
+    @PostMapping("/product/admin/sku/internal/listSimpleByIds")
     R<List<SkuSimpleDTO>> listSkuSimpleByIds(@RequestBody List<Long> skuIds);
 }

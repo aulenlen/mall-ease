@@ -6,8 +6,8 @@ package com.mallease.product.constant;
  */
 public final class ProductCacheKeys {
 
-    private static final String SPU_DETAIL_PREFIX = "product:spu:detail:";
-    private static final long SPU_DETAIL_TTL_SECONDS = 3600L;
+    private static final String SPU_SNAPSHOT_PREFIX = "product:spu:snapshot:";
+    private static final long SPU_SNAPSHOT_TTL_SECONDS = 3600L;
 
     private static final String SPU_SKU_STOCK_PREFIX = "product:spu:sku:stock:";
     private static final long SPU_SKU_STOCK_TTL_SECONDS = 3600L;
@@ -16,7 +16,7 @@ public final class ProductCacheKeys {
     }
 
     public static String spuDetailKey(Long spuId) {
-        return SPU_DETAIL_PREFIX + spuId;
+        return SPU_SNAPSHOT_PREFIX + spuId;
     }
 
     public static String spuStockKey(Long spuId) {
@@ -28,7 +28,7 @@ public final class ProductCacheKeys {
     }
 
     public static String spuDetailPrefix() {
-        return SPU_DETAIL_PREFIX;
+        return SPU_SNAPSHOT_PREFIX;
     }
 
     public static String spuStockPrefix() {
@@ -36,7 +36,7 @@ public final class ProductCacheKeys {
     }
 
     public static long spuDetailTtlSeconds() {
-        return SPU_DETAIL_TTL_SECONDS;
+        return SPU_SNAPSHOT_TTL_SECONDS;
     }
 
     public static long spuStockTtlSeconds() {
