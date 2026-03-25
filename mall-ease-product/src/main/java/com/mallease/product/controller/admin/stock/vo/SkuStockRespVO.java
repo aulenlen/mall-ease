@@ -61,6 +61,9 @@ public class SkuStockRespVO {
     @Schema(description = "SKU 编码")
     private String skuCode;
 
+    @Schema(description = "SKU 图片")
+    private String pic;
+
     @Schema(description = "SKU 属性值（JSON 格式）")
     private String attrValues;
 

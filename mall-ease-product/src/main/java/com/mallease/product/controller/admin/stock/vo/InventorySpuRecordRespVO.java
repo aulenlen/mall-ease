@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 /**
  * 库存页 SPU 聚合记录
  */
@@ -23,6 +21,9 @@ public class InventorySpuRecordRespVO {
 
     @Schema(description = "SPU 名称")
     private String spuName;
+
+    @Schema(description = "SPU 图片")
+    private String pic;
 
     @Schema(description = "品牌名称")
     private String brandName;
@@ -50,7 +51,4 @@ public class InventorySpuRecordRespVO {
 
     @Schema(description = "预售 SKU 数")
     private Integer presaleSkuCount;
-
-    @Schema(description = "SKU 子表记录")
-    private List<InventoryRecordRespVO> records;
 }

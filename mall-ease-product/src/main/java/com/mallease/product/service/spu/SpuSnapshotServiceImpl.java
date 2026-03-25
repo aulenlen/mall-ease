@@ -99,7 +99,7 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
         }
 
         List<SpuDetail> spuDetails = spuDetailDao.selectBySpuIds(spuIds);
-        List<Sku> skus = skuDao.selectBySpuIds(spuIds);
+        List<Sku> skus = skuDao.selectEnabledBySpuIds(spuIds);
         List<AttributeValue> params = attributeValueDao.selectParamsBySpuIds(spuIds);
         List<AttributeValue> specs = skus.isEmpty() ? List.of() : attributeValueDao.selectSpecsBySkuIds(skus.stream().map(Sku::getId).toList());
 

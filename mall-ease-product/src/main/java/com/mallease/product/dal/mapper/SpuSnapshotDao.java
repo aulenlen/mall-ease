@@ -129,6 +129,5 @@ public interface SpuSnapshotDao {
      * @param publishStatus 发布状态
      * @return 影响行数
      */
-    int updatePublishStatusBatch(@Param("spuIds") List<Long> spuIds,
-                                 @Param("publishStatus") Integer publishStatus);
+    int updatePublishStatusBatch(@Param("spuIds") List<Long> spuIds, @Param("publishStatus") Integer publishStatus);
 }

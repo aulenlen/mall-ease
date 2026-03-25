@@ -2,7 +2,6 @@ package com.mallease.product.service.stock;
 
 import com.mallease.common.dto.remote.SkuAvailabilityDTO;
 import com.mallease.common.dto.remote.SkuStockQueryDTO;
-import com.mallease.product.controller.admin.stock.vo.InventoryRecordRespVO;
 import com.mallease.product.controller.admin.stock.vo.InventorySpuRecordRespVO;
 import com.mallease.product.controller.admin.stock.vo.InventoryStatsRespVO;
 import com.mallease.product.controller.admin.stock.vo.InventorySummaryRespVO;
@@ -54,6 +53,7 @@ public class SkuStockServiceImpl implements SkuStockService {
     private static final long INVENTORY_AVAILABLE_SKU_TTL_SECONDS = 3600L;
     private static final String SOURCE_TYPE_ADMIN = "ADMIN";
     private static final String SOURCE_TYPE_ORDER = "ORDER";
+    private static final String CHANGE_TYPE_CREATE = "CREATE";
     private static final String CHANGE_TYPE_UPDATE = "UPDATE";
     private static final String CHANGE_TYPE_BATCH_UPDATE = "BATCH_UPDATE";
     private static final String CHANGE_TYPE_STATUS_UPDATE = "STATUS_UPDATE";
@@ -103,6 +103,16 @@ public class SkuStockServiceImpl implements SkuStockService {
         stock.setSale(stock.getSale() != null ? stock.getSale() : 0);
         stock.setVersion(stock.getVersion() != null ? stock.getVersion() : 0);
         skuStockDao.insertSelective(stock);
+        recordStockLogsQuietly(buildStockLog(
+                buildInitialStockSnapshot(stock),
+                stock.getStock(),
+                stock.getLockStock(),
+                safeInt(stock.getStock()),
+                CHANGE_TYPE_CREATE,
+                SOURCE_TYPE_ADMIN,
+                null,
+                "后台创建库存记录"
+        ));
         return stock.getId();
     }
 
@@ -272,29 +282,7 @@ public class SkuStockServiceImpl implements SkuStockService {
     @Override
     public List<InventorySpuRecordRespVO> page(SkuStockPageReqVO reqVO) {
         List<InventorySpuRecordRespVO> respVOList = skuStockDao.selectInventorySpuPage(reqVO == null ? new SkuStockPageReqVO() : reqVO);
-        if (respVOList == null || respVOList.isEmpty()) {
-            return List.of();
-        }
-
-        List<Long> spuIds = respVOList.stream()
-                .map(InventorySpuRecordRespVO::getSpuId)
-                .filter(Objects::nonNull)
-                .toList();
-        if (spuIds.isEmpty()) {
-            return respVOList;
-        }
-
-        List<InventoryRecordRespVO> recordList = skuStockDao.selectInventoryRecordsBySpuIds(spuIds);
-        if (recordList == null || recordList.isEmpty()) {
-            respVOList.forEach(item -> item.setRecords(List.of()));
-            return respVOList;
-        }
-
-        recordList.forEach(item -> item.setSpecs(parseSpecs(item.getAttrValues())));
-        Map<Long, List<InventoryRecordRespVO>> recordMap = recordList.stream()
-                .collect(Collectors.groupingBy(InventoryRecordRespVO::getSpuId, LinkedHashMap::new, Collectors.toList()));
-        respVOList.forEach(item -> item.setRecords(recordMap.getOrDefault(item.getSpuId(), List.of())));
-        return respVOList;
+        return respVOList == null ? List.of() : respVOList;
     }
 
     @Override
@@ -728,6 +716,15 @@ public class SkuStockServiceImpl implements SkuStockService {
         return merged;
     }
 
+    private SkuStock buildInitialStockSnapshot(SkuStock stock) {
+        SkuStock initialStock = new SkuStock();
+        initialStock.setSkuId(stock.getSkuId());
+        initialStock.setSpuId(stock.getSpuId());
+        initialStock.setStock(0);
+        initialStock.setLockStock(0);
+        return initialStock;
+    }
+
     private InventorySummaryRespVO emptySummary() {
         return InventorySummaryRespVO.builder()
                 .spuCount(0L)
@@ -745,20 +742,6 @@ public class SkuStockServiceImpl implements SkuStockService {
                 .empty(0L)
                 .presale(0L)
                 .build();
-    }
-
-    private List<InventoryRecordRespVO.SpecVO> parseSpecs(String attrValues) {
-        List<com.mallease.product.controller.admin.stock.vo.SkuStockRespVO.AttrValueVO> attrValueList = skuStockConvert.parseAttrValues(attrValues);
-        if (attrValueList == null || attrValueList.isEmpty()) {
-            return List.of();
-        }
-        return attrValueList.stream()
-                .map(item -> InventoryRecordRespVO.SpecVO.builder()
-                        .attrId(item.getAttrId())
-                        .attrName(item.getAttrName())
-                        .attrValue(item.getAttrValue())
-                        .build())
-                .toList();
     }
 
     private SkuStockLog buildStockLog(SkuStock beforeStock,

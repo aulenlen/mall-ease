@@ -40,6 +40,11 @@ public class AuditFieldInterceptor implements Interceptor {
     }
 
     private void fillAuditFields(Object parameter, SqlCommandType sqlCommandType, String username, LocalDateTime now) {
+
+        if (parameter == null) {
+            return;
+        }
+
         if (parameter instanceof Map<?, ?> map) {
             for (Object value : map.values()) {
                 fillAuditFields(value, sqlCommandType, username, now);

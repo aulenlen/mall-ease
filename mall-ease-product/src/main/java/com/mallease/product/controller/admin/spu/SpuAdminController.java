@@ -120,7 +120,7 @@ public class SpuAdminController {
                 .map(SpuPageRespVO::getId)
                 .toList();
 
-        List<Sku> skuList = skuService.selectBySpuIds(spuIds);
+        List<Sku> skuList = skuService.selectEnabledBySpuIds(spuIds);
         List<SkuRespVO> skuRespList = skuConvert.entityListToRespVOList(skuList);
         Map<Long, SkuRespVO> skuRespMap = skuRespList.stream()
                 .collect(Collectors.toMap(SkuRespVO::getId, item -> item, (left, right) -> left));

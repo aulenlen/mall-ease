@@ -21,7 +21,11 @@ public interface SkuDao {
 
     List<Sku> selectBySpuId(@Param("spuId") Long spuId);
 
+    List<Sku> selectEnabledBySpuId(@Param("spuId") Long spuId);
+
     List<Sku> selectBySpuIds(@Param("spuIds") List<Long> spuIds);
+
+    List<Sku> selectEnabledBySpuIds(@Param("spuIds") List<Long> spuIds);
 
     List<Sku> selectByConditions(@Param("spuId") Long spuId,
                                  @Param("enableStatus") Integer enableStatus);
@@ -31,6 +35,8 @@ public interface SkuDao {
     int insertSelective(Sku record);
 
     int insertBatch(@Param("list") List<Sku> list);
+
+    int updateBatch(@Param("list") List<Sku> list);
 
     int updateByPrimaryKey(Sku record);
 

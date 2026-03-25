@@ -66,4 +66,9 @@ public interface SkuService {
      * 按 SPU ID 批量查询 SKU，供发布、索引等链路使用。
      */
     List<Sku> selectBySpuIds(List<Long> spuIds);
+
+    /**
+     * 按 SPU ID 批量查询启用中的 SKU，供详情、快照、索引等当前生效链路使用。
+     */
+    List<Sku> selectEnabledBySpuIds(List<Long> spuIds);
 }

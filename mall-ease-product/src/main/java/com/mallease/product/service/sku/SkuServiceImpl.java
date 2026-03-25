@@ -209,6 +209,14 @@ public class SkuServiceImpl implements SkuService {
         return skuDao.selectBySpuIds(spuIds);
     }
 
+    @Override
+    public List<Sku> selectEnabledBySpuIds(List<Long> spuIds) {
+        if (spuIds == null || spuIds.isEmpty()) {
+            return List.of();
+        }
+        return skuDao.selectEnabledBySpuIds(spuIds);
+    }
+
     private void deleteAssociatedDataBySkuId(Long skuId) {
         skuStockDao.deleteBySkuId(skuId);
     }

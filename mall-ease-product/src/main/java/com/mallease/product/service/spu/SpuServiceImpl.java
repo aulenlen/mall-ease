@@ -59,7 +59,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-@Service("adminSpuService")
+@Service
 @RequiredArgsConstructor
 public class SpuServiceImpl implements SpuService {
 
@@ -149,7 +149,7 @@ public class SpuServiceImpl implements SpuService {
         respVO.setSpuDetail(spuConvert.toDetailDataRespVO(spuDetailDao.selectBySpuId(spuId)));
         respVO.setAttrValueList(spuConvert.toAttrValueRespList(attributeValueDao.selectParamsBySpuId(spuId)));
 
-        List<Sku> skuList = skuDao.selectBySpuId(spuId);
+        List<Sku> skuList = skuDao.selectEnabledBySpuId(spuId);
         Map<Long, List<AttributeValue>> skuSpecMap = loadSkuSpecMap(skuList);
         List<SpuDetailRespVO.SkuRespVO> skuRespList = spuConvert.toSkuRespList(skuList);
         for (SpuDetailRespVO.SkuRespVO skuRespVO : skuRespList) {
@@ -581,8 +581,7 @@ public class SpuServiceImpl implements SpuService {
 
     private void saveSpuRelations(Long spuId, SpuSaveReqVO reqVO) {
         upsertSpuDetail(spuId, reqVO.getSpuDetail());
-        replaceSpuParams(spuId, reqVO.getAttrValueList());
-        syncSkuSnapshot(spuId, reqVO.getSkuList());
+        syncSkuSnapshot(spuId, reqVO);
     }
 
     private void validateAttrTypes(SpuSaveReqVO reqVO) {
@@ -596,7 +595,7 @@ public class SpuServiceImpl implements SpuService {
         if (reqVO.getAttrValueList() != null) {
             reqVO.getAttrValueList().stream()
                     .map(SpuSaveReqVO.AttrValueReqVO::getAttrId)
-                    .filter(id -> id != null)
+                    .filter(Objects::nonNull)
                     .forEach(attrIds::add);
         }
         if (reqVO.getSkuList() != null) {
@@ -604,7 +603,7 @@ public class SpuServiceImpl implements SpuService {
                     .filter(sku -> sku.getAttrValues() != null)
                     .flatMap(sku -> sku.getAttrValues().stream())
                     .map(SkuSaveReqVO.AttrValueReqVO::getAttrId)
-                    .filter(id -> id != null)
+                    .filter(Objects::nonNull)
                     .forEach(attrIds::add);
         }
         if (attrIds.isEmpty()) {
@@ -681,11 +680,16 @@ public class SpuServiceImpl implements SpuService {
         if (skuReqList == null || skuReqList.isEmpty()) {
             throw new ApiException("SKU列表不能为空");
         }
-        BigDecimal minPrice = skuReqList.stream()
+        List<SkuSaveReqVO> enabledSkuReqList = skuReqList.stream()
+                .filter(this::isEnabledSku)
+                .toList();
+        List<SkuSaveReqVO> priceSource = enabledSkuReqList.isEmpty() ? skuReqList : enabledSkuReqList;
+
+        BigDecimal minPrice = priceSource.stream()
                 .map(SkuSaveReqVO::getBasePrice)
                 .min(BigDecimal::compareTo)
                 .orElseThrow(() -> new ApiException("SKU销售价不能为空"));
-        BigDecimal maxPrice = skuReqList.stream()
+        BigDecimal maxPrice = priceSource.stream()
                 .map(SkuSaveReqVO::getBasePrice)
                 .max(BigDecimal::compareTo)
                 .orElseThrow(() -> new ApiException("SKU销售价不能为空"));
@@ -719,80 +723,27 @@ public class SpuServiceImpl implements SpuService {
         spuDetailDao.updateByPrimaryKey(existingDetail);
     }
 
-    private void replaceSpuParams(Long spuId, List<SpuSaveReqVO.AttrValueReqVO> attrValueReqList) {
-        attributeValueDao.removeParamsBySpuId(spuId);
-        List<AttributeValue> attrValues = spuConvert.toAttrValueList(attrValueReqList);
-        if (attrValues == null || attrValues.isEmpty()) {
-            return;
+    private void syncSkuSnapshot(Long spuId, SpuSaveReqVO reqVO) {
+        SkuSyncPlan syncPlan = buildSkuSyncPlan(spuId, reqVO.getSkuList());
+
+        if (!syncPlan.createSkuList().isEmpty()) {
+            skuDao.insertBatch(syncPlan.createSkuList());
         }
-        attrValues.forEach(item -> {
-            item.setSpuId(spuId);
-            item.setSkuId(null);
-            item.setDeleted(0);
-        });
-        attributeValueDao.insertBatch(attrValues);
-    }
-
-    private void syncSkuSnapshot(Long spuId, List<SkuSaveReqVO> skuReqList) {
-        List<Sku> existingSkuList = skuDao.selectBySpuId(spuId);
-        Map<Long, Sku> existingSkuMap = existingSkuList.stream()
-                .collect(Collectors.toMap(Sku::getId, sku -> sku, (left, right) -> left));
-
-        List<SkuSaveReqVO> createSkuReqList = new ArrayList<>();
-        Set<Long> incomingExistingSkuIds = new HashSet<>();
-        for (SkuSaveReqVO skuReqVO : skuReqList) {
-            Long skuId = skuReqVO.getId();
-            if (skuId == null) {
-                createSkuReqList.add(skuReqVO);
-                continue;
-            }
-            if (!incomingExistingSkuIds.add(skuId)) {
-                throw new ApiException("SKU ID重复");
-            }
-            Sku existingSku = existingSkuMap.get(skuId);
-            if (existingSku == null) {
-                throw new ApiException("SKU不存在或不属于当前商品: " + skuId);
-            }
-            updateSku(spuId, existingSku, skuReqVO);
+        if (!syncPlan.updateSkuList().isEmpty()) {
+            skuDao.updateBatch(syncPlan.updateSkuList());
+        }
+        if (!syncPlan.disableSkuIds().isEmpty()) {
+            skuDao.updateEnableStatusBatch(syncPlan.disableSkuIds(), 0);
         }
 
-        if (!createSkuReqList.isEmpty()) {
-            createSkuBatch(spuId, createSkuReqList);
-        }
-
-        List<Long> deleteSkuIds = existingSkuList.stream()
-                .map(Sku::getId)
-                .filter(id -> !incomingExistingSkuIds.contains(id))
-                .toList();
-        if (deleteSkuIds.isEmpty()) {
-            return;
-        }
-        attributeValueDao.removeSpecsBySkuIds(deleteSkuIds);
-        skuStockDao.deleteBySkuIds(deleteSkuIds);
-        skuDao.deleteBatch(deleteSkuIds);
-    }
-
-    private void createSkuBatch(Long spuId, List<SkuSaveReqVO> skuReqList) {
-        List<Sku> skuList = skuReqList.stream()
-                .map(reqVO -> buildSku(spuId, reqVO))
-                .toList();
-        skuDao.insertBatch(skuList);
-
-        List<AttributeValue> specValues = new ArrayList<>();
-        for (int i = 0; i < skuReqList.size(); i++) {
-            Long skuId = skuList.get(i).getId();
-            SkuSaveReqVO skuReqVO = skuReqList.get(i);
-            specValues.addAll(buildSkuSpecValues(spuId, skuId, skuReqVO.getAttrValues()));
-        }
-        if (!specValues.isEmpty()) {
-            attributeValueDao.insertBatch(specValues);
-        }
+        rebuildAttrValues(spuId, reqVO.getAttrValueList(), syncPlan.activeSkuSpecs());
     }
 
     private Sku buildSku(Long spuId, SkuSaveReqVO skuReqVO) {
         Sku sku = spuConvert.toSku(skuReqVO);
         sku.setDeleted(0);
         sku.setSpuId(spuId);
+        sku.setEnableStatus(normalizeEnableStatus(skuReqVO.getEnableStatus()));
         if (!StringUtils.hasText(sku.getSkuCode())) {
             sku.setSkuCode(IdUtil.getSnowflakeNextIdStr());
         }
@@ -812,22 +763,88 @@ public class SpuServiceImpl implements SpuService {
         return specValues;
     }
 
-    private void updateSku(Long spuId, Sku existingSku, SkuSaveReqVO skuReqVO) {
-        spuConvert.copyToSku(existingSku, skuReqVO);
-        existingSku.setSpuId(spuId);
-        if (!StringUtils.hasText(existingSku.getSkuCode())) {
-            existingSku.setSkuCode(IdUtil.getSnowflakeNextIdStr());
+    private SkuSyncPlan buildSkuSyncPlan(Long spuId, List<SkuSaveReqVO> skuReqList) {
+        List<Sku> existingSkuList = skuDao.selectBySpuId(spuId);
+        Map<Long, Sku> existingSkuMap = existingSkuList.stream()
+                .collect(Collectors.toMap(Sku::getId, sku -> sku, (left, right) -> left));
+
+        List<Sku> createSkuList = new ArrayList<>();
+        List<Sku> updateSkuList = new ArrayList<>();
+        List<SkuSpecCarrier> activeSkuSpecs = new ArrayList<>();
+        Set<Long> incomingExistingSkuIds = new HashSet<>();
+
+        for (SkuSaveReqVO skuReqVO : skuReqList) {
+            Long skuId = skuReqVO.getId();
+            if (skuId == null) {
+                Sku newSku = buildSku(spuId, skuReqVO);
+                createSkuList.add(newSku);
+                if (isEnabledSku(newSku)) {
+                    activeSkuSpecs.add(new SkuSpecCarrier(newSku, skuReqVO.getAttrValues()));
+                }
+                continue;
+            }
+            if (!incomingExistingSkuIds.add(skuId)) {
+                throw new ApiException("SKU ID重复");
+            }
+            Sku existingSku = existingSkuMap.get(skuId);
+            if (existingSku == null) {
+                throw new ApiException("SKU不存在或不属于当前商品: " + skuId);
+            }
+            spuConvert.copyToSku(existingSku, skuReqVO);
+            existingSku.setSpuId(spuId);
+            existingSku.setEnableStatus(normalizeEnableStatus(skuReqVO.getEnableStatus()));
+            if (!StringUtils.hasText(existingSku.getSkuCode())) {
+                existingSku.setSkuCode(IdUtil.getSnowflakeNextIdStr());
+            }
+            updateSkuList.add(existingSku);
+            if (isEnabledSku(existingSku)) {
+                activeSkuSpecs.add(new SkuSpecCarrier(existingSku, skuReqVO.getAttrValues()));
+            }
         }
-        skuDao.updateByPrimaryKey(existingSku);
-        replaceSkuSpecs(spuId, existingSku.getId(), skuReqVO.getAttrValues());
+
+        List<Long> disableSkuIds = existingSkuList.stream()
+                .map(Sku::getId)
+                .filter(id -> !incomingExistingSkuIds.contains(id))
+                .toList();
+
+        return new SkuSyncPlan(createSkuList, updateSkuList, disableSkuIds, activeSkuSpecs);
     }
 
-    private void replaceSkuSpecs(Long spuId, Long skuId, List<SkuSaveReqVO.AttrValueReqVO> attrValues) {
-        attributeValueDao.removeSpecsBySkuId(skuId);
-        List<AttributeValue> specValues = buildSkuSpecValues(spuId, skuId, attrValues);
-        if (!specValues.isEmpty()) {
-            attributeValueDao.insertBatch(specValues);
+    private void rebuildAttrValues(Long spuId, List<SpuSaveReqVO.AttrValueReqVO> spuParamReqList, List<SkuSpecCarrier> activeSkuSpecs) {
+        attributeValueDao.removeBySpuId(spuId);
+
+        List<AttributeValue> attrValues = new ArrayList<>(buildSpuParamValues(spuId, spuParamReqList));
+        for (SkuSpecCarrier activeSkuSpec : activeSkuSpecs) {
+            attrValues.addAll(buildSkuSpecValues(spuId, activeSkuSpec.sku().getId(), activeSkuSpec.attrValues()));
         }
+        if (!attrValues.isEmpty()) {
+            attributeValueDao.insertBatch(attrValues);
+        }
+    }
+
+    private List<AttributeValue> buildSpuParamValues(Long spuId, List<SpuSaveReqVO.AttrValueReqVO> attrValueReqList) {
+        List<AttributeValue> attrValues = spuConvert.toAttrValueList(attrValueReqList);
+        if (attrValues == null || attrValues.isEmpty()) {
+            return List.of();
+        }
+        attrValues.forEach(item -> {
+            item.setSpuId(spuId);
+            item.setSkuId(null);
+            item.setDeleted(0);
+        });
+        return attrValues;
+    }
+
+    private int normalizeEnableStatus(Integer enableStatus) {
+        return Integer.valueOf(0).equals(enableStatus) ? 0 : 1;
+    }
+
+    private boolean isEnabledSku(SkuSaveReqVO skuReqVO) {
+        return normalizeEnableStatus(skuReqVO.getEnableStatus()) == 1;
+    }
+
+    private boolean isEnabledSku(Sku sku) {
+        return normalizeEnableStatus(sku.getEnableStatus()) == 1;
     }
 
     private SpuStatsRespVO emptyStats() {
@@ -837,5 +854,16 @@ public class SpuServiceImpl implements SpuService {
                 .unpublishedCount(0L)
                 .unverifiedCount(0L)
                 .build();
+    }
+
+    private record SkuSyncPlan(
+            List<Sku> createSkuList,
+            List<Sku> updateSkuList,
+            List<Long> disableSkuIds,
+            List<SkuSpecCarrier> activeSkuSpecs
+    ) {
+    }
+
+    private record SkuSpecCarrier(Sku sku, List<SkuSaveReqVO.AttrValueReqVO> attrValues) {
     }
 }

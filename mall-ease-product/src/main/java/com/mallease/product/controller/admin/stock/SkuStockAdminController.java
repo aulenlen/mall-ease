@@ -69,7 +69,7 @@ public class SkuStockAdminController {
         return R.success(skuStockService.updateBatch(reqList));
     }
 
-    @Operation(summary = "分页查询库存列表", description = "独立库存页使用，返回 SPU 聚合行和 SKU 子表")
+    @Operation(summary = "分页查询库存列表", description = "独立库存页使用，只返回 SPU 聚合行")
     @GetMapping("/page")
     public R<Page<InventorySpuRecordRespVO>> page(@Validated @ModelAttribute SkuStockPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
@@ -131,29 +131,46 @@ public class SkuStockAdminController {
         return R.success(skuStockConvert.entityToRespVO(stock));
     }
 
-    @Operation(summary = "根据 SPU 获取库存列表", description = "查询某个 SPU 下所有 SKU 的库存，包含商品名称和规格信息")
+    @Operation(summary = "根据 SPU 获取库存列表", description = "查询某个 SPU 下所有 SKU 的库存，包含商品名称、规格信息，以及启用和停用两类 SKU")
     @GetMapping("/spu/{spuId}")
     public R<List<SkuStockRespVO>> listBySpuId(@Parameter(description = "SPU ID") @PathVariable Long spuId) {
-        List<SkuStock> stockList = skuStockService.listStockBySpuIds(List.of(spuId));
-        if (stockList.isEmpty()) {
-            return R.success(List.of());
-        }
-
         List<Spu> spuList = spuService.listByIds(List.of(spuId));
         String spuName = spuList.isEmpty() ? null : spuList.get(0).getName();
 
         List<Sku> skuList = skuService.listBySpuId(spuId);
-        Map<Long, String> skuAttrMap = skuList.stream()
-                .collect(Collectors.toMap(Sku::getId, Sku::getAttrValues, (left, right) -> left));
-
-        List<SkuStockRespVO> respVOList = skuStockConvert.entityListToRespVOList(stockList);
-        for (SkuStockRespVO respVO : respVOList) {
-            respVO.setSpuName(spuName);
-            String attrValuesJson = skuAttrMap.get(respVO.getSkuId());
-            respVO.setAttrValues(attrValuesJson);
-            respVO.setAttrValuesObj(skuStockConvert.parseAttrValues(attrValuesJson));
+        if (skuList.isEmpty()) {
+            return R.success(List.of());
         }
+
+        Map<Long, SkuStock> stockMap = skuStockService.listStockBySpuIds(List.of(spuId)).stream()
+                .collect(Collectors.toMap(SkuStock::getSkuId, item -> item, (left, right) -> left));
+
+        List<SkuStockRespVO> respVOList = skuList.stream()
+                .map(sku -> toSkuStockRespVO(spuName, sku, stockMap.get(sku.getId())))
+                .toList();
         return R.success(respVOList);
+    }
+
+    private SkuStockRespVO toSkuStockRespVO(String spuName, Sku sku, SkuStock stock) {
+        SkuStockRespVO respVO = stock != null
+                ? skuStockConvert.entityToRespVO(stock)
+                : SkuStockRespVO.builder()
+                .skuId(sku.getId())
+                .spuId(sku.getSpuId())
+                .stock(0)
+                .lockStock(0)
+                .sale(0)
+                .lowStock(0)
+                .stockStatus(0)
+                .lowStockWarning(false)
+                .build();
+        String attrValuesJson = sku.getAttrValues();
+        respVO.setSpuName(spuName);
+        respVO.setSkuCode(sku.getSkuCode());
+        respVO.setPic(sku.getPic());
+        respVO.setAttrValues(attrValuesJson);
+        respVO.setAttrValuesObj(skuStockConvert.parseAttrValues(attrValuesJson));
+        return respVO;
     }
 
     @Operation(summary = "调整库存", description = "手动入库/出库操作")

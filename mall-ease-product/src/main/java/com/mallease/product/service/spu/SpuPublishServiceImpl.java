@@ -184,7 +184,7 @@ public class SpuPublishServiceImpl implements SpuPublishService {
         Map<Long, String> categoryPathMap = categoryList.stream()
                 .collect(Collectors.toMap(Category::getId, Category::getPath));
 
-        List<Sku> skuList = skuService.selectBySpuIds(successIds);
+        List<Sku> skuList = skuService.selectEnabledBySpuIds(successIds);
         Map<Long, List<Sku>> skuGroupMap = skuList.stream().collect(Collectors.groupingBy(Sku::getSpuId));
 
         List<AttributeValue> paramValueList = attributeService.listParamValuesBySpuIds(successIds);

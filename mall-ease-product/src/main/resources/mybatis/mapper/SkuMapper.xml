@@ -56,11 +56,34 @@
         ORDER BY id
     </select>
 
+    <select id="selectEnabledBySpuId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_sku
+        WHERE spu_id = #{spuId,jdbcType=BIGINT} AND deleted = 0 AND enable_status = 1
+        ORDER BY id
+    </select>
+
     <!-- 根据SPU ID列表批量查询 -->
     <select id="selectBySpuIds" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM product_sku
         WHERE deleted = 0
+        <if test="spuIds != null and spuIds.size() > 0">
+            AND spu_id IN
+            <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+                #{spuId,jdbcType=BIGINT}
+            </foreach>
+        </if>
+        <if test="spuIds == null or spuIds.size() == 0">
+            AND 1 = 0
+        </if>
+        ORDER BY spu_id, id
+    </select>
+
+    <select id="selectEnabledBySpuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_sku
+        WHERE deleted = 0 AND enable_status = 1
         <if test="spuIds != null and spuIds.size() > 0">
             AND spu_id IN
             <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
@@ -151,6 +174,50 @@
             )
         </foreach>
     </insert>
+
+    <update id="updateBatch">
+        UPDATE product_sku
+        SET sku_code = CASE id
+        <foreach collection="list" item="item">
+            WHEN #{item.id,jdbcType=BIGINT} THEN #{item.skuCode,jdbcType=VARCHAR}
+        </foreach>
+        END,
+            attr_values = CASE id
+        <foreach collection="list" item="item">
+            WHEN #{item.id,jdbcType=BIGINT} THEN #{item.attrValues,jdbcType=VARCHAR}
+        </foreach>
+        END,
+            pic = CASE id
+        <foreach collection="list" item="item">
+            WHEN #{item.id,jdbcType=BIGINT} THEN #{item.pic,jdbcType=VARCHAR}
+        </foreach>
+        END,
+            base_price = CASE id
+        <foreach collection="list" item="item">
+            WHEN #{item.id,jdbcType=BIGINT} THEN #{item.basePrice,jdbcType=DECIMAL}
+        </foreach>
+        END,
+            compare_at_price = CASE id
+        <foreach collection="list" item="item">
+            WHEN #{item.id,jdbcType=BIGINT} THEN #{item.compareAtPrice,jdbcType=DECIMAL}
+        </foreach>
+        END,
+            enable_status = CASE id
+        <foreach collection="list" item="item">
+            WHEN #{item.id,jdbcType=BIGINT} THEN #{item.enableStatus,jdbcType=TINYINT}
+        </foreach>
+        END,
+            updater = CASE id
+        <foreach collection="list" item="item">
+            WHEN #{item.id,jdbcType=BIGINT} THEN #{item.updater,jdbcType=VARCHAR}
+        </foreach>
+        END,
+            version = version + 1
+        WHERE deleted = 0 AND id IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.id,jdbcType=BIGINT}
+        </foreach>
+    </update>
 
     <!-- 根据主键更新 -->
     <update id="updateByPrimaryKey" parameterType="com.mallease.product.dal.entity.Sku">
