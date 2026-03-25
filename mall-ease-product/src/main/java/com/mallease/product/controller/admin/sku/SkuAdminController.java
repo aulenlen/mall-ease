@@ -5,7 +5,6 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
-import com.mallease.common.dto.remote.SkuSimpleDTO;
 import com.mallease.product.controller.admin.sku.vo.SkuPageReqVO;
 import com.mallease.product.controller.admin.sku.vo.SkuRespVO;
 import com.mallease.product.controller.admin.sku.vo.SkuSaveReqVO;
@@ -86,11 +85,5 @@ public class SkuAdminController {
     public R<List<SkuRespVO>> listBySpuId(@Parameter(description = "SPU ID") @PathVariable Long spuId) {
         List<Sku> skuList = skuService.listBySpuId(spuId);
         return R.success(skuConvert.entityListToRespVOList(skuList));
-    }
-
-    @Operation(summary = "批量获取 SKU 简要信息", description = "内部服务调用，用于秒杀/优惠券等场景")
-    @PostMapping("/internal/listSimpleByIds")
-    public R<List<SkuSimpleDTO>> listSimpleByIds(@RequestBody List<Long> skuIds) {
-        return R.success(skuService.listSimpleByIds(skuIds));
     }
 }

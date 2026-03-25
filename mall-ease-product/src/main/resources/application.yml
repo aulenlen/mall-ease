@@ -56,14 +56,6 @@ spring:
 mybatis:
   mapper-locations: classpath:mybatis/mapper/*.xml
 
-storage:
-  # S3 兼容对象存储配置（支持 Cloudflare R2 / OSS 等）
-  endpoint: ${STORAGE_ENDPOINT:http://localhost:9000}
-  bucket-name: ${STORAGE_BUCKET:mall-ease}
-  access-key: ${STORAGE_ACCESS_KEY:}
-  secret-key: ${STORAGE_SECRET_KEY:}
-  public-url: ${STORAGE_PUBLIC_URL:}
-
 # Sa-Token 配置
 sa-token:
   token-name: Authorization
@@ -104,7 +96,8 @@ thread-pool:
 # SpringDoc OpenAPI配置
 springdoc:
   paths-to-match:
-    - /admin/**
+    - /admin/stock/**
+    - /admin/sku/**
   api-docs:
     enabled: true
   swagger-ui:

@@ -9,6 +9,7 @@ import com.mallease.product.controller.admin.spu.vo.SpuDetailRespVO;
 import com.mallease.product.controller.admin.spu.vo.SpuPageReqVO;
 import com.mallease.product.controller.admin.spu.vo.SpuPageRespVO;
 import com.mallease.product.controller.admin.spu.vo.SpuSaveReqVO;
+import com.mallease.product.controller.admin.spu.vo.SpuStatsRespVO;
 import com.mallease.product.convert.sku.SkuConvert;
 import com.mallease.product.convert.spu.SpuConvert;
 import com.mallease.product.dal.entity.Sku;
@@ -75,10 +76,22 @@ public class SpuAdminController {
         return R.success(spuService.getDetail(id));
     }
 
+    @Operation(summary = "获取商品统计", description = "统计当前筛选条件下全部、上架、下架、未审核数量，忽略 publishStatus 和 verifyStatus 条件")
+    @GetMapping("/stats")
+    public R<SpuStatsRespVO> stats(@Validated @ModelAttribute SpuPageReqVO reqVO) {
+        return R.success(spuService.stats(reqVO));
+    }
+
     @Operation(summary = "删除商品")
     @DeleteMapping("/{id}")
     public R<Integer> delete(@PathVariable Long id) {
         return R.success(spuService.delete(id));
+    }
+
+    @Operation(summary = "批量删除商品", description = "批量逻辑删除商品及其关联数据")
+    @PostMapping("/delete/batch")
+    public R<Integer> deleteBatch(@RequestBody List<Long> ids) {
+        return R.success(spuService.deleteBatch(ids));
     }
 
     @Operation(summary = "批量上架商品")

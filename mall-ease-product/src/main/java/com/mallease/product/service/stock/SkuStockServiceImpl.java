@@ -2,13 +2,23 @@ package com.mallease.product.service.stock;
 
 import com.mallease.common.dto.remote.SkuAvailabilityDTO;
 import com.mallease.common.dto.remote.SkuStockQueryDTO;
+import com.mallease.product.controller.admin.stock.vo.InventoryRecordRespVO;
+import com.mallease.product.controller.admin.stock.vo.InventorySpuRecordRespVO;
+import com.mallease.product.controller.admin.stock.vo.InventoryStatsRespVO;
+import com.mallease.product.controller.admin.stock.vo.InventorySummaryRespVO;
+import com.mallease.product.controller.admin.stock.vo.InventoryTabTotalsRespVO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.TypedRedisService;
+import com.mallease.product.controller.admin.stock.vo.SkuStockLogPageReqVO;
+import com.mallease.product.controller.admin.stock.vo.SkuStockLogRespVO;
+import com.mallease.product.controller.admin.stock.vo.SkuStockPageReqVO;
 import com.mallease.product.controller.admin.stock.vo.SkuStockSaveReqVO;
 import com.mallease.product.convert.stock.SkuStockConvert;
 import com.mallease.product.dal.entity.SkuStock;
+import com.mallease.product.dal.entity.SkuStockLog;
 import com.mallease.product.dal.entity.StockReservation;
 import com.mallease.product.dal.mapper.SkuStockDao;
+import com.mallease.product.dal.mapper.SkuStockLogDao;
 import com.mallease.product.service.stock.enums.ReservationStatus;
 import com.mallease.product.service.stock.model.LockStockItem;
 import com.mallease.product.service.stock.model.UnlockStockItem;
@@ -42,6 +52,16 @@ public class SkuStockServiceImpl implements SkuStockService {
 
     private static final String INVENTORY_AVAILABLE_SKU_PREFIX = "inventory:available:sku:";
     private static final long INVENTORY_AVAILABLE_SKU_TTL_SECONDS = 3600L;
+    private static final String SOURCE_TYPE_ADMIN = "ADMIN";
+    private static final String SOURCE_TYPE_ORDER = "ORDER";
+    private static final String CHANGE_TYPE_UPDATE = "UPDATE";
+    private static final String CHANGE_TYPE_BATCH_UPDATE = "BATCH_UPDATE";
+    private static final String CHANGE_TYPE_STATUS_UPDATE = "STATUS_UPDATE";
+    private static final String CHANGE_TYPE_ADJUST_IN = "ADJUST_IN";
+    private static final String CHANGE_TYPE_ADJUST_OUT = "ADJUST_OUT";
+    private static final String CHANGE_TYPE_LOCK = "LOCK";
+    private static final String CHANGE_TYPE_UNLOCK = "UNLOCK";
+    private static final String CHANGE_TYPE_CONFIRM = "CONFIRM";
     private static final String RESERVE_STOCK_LUA = "for i = 1, #KEYS do \n"
             + "   local inventoryKey = KEYS[i] \n"
             + "   local lockQty = tonumber(ARGV[i]) \n"
@@ -62,6 +82,7 @@ public class SkuStockServiceImpl implements SkuStockService {
             + "return 1";
 
     private final SkuStockDao skuStockDao;
+    private final SkuStockLogDao skuStockLogDao;
     private final SkuStockConvert skuStockConvert;
     private final StockReservationService stockReservationService;
     private final TypedRedisService typedRedisService;
@@ -92,6 +113,24 @@ public class SkuStockServiceImpl implements SkuStockService {
 
     @Override
     public int update(SkuStockSaveReqVO reqVO) {
+        return updateInternal(reqVO, CHANGE_TYPE_UPDATE, "后台单条更新库存");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateBatch(List<SkuStockSaveReqVO> reqList) {
+        if (reqList == null || reqList.isEmpty()) {
+            return 0;
+        }
+
+        int updatedCount = 0;
+        for (SkuStockSaveReqVO reqVO : reqList) {
+            updatedCount += updateInternal(reqVO, CHANGE_TYPE_BATCH_UPDATE, "后台批量更新库存");
+        }
+        return updatedCount;
+    }
+
+    private int updateInternal(SkuStockSaveReqVO reqVO, String changeType, String remark) {
         if (reqVO == null || reqVO.getId() == null) {
             throw new ApiException("库存ID不能为空");
         }
@@ -104,7 +143,21 @@ public class SkuStockServiceImpl implements SkuStockService {
         SkuStock stock = new SkuStock();
         stock.setId(reqVO.getId());
         skuStockConvert.updateEntityFromReqVO(stock, reqVO);
-        return skuStockDao.updateByPrimaryKeySelective(stock);
+        int updatedRows = skuStockDao.updateByPrimaryKeySelective(stock);
+        if (updatedRows > 0) {
+            SkuStock mergedStock = mergeUpdatedStock(existing, reqVO);
+            recordStockLogsQuietly(buildStockLog(
+                    existing,
+                    mergedStock.getStock(),
+                    mergedStock.getLockStock(),
+                    safeInt(mergedStock.getStock()) - safeInt(existing.getStock()),
+                    changeType,
+                    SOURCE_TYPE_ADMIN,
+                    null,
+                    remark
+            ));
+        }
+        return updatedRows;
     }
 
     @Override
@@ -131,6 +184,18 @@ public class SkuStockServiceImpl implements SkuStockService {
 
         if (quantity > 0) {
             int result = skuStockDao.increaseStock(skuId, quantity);
+            if (result > 0) {
+                recordStockLogsQuietly(buildStockLog(
+                        existing,
+                        safeInt(existing.getStock()) + quantity,
+                        existing.getLockStock(),
+                        quantity,
+                        CHANGE_TYPE_ADJUST_IN,
+                        SOURCE_TYPE_ADMIN,
+                        null,
+                        "后台手工入库"
+                ));
+            }
             log.info("库存入库成功，skuId={}, 入库数量={}", skuId, quantity);
             return result;
         }
@@ -141,6 +206,18 @@ public class SkuStockServiceImpl implements SkuStockService {
         }
 
         int result = skuStockDao.increaseStock(skuId, quantity);
+        if (result > 0) {
+            recordStockLogsQuietly(buildStockLog(
+                    existing,
+                    safeInt(existing.getStock()) + quantity,
+                    existing.getLockStock(),
+                    quantity,
+                    CHANGE_TYPE_ADJUST_OUT,
+                    SOURCE_TYPE_ADMIN,
+                    null,
+                    "后台手工出库"
+            ));
+        }
         log.info("库存出库成功，skuId={}, 出库数量={}", skuId, absQuantity);
         return result;
     }
@@ -193,6 +270,50 @@ public class SkuStockServiceImpl implements SkuStockService {
     }
 
     @Override
+    public List<InventorySpuRecordRespVO> page(SkuStockPageReqVO reqVO) {
+        List<InventorySpuRecordRespVO> respVOList = skuStockDao.selectInventorySpuPage(reqVO == null ? new SkuStockPageReqVO() : reqVO);
+        if (respVOList == null || respVOList.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> spuIds = respVOList.stream()
+                .map(InventorySpuRecordRespVO::getSpuId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (spuIds.isEmpty()) {
+            return respVOList;
+        }
+
+        List<InventoryRecordRespVO> recordList = skuStockDao.selectInventoryRecordsBySpuIds(spuIds);
+        if (recordList == null || recordList.isEmpty()) {
+            respVOList.forEach(item -> item.setRecords(List.of()));
+            return respVOList;
+        }
+
+        recordList.forEach(item -> item.setSpecs(parseSpecs(item.getAttrValues())));
+        Map<Long, List<InventoryRecordRespVO>> recordMap = recordList.stream()
+                .collect(Collectors.groupingBy(InventoryRecordRespVO::getSpuId, LinkedHashMap::new, Collectors.toList()));
+        respVOList.forEach(item -> item.setRecords(recordMap.getOrDefault(item.getSpuId(), List.of())));
+        return respVOList;
+    }
+
+    @Override
+    public InventoryStatsRespVO stats(SkuStockPageReqVO reqVO) {
+        SkuStockPageReqVO safeReqVO = reqVO == null ? new SkuStockPageReqVO() : reqVO;
+        InventorySummaryRespVO summary = skuStockDao.selectInventorySummary(safeReqVO);
+        InventoryTabTotalsRespVO tabTotals = skuStockDao.selectInventoryTabTotals(safeReqVO);
+        return InventoryStatsRespVO.builder()
+                .summary(summary != null ? summary : emptySummary())
+                .tabTotals(tabTotals != null ? tabTotals : emptyTabTotals())
+                .build();
+    }
+
+    @Override
+    public List<SkuStockLogRespVO> logPage(SkuStockLogPageReqVO reqVO) {
+        return skuStockLogDao.selectPage(reqVO == null ? new SkuStockLogPageReqVO() : reqVO);
+    }
+
+    @Override
     public List<SkuStock> listLowStockWarning() {
         return skuStockDao.selectLowStockWarning();
     }
@@ -205,7 +326,32 @@ public class SkuStockServiceImpl implements SkuStockService {
         if (stockStatus == null || stockStatus < 0 || stockStatus > 2) {
             throw new ApiException("库存状态值必须为0-2");
         }
-        return skuStockDao.updateStockStatusBatch(skuIds, stockStatus);
+        List<Long> normalizedSkuIds = skuIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (normalizedSkuIds.isEmpty()) {
+            return 0;
+        }
+
+        List<SkuStock> existingStocks = skuStockDao.selectBySkuIds(normalizedSkuIds);
+        int updatedRows = skuStockDao.updateStockStatusBatch(normalizedSkuIds, stockStatus);
+        if (updatedRows > 0 && !existingStocks.isEmpty()) {
+            recordStockLogsQuietly(existingStocks.stream()
+                    .map(existing -> buildStockLog(
+                            existing,
+                            existing.getStock(),
+                            existing.getLockStock(),
+                            0,
+                            CHANGE_TYPE_STATUS_UPDATE,
+                            SOURCE_TYPE_ADMIN,
+                            null,
+                            "批量更新库存状态为" + stockStatus
+                    ))
+                    .filter(Objects::nonNull)
+                    .toList());
+        }
+        return updatedRows;
     }
 
     @Override
@@ -562,6 +708,107 @@ public class SkuStockServiceImpl implements SkuStockService {
                         LinkedHashMap::new,
                         Collectors.summingInt(StockReservation::getQuantity)
                 ));
+    }
+
+    private SkuStock mergeUpdatedStock(SkuStock existing, SkuStockSaveReqVO reqVO) {
+        SkuStock merged = new SkuStock();
+        merged.setId(existing.getId());
+        merged.setSkuId(existing.getSkuId());
+        merged.setSpuId(existing.getSpuId());
+        merged.setStock(reqVO.getStock() != null ? reqVO.getStock() : existing.getStock());
+        merged.setLockStock(existing.getLockStock());
+        merged.setSale(existing.getSale());
+        merged.setLowStock(reqVO.getLowStock() != null ? reqVO.getLowStock() : existing.getLowStock());
+        merged.setStockStatus(reqVO.getStockStatus() != null ? reqVO.getStockStatus() : existing.getStockStatus());
+        merged.setVersion(existing.getVersion());
+        merged.setCreateTime(existing.getCreateTime());
+        merged.setUpdateTime(existing.getUpdateTime());
+        merged.setCreator(existing.getCreator());
+        merged.setUpdater(existing.getUpdater());
+        return merged;
+    }
+
+    private InventorySummaryRespVO emptySummary() {
+        return InventorySummaryRespVO.builder()
+                .spuCount(0L)
+                .skuCount(0L)
+                .warningSpuCount(0L)
+                .emptySpuCount(0L)
+                .presaleSpuCount(0L)
+                .build();
+    }
+
+    private InventoryTabTotalsRespVO emptyTabTotals() {
+        return InventoryTabTotalsRespVO.builder()
+                .all(0L)
+                .warning(0L)
+                .empty(0L)
+                .presale(0L)
+                .build();
+    }
+
+    private List<InventoryRecordRespVO.SpecVO> parseSpecs(String attrValues) {
+        List<com.mallease.product.controller.admin.stock.vo.SkuStockRespVO.AttrValueVO> attrValueList = skuStockConvert.parseAttrValues(attrValues);
+        if (attrValueList == null || attrValueList.isEmpty()) {
+            return List.of();
+        }
+        return attrValueList.stream()
+                .map(item -> InventoryRecordRespVO.SpecVO.builder()
+                        .attrId(item.getAttrId())
+                        .attrName(item.getAttrName())
+                        .attrValue(item.getAttrValue())
+                        .build())
+                .toList();
+    }
+
+    private SkuStockLog buildStockLog(SkuStock beforeStock,
+                                      Integer afterStock,
+                                      Integer afterLockStock,
+                                      Integer changeQuantity,
+                                      String changeType,
+                                      String sourceType,
+                                      String sourceNo,
+                                      String remark) {
+        if (beforeStock == null || beforeStock.getSkuId() == null) {
+            return null;
+        }
+
+        SkuStockLog stockLog = new SkuStockLog();
+        stockLog.setSkuId(beforeStock.getSkuId());
+        stockLog.setSpuId(beforeStock.getSpuId());
+        stockLog.setChangeType(changeType);
+        stockLog.setBeforeStock(safeInt(beforeStock.getStock()));
+        stockLog.setAfterStock(afterStock != null ? afterStock : safeInt(beforeStock.getStock()));
+        stockLog.setBeforeLockStock(safeInt(beforeStock.getLockStock()));
+        stockLog.setAfterLockStock(afterLockStock != null ? afterLockStock : safeInt(beforeStock.getLockStock()));
+        stockLog.setChangeQuantity(changeQuantity != null ? changeQuantity : 0);
+        stockLog.setSourceType(sourceType);
+        stockLog.setSourceNo(sourceNo);
+        stockLog.setRemark(remark);
+        stockLog.setCreateTime(LocalDateTime.now());
+        return stockLog;
+    }
+
+    private void recordStockLogsQuietly(SkuStockLog stockLog) {
+        if (stockLog == null) {
+            return;
+        }
+        recordStockLogsQuietly(List.of(stockLog));
+    }
+
+    private void recordStockLogsQuietly(List<SkuStockLog> stockLogs) {
+        if (stockLogs == null || stockLogs.isEmpty()) {
+            return;
+        }
+        try {
+            skuStockLogDao.insertBatch(stockLogs);
+        } catch (RuntimeException ex) {
+            log.error("库存日志写入失败，不影响主流程，logCount={}", stockLogs.size(), ex);
+        }
+    }
+
+    private int safeInt(Integer value) {
+        return value != null ? value : 0;
     }
 
     private void runAfterCommit(Runnable runnable) {

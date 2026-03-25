@@ -19,6 +19,7 @@ import com.mallease.product.controller.admin.spu.vo.SkuSaveReqVO;
 import com.mallease.product.controller.admin.spu.vo.SpuDetailRespVO;
 import com.mallease.product.controller.admin.spu.vo.SpuPageReqVO;
 import com.mallease.product.controller.admin.spu.vo.SpuSaveReqVO;
+import com.mallease.product.controller.admin.spu.vo.SpuStatsRespVO;
 import com.mallease.product.convert.spu.SpuConvert;
 import com.mallease.product.convert.spu.SpuSnapshotConvert;
 import com.mallease.product.dal.mapper.AttributeDao;
@@ -181,6 +182,42 @@ public class SpuServiceImpl implements SpuService {
             skuDao.deleteBatch(skuIds);
         }
         return spuDao.deleteBatch(List.of(spuId));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteBatch(List<Long> spuIds) {
+        if (spuIds == null || spuIds.isEmpty()) {
+            return 0;
+        }
+        if (spuIds.stream().anyMatch(Objects::isNull)) {
+            throw new ApiException("商品ID不能为空");
+        }
+
+        List<Long> normalizedSpuIds = spuIds.stream().distinct().toList();
+        List<Spu> existingSpus = spuDao.selectByIds(normalizedSpuIds);
+        if (existingSpus.size() != normalizedSpuIds.size()) {
+            throw new ApiException("部分商品不存在");
+        }
+
+        int deletedCount = 0;
+        for (Long spuId : normalizedSpuIds) {
+            deletedCount += delete(spuId);
+        }
+        return deletedCount;
+    }
+
+    @Override
+    public SpuStatsRespVO stats(SpuPageReqVO reqVO) {
+        SpuPageReqVO safeReqVO = reqVO == null ? new SpuPageReqVO() : reqVO;
+        SpuStatsRespVO stats = spuDao.selectStats(
+                safeReqVO.getKeyword(),
+                safeReqVO.getBrandId(),
+                safeReqVO.getCategoryId(),
+                safeReqVO.getNewStatus(),
+                safeReqVO.getRecommendStatus()
+        );
+        return stats != null ? stats : emptyStats();
     }
 
     @Override
@@ -791,5 +828,14 @@ public class SpuServiceImpl implements SpuService {
         if (!specValues.isEmpty()) {
             attributeValueDao.insertBatch(specValues);
         }
+    }
+
+    private SpuStatsRespVO emptyStats() {
+        return SpuStatsRespVO.builder()
+                .allCount(0L)
+                .publishedCount(0L)
+                .unpublishedCount(0L)
+                .unverifiedCount(0L)
+                .build();
     }
 }

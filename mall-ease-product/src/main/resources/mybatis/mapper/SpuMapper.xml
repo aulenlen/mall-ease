@@ -137,6 +137,32 @@
         ORDER BY sort, id DESC
     </select>
 
+    <select id="selectStats" resultType="com.mallease.product.controller.admin.spu.vo.SpuStatsRespVO">
+        SELECT COUNT(*) AS allCount,
+               COALESCE(SUM(CASE WHEN publish_status = 1 THEN 1 ELSE 0 END), 0) AS publishedCount,
+               COALESCE(SUM(CASE WHEN publish_status = 0 THEN 1 ELSE 0 END), 0) AS unpublishedCount,
+               COALESCE(SUM(CASE WHEN verify_status = 0 THEN 1 ELSE 0 END), 0) AS unverifiedCount
+        FROM product_spu
+        <where>
+            AND deleted = 0
+            <if test="keyword != null and keyword != ''">
+                AND name LIKE CONCAT('%', #{keyword,jdbcType=VARCHAR}, '%')
+            </if>
+            <if test="brandId != null">
+                AND brand_id = #{brandId,jdbcType=BIGINT}
+            </if>
+            <if test="categoryId != null">
+                AND category_id = #{categoryId,jdbcType=BIGINT}
+            </if>
+            <if test="newStatus != null">
+                AND new_status = #{newStatus,jdbcType=TINYINT}
+            </if>
+            <if test="recommendStatus != null">
+                AND recommend_status = #{recommendStatus,jdbcType=TINYINT}
+            </if>
+        </where>
+    </select>
+
     <!-- 查询所有 -->
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>

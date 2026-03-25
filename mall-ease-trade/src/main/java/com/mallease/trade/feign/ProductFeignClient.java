@@ -25,7 +25,7 @@ public interface ProductFeignClient {
      * @param skuIds SKU ID 列表
      * @return SKU 简要信息列表
      */
-    @PostMapping("/product/admin/sku/internal/listSimpleByIds")
+    @PostMapping("/internal/sku/listSimpleByIds")
     R<List<SkuSimpleDTO>> listSkuSimpleByIds(@RequestBody List<Long> skuIds);
 
     /**
@@ -34,7 +34,7 @@ public interface ProductFeignClient {
      * @param queries SPU 和 SKU 查询参数
      * @return SKU 可售状态列表
      */
-    @PostMapping("/product/admin/stock/internal/availability")
+    @PostMapping("/internal/stock/availability")
     R<List<SkuAvailabilityDTO>> listSkuAvailability(@RequestBody List<SkuStockQueryDTO> queries);
 
     /**
@@ -43,7 +43,7 @@ public interface ProductFeignClient {
      * @param stockLockDTO 锁库存请求
      * @return 调用结果
      */
-    @PutMapping("/product/admin/stock/internal/lock")
+    @PutMapping("/internal/stock/lock")
     R<Void> lockStock(@RequestBody StockLockDTO stockLockDTO);
 
     /**
@@ -52,7 +52,7 @@ public interface ProductFeignClient {
      * @param orderNos 订单号列表
      * @return 释放失败的订单号列表，空列表表示全部成功
      */
-    @PutMapping("/product/admin/stock/internal/unlock")
+    @PutMapping("/internal/stock/unlock")
     R<List<String>> unlock(@RequestBody List<String> orderNos);
 
     /**
@@ -61,6 +61,6 @@ public interface ProductFeignClient {
      * @param orderNo 订单号
      * @return 调用结果
      */
-    @PutMapping("/product/admin/stock/internal/confirm")
+    @PutMapping("/internal/stock/confirm")
     R<Void> confirmStock(@RequestParam("orderNo") String orderNo);
 }

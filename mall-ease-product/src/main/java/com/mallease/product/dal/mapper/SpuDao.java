@@ -3,6 +3,7 @@ package com.mallease.product.dal.mapper;
 import com.mallease.common.dto.remote.SearchFilterDTO;
 import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
+import com.mallease.product.controller.admin.spu.vo.SpuStatsRespVO;
 import com.mallease.product.dal.entity.AttrValueAggregation;
 import com.mallease.product.dal.entity.Spu;
 import org.apache.ibatis.annotations.Mapper;
@@ -80,6 +81,22 @@ public interface SpuDao {
                                  @Param("verifyStatus") Integer verifyStatus,
                                  @Param("newStatus") Integer newStatus,
                                  @Param("recommendStatus") Integer recommendStatus);
+
+    /**
+     * 统计当前筛选条件下的商品数量。
+     *
+     * @param keyword         关键字（名称模糊匹配）
+     * @param brandId         品牌ID
+     * @param categoryId      分类ID
+     * @param newStatus       新品状态
+     * @param recommendStatus 推荐状态
+     * @return 统计结果
+     */
+    SpuStatsRespVO selectStats(@Param("keyword") String keyword,
+                               @Param("brandId") Long brandId,
+                               @Param("categoryId") Long categoryId,
+                               @Param("newStatus") Integer newStatus,
+                               @Param("recommendStatus") Integer recommendStatus);
 
     /**
      * 插入记录

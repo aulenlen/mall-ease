@@ -2,9 +2,11 @@ package com.mallease.bff.feign;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.*;
-import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -22,7 +24,7 @@ public interface ProductFeignClient {
      *
      * @return 分类列表
      */
-    @GetMapping("/product/admin/category/internal/nav")
+    @GetMapping("/internal/category/nav")
     R<List<CategoryDTO>> listNavCategories();
 
     /**
@@ -30,7 +32,7 @@ public interface ProductFeignClient {
      *
      * @return 分类树列表
      */
-    @GetMapping("/product/admin/category/internal/portalTree")
+    @GetMapping("/internal/category/portalTree")
     R<List<CategoryTreeDTO>> portalTree();
 
     /**
@@ -57,6 +59,6 @@ public interface ProductFeignClient {
      * @param skuIds SKU ID列表
      * @return SKU简要信息列表
      */
-    @PostMapping("/product/admin/sku/internal/listSimpleByIds")
+    @PostMapping("/internal/sku/listSimpleByIds")
     R<List<SkuSimpleDTO>> listSkuSimpleByIds(@RequestBody List<Long> skuIds);
 }

@@ -9,6 +9,7 @@ import com.mallease.product.controller.admin.spu.vo.SnapshotVO;
 import com.mallease.product.controller.admin.spu.vo.SpuDetailRespVO;
 import com.mallease.product.controller.admin.spu.vo.SpuPageReqVO;
 import com.mallease.product.controller.admin.spu.vo.SpuSaveReqVO;
+import com.mallease.product.controller.admin.spu.vo.SpuStatsRespVO;
 import com.mallease.product.dal.entity.Spu;
 import com.mallease.product.dal.entity.SpuDetail;
 
@@ -43,6 +44,16 @@ public interface SpuService {
      * 删除 SPU 及其关联数据。
      */
     int delete(Long spuId);
+
+    /**
+     * 批量删除 SPU 及其关联数据。
+     */
+    int deleteBatch(List<Long> spuIds);
+
+    /**
+     * 统计当前筛选条件下的商品数量。
+     */
+    SpuStatsRespVO stats(SpuPageReqVO reqVO);
 
     /**
      * 按 ID 批量查询 SPU 基础数据。

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.product.dal.mapper.SkuStockLogDao">
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO product_sku_stock_log (
+            sku_id, spu_id, change_type, before_stock, after_stock,
+            before_lock_stock, after_lock_stock, change_quantity,
+            source_type, source_no, remark, create_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.skuId,jdbcType=BIGINT},
+                #{item.spuId,jdbcType=BIGINT},
+                #{item.changeType,jdbcType=VARCHAR},
+                #{item.beforeStock,jdbcType=INTEGER},
+                #{item.afterStock,jdbcType=INTEGER},
+                #{item.beforeLockStock,jdbcType=INTEGER},
+                #{item.afterLockStock,jdbcType=INTEGER},
+                #{item.changeQuantity,jdbcType=INTEGER},
+                #{item.sourceType,jdbcType=VARCHAR},
+                #{item.sourceNo,jdbcType=VARCHAR},
+                #{item.remark,jdbcType=VARCHAR},
+                #{item.createTime,jdbcType=TIMESTAMP}
+            )
+        </foreach>
+    </insert>
+
+    <select id="selectPage" resultType="com.mallease.product.controller.admin.stock.vo.SkuStockLogRespVO">
+        SELECT log.id AS id,
+               log.sku_id AS skuId,
+               log.spu_id AS spuId,
+               spu.name AS spuName,
+               sku.sku_code AS skuCode,
+               log.change_type AS changeType,
+               log.before_stock AS beforeStock,
+               log.after_stock AS afterStock,
+               log.before_lock_stock AS beforeLockStock,
+               log.after_lock_stock AS afterLockStock,
+               log.change_quantity AS changeQuantity,
+               log.source_type AS sourceType,
+               log.source_no AS sourceNo,
+               log.remark AS remark,
+               log.create_time AS createTime
+        FROM product_sku_stock_log log
+        LEFT JOIN product_sku sku ON sku.id = log.sku_id AND sku.deleted = 0
+        LEFT JOIN product_spu spu ON spu.id = log.spu_id AND spu.deleted = 0
+        <where>
+            <if test="reqVO != null and reqVO.skuId != null">
+                AND log.sku_id = #{reqVO.skuId,jdbcType=BIGINT}
+            </if>
+            <if test="reqVO != null and reqVO.changeType != null and reqVO.changeType != ''">
+                AND log.change_type = #{reqVO.changeType,jdbcType=VARCHAR}
+            </if>
+            <if test="reqVO != null and reqVO.sourceType != null and reqVO.sourceType != ''">
+                AND log.source_type = #{reqVO.sourceType,jdbcType=VARCHAR}
+            </if>
+            <if test="reqVO != null and reqVO.sourceNo != null and reqVO.sourceNo != ''">
+                AND log.source_no = #{reqVO.sourceNo,jdbcType=VARCHAR}
+            </if>
+        </where>
+        ORDER BY log.create_time DESC, log.id DESC
+    </select>
+
+</mapper>

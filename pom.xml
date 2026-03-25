@@ -46,7 +46,7 @@
         <pagehelper.version>6.1.0</pagehelper.version>
         <druid.version>1.2.9</druid.version>
         <sa-token.version>1.37.0</sa-token.version>
-        <minio.version>8.4.5</minio.version>
+        <aws.sdk.version>2.25.53</aws.sdk.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
         <springdoc.version>2.3.0</springdoc.version>
@@ -134,11 +134,13 @@
                 <artifactId>mysql-connector-java</artifactId>
                 <version>${mysql-connector.version}</version>
             </dependency>
-            <!--MinIO JAVA SDK-->
+            <!-- AWS SDK for R2/S3 Compatible Storage -->
             <dependency>
-                <groupId>io.minio</groupId>
-                <artifactId>minio</artifactId>
-                <version>${minio.version}</version>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <!-- Sa-Token 权限认证（Reactor响应式集成） -->
             <dependency>

@@ -20,6 +20,7 @@ public interface SkuStockConvert {
 
     @Mapping(target = "lowStockWarning", source = ".", qualifiedByName = "calcLowStockWarning")
     @Mapping(target = "spuName", ignore = true)
+    @Mapping(target = "skuCode", ignore = true)
     @Mapping(target = "attrValues", ignore = true)
     @Mapping(target = "attrValuesObj", ignore = true)
     SkuStockRespVO entityToRespVO(SkuStock entity);

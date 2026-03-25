@@ -54,13 +54,6 @@ spring:
     connection-timeout: 10s
     socket-timeout: 60s
 
-storage:
-  endpoint: ${STORAGE_ENDPOINT}
-  bucket-name: ${STORAGE_BUCKET:mall-ease}
-  access-key: ${STORAGE_ACCESS_KEY}
-  secret-key: ${STORAGE_SECRET_KEY}
-  public-url: ${STORAGE_PUBLIC_URL}
-
 # Sa-Token 配置（生产环境使用强密钥）
 sa-token:
   jwt-secret-key: ${SA_TOKEN_SECRET}

@@ -2,14 +2,7 @@ package com.mallease.product.controller.admin.category;
 
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
-import com.mallease.common.dto.remote.CategoryDTO;
-import com.mallease.common.dto.remote.CategoryTreeDTO;
-import com.mallease.product.controller.admin.category.vo.CategoryConfigSnapshotRespVO;
-import com.mallease.product.controller.admin.category.vo.CategoryDetailRespVO;
-import com.mallease.product.controller.admin.category.vo.CategoryListRespVO;
-import com.mallease.product.controller.admin.category.vo.CategoryQueryReqVO;
-import com.mallease.product.controller.admin.category.vo.CategorySaveReqVO;
-import com.mallease.product.controller.admin.category.vo.CategoryTreeRespVO;
+import com.mallease.product.controller.admin.category.vo.*;
 import com.mallease.product.convert.category.CategoryConvert;
 import com.mallease.product.dal.entity.Category;
 import com.mallease.product.service.category.CategoryService;
@@ -18,14 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -161,18 +147,6 @@ public class CategoryAdminController {
                                       @Parameter(description = "是否导航显示：0-否，1-是") @RequestParam Integer isNav) {
         int count = categoryService.updateNavStatus(id, isNav);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
-    }
-
-    @Operation(summary = "金刚区分类", description = "内部调用")
-    @GetMapping("/internal/nav")
-    public R<List<CategoryDTO>> listNavCategories() {
-        return R.success(categoryService.listNavCategories());
-    }
-
-    @Operation(summary = "完整分类树", description = "内部调用")
-    @GetMapping("/internal/portalTree")
-    public R<List<CategoryTreeDTO>> portalTree() {
-        return R.success(categoryService.portalTree());
     }
 
     @Operation(summary = "获取分类快照", description = "一次请求返回 category + specs + params + brands")

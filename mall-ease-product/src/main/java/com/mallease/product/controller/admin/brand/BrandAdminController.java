@@ -136,10 +136,4 @@ public class BrandAdminController {
     public R<Integer> unbindCategoryBatch(@Validated @RequestBody BrandRelationBatchUnbindReqVO reqVO) {
         return R.success(brandService.unbindCategoryBatch(reqVO));
     }
-
-    @Operation(summary = "获取启用的品牌列表", description = "内部调用")
-    @GetMapping("/internal/list")
-    public R<List<BrandDTO>> listEnabledBrands() {
-        return R.success(brandService.listEnabledBrands());
-    }
 }

@@ -1,8 +1,9 @@
 package com.mallease.product.dal.mapper;
 
+import com.mallease.product.controller.admin.stock.vo.*;
+import com.mallease.product.dal.entity.SkuStock;
 import com.mallease.product.service.stock.model.LockStockItem;
 import com.mallease.product.service.stock.model.UnlockStockItem;
-import com.mallease.product.dal.entity.SkuStock;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -56,6 +57,38 @@ public interface SkuStockDao {
      * @return 库存列表
      */
     List<SkuStock> selectBySpuIds(@Param("spuIds") List<Long> spuIds);
+
+    /**
+     * 独立库存页 SPU 聚合分页。
+     *
+     * @param reqVO 查询参数
+     * @return 分页结果
+     */
+    List<InventorySpuRecordRespVO> selectInventorySpuPage(@Param("reqVO") SkuStockPageReqVO reqVO);
+
+    /**
+     * 查询指定 SPU 列表下的 SKU 子表记录。
+     *
+     * @param spuIds SPU ID 列表
+     * @return SKU 子表记录
+     */
+    List<InventoryRecordRespVO> selectInventoryRecordsBySpuIds(@Param("spuIds") List<Long> spuIds);
+
+    /**
+     * 库存页 summary 统计。
+     *
+     * @param reqVO 查询参数
+     * @return 统计结果
+     */
+    InventorySummaryRespVO selectInventorySummary(@Param("reqVO") SkuStockPageReqVO reqVO);
+
+    /**
+     * 库存页 tab 统计。
+     *
+     * @param reqVO 查询参数
+     * @return tab 统计
+     */
+    InventoryTabTotalsRespVO selectInventoryTabTotals(@Param("reqVO") SkuStockPageReqVO reqVO);
 
     /**
      * 根据库存状态查询
