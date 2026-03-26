@@ -61,16 +61,14 @@ public class SpuPublishServiceImpl implements SpuPublishService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int publish(List<Long> spuIds) {
-
         List<Long> normalizedSpuIds = normalizeSpuIds(spuIds);
         LocalDateTime publishedAt = LocalDateTime.now();
 
-        List<SpuSnapshot> snapshots = snapshotService.buildSnapshots(normalizedSpuIds, publishedAt);
-
-        snapshotService.saveSnapshots(snapshots);
+        List<PublishSnapshotPlan> publishPlans = snapshotService.buildPublishPlans(normalizedSpuIds, publishedAt);
+        snapshotService.saveSnapshots(publishPlans.stream().map(PublishSnapshotPlan::snapshot).toList());
 
         int updatedCount = spuDao.updatePublishStatusBatch(normalizedSpuIds, 1, publishedAt);
-        runAfterCommit(() -> handlePublishSideEffects(normalizedSpuIds));
+        runAfterCommit(() -> handlePublishSideEffects(publishPlans));
 
         return updatedCount;
     }
@@ -100,10 +98,14 @@ public class SpuPublishServiceImpl implements SpuPublishService {
         return 0;
     }
 
-    private void handlePublishSideEffects(List<Long> spuIds) {
+    private void handlePublishSideEffects(List<PublishSnapshotPlan> publishPlans) {
+        if (publishPlans == null || publishPlans.isEmpty()) {
+            return;
+        }
+        List<Long> spuIds = publishPlans.stream().map(PublishSnapshotPlan::spuId).toList();
         try {
             warmUpPublishedSnapshotCache(spuIds);
-            syncPublishedSearch(spuIds);
+            syncPublishedSearch(publishPlans);
         } catch (Exception e) {
             log.error("发布后缓存或搜索同步失败，spuIds={}", spuIds, e);
         }
@@ -150,22 +152,43 @@ public class SpuPublishServiceImpl implements SpuPublishService {
         typedRedisService.deleteBatch(keys);
     }
 
-    private void syncPublishedSearch(List<Long> spuIds) {
-        R<List<Long>> publishResult = spuSearchFeignClient.publish(spuIds);
+    private void syncPublishedSearch(List<PublishSnapshotPlan> publishPlans) {
+        List<Long> changedSpuIds = publishPlans.stream()
+                .filter(PublishSnapshotPlan::contentChanged)
+                .map(PublishSnapshotPlan::spuId)
+                .toList();
+        List<Long> unchangedSpuIds = publishPlans.stream()
+                .filter(plan -> !plan.contentChanged())
+                .map(PublishSnapshotPlan::spuId)
+                .toList();
+
+        if (!changedSpuIds.isEmpty()) {
+            log.info("检测到已发布内容变化，执行 ES 全量重建，请求: {}", changedSpuIds);
+            List<SpuIndexDTO> changedIndexList = buildIndex(changedSpuIds);
+            if (!changedIndexList.isEmpty()) {
+                spuSearchFeignClient.indexBatch(changedIndexList);
+            }
+        }
+
+        if (unchangedSpuIds.isEmpty()) {
+            return;
+        }
+
+        R<List<Long>> publishResult = spuSearchFeignClient.publish(unchangedSpuIds);
         if (publishResult == null || publishResult.getData() == null) {
             return;
         }
 
         List<Long> missingIds = publishResult.getData();
         if (missingIds.isEmpty()) {
-            log.info("ES商品全部存在，仅更新状态，数量: {}", spuIds.size());
+            log.info("ES商品内容未变化，仅更新上架状态，数量: {}", unchangedSpuIds.size());
             return;
         }
 
-        log.info("ES中缺少部分SPU，执行全量索引，请求: {}, 不存在: {}", spuIds, missingIds);
-        List<SpuIndexDTO> spuIndexDTOList = buildIndex(missingIds);
-        if (!spuIndexDTOList.isEmpty()) {
-            spuSearchFeignClient.indexBatch(spuIndexDTOList);
+        log.info("ES中缺少部分未变化的SPU，执行补建索引，请求: {}, 不存在: {}", unchangedSpuIds, missingIds);
+        List<SpuIndexDTO> missingIndexList = buildIndex(missingIds);
+        if (!missingIndexList.isEmpty()) {
+            spuSearchFeignClient.indexBatch(missingIndexList);
         }
     }
 

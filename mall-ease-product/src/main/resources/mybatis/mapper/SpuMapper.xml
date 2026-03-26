@@ -108,7 +108,8 @@
 
     <!-- 多条件查询 -->
     <select id="selectByConditions" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List"/>
+        SELECT
+        <include refid="Base_Column_List"/>
         FROM product_spu
         <where>
             AND deleted = 0
@@ -133,6 +134,9 @@
             <if test="recommendStatus != null">
                 AND recommend_status = #{recommendStatus,jdbcType=TINYINT}
             </if>
+            <if test="hasStagedChanges != null">
+                AND has_staged_changes = #{hasStagedChanges,jdbcType=TINYINT}
+            </if>
         </where>
         ORDER BY sort, id DESC
     </select>
@@ -141,7 +145,8 @@
         SELECT COUNT(*) AS allCount,
                COALESCE(SUM(CASE WHEN publish_status = 1 THEN 1 ELSE 0 END), 0) AS publishedCount,
                COALESCE(SUM(CASE WHEN publish_status = 0 THEN 1 ELSE 0 END), 0) AS unpublishedCount,
-               COALESCE(SUM(CASE WHEN verify_status = 0 THEN 1 ELSE 0 END), 0) AS unverifiedCount
+               COALESCE(SUM(CASE WHEN verify_status = 0 THEN 1 ELSE 0 END), 0) AS unverifiedCount,
+               COALESCE(SUM(CASE WHEN has_staged_changes = 1 THEN 1 ELSE 0 END), 0) AS hasStagedChangesCount
         FROM product_spu
         <where>
             AND deleted = 0

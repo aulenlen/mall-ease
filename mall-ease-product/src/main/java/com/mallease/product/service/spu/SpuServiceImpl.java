@@ -134,7 +134,8 @@ public class SpuServiceImpl implements SpuService {
                 reqVO.getPublishStatus(),
                 reqVO.getVerifyStatus(),
                 reqVO.getNewStatus(),
-                reqVO.getRecommendStatus()
+                reqVO.getRecommendStatus(),
+                reqVO.getHasStagedChanges()
         );
     }
 

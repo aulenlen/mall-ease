@@ -5,20 +5,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.common.exception.ApiException;
 import com.mallease.product.controller.admin.spu.vo.SnapshotVO;
 import com.mallease.product.convert.spu.SpuSnapshotConvert;
-import com.mallease.product.dal.mapper.AttributeValueDao;
-import com.mallease.product.dal.mapper.SkuDao;
-import com.mallease.product.dal.mapper.SpuDao;
-import com.mallease.product.dal.mapper.SpuDetailDao;
-import com.mallease.product.dal.mapper.SpuSnapshotDao;
 import com.mallease.product.dal.entity.AttributeValue;
 import com.mallease.product.dal.entity.Sku;
 import com.mallease.product.dal.entity.Spu;
 import com.mallease.product.dal.entity.SpuDetail;
 import com.mallease.product.dal.entity.SpuSnapshot;
+import com.mallease.product.dal.mapper.AttributeValueDao;
+import com.mallease.product.dal.mapper.SkuDao;
+import com.mallease.product.dal.mapper.SpuDao;
+import com.mallease.product.dal.mapper.SpuDetailDao;
+import com.mallease.product.dal.mapper.SpuSnapshotDao;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -42,13 +43,18 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
     private final ObjectMapper objectMapper;
 
     @Override
-    public List<SpuSnapshot> buildSnapshots(List<Long> spuIds, LocalDateTime publishedAt) {
-
+    public List<PublishSnapshotPlan> buildPublishPlans(List<Long> spuIds, LocalDateTime publishedAt) {
         List<Long> normalizedSpuIds = normalizeSpuIds(spuIds);
-
+        // 草稿对象
         BatchSnapshotSource source = loadSnapshotSource(normalizedSpuIds);
+        // 已发布的快照
+        Map<Long, SpuSnapshot> currentSnapshotMap = spuSnapshotDao.selectBySpuIds(normalizedSpuIds).stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(SpuSnapshot::getSpuId, Function.identity(), (left, right) -> right));
 
-        return normalizedSpuIds.stream().map(spuId -> buildSnapshot(source, spuId, publishedAt)).toList();
+        return normalizedSpuIds.stream()
+                .map(spuId -> buildPublishPlan(source, spuId, currentSnapshotMap, publishedAt))
+                .toList();
     }
 
     @Override
@@ -64,10 +70,9 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
         return spuSnapshotDao.selectBySpuId(spuId);
     }
 
-    private SpuSnapshot buildSnapshot(BatchSnapshotSource source, Long spuId, LocalDateTime publishedAt) {
-
+    private PublishSnapshotPlan buildPublishPlan(BatchSnapshotSource source, Long spuId,
+                                                 Map<Long, SpuSnapshot> currentSnapshotMap, LocalDateTime publishedAt) {
         Spu spu = source.spuMap().get(spuId);
-
         List<Sku> skus = source.skuMap().getOrDefault(spuId, List.of());
 
         SnapshotSource snapshotSource = new SnapshotSource(
@@ -79,18 +84,26 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
         );
 
         validatePublishable(snapshotSource);
+        // 即将要发布对象
+        SnapshotVO contentSnapshotVO = assembleContentSnapshotVO(snapshotSource);
+        // 即将要发布对象的json
+        String contentJson = serializeSnapshotJson(spuId, contentSnapshotVO);
+        // 即将要发布对象的hash值
+        String contentHash = calculateHash(contentJson);
+        // 已发布对象的hash值
+        String currentContentHash = resolveCurrentContentHash(spuId, currentSnapshotMap.get(spuId));
+        // 对比是否有过更改
+        boolean contentChanged = !Objects.equals(currentContentHash, contentHash);
 
         int nextVersion = resolvePublishedVersion(spu);
+        SnapshotVO finalSnapshotVO = enrichPublishMeta(contentSnapshotVO, nextVersion, publishedAt, contentHash);
+        String finalSnapshotJson = serializeSnapshotJson(spuId, finalSnapshotVO);
 
-        SnapshotVO snapshotVO = assembleSnapshotVO(snapshotSource, nextVersion, publishedAt);
-        String snapshotJson = serializeSnapshotJson(spuId, snapshotVO);
-        String snapshotHash = DigestUtils.md5DigestAsHex(snapshotJson.getBytes(StandardCharsets.UTF_8));
-
-        return assembleSnapshotEntity(spu, nextVersion, publishedAt, snapshotJson, snapshotHash);
+        SpuSnapshot snapshot = assembleSnapshotEntity(spu, nextVersion, publishedAt, finalSnapshotJson, contentHash);
+        return new PublishSnapshotPlan(spuId, snapshot, contentChanged);
     }
 
     private BatchSnapshotSource loadSnapshotSource(List<Long> spuIds) {
-
         List<Spu> spus = spuDao.selectByIds(spuIds);
         Map<Long, Spu> spuMap = spus.stream().collect(Collectors.toMap(Spu::getId, Function.identity()));
         List<Long> missingSpuIds = spuIds.stream().filter(spuId -> !spuMap.containsKey(spuId)).toList();
@@ -130,21 +143,22 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
         }
     }
 
-    private SnapshotVO assembleSnapshotVO(SnapshotSource source, Integer version, LocalDateTime publishedAt) {
-
-        SnapshotVO snapshotVO = spuSnapshotConvert.toSnapshotVO(
+    private SnapshotVO assembleContentSnapshotVO(SnapshotSource source) {
+        return spuSnapshotConvert.toSnapshotVO(
                 source.spu(),
                 source.spuDetail(),
                 source.params(),
                 source.specs(),
                 source.skus()
         );
+    }
 
+    private SnapshotVO enrichPublishMeta(SnapshotVO snapshotVO, Integer version, LocalDateTime publishedAt, String snapshotHash) {
         SnapshotVO.PublishMeta publishMeta = new SnapshotVO.PublishMeta();
         publishMeta.setVersion(version);
         publishMeta.setPublishedAt(publishedAt);
+        publishMeta.setSnapshotHash(snapshotHash);
         snapshotVO.setPublishMeta(publishMeta);
-
         return snapshotVO;
     }
 
@@ -155,6 +169,27 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
             log.error("商品快照序列化失败，spuId={}", spuId, e);
             throw new ApiException("商品快照生成失败");
         }
+    }
+
+    private String resolveCurrentContentHash(Long spuId, SpuSnapshot currentSnapshot) {
+        if (currentSnapshot == null) {
+            return null;
+        }
+        if (!StringUtils.hasText(currentSnapshot.getSnapshotJson())) {
+            return currentSnapshot.getSnapshotHash();
+        }
+        try {
+            SnapshotVO snapshotVO = objectMapper.readValue(currentSnapshot.getSnapshotJson(), SnapshotVO.class);
+            snapshotVO.setPublishMeta(null);
+            return calculateHash(objectMapper.writeValueAsString(snapshotVO));
+        } catch (Exception e) {
+            log.warn("解析当前快照内容摘要失败，退回使用已存摘要，spuId={}", spuId, e);
+            return currentSnapshot.getSnapshotHash();
+        }
+    }
+
+    private String calculateHash(String json) {
+        return DigestUtils.md5DigestAsHex(json.getBytes(StandardCharsets.UTF_8));
     }
 
     private SpuSnapshot assembleSnapshotEntity(Spu spu, Integer version, LocalDateTime publishedAt, String snapshotJson, String snapshotHash) {
@@ -175,7 +210,6 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
     }
 
     private List<Long> normalizeSpuIds(List<Long> spuIds) {
-
         if (spuIds == null || spuIds.isEmpty()) {
             throw new ApiException("商品ID不能为空");
         }
@@ -183,11 +217,9 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
             throw new ApiException("商品ID不能为空");
         }
 
-        List<Long> normalizedSpuIds = spuIds.stream()
+        return spuIds.stream()
                 .distinct()
                 .toList();
-
-        return normalizedSpuIds;
     }
 
     private record BatchSnapshotSource(

@@ -11,9 +11,9 @@ import java.util.List;
 public interface SpuSnapshotService {
 
     /**
-     * 为指定 SPU 构建发布快照。
+     * 为指定 SPU 构建发布计划。
      */
-    List<SpuSnapshot> buildSnapshots(List<Long> spuIds, LocalDateTime publishedAt);
+    List<PublishSnapshotPlan> buildPublishPlans(List<Long> spuIds, LocalDateTime publishedAt);
 
     /**
      * 批量保存发布快照。

@@ -80,7 +80,8 @@ public interface SpuDao {
                                  @Param("publishStatus") Integer publishStatus,
                                  @Param("verifyStatus") Integer verifyStatus,
                                  @Param("newStatus") Integer newStatus,
-                                 @Param("recommendStatus") Integer recommendStatus);
+                                 @Param("recommendStatus") Integer recommendStatus,
+                                 @Param("hasStagedChanges") Integer hasStagedChanges);
 
     /**
      * 统计当前筛选条件下的商品数量。

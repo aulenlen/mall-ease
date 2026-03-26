@@ -27,4 +27,7 @@ public class SpuStatsRespVO {
 
     @Schema(description = "未审核商品数量")
     private Long unverifiedCount;
+
+    @Schema(description = "已修改未发布数量")
+    private Long hasStagedChangesCount;
 }

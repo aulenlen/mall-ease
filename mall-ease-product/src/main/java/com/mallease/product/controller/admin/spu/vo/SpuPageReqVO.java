@@ -33,4 +33,7 @@ public class SpuPageReqVO extends BaseQuery {
 
     @Schema(description = "审核状态: 0-未审核, 1-审核通过")
     private Integer verifyStatus;
+
+    @Schema(description = "是否存在未发布草稿: 0-不存在, 1-存在")
+    private Integer hasStagedChanges;
 }

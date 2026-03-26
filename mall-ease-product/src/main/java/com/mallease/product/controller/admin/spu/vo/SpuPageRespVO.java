@@ -45,6 +45,9 @@ public class SpuPageRespVO {
     @Schema(description = "商品主图")
     private String pic;
 
+    @Schema(description = "是否存在未发布草稿：0-否，1-是")
+    private Integer hasStagedChanges;
+
     @Schema(description = "上架状态: 0-下架, 1-上架")
     private Integer publishStatus;
 
