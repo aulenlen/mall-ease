@@ -1,5 +1,6 @@
-package com.mallease.bff.model.client.vo;
+package com.mallease.bff.controller.portal.category.vo;
 
+import com.mallease.bff.controller.portal.common.vo.RecommendProductRespVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,8 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CategoryTreeVO {
+@Schema(description = "分类树")
+public class CategoryTreeRespVO {
 
     @Schema(description = "分类ID")
     private Long id;
@@ -36,8 +38,8 @@ public class CategoryTreeVO {
     private Integer sort;
 
     @Schema(description = "子分类")
-    private List<CategoryTreeVO> children;
+    private List<CategoryTreeRespVO> children;
 
     @Schema(description = "推荐商品")
-    private List<HomeRecommendVO> recommends;
+    private List<RecommendProductRespVO> recommends;
 }

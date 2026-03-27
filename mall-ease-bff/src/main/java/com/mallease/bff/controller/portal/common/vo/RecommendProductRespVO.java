@@ -1,4 +1,4 @@
-package com.mallease.bff.model.client.vo;
+package com.mallease.bff.controller.portal.common.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * 首页推荐商品 VO
+ * 推荐商品卡片返回值。
  *
  * @author: Aulen
  * @create: 2026-01-08
@@ -18,8 +18,8 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "首页推荐商品")
-public class HomeRecommendVO {
+@Schema(description = "推荐商品")
+public class RecommendProductRespVO {
 
     @Schema(description = "SPU ID")
     private Long spuId;

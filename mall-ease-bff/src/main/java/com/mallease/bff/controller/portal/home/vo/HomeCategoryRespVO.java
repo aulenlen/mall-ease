@@ -1,4 +1,4 @@
-package com.mallease.bff.model.client.vo;
+package com.mallease.bff.controller.portal.home.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "首页金刚区分类")
-public class HomeCategoryVO {
+public class HomeCategoryRespVO {
 
     @Schema(description = "分类ID")
     private Long id;

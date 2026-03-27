@@ -1,4 +1,4 @@
-package com.mallease.bff.feign;
+package com.mallease.bff.feign.search;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
@@ -35,5 +35,4 @@ public interface SearchFeignClient {
     @Operation(summary = "商品搜索（带筛选面板）")
     @PostMapping("/search/internal/product/advancedSearch")
     R<SpuSearchResultDTO> advancedSearch(@Validated @RequestBody SpuSearchQuery query);
-
 }

@@ -1,4 +1,4 @@
-package com.mallease.bff.feign;
+package com.mallease.bff.feign.content;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.BannerDTO;

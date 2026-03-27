@@ -1,4 +1,4 @@
-package com.mallease.bff.model.client.vo;
+package com.mallease.bff.controller.portal.home.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "首页编辑精选")
-public class HomeEditorialVO {
+public class HomeEditorialRespVO {
 
     @Schema(description = "编辑精选ID")
     private Long id;

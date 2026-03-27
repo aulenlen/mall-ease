@@ -1,7 +1,12 @@
-package com.mallease.bff.feign;
+package com.mallease.bff.feign.product;
 
 import com.mallease.common.api.R;
-import com.mallease.common.dto.remote.*;
+import com.mallease.common.dto.remote.CategoryDTO;
+import com.mallease.common.dto.remote.CategoryTreeDTO;
+import com.mallease.common.dto.remote.ProductDTO;
+import com.mallease.common.dto.remote.SkuSimpleDTO;
+import com.mallease.common.dto.remote.SpuSearchQuery;
+import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

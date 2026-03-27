@@ -1,4 +1,4 @@
-package com.mallease.bff.model.client.vo;
+package com.mallease.bff.controller.portal.home.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "首页轮播图")
-public class HomeBannerVO {
+public class HomeBannerRespVO {
 
     @Schema(description = "Banner ID")
     private Long id;

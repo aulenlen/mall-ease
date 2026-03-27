@@ -1,4 +1,4 @@
-package com.mallease.bff.model.client.vo;
+package com.mallease.bff.controller.portal.home.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -21,7 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "首页秒杀数据")
-public class HomeFlashVO {
+public class HomeFlashRespVO {
 
     @Schema(description = "场次ID")
     private Long sessionId;
@@ -42,14 +42,14 @@ public class HomeFlashVO {
     private Long serverTime;
 
     @Schema(description = "秒杀商品列表")
-    private List<FlashProductVO> products;
+    private List<FlashProductRespVO> products;
 
     @Data
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
     @Schema(description = "秒杀商品")
-    public static class FlashProductVO {
+    public static class FlashProductRespVO {
 
         @Schema(description = "秒杀商品ID")
         private Long id;
