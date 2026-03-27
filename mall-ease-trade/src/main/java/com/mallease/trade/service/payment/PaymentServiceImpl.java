@@ -1,13 +1,17 @@
 package com.mallease.trade.service.payment;
 
-import com.mallease.common.enums.OrderStatus;
+import com.github.pagehelper.PageHelper;
+import com.mallease.common.api.Page;
+import com.mallease.common.api.PageUtils;
 import com.mallease.common.enums.PayChannel;
 import com.mallease.common.enums.PaymentStatus;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.NoGeneratorUtil;
-import com.mallease.trade.dal.mapper.PaymentOrderDao;
-import com.mallease.trade.controller.portal.payment.vo.PaymentCreateReqVO;
 import com.mallease.trade.controller.admin.payment.vo.PaymentPageReqVO;
+import com.mallease.trade.controller.admin.payment.vo.PaymentRespVO;
+import com.mallease.trade.controller.portal.payment.vo.PaymentCreateReqVO;
+import com.mallease.trade.convert.payment.PaymentConvert;
+import com.mallease.trade.dal.mapper.PaymentOrderDao;
 import com.mallease.trade.dal.entity.Order;
 import com.mallease.trade.dal.entity.PaymentOrder;
 import com.mallease.trade.service.order.OrderService;
@@ -21,6 +25,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -39,22 +44,23 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentOrderDao paymentOrderDao;
     private final OrderService orderService;
     private final AlipayHandler alipayHandler;
+    private final PaymentConvert paymentConvert;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PaymentOrder create(Long userId, PaymentCreateReqVO cmd) {
+    public PaymentOrder create(Long userId, PaymentCreateReqVO reqVO) {
 
-        Order pendingOrder = orderService.findPendingPaymentOrder(userId, cmd.getOrderNo());
+        Order pendingOrder = orderService.findPendingPaymentOrder(userId, reqVO.getOrderNo());
 
         if (pendingOrder == null) {
             throw new ApiException("订单错误");
         }
-        PaymentOrder existPayment = paymentOrderDao.selectByOrderNo(cmd.getOrderNo());
+        PaymentOrder existPayment = paymentOrderDao.selectByOrderNo(reqVO.getOrderNo());
 
         if (existPayment == null) {
             PaymentOrder payment = PaymentOrder.builder()
                     .paymentNo(NoGeneratorUtil.generate(userId))
-                    .orderNo(cmd.getOrderNo())
+                    .orderNo(reqVO.getOrderNo())
                     .userId(userId)
                     .payAmount(pendingOrder.getPayAmount())
                     .status(PaymentStatus.PENDING.getCode())
@@ -62,7 +68,7 @@ public class PaymentServiceImpl implements PaymentService {
                     .build();
 
             paymentOrderDao.insert(payment);
-            return paymentOrderDao.selectByOrderNo(cmd.getOrderNo());
+            return paymentOrderDao.selectByOrderNo(reqVO.getOrderNo());
         }
 
         if (existPayment.getStatus().equals(PaymentStatus.PENDING.getCode())) {
@@ -75,7 +81,7 @@ public class PaymentServiceImpl implements PaymentService {
                     NoGeneratorUtil.generate(userId),
                     LocalDateTime.now().plusMinutes(30)
             );
-            return paymentOrderDao.selectByOrderNo(cmd.getOrderNo());
+            return paymentOrderDao.selectByOrderNo(reqVO.getOrderNo());
         }
 
         if (existPayment.getStatus().equals(PaymentStatus.SUCCESS.getCode())) {
@@ -122,6 +128,28 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentOrder getByPaymentNo(String paymentNo) {
         return paymentOrderDao.selectByPaymentNo(paymentNo);
+    }
+
+    @Override
+    public Page<PaymentRespVO> pageAdminPayments(PaymentPageReqVO reqVO) {
+        PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
+        List<PaymentOrder> payments = paymentOrderDao.adminList(reqVO);
+        if (payments.isEmpty()) {
+            return PageUtils.buildPage(payments, Collections.emptyList());
+        }
+        List<PaymentRespVO> voList = payments.stream()
+                .map(paymentConvert::entityToVO)
+                .toList();
+        return PageUtils.buildPage(payments, voList);
+    }
+
+    @Override
+    public PaymentRespVO getAdminPaymentDetail(String paymentNo) {
+        PaymentOrder payment = getByPaymentNo(paymentNo);
+        if (payment == null) {
+            throw new ApiException("支付单不存在");
+        }
+        return paymentConvert.entityToVO(payment);
     }
 
     @Override
@@ -227,15 +255,4 @@ public class PaymentServiceImpl implements PaymentService {
         };
     }
 
-    // ==================== 管理端方法 ====================
-
-    @Override
-    public PaymentOrder findByOrderNo(String orderNo) {
-        return paymentOrderDao.selectByOrderNo(orderNo);
-    }
-
-    @Override
-    public List<PaymentOrder> adminList(PaymentPageReqVO query) {
-        return paymentOrderDao.adminList(query);
-    }
 }

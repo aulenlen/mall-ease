@@ -94,6 +94,14 @@ public interface OrderDao {
                                              @Param("stockProcessStatus") Integer stockProcessStatus);
 
     /**
+     * 按订单编号批量更新订单状态和库存处理状态，并校验原状态。
+     */
+    int batchUpdateStatusAndStockProcessByOrderNos(@Param("orderNos") List<String> orderNos,
+                                                   @Param("oldStatus") Integer oldStatus,
+                                                   @Param("newStatus") Integer newStatus,
+                                                   @Param("stockProcessStatus") Integer stockProcessStatus);
+
+    /**
      * 根据主键删除订单
      */
     int deleteByPrimaryKey(Long id);

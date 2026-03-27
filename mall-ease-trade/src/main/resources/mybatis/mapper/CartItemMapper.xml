@@ -60,8 +60,8 @@
     </select>
 
     <!-- 查询已选中商品总金额 -->
-    <select id="selectCheckedSummaryByUserId" parameterType="java.lang.Long"
-            resultType="com.mallease.trade.service.cart.model.CartCheckedSummary">
+    <select id="selectCheckedAmountByUserId" parameterType="java.lang.Long"
+            resultType="java.math.BigDecimal">
         SELECT
             COALESCE(SUM(CASE WHEN checked = 1 THEN quantity * price ELSE 0 END), 0) AS checkedAmount
         FROM trade_cart_item

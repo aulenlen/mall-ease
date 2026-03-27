@@ -2,7 +2,6 @@ package com.mallease.trade.convert.order;
 
 import com.mallease.common.enums.OrderStatus;
 import com.mallease.trade.controller.portal.order.vo.OrderSubmitReqVO;
-import com.mallease.trade.service.order.model.OrderAggregate;
 import com.mallease.trade.controller.portal.order.vo.OrderItemRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderRespVO;
 import com.mallease.trade.dal.entity.Order;
@@ -54,18 +53,13 @@ public interface OrderConvert {
     List<OrderItemRespVO> itemsToItemVOs(List<OrderItem> items);
 
     /**
-     * OrderAggregate -> OrderRespVO
+     * Order + OrderItem List -> OrderRespVO
      */
-    default OrderRespVO aggregateToVO(OrderAggregate aggregate) {
-        if (aggregate == null || aggregate.getOrder() == null) {
+    default OrderRespVO toOrderRespVO(Order order, List<OrderItem> items, Integer totalQuantity) {
+        if (order == null) {
             return null;
         }
-
-        Order order = aggregate.getOrder();
-        Integer totalQuantity = resolveTotalQuantity(aggregate);
-        List<OrderItemRespVO> itemVOs = aggregate.getItems() == null
-                ? Collections.emptyList()
-                : itemsToItemVOs(aggregate.getItems());
+        List<OrderItemRespVO> itemVOs = items == null ? Collections.emptyList() : itemsToItemVOs(items);
 
         return OrderRespVO.builder()
                 .id(order.getId())
@@ -88,29 +82,6 @@ public interface OrderConvert {
                 .totalQuantity(totalQuantity)
                 .items(itemVOs)
                 .build();
-    }
-
-    /**
-     * OrderAggregate List -> OrderRespVO List
-     */
-    default List<OrderRespVO> aggregatesToVOs(List<OrderAggregate> aggregates) {
-        if (aggregates == null) {
-            return Collections.emptyList();
-        }
-        return aggregates.stream().map(this::aggregateToVO).toList();
-    }
-
-    private Integer resolveTotalQuantity(OrderAggregate aggregate) {
-        if (aggregate.getTotalQuantity() != null) {
-            return aggregate.getTotalQuantity();
-        }
-        if (aggregate.getItems() == null || aggregate.getItems().isEmpty()) {
-            return 0;
-        }
-        return aggregate.getItems().stream()
-                .map(OrderItem::getQuantity)
-                .filter(quantity -> quantity != null)
-                .reduce(0, Integer::sum);
     }
 
     private LocalDateTime resolvePayExpireTime(Order order) {

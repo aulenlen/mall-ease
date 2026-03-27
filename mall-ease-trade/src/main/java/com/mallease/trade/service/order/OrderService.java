@@ -1,22 +1,28 @@
 package com.mallease.trade.service.order;
 
 import com.mallease.common.api.Page;
+import com.mallease.trade.controller.admin.order.vo.OrderAdminRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderConfirmRespVO;
+import com.mallease.trade.controller.portal.order.vo.OrderRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderSubmitReqVO;
-import com.mallease.trade.service.order.model.OrderAggregate;
 import com.mallease.trade.controller.admin.order.vo.OrderPageReqVO;
+import com.mallease.trade.controller.admin.order.vo.OrderShipReqVO;
+import com.mallease.trade.controller.admin.order.vo.OrderShipmentRespVO;
+import com.mallease.trade.controller.admin.order.vo.OrderStatsOverviewRespVO;
 import com.mallease.trade.controller.admin.order.vo.OrderStatsTrendRespVO;
 import com.mallease.trade.controller.admin.order.vo.OrderStatusDistributionRespVO;
+import com.mallease.trade.controller.admin.order.vo.OrderUpdateReqVO;
 import com.mallease.trade.controller.portal.order.vo.OrderSubmitRespVO;
 import com.mallease.trade.dal.entity.Order;
 import com.mallease.trade.dal.entity.OrderItem;
+import com.mallease.trade.dal.entity.OrderOperationLog;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 订单服务接口
+ * 订单领域服务。
  *
  * @author: Aulen
  * @create: 2026-01-29
@@ -31,19 +37,79 @@ public interface OrderService {
     OrderConfirmRespVO createOrderSnapshot(Long userId);
 
     /**
-     * 提交订单
+     * 根据确认页返回的 requestId 提交订单。
      */
     OrderSubmitRespVO submitOrder(Long userId, OrderSubmitReqVO reqVO);
 
     /**
-     * 根据订单编号查询
+     * 查询指定用户的订单详情。
      */
-    OrderAggregate getOrderAggregate(String orderNo);
+    OrderRespVO getUserOrderDetail(Long userId, String orderNo);
 
     /**
      * 查询用户订单列表（分页）
      */
-    Page<OrderAggregate> pageUserOrders(Long userId, Integer status, int pageNum, int pageSize);
+    Page<OrderRespVO> pageUserOrders(Long userId, Integer status, int pageNum, int pageSize);
+
+    /**
+     * 管理端订单分页列表。
+     */
+    Page<OrderAdminRespVO> pageAdminOrders(OrderPageReqVO reqVO);
+
+    /**
+     * 管理端订单详情。
+     */
+    OrderAdminRespVO getAdminOrderDetail(String orderNo);
+
+    /**
+     * 管理端发货。
+     */
+    void shipOrder(OrderShipReqVO reqVO);
+
+    /**
+     * 查询物流信息。
+     */
+    OrderShipmentRespVO getOrderShipment(String orderNo);
+
+    /**
+     * 管理端强制取消订单。
+     */
+    void forceCancelOrder(String orderNo);
+
+    /**
+     * 管理端修改收货地址。
+     */
+    void updateOrderAddress(OrderUpdateReqVO reqVO);
+
+    /**
+     * 管理端修改备注。
+     */
+    void updateOrderRemark(OrderUpdateReqVO reqVO);
+
+    /**
+     * 管理端调整订单金额。
+     */
+    void adjustOrderAmount(OrderUpdateReqVO reqVO);
+
+    /**
+     * 查询订单操作日志。
+     */
+    List<OrderOperationLog> listOrderOperationLogs(String orderNo);
+
+    /**
+     * 管理端订单统计总览。
+     */
+    OrderStatsOverviewRespVO getOrderStatsOverview();
+
+    /**
+     * 管理端订单趋势统计。
+     */
+    List<OrderStatsTrendRespVO> listAdminOrderStatsTrend(Integer days);
+
+    /**
+     * 管理端订单状态分布。
+     */
+    List<OrderStatusDistributionRespVO> listAdminOrderStatusDistribution();
 
     /**
      * 取消订单（用户主动取消）
@@ -58,30 +124,39 @@ public interface OrderService {
     void cancelOrders(List<String> orderNos);
 
     /**
-     * 获取快照
+     * 查询指定用户下待支付订单，用于支付链路校验订单归属和状态。
      */
-    OrderConfirmRespVO getOrderSnapshot(String requestId);
-
-    /**
-     * 删除快照
-     */
-    void deleteOrderSnapshot(String requestId);
-
     Order findPendingPaymentOrder(Long userId, String orderNo);
 
+    /**
+     * 仅更新订单状态字段，适合支付回调等轻量状态推进场景。
+     */
     int updateOrderStatus(String orderNo, int status);
 
+    /**
+     * 支付成功后确认库存扣减，并把订单推进到待发货状态。
+     */
     void confirmPaidOrder(String orderNo);
 
+    /**
+     * 补偿处理锁库中或锁库结果未知的订单，避免异常链路长期停留在处理中。
+     */
     void recoverLockingOrders(int limit);
 
+    /**
+     * 关闭已过支付时效的待支付订单，并释放已锁定库存。
+     */
     void closeExpiredPendingOrders(int limit);
 
+    /**
+     * 重试支付成功但库存确认未完成的订单。
+     */
     void retryPayConfirmingOrders(int limit);
 
+    /**
+     * 重试库存释放失败的已取消订单。
+     */
     void retryReleasingOrders(int limit);
-
-    // ==================== 管理端方法 ====================
 
     /**
      * 根据订单编号查询订单实体
@@ -94,10 +169,10 @@ public interface OrderService {
     /**
      * 管理端订单分页查询（多条件筛选）
      *
-     * @param query 查询条件
+     * @param reqVO 查询条件
      * @return 订单列表（需配合 PageHelper 使用）
      */
-    List<Order> listAdminOrders(OrderPageReqVO query);
+    List<Order> listAdminOrders(OrderPageReqVO reqVO);
 
     /**
      * 根据订单ID列表批量查询订单商品

@@ -8,7 +8,6 @@ import com.mallease.common.dto.remote.SkuSimpleDTO;
 import com.mallease.common.dto.remote.SkuStockQueryDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.LoginContextUtil;
-import com.mallease.trade.service.cart.model.CartCheckedSummary;
 import com.mallease.trade.dal.mapper.CartItemDao;
 import com.mallease.trade.feign.product.ProductFeignClient;
 import com.mallease.trade.controller.portal.cart.vo.CartPageItemRespVO;
@@ -57,7 +56,7 @@ public class CartServiceImpl implements CartService {
             return buildEmptyCart(safePageNum, safePageSize);
         }
 
-        CartCheckedSummary checkedSummary = cartItemDao.selectCheckedSummaryByUserId(userId);
+        BigDecimal checkedAmount = cartItemDao.selectCheckedAmountByUserId(userId);
         List<Long> skuIds = cartPage.getList().stream()
                 .map(CartItem::getSkuId)
                 .filter(Objects::nonNull)
@@ -70,7 +69,7 @@ public class CartServiceImpl implements CartService {
 
         return CartPageRespVO.builder()
                 .page(buildPage(cartPage, pageItems))
-                .summary(buildCartSummary(checkedSummary))
+                .summary(buildCartSummary(checkedAmount))
                 .build();
     }
 
@@ -192,7 +191,7 @@ public class CartServiceImpl implements CartService {
         cartItem.setId(id);
         cartItem.setQuantity(quantity);
         cartItemDao.updateByPrimaryKeySelective(cartItem);
-        return buildCartSummary(cartItemDao.selectCheckedSummaryByUserId(existing.getUserId()));
+        return buildCartSummary(cartItemDao.selectCheckedAmountByUserId(existing.getUserId()));
     }
 
     @Override
@@ -201,13 +200,13 @@ public class CartServiceImpl implements CartService {
             throw new ApiException("用户ID不能为空");
         }
         if (ids == null || ids.isEmpty()) {
-            return buildCartSummary(cartItemDao.selectCheckedSummaryByUserId(userId));
+            return buildCartSummary(cartItemDao.selectCheckedAmountByUserId(userId));
         }
         if (checked == null || (checked != 0 && checked != 1)) {
             throw new ApiException("选中状态必须为0或1");
         }
         cartItemDao.updateCheckedBatch(ids, checked);
-        return buildCartSummary(cartItemDao.selectCheckedSummaryByUserId(userId));
+        return buildCartSummary(cartItemDao.selectCheckedAmountByUserId(userId));
     }
 
     @Override
@@ -219,7 +218,7 @@ public class CartServiceImpl implements CartService {
             throw new ApiException("选中状态必须为0或1");
         }
         cartItemDao.updateCheckedByUserId(userId, checked);
-        return buildCartSummary(cartItemDao.selectCheckedSummaryByUserId(userId));
+        return buildCartSummary(cartItemDao.selectCheckedAmountByUserId(userId));
     }
 
     @Override
@@ -330,13 +329,11 @@ public class CartServiceImpl implements CartService {
         return page;
     }
 
-    private CartSummaryRespVO buildCartSummary(CartCheckedSummary checkedSummary) {
-        BigDecimal checkedAmount = checkedSummary != null && checkedSummary.getCheckedAmount() != null
-                ? checkedSummary.getCheckedAmount()
-                : BigDecimal.ZERO;
+    private CartSummaryRespVO buildCartSummary(BigDecimal checkedAmount) {
+        BigDecimal safeCheckedAmount = checkedAmount != null ? checkedAmount : BigDecimal.ZERO;
 
         return CartSummaryRespVO.builder()
-                .checkedAmount(checkedAmount)
+                .checkedAmount(safeCheckedAmount)
                 .build();
     }
 

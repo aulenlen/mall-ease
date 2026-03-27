@@ -10,33 +10,53 @@ import com.mallease.common.enums.OrderStatus;
 import com.mallease.common.enums.OrderStockStatus;
 import com.mallease.common.enums.ReservationAggregateStatus;
 import com.mallease.common.exception.ApiException;
+import com.mallease.common.service.TypedRedisService;
+import com.mallease.common.util.LoginContextUtil;
 import com.mallease.common.util.NoGeneratorUtil;
-import com.mallease.trade.service.order.cache.OrderSnapshotCacheService;
+import com.mallease.trade.constant.OrderCacheKeys;
+import com.mallease.trade.constant.OperationType;
+import com.mallease.trade.controller.admin.order.vo.OrderAdminRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderConfirmRespVO;
+import com.mallease.trade.controller.portal.order.vo.OrderRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderSubmitReqVO;
+import com.mallease.trade.controller.admin.order.vo.OrderShipReqVO;
+import com.mallease.trade.controller.admin.order.vo.OrderShipmentRespVO;
+import com.mallease.trade.controller.admin.order.vo.OrderStatsOverviewRespVO;
 import com.mallease.trade.convert.order.OrderConvert;
+import com.mallease.trade.convert.order.OrderAdminConvert;
+import com.mallease.trade.convert.payment.PaymentConvert;
 import com.mallease.trade.dal.mapper.CartItemDao;
 import com.mallease.trade.dal.mapper.OrderDao;
 import com.mallease.trade.dal.mapper.OrderItemDao;
+import com.mallease.trade.dal.mapper.OrderOperationLogDao;
+import com.mallease.trade.dal.mapper.OrderShipmentDao;
+import com.mallease.trade.dal.mapper.PaymentOrderDao;
 import com.mallease.trade.feign.product.ProductFeignClient;
-import com.mallease.trade.service.order.model.OrderAggregate;
 import com.mallease.trade.controller.admin.order.vo.OrderPageReqVO;
 import com.mallease.trade.controller.portal.order.vo.OrderItemRespVO;
 import com.mallease.trade.controller.admin.order.vo.OrderStatsTrendRespVO;
 import com.mallease.trade.controller.admin.order.vo.OrderStatusDistributionRespVO;
+import com.mallease.trade.controller.admin.order.vo.OrderUpdateReqVO;
+import com.mallease.trade.controller.admin.payment.vo.PaymentRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderSubmitRespVO;
 import com.mallease.trade.dal.entity.CartItem;
 import com.mallease.trade.dal.entity.Order;
 import com.mallease.trade.dal.entity.OrderItem;
+import com.mallease.trade.dal.entity.OrderOperationLog;
+import com.mallease.trade.dal.entity.OrderShipment;
+import com.mallease.trade.dal.entity.PaymentOrder;
 import com.mallease.trade.service.cart.CartService;
-import com.mallease.trade.service.order.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,15 +77,34 @@ import static com.mallease.trade.constant.OrderConstant.PAYMENT_TIMEOUT_MINUTES;
 public class OrderServiceImpl implements OrderService {
 
     private static final int ORDER_LIST_PREVIEW_LIMIT = 2;
+    private static final Set<Integer> SHIPPABLE_STATUS = Set.of(
+            OrderStatus.PAID.getCode(),
+            OrderStatus.PENDING_SHIPMENT.getCode()
+    );
+    private static final Set<Integer> FORCE_CANCELLABLE_STATUS = Set.of(
+            OrderStatus.PENDING_PAYMENT.getCode(),
+            OrderStatus.PAID.getCode(),
+            OrderStatus.PENDING_RECEIPT.getCode()
+    );
+    private static final Set<Integer> ADDRESS_UPDATABLE_STATUS = Set.of(
+            OrderStatus.PENDING_SHIPMENT.getCode(),
+            OrderStatus.PENDING_PAYMENT.getCode(),
+            OrderStatus.PAID.getCode()
+    );
 
     private final TransactionTemplate transactionTemplate;
     private final CartItemDao cartItemDao;
     private final OrderDao orderDao;
     private final OrderItemDao orderItemDao;
+    private final PaymentOrderDao paymentOrderDao;
+    private final OrderShipmentDao orderShipmentDao;
+    private final OrderOperationLogDao orderOperationLogDao;
     private final CartService cartItemService;
-    private final OrderSnapshotCacheService orderSnapshotCacheService;
+    private final TypedRedisService typedRedisService;
     private final ProductFeignClient productFeignClient;
     private final OrderConvert orderConvert;
+    private final OrderAdminConvert orderAdminConvert;
+    private final PaymentConvert paymentConvert;
 
     @Override
     public OrderConfirmRespVO createOrderSnapshot(Long userId) {
@@ -107,7 +146,7 @@ public class OrderServiceImpl implements OrderService {
                 .payAmount(totalAmount)
                 .createTime(LocalDateTime.now())
                 .build();
-        orderSnapshotCacheService.save(requestId, snapshot);
+        saveOrderSnapshot(requestId, snapshot);
         return snapshot;
     }
 
@@ -116,14 +155,9 @@ public class OrderServiceImpl implements OrderService {
         String requestId = reqVO.getRequestId();
         OrderConfirmRespVO snapshot = validateOrderSnapshot(userId, requestId);
 
-        Order existOrder = orderDao.selectByRequestId(requestId);
+        Order existOrder = getValidIdempotentOrder(requestId);
         if (existOrder != null) {
-            if (OrderStatus.FAILED.getCode() == existOrder.getStatus()
-                    || OrderStatus.CANCELLED.getCode() == existOrder.getStatus()) {
-                throw new ApiException("订单已失效，请重新结算");
-            }
-            log.info("订单已存在，直接返回已有订单: requestId={}, orderNo={}, status={}",
-                    requestId, existOrder.getOrderNo(), existOrder.getStatus());
+            log.info("订单已存在，直接返回已有订单: requestId={}, orderNo={}, status={}", requestId, existOrder.getOrderNo(), existOrder.getStatus());
             return buildSubmitOrderResponse(existOrder);
         }
 
@@ -138,7 +172,18 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = buildLockingOrder(userId, reqVO, snapshot, requestId, orderNo, payExpireTime);
         List<OrderItem> orderItems = buildOrderItemEntities(orderNo, snapshotItems);
-        createLockingOrder(order, orderItems);
+        try {
+            createLockingOrder(order, orderItems);
+        } catch (DuplicateKeyException ex) {
+            Order duplicatedOrder = getValidIdempotentOrder(requestId);
+            if (duplicatedOrder == null) {
+                log.error("订单创建发生唯一键冲突但未查询到幂等订单，requestId={}", requestId, ex);
+                throw new ApiException("订单创建失败");
+            }
+            log.info("订单并发重复提交，返回已有订单: requestId={}, orderNo={}, status={}",
+                    requestId, duplicatedOrder.getOrderNo(), duplicatedOrder.getStatus());
+            return buildSubmitOrderResponse(duplicatedOrder);
+        }
 
         R<Void> lockResult;
         try {
@@ -170,18 +215,20 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderAggregate getOrderAggregate(String orderNo) {
+    public OrderRespVO getUserOrderDetail(Long userId, String orderNo) {
         Order order = orderDao.selectByOrderNo(orderNo);
+        if (order == null) {
+            throw new ApiException("订单不存在");
+        }
+        if (!Objects.equals(order.getUserId(), userId)) {
+            throw new ApiException("无权查看此订单");
+        }
         List<OrderItem> orderItems = orderItemDao.selectByOrderNo(orderNo);
-        return OrderAggregate.builder()
-                .order(order)
-                .items(orderItems)
-                .totalQuantity(calculateTotalQuantity(orderItems))
-                .build();
+        return buildOrderRespVO(order, orderItems, null);
     }
 
     @Override
-    public Page<OrderAggregate> pageUserOrders(Long userId, Integer status, int pageNum, int pageSize) {
+    public Page<OrderRespVO> pageUserOrders(Long userId, Integer status, int pageNum, int pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         List<Order> orders = orderDao.listByUserId(userId, status);
         if (orders.isEmpty()) {
@@ -194,14 +241,200 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.groupingBy(OrderItem::getOrderId));
         Map<Long, Integer> totalQuantityMap = buildOrderQuantityMap(orderItemDao.sumQuantityByOrderIds(orderIds));
 
-        List<OrderAggregate> aggregates = orders.stream()
-                .map(item -> OrderAggregate.builder()
-                        .order(item)
-                        .items(itemsMap.getOrDefault(item.getId(), Collections.emptyList()))
-                        .totalQuantity(totalQuantityMap.getOrDefault(item.getId(), 0))
-                        .build())
+        List<OrderRespVO> orderRespVOs = orders.stream()
+                .map(item -> buildOrderRespVO(
+                        item,
+                        itemsMap.getOrDefault(item.getId(), Collections.emptyList()),
+                        totalQuantityMap.getOrDefault(item.getId(), 0)
+                ))
                 .toList();
-        return PageUtils.buildPage(orders, aggregates);
+        return PageUtils.buildPage(orders, orderRespVOs);
+    }
+
+    @Override
+    public Page<OrderAdminRespVO> pageAdminOrders(OrderPageReqVO reqVO) {
+        PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
+        List<Order> orders = listAdminOrders(reqVO);
+        if (orders.isEmpty()) {
+            return PageUtils.buildPage(orders, Collections.emptyList());
+        }
+
+        List<Long> orderIds = orders.stream().map(Order::getId).toList();
+        List<OrderItem> allItems = listOrderItemsByOrderIds(orderIds);
+        Map<Long, List<OrderItem>> itemsMap = allItems.stream()
+                .collect(Collectors.groupingBy(OrderItem::getOrderId));
+
+        List<OrderAdminRespVO> voList = orders.stream()
+                .map(order -> orderAdminConvert.toListVO(order, itemsMap.get(order.getId())))
+                .toList();
+        return PageUtils.buildPage(orders, voList);
+    }
+
+    @Override
+    public OrderAdminRespVO getAdminOrderDetail(String orderNo) {
+        Order order = getRequiredOrder(orderNo);
+        List<OrderItem> items = listOrderItemsByOrderNo(orderNo);
+        PaymentOrder paymentOrder = paymentOrderDao.selectByOrderNo(orderNo);
+        PaymentRespVO paymentVO = paymentOrder != null ? paymentConvert.entityToVO(paymentOrder) : null;
+
+        OrderAdminRespVO vo = orderAdminConvert.toDetailVO(order, items, paymentVO);
+        OrderShipment shipment = orderShipmentDao.selectByOrderNo(orderNo);
+        if (shipment != null) {
+            vo.setShipment(toShipmentVO(shipment));
+        }
+        return vo;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void shipOrder(OrderShipReqVO reqVO) {
+        Order order = getRequiredOrder(reqVO.getOrderNo());
+        if (!SHIPPABLE_STATUS.contains(order.getStatus())) {
+            throw new ApiException("当前订单状态不允许发货");
+        }
+
+        OrderShipment shipment = OrderShipment.builder()
+                .orderNo(reqVO.getOrderNo())
+                .logisticsCompany(reqVO.getLogisticsCompany())
+                .logisticsCode(reqVO.getLogisticsCode())
+                .logisticsNo(reqVO.getLogisticsNo())
+                .shipperName(LoginContextUtil.getUserName())
+                .shipTime(LocalDateTime.now())
+                .status(0)
+                .creator(LoginContextUtil.getUserName())
+                .build();
+        try {
+            orderShipmentDao.insert(shipment);
+        } catch (DuplicateKeyException e) {
+            throw new ApiException("该订单已发货，请勿重复操作");
+        }
+
+        updateOrderStatus(reqVO.getOrderNo(), OrderStatus.PENDING_RECEIPT.getCode());
+        saveOperationLog(reqVO.getOrderNo(), OperationType.SHIP,
+                "物流公司:" + reqVO.getLogisticsCompany() + " 运单号:" + reqVO.getLogisticsNo());
+        log.info("订单发货成功，orderNo={}, logisticsNo={}", reqVO.getOrderNo(), reqVO.getLogisticsNo());
+    }
+
+    @Override
+    public OrderShipmentRespVO getOrderShipment(String orderNo) {
+        OrderShipment shipment = orderShipmentDao.selectByOrderNo(orderNo);
+        return shipment != null ? toShipmentVO(shipment) : null;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void forceCancelOrder(String orderNo) {
+        Order order = getRequiredOrder(orderNo);
+        if (!FORCE_CANCELLABLE_STATUS.contains(order.getStatus())) {
+            throw new ApiException("当前订单状态不允许取消");
+        }
+
+        cancelOrders(List.of(orderNo));
+        saveOperationLog(orderNo, OperationType.FORCE_CANCEL,
+                "原状态:" + OrderStatus.getDescriptionByCode(order.getStatus()));
+        log.info("管理员强制取消订单，orderNo={}", orderNo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateOrderAddress(OrderUpdateReqVO reqVO) {
+        Order order = getRequiredOrder(reqVO.getOrderNo());
+        if (!ADDRESS_UPDATABLE_STATUS.contains(order.getStatus())) {
+            throw new ApiException("当前订单状态不允许修改地址");
+        }
+
+        Order updateOrder = new Order();
+        updateOrder.setId(order.getId());
+        updateOrder.setReceiverName(reqVO.getReceiverName());
+        updateOrder.setReceiverPhone(reqVO.getReceiverPhone());
+        updateOrder.setReceiverProvince(reqVO.getReceiverProvince());
+        updateOrder.setReceiverCity(reqVO.getReceiverCity());
+        updateOrder.setReceiverDistrict(reqVO.getReceiverDistrict());
+        updateOrder.setReceiverAddress(reqVO.getReceiverAddress());
+        updateOrder(updateOrder);
+
+        saveOperationLog(reqVO.getOrderNo(), OperationType.UPDATE_ADDRESS,
+                "修改收货地址: " + reqVO.getReceiverProvince() + reqVO.getReceiverCity()
+                        + reqVO.getReceiverDistrict() + reqVO.getReceiverAddress());
+        log.info("管理员修改订单地址，orderNo={}", reqVO.getOrderNo());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateOrderRemark(OrderUpdateReqVO reqVO) {
+        Order order = getRequiredOrder(reqVO.getOrderNo());
+
+        Order updateOrder = new Order();
+        updateOrder.setId(order.getId());
+        updateOrder.setRemark(reqVO.getRemark());
+        updateOrder(updateOrder);
+
+        saveOperationLog(reqVO.getOrderNo(), OperationType.UPDATE_REMARK,
+                "修改备注: " + reqVO.getRemark());
+        log.info("管理员修改订单备注，orderNo={}", reqVO.getOrderNo());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void adjustOrderAmount(OrderUpdateReqVO reqVO) {
+        Order order = getRequiredOrder(reqVO.getOrderNo());
+        if (!Objects.equals(order.getStatus(), OrderStatus.PENDING_PAYMENT.getCode())) {
+            throw new ApiException("仅待支付订单可调整金额");
+        }
+        if (reqVO.getPayAmount() == null || reqVO.getPayAmount().signum() <= 0) {
+            throw new ApiException("调整金额必须大于0");
+        }
+
+        Order updateOrder = new Order();
+        updateOrder.setId(order.getId());
+        updateOrder.setPayAmount(reqVO.getPayAmount());
+        updateOrder(updateOrder);
+
+        saveOperationLog(reqVO.getOrderNo(), OperationType.ADJUST_AMOUNT,
+                "金额调整: " + order.getPayAmount() + " -> " + reqVO.getPayAmount());
+        log.info("管理员调整订单金额，orderNo={}, {} -> {}", reqVO.getOrderNo(), order.getPayAmount(), reqVO.getPayAmount());
+    }
+
+    @Override
+    public List<OrderOperationLog> listOrderOperationLogs(String orderNo) {
+        return orderOperationLogDao.selectByOrderNo(orderNo);
+    }
+
+    @Override
+    public OrderStatsOverviewRespVO getOrderStatsOverview() {
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        Map<String, Object> todayStats = getTodayOrderOverview(todayStart);
+        Map<String, Object> totalStats = getTotalOrderOverview();
+
+        Long pendingPaymentCount = countOrdersByStatus(OrderStatus.PENDING_PAYMENT.getCode());
+        Long pendingShipmentCount = countOrdersByStatus(OrderStatus.PAID.getCode())
+                + countOrdersByStatus(OrderStatus.PENDING_SHIPMENT.getCode());
+        Long pendingReceiptCount = countOrdersByStatus(OrderStatus.PENDING_RECEIPT.getCode());
+
+        return OrderStatsOverviewRespVO.builder()
+                .todayOrderCount(toLong(todayStats.get("orderCount")))
+                .todayOrderAmount(toBigDecimal(todayStats.get("orderAmount")))
+                .pendingPaymentCount(pendingPaymentCount)
+                .pendingShipmentCount(pendingShipmentCount)
+                .pendingReceiptCount(pendingReceiptCount)
+                .totalOrderCount(toLong(totalStats.get("orderCount")))
+                .totalOrderAmount(toBigDecimal(totalStats.get("orderAmount")))
+                .build();
+    }
+
+    @Override
+    public List<OrderStatsTrendRespVO> listAdminOrderStatsTrend(Integer days) {
+        int queryDays = days != null && days > 0 ? days : 7;
+        LocalDateTime startDate = LocalDate.now().minusDays(queryDays - 1).atStartOfDay();
+        LocalDateTime endDate = LocalDate.now().atTime(LocalTime.MAX);
+        return listOrderStatsTrend(startDate, endDate);
+    }
+
+    @Override
+    public List<OrderStatusDistributionRespVO> listAdminOrderStatusDistribution() {
+        List<OrderStatusDistributionRespVO> distributions = listOrderStatusDistribution();
+        distributions.forEach(item -> item.setStatusDesc(OrderStatus.getDescriptionByCode(item.getStatus())));
+        return distributions;
     }
 
     @Override
@@ -234,16 +467,6 @@ public class OrderServiceImpl implements OrderService {
         if (!pendingOrders.isEmpty()) {
             releaseOrderStocks(pendingOrders, false, true);
         }
-    }
-
-    @Override
-    public OrderConfirmRespVO getOrderSnapshot(String requestId) {
-        return orderSnapshotCacheService.get(requestId);
-    }
-
-    @Override
-    public void deleteOrderSnapshot(String requestId) {
-        orderSnapshotCacheService.delete(requestId);
     }
 
     @Override
@@ -377,8 +600,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<Order> listAdminOrders(OrderPageReqVO query) {
-        return orderDao.adminList(query);
+    public List<Order> listAdminOrders(OrderPageReqVO reqVO) {
+        return orderDao.adminList(reqVO);
     }
 
     @Override
@@ -425,7 +648,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderConfirmRespVO validateOrderSnapshot(Long userId, String requestId) {
-        OrderConfirmRespVO snapshot = getOrderSnapshot(requestId);
+        OrderConfirmRespVO snapshot = loadOrderSnapshot(requestId);
         if (snapshot == null) {
             throw new ApiException("订单已过期，请重新结算");
         }
@@ -433,6 +656,39 @@ public class OrderServiceImpl implements OrderService {
             throw new ApiException("非法请求");
         }
         return snapshot;
+    }
+
+    private Order getValidIdempotentOrder(String requestId) {
+        Order existOrder = orderDao.selectByRequestId(requestId);
+        if (existOrder == null) {
+            return null;
+        }
+        if (OrderStatus.FAILED.getCode() == existOrder.getStatus()
+                || OrderStatus.CANCELLED.getCode() == existOrder.getStatus()) {
+            throw new ApiException("订单已失效，请重新结算");
+        }
+        return existOrder;
+    }
+
+    private void saveOrderSnapshot(String requestId, OrderConfirmRespVO snapshot) {
+        if (requestId == null || requestId.isBlank() || snapshot == null) {
+            return;
+        }
+        typedRedisService.setJson(OrderCacheKeys.snapshotKey(requestId), snapshot, OrderCacheKeys.snapshotTtlSeconds());
+    }
+
+    private OrderConfirmRespVO loadOrderSnapshot(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            return null;
+        }
+        return typedRedisService.getJson(OrderCacheKeys.snapshotKey(requestId), OrderConfirmRespVO.class);
+    }
+
+    private void deleteOrderSnapshot(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            return;
+        }
+        typedRedisService.delete(OrderCacheKeys.snapshotKey(requestId));
     }
 
     private Order buildLockingOrder(Long userId, OrderSubmitReqVO reqVO, OrderConfirmRespVO snapshot,
@@ -490,7 +746,10 @@ public class OrderServiceImpl implements OrderService {
                 }
                 orderItemDao.insertBatch(orderItems);
                 return Boolean.TRUE;
-            } catch (RuntimeException ex) {
+            } catch (DuplicateKeyException e) {
+                status.setRollbackOnly();
+                throw e;
+            } catch (Exception ex) {
                 status.setRollbackOnly();
                 log.error("创建占位订单失败，orderNo={}", order.getOrderNo(), ex);
                 return Boolean.FALSE;
@@ -617,22 +876,37 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private List<String> transitionOrdersToReleasing(List<Order> orders) {
-        List<String> processingOrderNos = new ArrayList<>();
-        for (Order order : orders) {
-            if (order == null || order.getOrderNo() == null) {
-                continue;
-            }
-            int rows = orderDao.updateStatusAndStockProcessByOrderNo(
-                    order.getOrderNo(),
-                    OrderStatus.PENDING_PAYMENT.getCode(),
-                    OrderStatus.CANCELLED.getCode(),
-                    OrderStockStatus.RELEASING.getCode()
-            );
-            if (rows > 0) {
-                processingOrderNos.add(order.getOrderNo());
-            }
+        List<String> orderNos = orders.stream()
+                .filter(Objects::nonNull)
+                .map(Order::getOrderNo)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (orderNos.isEmpty()) {
+            return Collections.emptyList();
         }
-        return processingOrderNos;
+
+        int updatedRows = orderDao.batchUpdateStatusAndStockProcessByOrderNos(
+                orderNos,
+                OrderStatus.PENDING_PAYMENT.getCode(),
+                OrderStatus.CANCELLED.getCode(),
+                OrderStockStatus.RELEASING.getCode()
+        );
+        if (updatedRows <= 0) {
+            return Collections.emptyList();
+        }
+        if (updatedRows == orderNos.size()) {
+            return orderNos;
+        }
+
+        return orderDao.selectByOrderNos(orderNos).stream()
+                .filter(Objects::nonNull)
+                .filter(order -> Objects.equals(order.getStatus(), OrderStatus.CANCELLED.getCode()))
+                .filter(order -> Objects.equals(order.getStockProcessStatus(), OrderStockStatus.RELEASING.getCode()))
+                .map(Order::getOrderNo)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
     }
 
     private void markOrdersCancelled(List<Order> orders) {
@@ -797,6 +1071,55 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    private Order getRequiredOrder(String orderNo) {
+        Order order = getOrder(orderNo);
+        if (order == null) {
+            throw new ApiException("订单不存在");
+        }
+        return order;
+    }
+
+    private void saveOperationLog(String orderNo, OperationType operationType, String detail) {
+        OrderOperationLog operationLog = OrderOperationLog.builder()
+                .orderNo(orderNo)
+                .operatorId(LoginContextUtil.getUserId())
+                .operatorName(LoginContextUtil.getOperatorNameOrSystem())
+                .operationType(operationType.getCode())
+                .detail(detail)
+                .build();
+        orderOperationLogDao.insert(operationLog);
+    }
+
+    private OrderShipmentRespVO toShipmentVO(OrderShipment shipment) {
+        return OrderShipmentRespVO.builder()
+                .logisticsCompany(shipment.getLogisticsCompany())
+                .logisticsCode(shipment.getLogisticsCode())
+                .logisticsNo(shipment.getLogisticsNo())
+                .shipperName(shipment.getShipperName())
+                .shipTime(shipment.getShipTime())
+                .receiveTime(shipment.getReceiveTime())
+                .status(shipment.getStatus())
+                .logisticsInfo(shipment.getLogisticsInfo())
+                .build();
+    }
+
+    private Long toLong(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+        return ((Number) value).longValue();
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        if (value instanceof BigDecimal bigDecimal) {
+            return bigDecimal;
+        }
+        return new BigDecimal(value.toString());
+    }
+
     private OrderSubmitRespVO buildSubmitOrderResponse(Order order) {
         return OrderSubmitRespVO.builder()
                 .orderNo(order.getOrderNo())
@@ -805,6 +1128,18 @@ public class OrderServiceImpl implements OrderService {
                 .orderStatus(order.getStatus())
                 .serverTime(LocalDateTime.now())
                 .build();
+    }
+
+    private OrderRespVO buildOrderRespVO(Order order, List<OrderItem> orderItems, Integer totalQuantity) {
+        if (order == null) {
+            return null;
+        }
+        List<OrderItem> safeOrderItems = orderItems == null ? Collections.emptyList() : orderItems;
+        return orderConvert.toOrderRespVO(
+                order,
+                safeOrderItems,
+                totalQuantity != null ? totalQuantity : calculateTotalQuantity(safeOrderItems)
+        );
     }
 
     private LocalDateTime resolvePayExpireTime(Order order) {

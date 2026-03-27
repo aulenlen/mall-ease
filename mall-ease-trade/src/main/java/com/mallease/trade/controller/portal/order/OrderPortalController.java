@@ -2,14 +2,11 @@ package com.mallease.trade.controller.portal.order;
 
 import com.mallease.common.api.Page;
 import com.mallease.common.api.R;
-import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.LoginContextUtil;
 import com.mallease.trade.controller.portal.order.vo.OrderConfirmRespVO;
-import com.mallease.trade.controller.portal.order.vo.OrderSubmitReqVO;
-import com.mallease.trade.convert.order.OrderConvert;
-import com.mallease.trade.service.order.model.OrderAggregate;
-import com.mallease.trade.controller.portal.order.vo.OrderPageRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderRespVO;
+import com.mallease.trade.controller.portal.order.vo.OrderSubmitReqVO;
+import com.mallease.trade.controller.portal.order.vo.OrderPageRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderSubmitRespVO;
 import com.mallease.trade.service.order.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,7 +16,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 订单控制器
@@ -31,7 +27,6 @@ import java.util.List;
 public class OrderPortalController {
 
     private final OrderService orderService;
-    private final OrderConvert orderConvert;
 
     @Operation(summary = "订单确认页", description = "根据当前选中的购物车商品生成确认页快照")
     @GetMapping("/portal/confirm")
@@ -54,15 +49,14 @@ public class OrderPortalController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
         Long userId = LoginContextUtil.getUserId();
-        Page<OrderAggregate> aggregatePage = orderService.pageUserOrders(userId, status, pageNum, pageSize);
-        List<OrderRespVO> voList = orderConvert.aggregatesToVOs(aggregatePage.getList());
+        Page<OrderRespVO> orderPage = orderService.pageUserOrders(userId, status, pageNum, pageSize);
 
         OrderPageRespVO result = OrderPageRespVO.builder()
-                .pageNum(aggregatePage.getPageNum())
-                .pageSize(aggregatePage.getPageSize())
-                .total(aggregatePage.getTotal())
-                .totalPage(aggregatePage.getTotalPage())
-                .list(voList)
+                .pageNum(orderPage.getPageNum())
+                .pageSize(orderPage.getPageSize())
+                .total(orderPage.getTotal())
+                .totalPage(orderPage.getTotalPage())
+                .list(orderPage.getList())
                 .serverTime(LocalDateTime.now())
                 .build();
         return R.success(result);
@@ -72,14 +66,7 @@ public class OrderPortalController {
     @GetMapping("/portal/detail")
     public R<OrderRespVO> portalDetail(@RequestParam String orderNo) {
         Long userId = LoginContextUtil.getUserId();
-        OrderAggregate aggregate = orderService.getOrderAggregate(orderNo);
-        if (aggregate.getOrder() == null) {
-            throw new ApiException("订单不存在");
-        }
-        if (!aggregate.getOrder().getUserId().equals(userId)) {
-            throw new ApiException("无权查看此订单");
-        }
-        return R.success(orderConvert.aggregateToVO(aggregate));
+        return R.success(orderService.getUserOrderDetail(userId, orderNo));
     }
 
     @Operation(summary = "取消订单")

@@ -1,5 +1,7 @@
 package com.mallease.trade.service.payment;
 
+import com.mallease.common.api.Page;
+import com.mallease.trade.controller.admin.payment.vo.PaymentRespVO;
 import com.mallease.trade.controller.portal.payment.vo.PaymentCreateReqVO;
 import com.mallease.trade.controller.admin.payment.vo.PaymentPageReqVO;
 import com.mallease.trade.dal.entity.PaymentOrder;
@@ -9,7 +11,7 @@ import java.util.Map;
 
 public interface PaymentService {
 
-    PaymentOrder create(Long userId, PaymentCreateReqVO cmd);
+    PaymentOrder create(Long userId, PaymentCreateReqVO reqVO);
 
     /**
      * 执行支付
@@ -22,6 +24,16 @@ public interface PaymentService {
 
     PaymentOrder getByPaymentNo(String paymentNo);
 
+    /**
+     * 管理端支付单分页列表。
+     */
+    Page<PaymentRespVO> pageAdminPayments(PaymentPageReqVO reqVO);
+
+    /**
+     * 管理端支付单详情。
+     */
+    PaymentRespVO getAdminPaymentDetail(String paymentNo);
+
     void close(Long userId, String orderNo);
 
     /**
@@ -32,21 +44,4 @@ public interface PaymentService {
      */
     boolean handleAlipayNotify(Map<String, String> params);
 
-    // ==================== 管理端方法 ====================
-
-    /**
-     * 根据订单编号查询支付单（无需用户ID，管理端使用）
-     *
-     * @param orderNo 订单编号
-     * @return 支付单
-     */
-    PaymentOrder findByOrderNo(String orderNo);
-
-    /**
-     * 管理端支付单分页查询（多条件筛选）
-     *
-     * @param query 查询条件
-     * @return 支付单列表（需配合 PageHelper 使用）
-     */
-    List<PaymentOrder> adminList(PaymentPageReqVO query);
 }

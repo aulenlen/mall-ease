@@ -36,9 +36,9 @@ public class PaymentPortalController {
 
     @Operation(summary = "创建支付单")
     @PostMapping("/portal/create")
-    public R<PaymentRespVO> create(@Validated @RequestBody PaymentCreateReqVO cmd) {
+    public R<PaymentRespVO> create(@Validated @RequestBody PaymentCreateReqVO reqVO) {
         Long userId = LoginContextUtil.getUserId();
-        return R.success(paymentConverter.entityToVO(paymentService.create(userId, cmd)));
+        return R.success(paymentConverter.entityToVO(paymentService.create(userId, reqVO)));
     }
 
     @Operation(summary = "执行支付")

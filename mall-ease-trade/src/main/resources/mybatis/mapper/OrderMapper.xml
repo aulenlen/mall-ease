@@ -286,6 +286,18 @@
           AND status = #{oldStatus,jdbcType=TINYINT}
     </update>
 
+    <update id="batchUpdateStatusAndStockProcessByOrderNos">
+        UPDATE trade_order
+        SET status = #{newStatus,jdbcType=TINYINT},
+            stock_process_status = #{stockProcessStatus,jdbcType=TINYINT},
+            update_time = NOW()
+        WHERE status = #{oldStatus,jdbcType=TINYINT}
+          AND order_no IN
+        <foreach collection="orderNos" item="orderNo" open="(" close=")" separator=",">
+            #{orderNo,jdbcType=VARCHAR}
+        </foreach>
+    </update>
+
     <!-- 批量更新订单状态 -->
     <update id="updateBatchStatus">
         UPDATE trade_order

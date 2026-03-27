@@ -1,10 +1,10 @@
 package com.mallease.trade.dal.mapper;
 
-import com.mallease.trade.service.cart.model.CartCheckedSummary;
 import com.mallease.trade.dal.entity.CartItem;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -39,7 +39,7 @@ public interface CartItemDao {
     /**
      * 查询已选中商品的汇总金额
      */
-    CartCheckedSummary selectCheckedSummaryByUserId(@Param("userId") Long userId);
+    BigDecimal selectCheckedAmountByUserId(@Param("userId") Long userId);
 
     /**
      * 根据用户ID和 SKU ID 查询购物车项

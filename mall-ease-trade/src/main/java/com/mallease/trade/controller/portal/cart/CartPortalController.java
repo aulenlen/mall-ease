@@ -48,9 +48,9 @@ public class CartPortalController {
 
     @Operation(summary = "前台添加购物车", description = "前台 App/H5 添加商品到购物车")
     @PostMapping("/portal/add")
-    public R<Long> portalAdd(@Validated @RequestBody CartItemAddReqVO cmd) {
+    public R<Long> portalAdd(@Validated @RequestBody CartItemAddReqVO reqVO) {
         Long userId = LoginContextUtil.getUserId();
-        return R.success(cartItemService.addToCart(userId, cmd.getSkuId(), cmd.getQuantity()));
+        return R.success(cartItemService.addToCart(userId, reqVO.getSkuId(), reqVO.getQuantity()));
     }
 
     @Operation(summary = "前台获取购物车数量", description = "前台 App/H5 获取购物车商品数量")
@@ -62,15 +62,15 @@ public class CartPortalController {
 
     @Operation(summary = "更新购物车数量")
     @PutMapping("/portal/quantity")
-    public R<CartSummaryRespVO> updateQuantity(@Validated(CartItemQuantityUpdateReqVO.Update.class) @RequestBody CartItemQuantityUpdateReqVO cmd) {
-        return R.success(cartItemService.updateQuantity(cmd.getId(), cmd.getQuantity()));
+    public R<CartSummaryRespVO> updateQuantity(@Validated(CartItemQuantityUpdateReqVO.Update.class) @RequestBody CartItemQuantityUpdateReqVO reqVO) {
+        return R.success(cartItemService.updateQuantity(reqVO.getId(), reqVO.getQuantity()));
     }
 
     @Operation(summary = "批量更新选中状态")
     @PutMapping("/portal/checked")
-    public R<CartSummaryRespVO> updateChecked(@Validated @RequestBody CartCheckedUpdateReqVO cmd) {
+    public R<CartSummaryRespVO> updateChecked(@Validated @RequestBody CartCheckedUpdateReqVO reqVO) {
         Long userId = LoginContextUtil.getUserId();
-        return R.success(cartItemService.updateChecked(userId, cmd.getIds(), cmd.getChecked()));
+        return R.success(cartItemService.updateChecked(userId, reqVO.getIds(), reqVO.getChecked()));
     }
 
     @Operation(summary = "全选/取消全选")
@@ -89,8 +89,8 @@ public class CartPortalController {
 
     @Operation(summary = "批量删除购物车项")
     @DeleteMapping("/portal/batch")
-    public R<Integer> deleteBatch(@Validated @RequestBody CartItemBatchDeleteReqVO cmd) {
-        return R.success(cartItemService.deleteBatch(cmd.getIds()));
+    public R<Integer> deleteBatch(@Validated @RequestBody CartItemBatchDeleteReqVO reqVO) {
+        return R.success(cartItemService.deleteBatch(reqVO.getIds()));
     }
 
     @Operation(summary = "清空购物车")
