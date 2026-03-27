@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.user.dao.MemberLevelDao">
-    <resultMap id="BaseResultMap" type="com.mallease.user.model.data.MemberLevel">
+<mapper namespace="com.mallease.user.dal.mapper.MemberLevelDao">
+    <resultMap id="BaseResultMap" type="com.mallease.user.dal.entity.MemberLevel">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="growth_point" property="growthPoint" jdbcType="INTEGER"/>
@@ -50,7 +50,7 @@
         where id = #{id,jdbcType=BIGINT}
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.user.model.data.MemberLevel" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.user.dal.entity.MemberLevel" useGeneratedKeys="true" keyProperty="id">
         insert into user_member_level (name, growth_point, default_status,
                                        free_freight_point, comment_growth_point,
                                        privilege_free_freight, privilege_sign_in, privilege_comment,
@@ -65,7 +65,7 @@
                 #{note,jdbcType=VARCHAR})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.user.model.data.MemberLevel" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.user.dal.entity.MemberLevel" useGeneratedKeys="true" keyProperty="id">
         insert into user_member_level
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="name != null">
@@ -145,7 +145,7 @@
         </trim>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.user.model.data.MemberLevel">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.user.dal.entity.MemberLevel">
         update user_member_level
         <set>
             <if test="name != null">
@@ -188,7 +188,7 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.user.model.data.MemberLevel">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.user.dal.entity.MemberLevel">
         update user_member_level
         set name = #{name,jdbcType=VARCHAR},
             growth_point = #{growthPoint,jdbcType=INTEGER},

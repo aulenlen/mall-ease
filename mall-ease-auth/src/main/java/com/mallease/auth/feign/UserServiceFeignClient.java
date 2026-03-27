@@ -1,9 +1,9 @@
 package com.mallease.auth.feign;
 
-import com.mallease.auth.model.AdminDTO;
-import com.mallease.auth.model.ResourceDTO;
 import com.mallease.common.api.R;
+import com.mallease.common.dto.remote.AdminDTO;
 import com.mallease.common.dto.remote.MemberDTO;
+import com.mallease.common.dto.remote.ResourceDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,8 +21,6 @@ import java.util.List;
 @FeignClient(name = "mall-ease-user")
 public interface UserServiceFeignClient {
 
-    // ============ 管理员相关方法 ============
-
     @GetMapping("/user/admin/username/{username}")
     R<AdminDTO> getAdminByUsername(@PathVariable("username") String username);
 
@@ -31,8 +29,6 @@ public interface UserServiceFeignClient {
 
     @GetMapping("/user/admin/resource/{adminId}")
     R<List<ResourceDTO>> getResourceList(@PathVariable Long adminId);
-
-    // ============ 会员相关方法 ============
 
     @GetMapping("/user/member/username/{username}")
     R<MemberDTO> getMemberByUsername(@PathVariable("username") String username);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.user.dao.RoleResourceRelationDao">
-    <resultMap id="BaseResultMap" type="com.mallease.user.model.data.RoleResourceRelation">
+<mapper namespace="com.mallease.user.dal.mapper.RoleResourceRelationDao">
+    <resultMap id="BaseResultMap" type="com.mallease.user.dal.entity.RoleResourceRelation">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="role_id" property="roleId" jdbcType="BIGINT"/>
         <result column="resource_id" property="resourceId" jdbcType="BIGINT"/>
@@ -47,12 +47,12 @@
         where resource_id = #{resourceId,jdbcType=BIGINT}
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.user.model.data.RoleResourceRelation" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.user.dal.entity.RoleResourceRelation" useGeneratedKeys="true" keyProperty="id">
         insert into user_role_resource_relation (id, role_id, resource_id)
         values (#{id,jdbcType=BIGINT}, #{roleId,jdbcType=BIGINT}, #{resourceId,jdbcType=BIGINT})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.user.model.data.RoleResourceRelation" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.user.dal.entity.RoleResourceRelation" useGeneratedKeys="true" keyProperty="id">
         insert into user_role_resource_relation
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
@@ -86,7 +86,7 @@
         </foreach>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.user.model.data.RoleResourceRelation">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.user.dal.entity.RoleResourceRelation">
         update user_role_resource_relation
         <set>
             <if test="roleId != null">
@@ -99,7 +99,7 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.user.model.data.RoleResourceRelation">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.user.dal.entity.RoleResourceRelation">
         update user_role_resource_relation
         set role_id = #{roleId,jdbcType=BIGINT},
             resource_id = #{resourceId,jdbcType=BIGINT}

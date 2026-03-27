@@ -34,7 +34,7 @@ public interface AuthConstant {
     /**
      * Redis缓存权限规则（路径->资源）
      */
-    String PATH_RESOURCE_MAP = "auth:pathResourceMap";
+    String PATH_RESOURCES = "auth:pathResources";
 
     /**
      * 认证信息Http请求头

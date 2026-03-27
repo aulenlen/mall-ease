@@ -1,6 +1,6 @@
 package com.mallease.user.component;
 
-import com.mallease.user.service.ResourceService;
+import com.mallease.user.service.resource.ResourceService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

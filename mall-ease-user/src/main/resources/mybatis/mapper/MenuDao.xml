@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.user.dao.MenuDao">
-    <resultMap id="BaseResultMap" type="com.mallease.user.model.data.Menu">
+<mapper namespace="com.mallease.user.dal.mapper.MenuDao">
+    <resultMap id="BaseResultMap" type="com.mallease.user.dal.entity.Menu">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="parent_id" property="parentId" jdbcType="BIGINT"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
@@ -53,7 +53,7 @@
         </foreach>
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.user.model.data.Menu" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.user.dal.entity.Menu" useGeneratedKeys="true" keyProperty="id">
         insert into user_menu (id, parent_id, create_time,
                                title, level, sort,
                                name, icon, hidden)
@@ -62,7 +62,7 @@
                 #{name,jdbcType=VARCHAR}, #{icon,jdbcType=VARCHAR}, #{hidden,jdbcType=INTEGER})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.user.model.data.Menu" useGeneratedKeys="true"
+    <insert id="insertSelective" parameterType="com.mallease.user.dal.entity.Menu" useGeneratedKeys="true"
             keyProperty="id">
         insert into user_menu
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -125,7 +125,7 @@
         </trim>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.user.model.data.Menu">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.user.dal.entity.Menu">
         update user_menu
         <set>
             <if test="parentId != null">
@@ -156,7 +156,7 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.user.model.data.Menu">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.user.dal.entity.Menu">
         update user_menu
         set parent_id   = #{parentId,jdbcType=BIGINT},
             create_time = #{createTime,jdbcType=TIMESTAMP},
