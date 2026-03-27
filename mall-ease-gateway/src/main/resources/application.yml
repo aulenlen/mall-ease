@@ -20,16 +20,10 @@ spring:
             - Path=/mall-ease-content/**
           filters:
             - StripPrefix=1
-        - id: mall-ease-auth
-          uri: lb://mall-ease-auth
-          predicates:
-            - Path=/mall-ease-auth/**
-          filters:
-            - StripPrefix=1
         - id: mall-ease-user
           uri: lb://mall-ease-user
           predicates:
-            - Path=/mall-ease-user/**
+            - Path=/mall-ease-user/**,/mall-ease-auth/**
           filters:
             - StripPrefix=1
         - id: mall-ease-marketing

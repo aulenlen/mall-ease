@@ -63,11 +63,13 @@ public class SaTokenConfig {
 
     /**
      * 前台公开接口 - 无需登录
-     */
-    private static final List<String> PORTAL_PUBLIC_PATHS = List.of(
+     */    private static final List<String> PORTAL_PUBLIC_PATHS = List.of(
             "/mall-ease-auth/auth/portal/login",
+            "/mall-ease-user/auth/portal/login",
             "/mall-ease-auth/auth/portal/register",
+            "/mall-ease-user/auth/portal/register",
             "/mall-ease-auth/auth/admin/login",
+            "/mall-ease-user/auth/admin/login",
             "/mall-ease-product/product/spu/portal/*",
             "/mall-ease-detail/spu/*",
             "/mall-ease-search/search/suggest",
@@ -77,9 +79,9 @@ public class SaTokenConfig {
 
     /**
      * 前台需登录接口 - 需要 member 登录
-     */
-    private static final List<String> PORTAL_AUTH_PATHS = List.of(
+     */    private static final List<String> PORTAL_AUTH_PATHS = List.of(
             "/mall-ease-auth/auth/portal/logout",
+            "/mall-ease-user/auth/portal/logout",
             "/mall-ease-user/user/member/portal/**",
             "/mall-ease-user/user/address/portal/**",
             "/mall-ease-trade/trade/cart/portal/**",
@@ -160,7 +162,7 @@ public class SaTokenConfig {
      * 检查管理员权限
      */
     private void checkAdminPermission() {
-        Map<Object, Object> map = redisService.hGetAll(AuthConstant.PATH_RESOURCE_MAP);
+        Map<Object, Object> map = redisService.hGetAll(AuthConstant.PATH_RESOURCES);
         if (map == null || map.isEmpty()) {
             return;
         }

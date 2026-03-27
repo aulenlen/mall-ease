@@ -1,4 +1,4 @@
-package com.mallease.auth.config;
+package com.mallease.user.config;
 
 import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.SaLoginModel;
@@ -7,20 +7,20 @@ import cn.dev33.satoken.stp.StpLogic;
 import com.mallease.common.constant.AuthConstant;
 
 /**
- * 会员认证工具类（Sa-Token 多账号体系）
+ * 管理员认证工具类（Sa-Token 多账号体系）
  *
  * @author: Aulen
  * @create: 2026-01-24
  */
-public class StpMemberUtil {
+public class StpAdminUtil {
 
-    private StpMemberUtil() {
+    private StpAdminUtil() {
     }
 
     /**
-     * 会员账号体系的 StpLogic
+     * 管理员账号体系的 StpLogic
      */
-    public static StpLogic stpLogic = new StpLogic(AuthConstant.LOGIN_TYPE_MEMBER);
+    public static StpLogic stpLogic = new StpLogic(AuthConstant.LOGIN_TYPE_ADMIN);
 
     public static StpLogic getStpLogic() {
         return stpLogic;
@@ -68,5 +68,17 @@ public class StpMemberUtil {
 
     public static SaSession getSession(boolean isCreate) {
         return stpLogic.getSession(isCreate);
+    }
+
+    public static void checkPermission(String permission) {
+        stpLogic.checkPermission(permission);
+    }
+
+    public static void checkPermissionOr(String... permissions) {
+        stpLogic.checkPermissionOr(permissions);
+    }
+
+    public static boolean hasPermission(String permission) {
+        return stpLogic.hasPermission(permission);
     }
 }

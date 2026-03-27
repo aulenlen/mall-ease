@@ -18,7 +18,6 @@
     </parent>
 
     <modules>
-        <module>mall-ease-auth</module>
         <module>mall-ease-bff</module>
         <module>mall-ease-common</module>
         <module>mall-ease-gateway</module>

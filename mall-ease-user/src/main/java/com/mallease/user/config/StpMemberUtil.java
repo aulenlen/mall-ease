@@ -1,6 +1,7 @@
 package com.mallease.user.config;
 
 import cn.dev33.satoken.session.SaSession;
+import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpLogic;
 import com.mallease.common.constant.AuthConstant;
@@ -23,6 +24,18 @@ public class StpMemberUtil {
 
     public static StpLogic getStpLogic() {
         return stpLogic;
+    }
+
+    public static void login(Object id) {
+        stpLogic.login(id);
+    }
+
+    public static void login(Object id, SaLoginModel loginModel) {
+        stpLogic.login(id, loginModel);
+    }
+
+    public static void logout() {
+        stpLogic.logout();
     }
 
     public static void checkLogin() {

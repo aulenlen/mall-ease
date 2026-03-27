@@ -1,4 +1,4 @@
-package com.mallease.auth.model.cmd;
+package com.mallease.user.controller.portal.auth.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -7,14 +7,14 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * 会员注册命令
+ * 会员注册请求
  *
  * @author: Aulen
  * @create: 2026-01-28
  */
 @Data
 @Schema(description = "会员注册请求")
-public class MemberRegisterCmd {
+public class MemberRegisterReqVO {
 
     @Schema(description = "用户名", example = "member001")
     @NotBlank(message = "用户名不能为空")
