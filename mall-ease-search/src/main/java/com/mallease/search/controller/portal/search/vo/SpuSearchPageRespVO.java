@@ -1,4 +1,4 @@
-package com.mallease.search.model.client.vo;
+package com.mallease.search.controller.portal.search.vo;
 
 import com.mallease.common.api.Page;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,11 +18,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "商品搜索页面响应")
-public class SpuSearchPageVO {
+public class SpuSearchPageRespVO {
 
     @Schema(description = "商品列表（分页）")
-    private Page<SpuItemVO> products;
+    private Page<SpuItemRespVO> products;
 
     @Schema(description = "筛选面板（聚合结果）")
-    private SearchFilterVO filters;
+    private SearchFilterRespVO filters;
 }

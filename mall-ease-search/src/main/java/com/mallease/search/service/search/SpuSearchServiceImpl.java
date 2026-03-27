@@ -1,28 +1,24 @@
-package com.mallease.search.service.impl;
+package com.mallease.search.service.search;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
-import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import co.elastic.clients.json.JsonData;
 import com.mallease.common.api.Page;
 import com.mallease.common.dto.remote.SearchFilterDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
 import com.mallease.common.exception.ApiException;
-import com.mallease.search.converter.SpuDocConverter;
+import com.mallease.search.convert.EsSpuConvert;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
-import com.mallease.search.model.data.doc.SpuDocument;
-import com.mallease.search.model.enums.SpuSortType;
-import com.mallease.search.model.enums.SpuStatus;
-import com.mallease.search.repository.SpuDocumentRepository;
-import com.mallease.search.service.SpuSearchService;
+import com.mallease.search.dal.entity.EsSpu;
+import com.mallease.search.service.search.enums.SpuSortType;
+import com.mallease.search.service.search.enums.SpuStatus;
+import com.mallease.search.dal.repository.EsSpuRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.client.Request;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregation;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregations;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
@@ -36,7 +32,6 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * SPU 搜索服务实现
@@ -50,26 +45,26 @@ import java.util.stream.Stream;
 public class SpuSearchServiceImpl implements SpuSearchService {
 
     private final ElasticsearchOperations elasticsearchOperations;
-    private final SpuDocumentRepository spuDocumentRepository;
-    private final SpuDocConverter spuDocConverter;
+    private final EsSpuRepository esSpuRepository;
+    private final EsSpuConvert esSpuConvert;
 
     @Override
-    public List<SpuDocument> search(SpuSearchQuery query) {
+    public List<EsSpu> search(SpuSearchQuery reqVO) {
         log.info("【搜索开始】关键词={}, 品牌IDs={}, 分类ID={}, 分类路径={}, " +
                         "价格区间=[{}-{}], 是否有货={}, 新品={}, 推荐={}, " +
                         "规格={}, 排序类型={}, 需要聚合={}, 页码={}, 每页={}",
-                query.getKeyword(), query.getBrandIds(), query.getCategoryId(), query.getCategoryPath(),
-                query.getMinPrice(), query.getMaxPrice(), query.getInStock(), query.getNewStatus(), query.getRecommendStatus(),
-                query.getAttrValues(), query.getSortType(), query.getNeedAggregation(), query.getPageNum(), query.getPageSize());
+                reqVO.getKeyword(), reqVO.getBrandIds(), reqVO.getCategoryId(), reqVO.getCategoryPath(),
+                reqVO.getMinPrice(), reqVO.getMaxPrice(), reqVO.getInStock(), reqVO.getNewStatus(), reqVO.getRecommendStatus(),
+                reqVO.getAttrValues(), reqVO.getSortType(), reqVO.getNeedAggregation(), reqVO.getPageNum(), reqVO.getPageSize());
 
-        boolean hasKeyword = StringUtils.hasText(query.getKeyword());
+        boolean hasKeyword = StringUtils.hasText(reqVO.getKeyword());
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
 
         // 1. 关键字搜索
         if (hasKeyword) {
             MultiMatchQuery multiMatch = MultiMatchQuery.of(m -> m
-                    .query(query.getKeyword())
-                    // 兼容拼音搜索：SpuDocument 已为 name/subTitle/keywords 建立 *.pinyin multi-field
+                    .query(reqVO.getKeyword())
+                    // 兼容拼音搜索：EsSpu 已为 name/subTitle/keywords 建立 *.pinyin multi-field
                     // 这里用较低权重，避免拼音命中过度“抢占”中文分词的相关性
                     .fields("name^3", "subTitle^2", "keywords",
                             "name.pinyin^2", "subTitle.pinyin", "keywords.pinyin")
@@ -80,18 +75,18 @@ public class SpuSearchServiceImpl implements SpuSearchService {
         }
 
         // 2. 品牌筛选
-        if (!CollectionUtils.isEmpty(query.getBrandIds())) {
+        if (!CollectionUtils.isEmpty(reqVO.getBrandIds())) {
             Query brandQuery = Query.of(q -> q.terms(t -> t.field("brandId")
-                    .terms(tf -> tf.value(query.getBrandIds().stream().map(FieldValue::of)
+                    .terms(tf -> tf.value(reqVO.getBrandIds().stream().map(FieldValue::of)
                             .collect(Collectors.toList())))));
             boolBuilder.filter(brandQuery);
         }
 
         // 3. 分类筛选
-        if (query.getCategoryId() != null) {
+        if (reqVO.getCategoryId() != null) {
             Query categoryQuery = Query.of(q -> q.term(
                     t -> t.field("categoryId")
-                            .value(query.getCategoryId())));
+                            .value(reqVO.getCategoryId())));
             boolBuilder.filter(categoryQuery);
         }
 
@@ -99,25 +94,25 @@ public class SpuSearchServiceImpl implements SpuSearchService {
         boolBuilder.filter(Query.of(q -> q.term(t -> t.field("publishStatus").value(1))));
 
         // 5. 推荐状态筛选：只有值为 1 时才筛选推荐商品
-        if (Integer.valueOf(1).equals(query.getRecommendStatus())) {
+        if (Integer.valueOf(1).equals(reqVO.getRecommendStatus())) {
             boolBuilder.filter(Query.of(q -> q.term(
                     t -> t.field("recommendStatus").value(1))));
         }
 
         // 6. 新品状态筛选：只有值为 1 时才筛选新品
-        if (Integer.valueOf(1).equals(query.getNewStatus())) {
+        if (Integer.valueOf(1).equals(reqVO.getNewStatus())) {
             boolBuilder.filter(Query.of(q -> q.term(
                     t -> t.field("newStatus").value(1))));
         }
 
         // 7. 库存筛选
-        if (Boolean.TRUE.equals(query.getInStock())) {
+        if (Boolean.TRUE.equals(reqVO.getInStock())) {
             boolBuilder.filter(Query.of(q -> q.term(t -> t.field("inStock").value(true))));
         }
 
         // 8. 价格区间筛选：只有当价格大于 0 时才应用过滤
-        BigDecimal minPrice = query.getMinPrice();
-        BigDecimal maxPrice = query.getMaxPrice();
+        BigDecimal minPrice = reqVO.getMinPrice();
+        BigDecimal maxPrice = reqVO.getMaxPrice();
         boolean hasMinPrice = minPrice != null && minPrice.compareTo(BigDecimal.ZERO) > 0;
         boolean hasMaxPrice = maxPrice != null && maxPrice.compareTo(BigDecimal.ZERO) > 0;
 
@@ -135,19 +130,19 @@ public class SpuSearchServiceImpl implements SpuSearchService {
         Query finalQuery = Query.of(q -> q.bool(boolBuilder.build()));
 
         // 9. 构建排序
-        SpuSortType sortType = SpuSortType.fromCode(query.getSortType());
+        SpuSortType sortType = SpuSortType.fromCode(reqVO.getSortType());
         Sort sort = sortType.buildSort(hasKeyword);
 
         NativeQuery nativeQuery = NativeQuery.builder()
                 .withQuery(finalQuery)
-                .withPageable(PageRequest.of(query.getPageNum() - 1, query.getPageSize()))
+                .withPageable(PageRequest.of(reqVO.getPageNum() - 1, reqVO.getPageSize()))
                 .withSort(sort)  // 使用动态排序
                 .build();
 
         // 执行搜索
-        SearchHits<SpuDocument> searchHits = elasticsearchOperations.search(nativeQuery, SpuDocument.class);
+        SearchHits<EsSpu> searchHits = elasticsearchOperations.search(nativeQuery, EsSpu.class);
 
-        List<SpuDocument> list = searchHits.getSearchHits().stream()
+        List<EsSpu> list = searchHits.getSearchHits().stream()
                 .map(SearchHit::getContent)
                 .collect(Collectors.toList());
 
@@ -165,24 +160,24 @@ public class SpuSearchServiceImpl implements SpuSearchService {
     }
 
     @Override
-    public void indexBatch(List<SpuDocument> spuDocumentList) {
-        if (CollectionUtils.isEmpty(spuDocumentList)) {
+    public void indexBatch(List<EsSpu> entityList) {
+        if (CollectionUtils.isEmpty(entityList)) {
             return;
         }
 
-        spuDocumentRepository.saveAll(spuDocumentList);
+        esSpuRepository.saveAll(entityList);
 
-        log.info("ES 保存索引， SPU数量：{}", spuDocumentList.size());
+        log.info("ES 保存索引， SPU数量：{}", entityList.size());
     }
 
     @Override
     public void deleteBatch(List<Long> spuIds) {
-        spuDocumentRepository.deleteAllBySpuIdIn(spuIds);
+        esSpuRepository.deleteAllBySpuIdIn(spuIds);
     }
 
     @Override
-    public void index(SpuDocument spuDocument) {
-        spuDocumentRepository.save(spuDocument);
+    public void index(EsSpu entity) {
+        esSpuRepository.save(entity);
     }
 
     @Override
@@ -218,8 +213,8 @@ public class SpuSearchServiceImpl implements SpuSearchService {
             NativeQuery existsQuery = NativeQuery.builder()
                     .withIds(spuIds.stream().map(String::valueOf).toList())
                     .build();
-            List<MultiGetItem<SpuDocument>> multiGetResult = elasticsearchOperations.multiGet(
-                    existsQuery, SpuDocument.class);
+            List<MultiGetItem<EsSpu>> multiGetResult = elasticsearchOperations.multiGet(
+                    existsQuery, EsSpu.class);
 
             // 2. 过滤出ES存在的 ID
             List<Long> existingIds = multiGetResult.stream()
@@ -228,24 +223,24 @@ public class SpuSearchServiceImpl implements SpuSearchService {
                     .toList();
 
             if (existingIds.isEmpty()) {
-                log.info("ES批量{}：无文档存在，返回全部ID", action);
+                log.info("ES批量{}：无索引记录存在，返回全部ID", action);
                 return spuIds;
             }
 
             // 3. 只对存在的执行更新
             List<UpdateQuery> queries = new ArrayList<>();
             for (Long spuId : existingIds) {
-                Document document = Document.create();
-                document.put("publishStatus", publishStatus);
+                Document partialUpdate = Document.create();
+                partialUpdate.put("publishStatus", publishStatus);
 
                 UpdateQuery updateQuery = UpdateQuery.builder(String.valueOf(spuId))
-                        .withDocument(document)
+                        .withDocument(partialUpdate)
                         .build();
                 queries.add(updateQuery);
             }
-            elasticsearchOperations.bulkUpdate(queries, SpuDocument.class);
+            elasticsearchOperations.bulkUpdate(queries, EsSpu.class);
             elasticsearchOperations.bulkUpdate(queries,
-                    elasticsearchOperations.getIndexCoordinatesFor(SpuDocument.class));
+                    elasticsearchOperations.getIndexCoordinatesFor(EsSpu.class));
 
             List<Long> nonExistentIds = spuIds.stream().filter(spuId -> !existingIds.contains(spuId)).toList();
 
@@ -259,58 +254,58 @@ public class SpuSearchServiceImpl implements SpuSearchService {
     }
 
     @Override
-    public SpuSearchResultDTO searchWithAggregation(SpuSearchQuery query) {
+    public SpuSearchResultDTO searchWithAggregation(SpuSearchQuery reqVO) {
         log.info("【聚合搜索开始】关键词={}, 品牌IDs={}, 分类ID={}, 价格区间=[{}-{}], 规格={}",
-                query.getKeyword(), query.getBrandIds(), query.getCategoryId(),
-                query.getMinPrice(), query.getMaxPrice(), query.getAttrValues());
+                reqVO.getKeyword(), reqVO.getBrandIds(), reqVO.getCategoryId(),
+                reqVO.getMinPrice(), reqVO.getMaxPrice(), reqVO.getAttrValues());
 
-        boolean hasKeyword = StringUtils.hasText(query.getKeyword());
+        boolean hasKeyword = StringUtils.hasText(reqVO.getKeyword());
 
         List<Query> commonFilters = new ArrayList<>();
 
         commonFilters.add(Query.of(q -> q.term(t -> t.field("publishStatus").value(1))));
 
-        if (Integer.valueOf(1).equals(query.getRecommendStatus())) {
+        if (Integer.valueOf(1).equals(reqVO.getRecommendStatus())) {
             commonFilters.add(Query.of(q -> q.term(t -> t.field("recommendStatus").value(1))));
         }
 
-        if (Integer.valueOf(1).equals(query.getNewStatus())) {
+        if (Integer.valueOf(1).equals(reqVO.getNewStatus())) {
             commonFilters.add(Query.of(q -> q.term(t -> t.field("newStatus").value(1))));
         }
 
-        if (Boolean.TRUE.equals(query.getInStock())) {
+        if (Boolean.TRUE.equals(reqVO.getInStock())) {
             commonFilters.add(Query.of(q -> q.term(t -> t.field("inStock").value(true))));
         }
 
         Query priceFilter = null;
-        if (query.getMinPrice() != null || query.getMaxPrice() != null) {
+        if (reqVO.getMinPrice() != null || reqVO.getMaxPrice() != null) {
             List<Query> priceRanges = new ArrayList<>();
-            if (query.getMinPrice() != null) {
-                priceRanges.add(Query.of(q -> q.range(r -> r.field("maxPrice").gte(JsonData.of(query.getMinPrice())))));
+            if (reqVO.getMinPrice() != null) {
+                priceRanges.add(Query.of(q -> q.range(r -> r.field("maxPrice").gte(JsonData.of(reqVO.getMinPrice())))));
             }
-            if (query.getMaxPrice() != null) {
-                priceRanges.add(Query.of(q -> q.range(r -> r.field("minPrice").lte(JsonData.of(query.getMaxPrice())))));
+            if (reqVO.getMaxPrice() != null) {
+                priceRanges.add(Query.of(q -> q.range(r -> r.field("minPrice").lte(JsonData.of(reqVO.getMaxPrice())))));
             }
             priceFilter = Query.of(q -> q.bool(b -> b.filter(priceRanges)));
             commonFilters.add(priceFilter);
         }
 
         Query brandFilter = null;
-        if (!CollectionUtils.isEmpty(query.getBrandIds())) {
+        if (!CollectionUtils.isEmpty(reqVO.getBrandIds())) {
             brandFilter = Query.of(q -> q.terms(t -> t.field("brandId")
-                    .terms(v -> v.value(query.getBrandIds().stream()
+                    .terms(v -> v.value(reqVO.getBrandIds().stream()
                             .map(FieldValue::of).collect(Collectors.toList())))));
         }
 
         Query categoryFilter = null;
-        if (query.getCategoryId() != null && query.getCategoryId() > 0) {
+        if (reqVO.getCategoryId() != null && reqVO.getCategoryId() > 0) {
             categoryFilter = Query.of(q -> q.term(
-                    t -> t.field("categoryId").value(query.getCategoryId())));
+                    t -> t.field("categoryId").value(reqVO.getCategoryId())));
         }
 
         Map<Long, Query> attrFilterMap = new HashMap<>();
-        if (!CollectionUtils.isEmpty(query.getAttrValues())) {
-            for (Map.Entry<Long, List<String>> entry : query.getAttrValues().entrySet()) {
+        if (!CollectionUtils.isEmpty(reqVO.getAttrValues())) {
+            for (Map.Entry<Long, List<String>> entry : reqVO.getAttrValues().entrySet()) {
                 if (entry.getKey() != null && !CollectionUtils.isEmpty(entry.getValue())) {
                     attrFilterMap.put(entry.getKey(), buildNestedAttrQuery(entry.getKey(), entry.getValue()));
                 }
@@ -322,7 +317,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
             baseQuery = Query.of(q -> q.multiMatch(m -> m
                     .fields("name^3", "subTitle^2", "keywords",
                             "name.pinyin^2", "subTitle.pinyin", "keywords.pinyin")
-                    .query(query.getKeyword())
+                    .query(reqVO.getKeyword())
                     .type(TextQueryType.BestFields)
                     .operator(Operator.And)));
         } else {
@@ -337,12 +332,12 @@ public class SpuSearchServiceImpl implements SpuSearchService {
         NativeQueryBuilder queryBuilder = NativeQuery.builder()
                 .withQuery(baseQuery)
                 .withFilter(Query.of(q -> q.bool(b -> b.filter(hitFilters))))
-                .withPageable(PageRequest.of(query.getPageNum() - 1, query.getPageSize()))
-                .withSort(SpuSortType.fromCode(query.getSortType())
-                        .buildSort(StringUtils.hasText(query.getKeyword())));
+                .withPageable(PageRequest.of(reqVO.getPageNum() - 1, reqVO.getPageSize()))
+                .withSort(SpuSortType.fromCode(reqVO.getSortType())
+                        .buildSort(StringUtils.hasText(reqVO.getKeyword())));
 
         // 聚合
-        if (Boolean.TRUE.equals(query.getNeedAggregation())) {
+        if (Boolean.TRUE.equals(reqVO.getNeedAggregation())) {
 
             List<Query> brandAggFilters = new ArrayList<>(commonFilters);
             if (categoryFilter != null) brandAggFilters.add(categoryFilter);
@@ -426,20 +421,20 @@ public class SpuSearchServiceImpl implements SpuSearchService {
         }
 
         NativeQuery nativeQuery = queryBuilder.build();
-        SearchHits<SpuDocument> searchHits = elasticsearchOperations.search(nativeQuery, SpuDocument.class);
-        List<SpuDocument> docs = searchHits.getSearchHits().stream()
+        SearchHits<EsSpu> searchHits = elasticsearchOperations.search(nativeQuery, EsSpu.class);
+        List<EsSpu> entities = searchHits.getSearchHits().stream()
                 .map(SearchHit::getContent)
                 .toList();
 
         SearchFilterDTO filters = new SearchFilterDTO();
-        if (Boolean.TRUE.equals(query.getNeedAggregation()) && searchHits.hasAggregations()) {
-            filters = parseAggregations(searchHits, query);
+        if (Boolean.TRUE.equals(reqVO.getNeedAggregation()) && searchHits.hasAggregations()) {
+            filters = parseAggregations(searchHits, reqVO);
         }
 
-        log.info("【聚合搜索完成】命中总数={}, 返回数量={}", searchHits.getTotalHits(), docs.size());
+        log.info("【聚合搜索完成】命中总数={}, 返回数量={}", searchHits.getTotalHits(), entities.size());
 
-        List<SpuRecommendDTO> products = spuDocConverter.docListToDTOList(docs);
-        Page<SpuRecommendDTO> productPage = buildPage(query, searchHits.getTotalHits(), products);
+        List<SpuRecommendDTO> products = esSpuConvert.entityListToDTOList(entities);
+        Page<SpuRecommendDTO> productPage = buildPage(reqVO, searchHits.getTotalHits(), products);
 
         return SpuSearchResultDTO.builder()
                 .products(productPage)
@@ -460,7 +455,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
     /**
      * 解析聚合结果
      */
-    private SearchFilterDTO parseAggregations(SearchHits<SpuDocument> searchHits, SpuSearchQuery query) {
+    private SearchFilterDTO parseAggregations(SearchHits<EsSpu> searchHits, SpuSearchQuery reqVO) {
         ElasticsearchAggregations aggregations = (ElasticsearchAggregations) searchHits.getAggregations();
         if (aggregations == null) {
             return new SearchFilterDTO();
@@ -476,7 +471,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
 
         List<SearchFilterDTO.FilterItem> categories = parseCategoryAggregation(aggMap.get("category_agg_filtered"));
 
-        List<SearchFilterDTO.AttrFilterItem> attrs = parseAttrAggregation(aggMap, query);
+        List<SearchFilterDTO.AttrFilterItem> attrs = parseAttrAggregation(aggMap, reqVO);
 
         SearchFilterDTO.PriceRange priceRange = parsePriceRangeAggregation(aggMap.get("price_range_filtered"));
 
@@ -555,7 +550,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
     /**
      * 解析属性聚合
      */
-    private List<SearchFilterDTO.AttrFilterItem> parseAttrAggregation(Map<String, Aggregate> aggMap, SpuSearchQuery query) {
+    private List<SearchFilterDTO.AttrFilterItem> parseAttrAggregation(Map<String, Aggregate> aggMap, SpuSearchQuery reqVO) {
 
         Aggregate mainPanelAgg = aggMap.get("main_attr_panel");
         if (mainPanelAgg == null || !mainPanelAgg.isFilter()) {
@@ -584,7 +579,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
                     }
 
                     List<SearchFilterDTO.AttrValue> values;
-                    boolean isSelected = query.getAttrValues() != null && query.getAttrValues().containsKey(attrId);
+                    boolean isSelected = reqVO.getAttrValues() != null && reqVO.getAttrValues().containsKey(attrId);
 
                     if (isSelected) {
 
@@ -682,9 +677,9 @@ public class SpuSearchServiceImpl implements SpuSearchService {
         return BigDecimal.valueOf(value);
     }
 
-    private static <T> Page<T> buildPage(SpuSearchQuery query, long total, List<T> list) {
-        int pageNum = query.getPageNum() == null || query.getPageNum() < 1 ? 1 : query.getPageNum();
-        int pageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 10 : query.getPageSize();
+    private static <T> Page<T> buildPage(SpuSearchQuery reqVO, long total, List<T> list) {
+        int pageNum = reqVO.getPageNum() == null || reqVO.getPageNum() < 1 ? 1 : reqVO.getPageNum();
+        int pageSize = reqVO.getPageSize() == null || reqVO.getPageSize() < 1 ? 10 : reqVO.getPageSize();
 
         Page<T> page = new Page<>();
         page.setPageNum(pageNum);

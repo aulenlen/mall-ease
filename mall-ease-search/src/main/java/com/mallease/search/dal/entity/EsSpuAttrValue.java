@@ -1,4 +1,4 @@
-package com.mallease.search.model.data.doc;
+package com.mallease.search.dal.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +20,7 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SpuAttrValueDocument implements Serializable {
+public class EsSpuAttrValue implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

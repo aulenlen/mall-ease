@@ -1,4 +1,4 @@
-package com.mallease.search.model.data.doc;
+package com.mallease.search.dal.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +25,7 @@ import java.util.List;
 @AllArgsConstructor
 @Document(indexName = "mall_spu_v1", createIndex = false)
 @Setting(shards = 1, replicas = 0)
-public class SpuDocument implements Serializable {
+public class EsSpu implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -165,14 +165,14 @@ public class SpuDocument implements Serializable {
      * SKU 列表 - 价格区间展示
      */
     @Field(type = FieldType.Nested)
-    private List<SpuSkuDocument> skuList;
+    private List<EsSpuSku> skuList;
 
     /**
      * 属性值列表 - 聚合筛选用
      * 统一规格和参数，通过 type 字段区分
      */
     @Field(type = FieldType.Nested)
-    private List<SpuAttrValueDocument> attrValueList;
+    private List<EsSpuAttrValue> attrValueList;
 
     @Field(type = FieldType.Date, format = DateFormat.date_time)
     private Date createTime;

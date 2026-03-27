@@ -1,4 +1,4 @@
-package com.mallease.search.model.enums;
+package com.mallease.search.service.search.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

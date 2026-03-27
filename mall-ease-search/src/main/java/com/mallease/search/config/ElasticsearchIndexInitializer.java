@@ -1,6 +1,6 @@
 package com.mallease.search.config;
 
-import com.mallease.search.model.data.doc.SpuDocument;
+import com.mallease.search.dal.entity.EsSpu;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -26,11 +26,11 @@ public class ElasticsearchIndexInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        initIndex(SpuDocument.class);
+        initIndex(EsSpu.class);
     }
 
-    private <T> void initIndex(Class<T> documentClass) {
-        IndexOperations indexOps = elasticsearchTemplate.indexOps(documentClass);
+    private <T> void initIndex(Class<T> entityClass) {
+        IndexOperations indexOps = elasticsearchTemplate.indexOps(entityClass);
         String indexName = indexOps.getIndexCoordinates().getIndexName();
 
         if (!indexOps.exists()) {

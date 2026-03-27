@@ -1,8 +1,8 @@
-package com.mallease.search.service;
+package com.mallease.search.service.search;
 
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
-import com.mallease.search.model.data.doc.SpuDocument;
+import com.mallease.search.dal.entity.EsSpu;
 
 import java.util.List;
 
@@ -17,10 +17,10 @@ public interface SpuSearchService {
     /**
      * 综合搜索
      *
-     * @param query 搜索查询条件
-     * @return Document 列表
+     * @param reqVO 搜索查询条件
+     * @return ES 实体列表
      */
-    List<SpuDocument> search(SpuSearchQuery query);
+    List<EsSpu> search(SpuSearchQuery reqVO);
 
     /**
      * 搜索建议
@@ -34,9 +34,9 @@ public interface SpuSearchService {
     /**
      * 批量索引商品
      *
-     * @param spuDocumentList SPU 索引列表
+     * @param entityList SPU 索引列表
      */
-    void indexBatch(List<SpuDocument> spuDocumentList);
+    void indexBatch(List<EsSpu> entityList);
 
     /**
      * 批量删除索引
@@ -48,9 +48,9 @@ public interface SpuSearchService {
     /**
      * 单个商品索引
      *
-     * @param spuDocument 商品文档
+     * @param entity SPU 索引实体
      */
-    void index(SpuDocument spuDocument);
+    void index(EsSpu entity);
 
     /**
      * 全量重建索引
@@ -75,8 +75,8 @@ public interface SpuSearchService {
     /**
      * 带聚合的搜索（返回商品列表 + 筛选面板）
      *
-     * @param query 搜索查询条件
+     * @param reqVO 搜索查询条件
      * @return 商品列表 + 筛选面板
      */
-    SpuSearchResultDTO searchWithAggregation(SpuSearchQuery query);
+    SpuSearchResultDTO searchWithAggregation(SpuSearchQuery reqVO);
 }

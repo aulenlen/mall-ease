@@ -1,4 +1,4 @@
-package com.mallease.search.model.client.vo;
+package com.mallease.search.controller.portal.search.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -20,26 +20,26 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "筛选面板")
-public class SearchFilterVO {
+public class SearchFilterRespVO {
 
     @Schema(description = "品牌聚合")
-    private List<BrandAggVO> brands;
+    private List<BrandAggRespVO> brands;
 
     @Schema(description = "分类聚合")
-    private List<CategoryAggVO> categories;
+    private List<CategoryAggRespVO> categories;
 
     @Schema(description = "属性聚合（可筛选的规格）")
-    private List<AttrAggVO> attrs;
+    private List<AttrAggRespVO> attrs;
 
     @Schema(description = "价格区间聚合")
-    private List<PriceRangeVO> priceRanges;
+    private List<PriceRangeRespVO> priceRanges;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(description = "品牌聚合项")
-    public static class BrandAggVO {
+    public static class BrandAggRespVO {
         private Long brandId;
         private String brandName;
         @Schema(description = "品牌Logo")
@@ -52,7 +52,7 @@ public class SearchFilterVO {
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(description = "分类聚合项")
-    public static class CategoryAggVO {
+    public static class CategoryAggRespVO {
         private Long categoryId;
         private String categoryName;
         private Long count;
@@ -63,10 +63,10 @@ public class SearchFilterVO {
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(description = "属性聚合项")
-    public static class AttrAggVO {
+    public static class AttrAggRespVO {
         private Long attrId;
         private String attrName;
-        private List<AttrValueAggVO> values;
+        private List<AttrValueAggRespVO> values;
     }
 
     @Data
@@ -74,7 +74,7 @@ public class SearchFilterVO {
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(description = "属性值聚合项")
-    public static class AttrValueAggVO {
+    public static class AttrValueAggRespVO {
         private String value;
         private Long count;
     }
@@ -84,7 +84,7 @@ public class SearchFilterVO {
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(description = "价格区间聚合项")
-    public static class PriceRangeVO {
+    public static class PriceRangeRespVO {
         @Schema(description = "区间标识，如 '0-300'")
         private String key;
         @Schema(description = "显示标签，如 '¥0-300'")

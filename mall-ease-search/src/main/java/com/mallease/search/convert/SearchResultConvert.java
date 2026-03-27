@@ -1,12 +1,12 @@
-package com.mallease.search.converter;
+package com.mallease.search.convert;
 
 import com.mallease.common.api.Page;
 import com.mallease.common.dto.remote.SearchFilterDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
-import com.mallease.search.model.client.vo.SearchFilterVO;
-import com.mallease.search.model.client.vo.SpuItemVO;
-import com.mallease.search.model.client.vo.SpuSearchPageVO;
+import com.mallease.search.controller.portal.search.vo.SearchFilterRespVO;
+import com.mallease.search.controller.portal.search.vo.SpuItemRespVO;
+import com.mallease.search.controller.portal.search.vo.SpuSearchPageRespVO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -23,29 +23,29 @@ import java.util.List;
  * @create: 2026-01-28
  */
 @Mapper(componentModel = "spring")
-public interface SearchResultConverter {
+public interface SearchResultConvert {
 
     // 商品项转换
 
     @Mapping(target = "highlightName", ignore = true)
     @Mapping(target = "score", ignore = true)
-    SpuItemVO dtoToVo(SpuRecommendDTO dto);
+    SpuItemRespVO dtoToRespVO(SpuRecommendDTO dto);
 
-    List<SpuItemVO> dtoListToVoList(List<SpuRecommendDTO> dtoList);
+    List<SpuItemRespVO> dtoListToRespVOList(List<SpuRecommendDTO> dtoList);
 
     // 筛选面板转换
 
-    @Mapping(target = "brands", source = "brands", qualifiedByName = "toBrandAggVOList")
-    @Mapping(target = "categories", source = "categories", qualifiedByName = "toCategoryAggVOList")
-    @Mapping(target = "attrs", source = "attrs", qualifiedByName = "toAttrAggVOList")
-    @Mapping(target = "priceRanges", source = "priceRange", qualifiedByName = "toPriceRangeVOList")
-    SearchFilterVO filterDtoToVo(SearchFilterDTO dto);
+    @Mapping(target = "brands", source = "brands", qualifiedByName = "toBrandAggRespVOList")
+    @Mapping(target = "categories", source = "categories", qualifiedByName = "toCategoryAggRespVOList")
+    @Mapping(target = "attrs", source = "attrs", qualifiedByName = "toAttrAggRespVOList")
+    @Mapping(target = "priceRanges", source = "priceRange", qualifiedByName = "toPriceRangeRespVOList")
+    SearchFilterRespVO filterDtoToRespVO(SearchFilterDTO dto);
 
-    @Named("toBrandAggVOList")
-    default List<SearchFilterVO.BrandAggVO> toBrandAggVOList(List<SearchFilterDTO.FilterItem> items) {
+    @Named("toBrandAggRespVOList")
+    default List<SearchFilterRespVO.BrandAggRespVO> toBrandAggRespVOList(List<SearchFilterDTO.FilterItem> items) {
         if (items == null) return Collections.emptyList();
         return items.stream()
-                .map(item -> SearchFilterVO.BrandAggVO.builder()
+                .map(item -> SearchFilterRespVO.BrandAggRespVO.builder()
                         .brandId(item.getId())
                         .brandName(item.getName())
                         .count(item.getCount())
@@ -53,11 +53,11 @@ public interface SearchResultConverter {
                 .toList();
     }
 
-    @Named("toCategoryAggVOList")
-    default List<SearchFilterVO.CategoryAggVO> toCategoryAggVOList(List<SearchFilterDTO.FilterItem> items) {
+    @Named("toCategoryAggRespVOList")
+    default List<SearchFilterRespVO.CategoryAggRespVO> toCategoryAggRespVOList(List<SearchFilterDTO.FilterItem> items) {
         if (items == null) return Collections.emptyList();
         return items.stream()
-                .map(item -> SearchFilterVO.CategoryAggVO.builder()
+                .map(item -> SearchFilterRespVO.CategoryAggRespVO.builder()
                         .categoryId(item.getId())
                         .categoryName(item.getName())
                         .count(item.getCount())
@@ -65,16 +65,16 @@ public interface SearchResultConverter {
                 .toList();
     }
 
-    @Named("toAttrAggVOList")
-    default List<SearchFilterVO.AttrAggVO> toAttrAggVOList(List<SearchFilterDTO.AttrFilterItem> items) {
+    @Named("toAttrAggRespVOList")
+    default List<SearchFilterRespVO.AttrAggRespVO> toAttrAggRespVOList(List<SearchFilterDTO.AttrFilterItem> items) {
         if (items == null) return Collections.emptyList();
         return items.stream()
-                .map(item -> SearchFilterVO.AttrAggVO.builder()
+                .map(item -> SearchFilterRespVO.AttrAggRespVO.builder()
                         .attrId(item.getAttrId())
                         .attrName(item.getAttrName())
                         .values(item.getValues() == null ? Collections.emptyList() :
                                 item.getValues().stream()
-                                        .map(v -> SearchFilterVO.AttrValueAggVO.builder()
+                                        .map(v -> SearchFilterRespVO.AttrValueAggRespVO.builder()
                                                 .value(v.getValue())
                                                 .count(v.getCount())
                                                 .build())
@@ -83,8 +83,8 @@ public interface SearchResultConverter {
                 .toList();
     }
 
-    @Named("toPriceRangeVOList")
-    default List<SearchFilterVO.PriceRangeVO> toPriceRangeVOList(SearchFilterDTO.PriceRange priceRange) {
+    @Named("toPriceRangeRespVOList")
+    default List<SearchFilterRespVO.PriceRangeRespVO> toPriceRangeRespVOList(SearchFilterDTO.PriceRange priceRange) {
         if (priceRange == null || priceRange.getMin() == null || priceRange.getMax() == null) {
             return Collections.emptyList();
         }
@@ -93,7 +93,7 @@ public interface SearchResultConverter {
         BigDecimal max = priceRange.getMax();
 
         // 生成价格区间桶（根据价格范围自动分桶）
-        List<SearchFilterVO.PriceRangeVO> ranges = new ArrayList<>();
+        List<SearchFilterRespVO.PriceRangeRespVO> ranges = new ArrayList<>();
         BigDecimal[] thresholds = {
                 BigDecimal.ZERO,
                 new BigDecimal("100"),
@@ -115,7 +115,7 @@ public interface SearchResultConverter {
             String key = from.intValue() + "-" + to.intValue();
             String label = "¥" + from.intValue() + "-" + to.intValue();
 
-            ranges.add(SearchFilterVO.PriceRangeVO.builder()
+            ranges.add(SearchFilterRespVO.PriceRangeRespVO.builder()
                     .key(key)
                     .label(label)
                     .from(from)
@@ -127,7 +127,7 @@ public interface SearchResultConverter {
         // 添加最高价格区间
         BigDecimal lastThreshold = thresholds[thresholds.length - 1];
         if (max.compareTo(lastThreshold) >= 0) {
-            ranges.add(SearchFilterVO.PriceRangeVO.builder()
+            ranges.add(SearchFilterRespVO.PriceRangeRespVO.builder()
                     .key(lastThreshold.intValue() + "+")
                     .label("¥" + lastThreshold.intValue() + "+")
                     .from(lastThreshold)
@@ -139,20 +139,20 @@ public interface SearchResultConverter {
         return ranges;
     }
 
-    default SpuSearchPageVO toPageVO(SpuSearchResultDTO dto) {
-        SpuSearchPageVO result = new SpuSearchPageVO();
+    default SpuSearchPageRespVO toPageRespVO(SpuSearchResultDTO dto) {
+        SpuSearchPageRespVO result = new SpuSearchPageRespVO();
 
         if (dto == null) {
             result.setProducts(new Page<>());
-            result.setFilters(new SearchFilterVO());
+            result.setFilters(new SearchFilterRespVO());
             return result;
         }
 
         // 转换商品列表
-        Page<SpuItemVO> productPage = new Page<>();
+        Page<SpuItemRespVO> productPage = new Page<>();
         if (dto.getProducts() != null) {
             Page<SpuRecommendDTO> source = dto.getProducts();
-            List<SpuItemVO> items = dtoListToVoList(source.getList());
+            List<SpuItemRespVO> items = dtoListToRespVOList(source.getList());
             productPage.setList(items);
             productPage.setPageNum(source.getPageNum());
             productPage.setPageSize(source.getPageSize());
@@ -161,10 +161,10 @@ public interface SearchResultConverter {
         }
 
         // 转换筛选面板
-        SearchFilterVO filters = filterDtoToVo(dto.getFilters());
+        SearchFilterRespVO filters = filterDtoToRespVO(dto.getFilters());
 
         result.setProducts(productPage);
-        result.setFilters(filters != null ? filters : new SearchFilterVO());
+        result.setFilters(filters != null ? filters : new SearchFilterRespVO());
         return result;
     }
 }

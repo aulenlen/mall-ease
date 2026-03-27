@@ -1,8 +1,8 @@
-package com.mallease.search.converter;
+package com.mallease.search.convert;
 
 import com.mallease.common.dto.remote.SpuRecommendDTO;
-import com.mallease.search.model.data.doc.SpuDocument;
-import com.mallease.search.model.client.vo.SpuItemVO;
+import com.mallease.search.dal.entity.EsSpu;
+import com.mallease.search.controller.portal.search.vo.SpuItemRespVO;
 
 import org.mapstruct.Mapper;
 
@@ -16,9 +16,9 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 
-public interface SpuDocConverter {
+public interface EsSpuConvert {
 
-    // SpuDocument -> SpuSearchResultVO
+    // ES 实体 -> 搜索结果响应
 
     @Mapping(target = "isNew", expression = "java(spu.getNewStatus() != null && spu.getNewStatus() == 1)")
 
@@ -26,15 +26,15 @@ public interface SpuDocConverter {
 
     @Mapping(target = "score", ignore = true)
 
-    SpuItemVO docToVo(SpuDocument spu);
+    SpuItemRespVO entityToRespVO(EsSpu spu);
 
 
 
-    List<SpuItemVO> docListToVoList(List<SpuDocument> spuList);
+    List<SpuItemRespVO> entityListToRespVOList(List<EsSpu> spuList);
 
-    // SpuDocument -> SpuRecommendDTO（内部调用）
+    // ES 实体 -> SpuRecommendDTO（内部调用）
     @Mapping(target = "isNew", expression = "java(spu.getNewStatus() != null && spu.getNewStatus() == 1)")
-    SpuRecommendDTO docToDTO(SpuDocument spu);
+    SpuRecommendDTO entityToDTO(EsSpu spu);
 
-    List<SpuRecommendDTO> docListToDTOList(List<SpuDocument> spuList);
+    List<SpuRecommendDTO> entityListToDTOList(List<EsSpu> spuList);
 }

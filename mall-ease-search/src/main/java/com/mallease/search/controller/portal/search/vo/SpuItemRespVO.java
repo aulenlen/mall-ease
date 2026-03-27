@@ -1,4 +1,4 @@
-package com.mallease.search.model.client.vo;
+package com.mallease.search.controller.portal.search.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "商品搜索结果")
-public class SpuItemVO {
+public class SpuItemRespVO {
 
     @Schema(description = "SPU ID")
     private Long spuId;

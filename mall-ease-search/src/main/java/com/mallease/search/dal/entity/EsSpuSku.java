@@ -1,4 +1,4 @@
-package com.mallease.search.model.data.doc;
+package com.mallease.search.dal.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SpuSkuDocument implements Serializable {
+public class EsSpuSku implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
