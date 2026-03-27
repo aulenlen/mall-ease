@@ -14,7 +14,9 @@ public enum OrderStatus {
     COMPLETED(3, "已完成"),
     CANCELLED(4, "已取消"),
     PENDING_PAYMENT(5, "待支付"),
-    PAID(6, "已支付");
+    PAID(6, "已支付"),
+    PROCESSING(7, "处理中"),
+    FAILED(8, "处理失败");
 
     private final int code;
     private final String description;
@@ -38,7 +40,10 @@ public enum OrderStatus {
      * @param code 状态码
      * @return 订单状态枚举
      */
-    public static OrderStatus fromCode(int code) {
+    public static OrderStatus fromCode(Integer code) {
+        if (code == null) {
+            return null;
+        }
         return Arrays.stream(values())
                 .filter(status -> status.code == code)
                 .findFirst()
@@ -51,8 +56,12 @@ public enum OrderStatus {
      * @param code 状态码
      * @return 状态描述
      */
-    public static String getDescriptionByCode(int code) {
+    public static String getDescriptionByCode(Integer code) {
         OrderStatus status = fromCode(code);
         return status != null ? status.description : "未知状态";
+    }
+
+    public boolean isTerminal() {
+        return this == COMPLETED || this == CANCELLED || this == FAILED;
     }
 }

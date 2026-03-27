@@ -2,6 +2,8 @@ package com.mallease.product.service.stock;
 
 import com.mallease.common.dto.remote.SkuAvailabilityDTO;
 import com.mallease.common.dto.remote.SkuStockQueryDTO;
+import com.mallease.common.dto.remote.StockReservationStatusDTO;
+import com.mallease.common.enums.ReservationAggregateStatus;
 import com.mallease.product.controller.admin.stock.vo.InventorySpuRecordRespVO;
 import com.mallease.product.controller.admin.stock.vo.InventoryStatsRespVO;
 import com.mallease.product.controller.admin.stock.vo.InventorySummaryRespVO;
@@ -23,16 +25,13 @@ import com.mallease.product.service.stock.model.LockStockItem;
 import com.mallease.product.service.stock.model.UnlockStockItem;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,24 +61,6 @@ public class SkuStockServiceImpl implements SkuStockService {
     private static final String CHANGE_TYPE_LOCK = "LOCK";
     private static final String CHANGE_TYPE_UNLOCK = "UNLOCK";
     private static final String CHANGE_TYPE_CONFIRM = "CONFIRM";
-    private static final String RESERVE_STOCK_LUA = "for i = 1, #KEYS do \n"
-            + "   local inventoryKey = KEYS[i] \n"
-            + "   local lockQty = tonumber(ARGV[i]) \n"
-            + "   local currentQty = redis.call('GET', inventoryKey) \n"
-            + "   if currentQty == false or tonumber(currentQty) < lockQty then return 0 end \n"
-            + "end \n"
-            + "for i = 1, #KEYS do \n"
-            + "   local inventoryKey = KEYS[i] \n"
-            + "   local lockQty = tonumber(ARGV[i]) \n"
-            + "   redis.call('DECRBY', inventoryKey, lockQty) \n"
-            + "end \n"
-            + "return 1";
-    private static final String RELEASE_STOCK_LUA = "for i = 1, #KEYS do \n"
-            + "   local inventoryKey = KEYS[i] \n"
-            + "   local restoreQty = tonumber(ARGV[i]) \n"
-            + "   redis.call('INCRBY', inventoryKey, restoreQty) \n"
-            + "end \n"
-            + "return 1";
 
     private final SkuStockDao skuStockDao;
     private final SkuStockLogDao skuStockLogDao;
@@ -113,6 +94,7 @@ public class SkuStockServiceImpl implements SkuStockService {
                 null,
                 "后台创建库存记录"
         ));
+        evictAvailableStockCache(List.of(stock.getSkuId()));
         return stock.getId();
     }
 
@@ -166,6 +148,7 @@ public class SkuStockServiceImpl implements SkuStockService {
                     null,
                     remark
             ));
+            evictAvailableStockCache(List.of(existing.getSkuId()));
         }
         return updatedRows;
     }
@@ -207,6 +190,7 @@ public class SkuStockServiceImpl implements SkuStockService {
                 ));
             }
             log.info("库存入库成功，skuId={}, 入库数量={}", skuId, quantity);
+            evictAvailableStockCache(List.of(skuId));
             return result;
         }
 
@@ -229,6 +213,7 @@ public class SkuStockServiceImpl implements SkuStockService {
             ));
         }
         log.info("库存出库成功，skuId={}, 出库数量={}", skuId, absQuantity);
+        evictAvailableStockCache(List.of(skuId));
         return result;
     }
 
@@ -356,39 +341,25 @@ public class SkuStockServiceImpl implements SkuStockService {
 
         List<StockReservation> exist = stockReservationService.listByOrderNo(orderNo);
         if (exist != null && !exist.isEmpty()) {
-            throw new ApiException("请勿重复提交");
+            log.info("库存已锁定，按幂等成功返回，orderNo={}", orderNo);
+            return;
         }
 
         Map<Long, SkuStock> stockMap = loadRequiredStocks(normalizedSkuStocks);
-        long ttlSeconds = Math.max(30L, Duration.between(LocalDateTime.now(), expireTime).getSeconds());
-        boolean reserved = reserveInRedis(normalizedSkuStocks, ttlSeconds);
-        if (!reserved) {
-            throw new ApiException("库存不足");
-        }
-
         List<LockStockItem> lockItems = buildLockItems(normalizedSkuStocks);
         List<StockReservation> reservations = buildLockedReservations(orderNo, normalizedSkuStocks, stockMap, expireTime);
 
-        try {
-            int rows = skuStockDao.batchLockStock(lockItems);
-            if (rows < lockItems.size()) {
-                rollbackReservedStockQuietly(normalizedSkuStocks);
-                throw new ApiException("库存不足");
-            }
-
-            int insertRows = stockReservationService.insertBatch(reservations);
-            if (insertRows < reservations.size()) {
-                rollbackReservedStockQuietly(normalizedSkuStocks);
-                throw new ApiException("库存预占失败");
-            }
-        } catch (RuntimeException ex) {
-            rollbackReservedStockQuietly(normalizedSkuStocks);
-            throw ex;
-        } catch (Exception ex) {
-            rollbackReservedStockQuietly(normalizedSkuStocks);
-            throw new ApiException("库存预占失败");
+        int rows = skuStockDao.batchLockStock(lockItems);
+        if (rows < lockItems.size()) {
+            throw new ApiException("库存不足");
         }
 
+        int insertRows = stockReservationService.insertBatch(reservations);
+        if (insertRows < reservations.size()) {
+            throw new ApiException("库存不足");
+        }
+
+        evictAvailableStockCache(normalizedSkuStocks.keySet());
         log.info("锁定库存成功，orderNo={}, 锁定SKU数={}", orderNo, lockItems.size());
     }
 
@@ -462,6 +433,31 @@ public class SkuStockServiceImpl implements SkuStockService {
     }
 
     @Override
+    public StockReservationStatusDTO queryReservationStatus(String orderNo) {
+        if (orderNo == null || orderNo.isBlank()) {
+            return buildReservationStatusDTO(ReservationAggregateStatus.NOT_FOUND, 0, 0, 0, 0);
+        }
+
+        List<StockReservation> reservations = stockReservationService.listByOrderNo(orderNo);
+        if (reservations == null || reservations.isEmpty()) {
+            return buildReservationStatusDTO(ReservationAggregateStatus.NOT_FOUND, 0, 0, 0, 0);
+        }
+
+        int totalCount = reservations.size();
+        int lockedCount = countReservationsByStatus(reservations, ReservationStatus.LOCKED);
+        int confirmedCount = countReservationsByStatus(reservations, ReservationStatus.CONFIRMED);
+        int releasedCount = countReservationsByStatus(reservations, ReservationStatus.RELEASED);
+
+        ReservationAggregateStatus aggregateStatus = resolveReservationAggregateStatus(
+                totalCount,
+                lockedCount,
+                confirmedCount,
+                releasedCount
+        );
+        return buildReservationStatusDTO(aggregateStatus, totalCount, lockedCount, confirmedCount, releasedCount);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int releaseExpiredReservations(int limit) {
         List<StockReservation> reservations = stockReservationService.listExpiredLocked(limit);
@@ -497,10 +493,6 @@ public class SkuStockServiceImpl implements SkuStockService {
                 .toList();
     }
 
-    private void rollbackReservedStockQuietly(Map<Long, Integer> skuStocks) {
-        releaseReservationInRedis(skuStocks);
-    }
-
     private int releaseLockedReservations(String orderNo, List<StockReservation> lockedReservations) {
         if (lockedReservations == null || lockedReservations.isEmpty()) {
             return 0;
@@ -524,13 +516,67 @@ public class SkuStockServiceImpl implements SkuStockService {
             throw new ApiException("库存释放失败");
         }
 
-        runAfterCommit(() -> releaseReservationInRedis(skuQuantityMap));
+        evictAvailableStockCache(skuQuantityMap.keySet());
         log.info("订单预占释放落库完成，orderNo={}, successReservationCount={}", orderNo, reservationIds.size());
         return reservationIds.size();
     }
 
+    private int countReservationsByStatus(List<StockReservation> reservations, ReservationStatus reservationStatus) {
+        return Math.toIntExact(reservations.stream()
+                .filter(item -> Objects.equals(item.getReservationStatus(), reservationStatus.getCode()))
+                .count());
+    }
+
+    private ReservationAggregateStatus resolveReservationAggregateStatus(int totalCount,
+                                                                        int lockedCount,
+                                                                        int confirmedCount,
+                                                                        int releasedCount) {
+        if (totalCount <= 0) {
+            return ReservationAggregateStatus.NOT_FOUND;
+        }
+        if (lockedCount == totalCount) {
+            return ReservationAggregateStatus.ALL_LOCKED;
+        }
+        if (confirmedCount == totalCount) {
+            return ReservationAggregateStatus.ALL_CONFIRMED;
+        }
+        if (releasedCount == totalCount) {
+            return ReservationAggregateStatus.ALL_RELEASED;
+        }
+        return ReservationAggregateStatus.INCONSISTENT;
+    }
+
+    private StockReservationStatusDTO buildReservationStatusDTO(ReservationAggregateStatus status,
+                                                                int totalCount,
+                                                                int lockedCount,
+                                                                int confirmedCount,
+                                                                int releasedCount) {
+        return StockReservationStatusDTO.builder()
+                .status(status)
+                .totalCount(totalCount)
+                .lockedCount(lockedCount)
+                .confirmedCount(confirmedCount)
+                .releasedCount(releasedCount)
+                .build();
+    }
+
     private String inventoryAvailableKey(Long skuId) {
         return INVENTORY_AVAILABLE_SKU_PREFIX + skuId;
+    }
+
+    private void evictAvailableStockCache(Iterable<Long> skuIds) {
+        if (skuIds == null) {
+            return;
+        }
+        List<String> keys = new ArrayList<>();
+        for (Long skuId : skuIds) {
+            if (skuId != null) {
+                keys.add(inventoryAvailableKey(skuId));
+            }
+        }
+        if (!keys.isEmpty()) {
+            typedRedisService.deleteBatch(keys);
+        }
     }
 
     private Map<Long, Integer> batchGetAvailableStockFromCache(List<Long> skuIds) {
@@ -581,80 +627,12 @@ public class SkuStockServiceImpl implements SkuStockService {
         return matchedStocks;
     }
 
-    private boolean reserveInRedis(Map<Long, Integer> skuStocks, long ttlSeconds) {
-        if (skuStocks == null || skuStocks.isEmpty()) {
-            log.error("skuStocks is null");
-            throw new ApiException("库存错误");
-        }
-        if (ttlSeconds <= 0) {
-            throw new ApiException("库存预占有效期错误");
-        }
-
-        List<String> keys = new ArrayList<>();
-        List<Object> args = new ArrayList<>();
-        for (Map.Entry<Long, Integer> entry : skuStocks.entrySet()) {
-            if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) {
-                throw new ApiException("库存预占参数错误");
-            }
-            keys.add(inventoryAvailableKey(entry.getKey()));
-            args.add(entry.getValue());
-        }
-
-        Long result = typedRedisService.executeScript(RedisScript.of(RESERVE_STOCK_LUA, Long.class), keys, args.toArray());
-        if (result == null) {
-            throw new ApiException("库存预占失败");
-        }
-        if (result == 0L) {
-            log.error("库存不足");
-            return false;
-        }
-        return result == 1L;
-    }
-
-    private boolean reserveInRedis(String orderNo, Map<Long, Integer> skuStocks, long ttlSeconds) {
-        if (orderNo == null || orderNo.isBlank()) {
-            log.error("orderNo is null");
-            throw new ApiException("订单不存在");
-        }
-        return reserveInRedis(skuStocks, ttlSeconds);
-    }
-
-    private int releaseReservationInRedis(String orderNo) {
-        List<StockReservation> lockedReservations = stockReservationService.listLockedByOrderNo(orderNo);
-        if (lockedReservations == null || lockedReservations.isEmpty()) {
-            return 0;
-        }
-        return releaseReservationInRedis(aggregateSkuQuantityMap(lockedReservations));
-    }
-
-    private int releaseReservationInRedis(Map<Long, Integer> skuStocks) {
-        if (skuStocks == null || skuStocks.isEmpty()) {
-            return 0;
-        }
-
-        List<String> keys = new ArrayList<>();
-        List<Object> args = new ArrayList<>();
-        for (Map.Entry<Long, Integer> entry : skuStocks.entrySet()) {
-            if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) {
-                throw new ApiException("库存释放参数错误");
-            }
-            keys.add(inventoryAvailableKey(entry.getKey()));
-            args.add(entry.getValue());
-        }
-
-        Integer result = typedRedisService.executeScript(RedisScript.of(RELEASE_STOCK_LUA, Integer.class), keys, args.toArray());
-        if (result == null) {
-            throw new ApiException("库存释放失败");
-        }
-        return result;
-    }
-
     private Map<Long, Integer> normalizeSkuStocks(Map<Long, Integer> skuStocks) {
         if (skuStocks == null || skuStocks.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        Map<Long, Integer> normalized = new LinkedHashMap<>();
+        Map<Long, Integer> normalized = new HashMap<>();
         for (Map.Entry<Long, Integer> entry : skuStocks.entrySet()) {
             if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) {
                 throw new ApiException("库存参数错误");
@@ -664,10 +642,8 @@ public class SkuStockServiceImpl implements SkuStockService {
         return normalized;
     }
 
-    private List<StockReservation> buildLockedReservations(String orderNo,
-                                                           Map<Long, Integer> skuStocks,
-                                                           Map<Long, SkuStock> stockMap,
-                                                           LocalDateTime expireTime) {
+    private List<StockReservation> buildLockedReservations(String orderNo, Map<Long, Integer> skuStocks,
+                                                           Map<Long, SkuStock> stockMap, LocalDateTime expireTime) {
         LocalDateTime now = LocalDateTime.now();
         List<StockReservation> reservations = new ArrayList<>();
         for (Map.Entry<Long, Integer> entry : skuStocks.entrySet()) {
@@ -792,19 +768,5 @@ public class SkuStockServiceImpl implements SkuStockService {
 
     private int safeInt(Integer value) {
         return value != null ? value : 0;
-    }
-
-    private void runAfterCommit(Runnable runnable) {
-        if (TransactionSynchronizationManager.isSynchronizationActive()
-                && TransactionSynchronizationManager.isActualTransactionActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    runnable.run();
-                }
-            });
-            return;
-        }
-        runnable.run();
     }
 }

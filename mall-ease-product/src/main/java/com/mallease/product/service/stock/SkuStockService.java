@@ -2,6 +2,7 @@ package com.mallease.product.service.stock;
 
 import com.mallease.common.dto.remote.SkuAvailabilityDTO;
 import com.mallease.common.dto.remote.SkuStockQueryDTO;
+import com.mallease.common.dto.remote.StockReservationStatusDTO;
 import com.mallease.product.controller.admin.stock.vo.InventorySpuRecordRespVO;
 import com.mallease.product.controller.admin.stock.vo.InventoryStatsRespVO;
 import com.mallease.product.controller.admin.stock.vo.SkuStockLogPageReqVO;
@@ -155,6 +156,14 @@ public interface SkuStockService {
      * @param orderNo 订单编号
      */
     void confirmStock(String orderNo);
+
+    /**
+     * 查询订单锁库结果。
+     *
+     * @param orderNo 订单编号
+     * @return 订单级库存预占聚合状态
+     */
+    StockReservationStatusDTO queryReservationStatus(String orderNo);
 
     /**
      * 释放过期的库存预占，定时任务调用。

@@ -3,11 +3,13 @@ package com.mallease.product.controller.internal.stock;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.SkuAvailabilityDTO;
 import com.mallease.common.dto.remote.SkuStockQueryDTO;
+import com.mallease.common.dto.remote.StockReservationStatusDTO;
 import com.mallease.common.dto.remote.StockLockDTO;
 import com.mallease.product.service.stock.SkuStockService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,8 +34,7 @@ public class SkuStockInternalController {
     @Operation(summary = "锁定库存", description = "内部调用，下单时锁定库存")
     @PutMapping("/lock")
     public R<Void> lockStock(@RequestBody StockLockDTO stockLockDTO) {
-        Map<Long, Integer> skuStocks = flattenSkuStocks(stockLockDTO.getSpuSkuQuantityMap());
-        skuStockService.lockStock(stockLockDTO.getOrderNo(), skuStocks, stockLockDTO.getExpireTime());
+        skuStockService.lockStock(stockLockDTO.getOrderNo(), stockLockDTO.getLockStocks(), stockLockDTO.getExpireTime());
         return R.success();
     }
 
@@ -50,29 +51,15 @@ public class SkuStockInternalController {
         return R.success();
     }
 
+    @Operation(summary = "查询锁库结果", description = "内部调用，Trade 回查 Product 侧锁库结果")
+    @GetMapping("/reservation/status")
+    public R<StockReservationStatusDTO> queryReservationStatus(@RequestParam String orderNo) {
+        return R.success(skuStockService.queryReservationStatus(orderNo));
+    }
+
     @Operation(summary = "批量查询 SKU 是否有货", description = "内部调用，购物车/下单页获取实时库存状态")
     @PostMapping("/availability")
     public R<List<SkuAvailabilityDTO>> listAvailability(@RequestBody List<SkuStockQueryDTO> queries) {
         return R.success(skuStockService.listAvailabilityBySkuIds(queries));
-    }
-
-    private Map<Long, Integer> flattenSkuStocks(Map<Long, Map<Long, Integer>> spuSkuQuantityMap) {
-        if (spuSkuQuantityMap == null || spuSkuQuantityMap.isEmpty()) {
-            return Map.of();
-        }
-
-        Map<Long, Integer> skuStocks = new java.util.LinkedHashMap<>();
-        for (Map<Long, Integer> skuQuantityMap : spuSkuQuantityMap.values()) {
-            if (skuQuantityMap == null || skuQuantityMap.isEmpty()) {
-                continue;
-            }
-            for (Map.Entry<Long, Integer> entry : skuQuantityMap.entrySet()) {
-                if (entry.getKey() == null || entry.getValue() == null) {
-                    continue;
-                }
-                skuStocks.merge(entry.getKey(), entry.getValue(), Integer::sum);
-            }
-        }
-        return skuStocks;
     }
 }

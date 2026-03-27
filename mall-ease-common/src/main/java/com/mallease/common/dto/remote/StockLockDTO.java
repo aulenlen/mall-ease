@@ -19,6 +19,10 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class StockLockDTO {
+    /**
+     * 幂等编号
+     */
+    private String requestId;
 
     /**
      * 订单编号
@@ -31,8 +35,8 @@ public class StockLockDTO {
     private LocalDateTime expireTime;
 
     /**
-     * SPU 维度的库存锁定信息
-     * 结构：spuId → (skuId → quantity)
+     * 库存锁定信息
+     * skuId → quantity
      */
-    private Map<Long, Map<Long, Integer>> spuSkuQuantityMap;
+    private Map<Long, Integer> lockStocks;
 }
