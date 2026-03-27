@@ -1,5 +1,7 @@
 package com.mallease.common.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.common.service.TypedRedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.connection.RedisStringCommands;
@@ -23,6 +25,7 @@ public class TypedRedisServiceImpl implements TypedRedisService {
 
     private static final int PIPELINE_BATCH_SIZE = 100;
 
+    private final ObjectMapper objectMapper;
     private final StringRedisTemplate stringRedisTemplate;
 
     @Override
@@ -36,6 +39,28 @@ public class TypedRedisServiceImpl implements TypedRedisService {
     @Override
     public String getString(String key) {
         return stringRedisTemplate.opsForValue().get(requireKey(key));
+    }
+
+    @Override
+    public <T> void setJson(String key, T value, long ttlSeconds) {
+        try {
+            setString(requireKey(key), objectMapper.writeValueAsString(requireValue(value)), ttlSeconds);
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException("Redis JSON 序列化失败", ex);
+        }
+    }
+
+    @Override
+    public <T> T getJson(String key, Class<T> clazz) {
+        String json = getString(key);
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, requireClass(clazz));
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException("Redis JSON 反序列化失败", ex);
+        }
     }
 
     @Override
@@ -131,6 +156,20 @@ public class TypedRedisServiceImpl implements TypedRedisService {
             throw new IllegalArgumentException("Redis value 不能为空");
         }
         return value;
+    }
+
+    private <T> T requireValue(T value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Redis value 不能为空");
+        }
+        return value;
+    }
+
+    private <T> Class<T> requireClass(Class<T> clazz) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("Redis value 类型不能为空");
+        }
+        return clazz;
     }
 
     private long requireTtl(long ttlSeconds) {

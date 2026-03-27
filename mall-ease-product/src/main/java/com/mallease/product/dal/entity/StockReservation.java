@@ -31,11 +31,6 @@ public class StockReservation {
     private String orderNo;
 
     /**
-     * SPU ID（用于 Redis key 分组）
-     */
-    private Long spuId;
-
-    /**
      * SKU ID
      */
     private Long skuId;

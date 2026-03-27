@@ -334,10 +334,7 @@ public class SkuStockServiceImpl implements SkuStockService {
             throw new ApiException("系统繁忙");
         }
 
-        Map<Long, Integer> normalizedSkuStocks = normalizeSkuStocks(skuStocks);
-        if (normalizedSkuStocks.isEmpty()) {
-            throw new ApiException("系统繁忙");
-        }
+        Map<Long, Integer> validatedSkuStocks = validateSkuStocks(skuStocks);
 
         List<StockReservation> exist = stockReservationService.listByOrderNo(orderNo);
         if (exist != null && !exist.isEmpty()) {
@@ -345,9 +342,9 @@ public class SkuStockServiceImpl implements SkuStockService {
             return;
         }
 
-        Map<Long, SkuStock> stockMap = loadRequiredStocks(normalizedSkuStocks);
-        List<LockStockItem> lockItems = buildLockItems(normalizedSkuStocks);
-        List<StockReservation> reservations = buildLockedReservations(orderNo, normalizedSkuStocks, stockMap, expireTime);
+        Map<Long, SkuStock> stockMap = loadRequiredStocks(validatedSkuStocks);
+        List<LockStockItem> lockItems = buildLockItems(validatedSkuStocks);
+        List<StockReservation> reservations = buildLockedReservations(orderNo, validatedSkuStocks, stockMap, expireTime);
 
         int rows = skuStockDao.batchLockStock(lockItems);
         if (rows < lockItems.size()) {
@@ -359,7 +356,7 @@ public class SkuStockServiceImpl implements SkuStockService {
             throw new ApiException("库存不足");
         }
 
-        evictAvailableStockCache(normalizedSkuStocks.keySet());
+        evictAvailableStockCache(validatedSkuStocks.keySet());
         log.info("锁定库存成功，orderNo={}, 锁定SKU数={}", orderNo, lockItems.size());
     }
 
@@ -477,18 +474,17 @@ public class SkuStockServiceImpl implements SkuStockService {
         return releasedReservationCount;
     }
 
-    private Map<Long, SkuStock> loadRequiredStocks(Map<Long, Integer> normalizedSkuStocks) {
-        List<SkuStock> stocks = skuStockDao.selectBySkuIds(new ArrayList<>(normalizedSkuStocks.keySet()));
-        Map<Long, SkuStock> stockMap = stocks.stream()
-                .collect(Collectors.toMap(SkuStock::getSkuId, stock -> stock));
-        if (stockMap.size() != normalizedSkuStocks.size()) {
+    private Map<Long, SkuStock> loadRequiredStocks(Map<Long, Integer> validatedSkuStocks) {
+        List<SkuStock> stocks = skuStockDao.selectBySkuIds(new ArrayList<>(validatedSkuStocks.keySet()));
+        Map<Long, SkuStock> stockMap = stocks.stream().collect(Collectors.toMap(SkuStock::getSkuId, stock -> stock));
+        if (stockMap.size() != validatedSkuStocks.size()) {
             throw new ApiException("商品不存在");
         }
         return stockMap;
     }
 
-    private List<LockStockItem> buildLockItems(Map<Long, Integer> normalizedSkuStocks) {
-        return normalizedSkuStocks.entrySet().stream()
+    private List<LockStockItem> buildLockItems(Map<Long, Integer> validatedSkuStocks) {
+        return validatedSkuStocks.entrySet().stream()
                 .map(entry -> new LockStockItem(entry.getKey(), entry.getValue()))
                 .toList();
     }
@@ -528,9 +524,9 @@ public class SkuStockServiceImpl implements SkuStockService {
     }
 
     private ReservationAggregateStatus resolveReservationAggregateStatus(int totalCount,
-                                                                        int lockedCount,
-                                                                        int confirmedCount,
-                                                                        int releasedCount) {
+                                                                         int lockedCount,
+                                                                         int confirmedCount,
+                                                                         int releasedCount) {
         if (totalCount <= 0) {
             return ReservationAggregateStatus.NOT_FOUND;
         }
@@ -627,19 +623,16 @@ public class SkuStockServiceImpl implements SkuStockService {
         return matchedStocks;
     }
 
-    private Map<Long, Integer> normalizeSkuStocks(Map<Long, Integer> skuStocks) {
+    private Map<Long, Integer> validateSkuStocks(Map<Long, Integer> skuStocks) {
         if (skuStocks == null || skuStocks.isEmpty()) {
             return Collections.emptyMap();
         }
-
-        Map<Long, Integer> normalized = new HashMap<>();
         for (Map.Entry<Long, Integer> entry : skuStocks.entrySet()) {
             if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) {
                 throw new ApiException("库存参数错误");
             }
-            normalized.merge(entry.getKey(), entry.getValue(), Integer::sum);
         }
-        return normalized;
+        return skuStocks;
     }
 
     private List<StockReservation> buildLockedReservations(String orderNo, Map<Long, Integer> skuStocks,
@@ -653,7 +646,6 @@ public class SkuStockServiceImpl implements SkuStockService {
             }
             reservations.add(StockReservation.builder()
                     .orderNo(orderNo)
-                    .spuId(stock.getSpuId())
                     .skuId(entry.getKey())
                     .quantity(entry.getValue())
                     .reservationStatus(ReservationStatus.LOCKED.getCode())

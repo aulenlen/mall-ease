@@ -5,7 +5,6 @@
     <resultMap id="BaseResultMap" type="com.mallease.product.dal.entity.StockReservation">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
-        <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
         <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
         <result column="quantity" property="quantity" jdbcType="INTEGER"/>
         <result column="reservation_status" property="reservationStatus" jdbcType="TINYINT"/>
@@ -15,7 +14,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, order_no, spu_id, sku_id, quantity, reservation_status, expire_time, create_time, update_time
+        id, order_no, sku_id, quantity, reservation_status, expire_time, create_time, update_time
     </sql>
 
     <!-- 根据主键查询 -->
@@ -80,10 +79,9 @@
     <insert id="insert" parameterType="com.mallease.product.dal.entity.StockReservation"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_stock_reservation (
-            order_no, spu_id, sku_id, quantity, reservation_status, expire_time, create_time, update_time
+            order_no, sku_id, quantity, reservation_status, expire_time, create_time, update_time
         ) VALUES (
             #{orderNo,jdbcType=VARCHAR},
-            #{spuId,jdbcType=BIGINT},
             #{skuId,jdbcType=BIGINT},
             #{quantity,jdbcType=INTEGER},
             #{reservationStatus,jdbcType=TINYINT},
@@ -96,12 +94,11 @@
     <!-- 批量插入 -->
     <insert id="insertBatch" parameterType="java.util.List">
         INSERT INTO product_stock_reservation (
-            order_no, spu_id, sku_id, quantity, reservation_status, expire_time, create_time, update_time
+            order_no, sku_id, quantity, reservation_status, expire_time, create_time, update_time
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
                 #{item.orderNo,jdbcType=VARCHAR},
-                #{item.spuId,jdbcType=BIGINT},
                 #{item.skuId,jdbcType=BIGINT},
                 #{item.quantity,jdbcType=INTEGER},
                 #{item.reservationStatus,jdbcType=TINYINT},
