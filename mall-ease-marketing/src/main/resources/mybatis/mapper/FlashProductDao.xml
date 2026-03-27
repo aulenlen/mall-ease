@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.marketing.dao.FlashProductDao">
+<mapper namespace="com.mallease.marketing.dal.mapper.FlashProductDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.marketing.model.data.entity.FlashProduct">
+    <resultMap id="BaseResultMap" type="com.mallease.marketing.dal.entity.FlashProduct">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="flash_session_id" property="flashSessionId" jdbcType="BIGINT"/>
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
@@ -118,7 +118,7 @@
     </delete>
 
     <!-- 插入 -->
-    <insert id="insert" parameterType="com.mallease.marketing.model.data.entity.FlashProduct" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.marketing.dal.entity.FlashProduct" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO marketing_flash_product
             (flash_session_id, spu_id,
              sku_id, flash_price, flash_stock, flash_limit, route_type, sort,
@@ -132,7 +132,7 @@
     </insert>
 
     <!-- 选择性插入 -->
-    <insert id="insertSelective" parameterType="com.mallease.marketing.model.data.entity.FlashProduct" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.marketing.dal.entity.FlashProduct" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO marketing_flash_product
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="flashSessionId != null">flash_session_id,</if>
@@ -182,7 +182,7 @@
     </insert>
 
     <!-- 选择性更新 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.marketing.model.data.entity.FlashProduct">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.marketing.dal.entity.FlashProduct">
         UPDATE marketing_flash_product
         <set>
             <if test="flashSessionId != null">flash_session_id = #{flashSessionId,jdbcType=BIGINT},</if>

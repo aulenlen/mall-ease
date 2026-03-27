@@ -33,6 +33,11 @@ public interface TypedRedisService {
     <T> T getJson(String key, Class<T> clazz);
 
     /**
+     * 按 key 列表批量读取 JSON，并反序列化为指定类型。
+     */
+    <T> Map<String, T> multiGetJson(List<String> keys, Class<T> clazz);
+
+    /**
      * 按 key 列表批量读取字符串值，返回结果中的 key 顺序与输入无关，但会一一对应。
      */
     Map<String, String> multiGetString(List<String> keys);
@@ -41,6 +46,11 @@ public interface TypedRedisService {
      * 批量写入字符串值，并统一设置过期时间。
      */
     void multiSetStringWithExpire(Map<String, String> map, long ttlSeconds);
+
+    /**
+     * 批量写入 JSON 对象，并统一设置过期时间。
+     */
+    <T> void multiSetJsonWithExpire(Map<String, T> map, long ttlSeconds);
 
     /**
      * 删除单个 key。

@@ -64,6 +64,30 @@ public class TypedRedisServiceImpl implements TypedRedisService {
     }
 
     @Override
+    public <T> Map<String, T> multiGetJson(List<String> keys, Class<T> clazz) {
+        Map<String, String> jsonMap = multiGetString(keys);
+        if (jsonMap.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Class<T> validClass = requireClass(clazz);
+        Map<String, T> result = new HashMap<>(jsonMap.size());
+        for (Map.Entry<String, String> entry : jsonMap.entrySet()) {
+            String json = entry.getValue();
+            if (json == null || json.isBlank()) {
+                result.put(entry.getKey(), null);
+                continue;
+            }
+            try {
+                result.put(entry.getKey(), objectMapper.readValue(json, validClass));
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException("Redis JSON 反序列化失败", ex);
+            }
+        }
+        return result;
+    }
+
+    @Override
     public Map<String, String> multiGetString(List<String> keys) {
         List<String> normalizedKeys = normalizeKeys(keys);
         if (normalizedKeys.isEmpty()) {
@@ -77,6 +101,25 @@ public class TypedRedisServiceImpl implements TypedRedisService {
             result.put(normalizedKeys.get(i), value);
         }
         return result;
+    }
+
+    @Override
+    public <T> void multiSetJsonWithExpire(Map<String, T> map, long ttlSeconds) {
+        if (map == null || map.isEmpty()) {
+            return;
+        }
+
+        Map<String, String> jsonMap = new HashMap<>(map.size());
+        for (Map.Entry<String, T> entry : map.entrySet()) {
+            String validKey = requireKey(entry.getKey());
+            T validValue = requireValue(entry.getValue());
+            try {
+                jsonMap.put(validKey, objectMapper.writeValueAsString(validValue));
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException("Redis JSON 序列化失败", ex);
+            }
+        }
+        multiSetStringWithExpire(jsonMap, ttlSeconds);
     }
 
     @Override
