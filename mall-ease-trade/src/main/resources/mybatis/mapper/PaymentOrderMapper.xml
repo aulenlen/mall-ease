@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.trade.dao.PaymentOrderDao">
+<mapper namespace="com.mallease.trade.dal.mapper.PaymentOrderDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.trade.model.data.entity.PaymentOrder">
+    <resultMap id="BaseResultMap" type="com.mallease.trade.dal.entity.PaymentOrder">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="payment_no" property="paymentNo" jdbcType="VARCHAR"/>
         <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
@@ -35,7 +35,7 @@
     </select>
 
     <!-- 插入支付单 -->
-    <insert id="insert" parameterType="com.mallease.trade.model.data.entity.PaymentOrder"
+    <insert id="insert" parameterType="com.mallease.trade.dal.entity.PaymentOrder"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_payment_order (
             payment_no, order_no, user_id, pay_amount, pay_channel,
@@ -116,7 +116,7 @@
     </update>
 
     <!-- 根据主键选择性更新 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.trade.model.data.entity.PaymentOrder">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.trade.dal.entity.PaymentOrder">
         UPDATE trade_payment_order
         <set>
             <if test="paymentNo != null">payment_no = #{paymentNo,jdbcType=VARCHAR},</if>
@@ -143,7 +143,7 @@
     </delete>
 
     <!-- 管理端支付单分页查询 -->
-    <select id="adminList" parameterType="com.mallease.trade.model.client.query.PaymentQuery" resultMap="BaseResultMap">
+    <select id="adminList" parameterType="com.mallease.trade.controller.admin.payment.vo.PaymentPageReqVO" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM trade_payment_order
         <where>

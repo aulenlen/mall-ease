@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.trade.dao.CartItemDao">
+<mapper namespace="com.mallease.trade.dal.mapper.CartItemDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.trade.model.data.entity.CartItem">
+    <resultMap id="BaseResultMap" type="com.mallease.trade.dal.entity.CartItem">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="user_id" property="userId" jdbcType="BIGINT"/>
         <result column="sku_id" property="skuId" jdbcType="BIGINT"/>
@@ -61,7 +61,7 @@
 
     <!-- 查询已选中商品总金额 -->
     <select id="selectCheckedSummaryByUserId" parameterType="java.lang.Long"
-            resultType="com.mallease.trade.model.aggregate.CartCheckedSummary">
+            resultType="com.mallease.trade.service.cart.model.CartCheckedSummary">
         SELECT
             COALESCE(SUM(CASE WHEN checked = 1 THEN quantity * price ELSE 0 END), 0) AS checkedAmount
         FROM trade_cart_item
@@ -93,7 +93,7 @@
     </select>
 
     <!-- 查询当前用户已选中的购物车项 -->
-    <select id="listChecked" resultType="com.mallease.trade.model.data.entity.CartItem">
+    <select id="listChecked" resultType="com.mallease.trade.dal.entity.CartItem">
         select
         <include refid="Base_Column_List"/>
         from trade_cart_item
@@ -102,7 +102,7 @@
     </select>
 
     <!-- 新增购物车项 -->
-    <insert id="insert" parameterType="com.mallease.trade.model.data.entity.CartItem" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.trade.dal.entity.CartItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_cart_item (
             user_id, sku_id, spu_id, quantity, checked,
             spu_name, sku_pic, sku_attrs, price
@@ -115,7 +115,7 @@
     </insert>
 
     <!-- 按条件新增购物车项 -->
-    <insert id="insertSelective" parameterType="com.mallease.trade.model.data.entity.CartItem" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.trade.dal.entity.CartItem" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_cart_item
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="userId != null">user_id,</if>
@@ -159,7 +159,7 @@
     </insert>
 
     <!-- 根据主键更新购物车项 -->
-    <update id="updateByPrimaryKey" parameterType="com.mallease.trade.model.data.entity.CartItem">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.trade.dal.entity.CartItem">
         UPDATE trade_cart_item
         SET user_id = #{userId,jdbcType=BIGINT},
             sku_id = #{skuId,jdbcType=BIGINT},
@@ -174,7 +174,7 @@
     </update>
 
     <!-- 按条件更新购物车项 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.trade.model.data.entity.CartItem">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.trade.dal.entity.CartItem">
         UPDATE trade_cart_item
         <set>
             <if test="userId != null">user_id = #{userId,jdbcType=BIGINT},</if>

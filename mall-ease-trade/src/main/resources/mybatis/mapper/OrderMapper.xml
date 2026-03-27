@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.trade.dao.OrderDao">
+<mapper namespace="com.mallease.trade.dal.mapper.OrderDao">
 
-    <resultMap id="BaseResultMap" type="com.mallease.trade.model.data.entity.Order">
+    <resultMap id="BaseResultMap" type="com.mallease.trade.dal.entity.Order">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
         <result column="request_id" property="requestId" jdbcType="VARCHAR"/>
@@ -20,7 +20,7 @@
         <result column="pay_expire_time" property="payExpireTime" jdbcType="TIMESTAMP"/>
         <result column="status" property="status" jdbcType="TINYINT"/>
         <result column="remark" property="remark" jdbcType="VARCHAR"/>
-        <result column="stock_release_status" property="stockReleaseStatus" jdbcType="TINYINT"/>
+        <result column="stock_process_status" property="stockProcessStatus" jdbcType="TINYINT"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
@@ -29,7 +29,7 @@
         id, order_no, request_id, user_id, receiver_name, receiver_phone,
         receiver_province, receiver_city, receiver_district, receiver_address,
         total_amount, freight_amount, discount_amount, pay_amount, pay_expire_time,
-        status, remark, stock_release_status, create_time, update_time
+        status, remark, stock_process_status, create_time, update_time
     </sql>
 
     <!-- 根据主键查询订单 -->
@@ -99,13 +99,49 @@
         order by create_time desc
     </select>
 
-    <!-- 根据状态和时间查询订单 -->
-    <select id="listByStatusAndTime" resultMap="BaseResultMap">
-        select
+    <!-- 查询指定状态的订单 -->
+    <select id="listByStatuses" resultMap="BaseResultMap">
+        SELECT
         <include refid="Base_Column_List"/>
-        from trade_order
-        where status = #{status,jdbcType=TINYINT}
-        and create_time &lt;= #{creatTime,jdbcType=TIMESTAMP}
+        FROM trade_order
+        WHERE status IN
+        <foreach collection="statuses" item="status" open="(" separator="," close=")">
+            #{status,jdbcType=TINYINT}
+        </foreach>
+        ORDER BY update_time ASC, id ASC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 按订单状态和库存处理状态联合查询订单 -->
+    <select id="listByStatusAndStockProcessStatuses" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM trade_order
+        WHERE status = #{orderStatus,jdbcType=TINYINT}
+          AND stock_process_status IN
+        <foreach collection="stockProcessStatuses" item="stockProcessStatus" open="(" separator="," close=")">
+            #{stockProcessStatus,jdbcType=TINYINT}
+        </foreach>
+        ORDER BY update_time ASC, id ASC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 查询已超时的待支付订单 -->
+    <select id="listExpiredPendingPayment" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM trade_order
+        WHERE status = #{status,jdbcType=TINYINT}
+          AND pay_expire_time IS NOT NULL
+          AND pay_expire_time &lt;= #{expireTime,jdbcType=TIMESTAMP}
+        ORDER BY pay_expire_time ASC, id ASC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
     </select>
 
     <!-- 根据用户ID、订单编号和状态查询订单 -->
@@ -119,12 +155,12 @@
     </select>
 
     <!-- 插入订单 -->
-    <insert id="insert" parameterType="com.mallease.trade.model.data.entity.Order" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.trade.dal.entity.Order" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_order (
             order_no, request_id, user_id, receiver_name, receiver_phone,
             receiver_province, receiver_city, receiver_district, receiver_address,
             total_amount, freight_amount, discount_amount, pay_amount, pay_expire_time,
-            status, remark, stock_release_status
+            status, remark, stock_process_status
         ) VALUES (
             #{orderNo,jdbcType=VARCHAR}, #{requestId,jdbcType=VARCHAR}, #{userId,jdbcType=BIGINT},
             #{receiverName,jdbcType=VARCHAR}, #{receiverPhone,jdbcType=VARCHAR},
@@ -132,12 +168,12 @@
             #{receiverDistrict,jdbcType=VARCHAR}, #{receiverAddress,jdbcType=VARCHAR},
             #{totalAmount,jdbcType=DECIMAL}, #{freightAmount,jdbcType=DECIMAL},
             #{discountAmount,jdbcType=DECIMAL}, #{payAmount,jdbcType=DECIMAL}, #{payExpireTime,jdbcType=TIMESTAMP},
-            #{status,jdbcType=TINYINT}, #{remark,jdbcType=VARCHAR}, #{stockReleaseStatus,jdbcType=TINYINT}
+            #{status,jdbcType=TINYINT}, #{remark,jdbcType=VARCHAR}, #{stockProcessStatus,jdbcType=TINYINT}
         )
     </insert>
 
     <!-- 选择性插入订单 -->
-    <insert id="insertSelective" parameterType="com.mallease.trade.model.data.entity.Order" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.trade.dal.entity.Order" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_order
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="orderNo != null">order_no,</if>
@@ -156,7 +192,7 @@
             <if test="payExpireTime != null">pay_expire_time,</if>
             <if test="status != null">status,</if>
             <if test="remark != null">remark,</if>
-            <if test="stockReleaseStatus != null">stock_release_status,</if>
+            <if test="stockProcessStatus != null">stock_process_status,</if>
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
             <if test="orderNo != null">#{orderNo,jdbcType=VARCHAR},</if>
@@ -175,12 +211,12 @@
             <if test="payExpireTime != null">#{payExpireTime,jdbcType=TIMESTAMP},</if>
             <if test="status != null">#{status,jdbcType=TINYINT},</if>
             <if test="remark != null">#{remark,jdbcType=VARCHAR},</if>
-            <if test="stockReleaseStatus != null">#{stockReleaseStatus,jdbcType=TINYINT},</if>
+            <if test="stockProcessStatus != null">#{stockProcessStatus,jdbcType=TINYINT},</if>
         </trim>
     </insert>
 
     <!-- 根据主键全量更新订单 -->
-    <update id="updateByPrimaryKey" parameterType="com.mallease.trade.model.data.entity.Order">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.trade.dal.entity.Order">
         UPDATE trade_order
         SET order_no = #{orderNo,jdbcType=VARCHAR},
             request_id = #{requestId,jdbcType=VARCHAR},
@@ -198,12 +234,12 @@
             pay_expire_time = #{payExpireTime,jdbcType=TIMESTAMP},
             status = #{status,jdbcType=TINYINT},
             remark = #{remark,jdbcType=VARCHAR},
-            stock_release_status = #{stockReleaseStatus,jdbcType=TINYINT}
+            stock_process_status = #{stockProcessStatus,jdbcType=TINYINT}
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
 
     <!-- 根据主键选择性更新订单 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.trade.model.data.entity.Order">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.trade.dal.entity.Order">
         UPDATE trade_order
         <set>
             <if test="orderNo != null">order_no = #{orderNo,jdbcType=VARCHAR},</if>
@@ -222,7 +258,7 @@
             <if test="payExpireTime != null">pay_expire_time = #{payExpireTime,jdbcType=TIMESTAMP},</if>
             <if test="status != null">status = #{status,jdbcType=TINYINT},</if>
             <if test="remark != null">remark = #{remark,jdbcType=VARCHAR},</if>
-            <if test="stockReleaseStatus != null">stock_release_status = #{stockReleaseStatus,jdbcType=TINYINT},</if>
+            <if test="stockProcessStatus != null">stock_process_status = #{stockProcessStatus,jdbcType=TINYINT},</if>
         </set>
         WHERE id = #{id,jdbcType=BIGINT}
     </update>
@@ -239,6 +275,15 @@
         UPDATE trade_order
         SET status = #{status,jdbcType=TINYINT}
         WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+    </update>
+
+    <update id="updateStatusAndStockProcessByOrderNo">
+        UPDATE trade_order
+        SET status = #{newStatus,jdbcType=TINYINT},
+            stock_process_status = #{stockProcessStatus,jdbcType=TINYINT},
+            update_time = NOW()
+        WHERE order_no = #{orderNo,jdbcType=VARCHAR}
+          AND status = #{oldStatus,jdbcType=TINYINT}
     </update>
 
     <!-- 批量更新订单状态 -->
@@ -261,7 +306,7 @@
     <update id="batchUpdateStatusByOrderNos">
         UPDATE trade_order
         SET status = #{orderStatus,jdbcType=TINYINT},
-            stock_release_status = #{stockReleaseStatus,jdbcType=TINYINT},
+            stock_process_status = #{stockProcessStatus,jdbcType=TINYINT},
             update_time = NOW()
         WHERE order_no IN
         <foreach collection="orderNos" item="orderNo" open="(" close=")" separator=",">
@@ -270,9 +315,9 @@
     </update>
 
     <!-- 批量更新库存释放状态 -->
-    <update id="updateStockReleaseStatusByOrderNos">
+    <update id="updateStockProcessStatusByOrderNos">
         UPDATE trade_order
-        SET stock_release_status = #{stockReleaseStatus,jdbcType=TINYINT},
+        SET stock_process_status = #{stockProcessStatus,jdbcType=TINYINT},
             update_time = NOW()
         WHERE order_no IN
         <foreach collection="orderNos" item="orderNo" open="(" close=")" separator=",">
@@ -280,22 +325,12 @@
         </foreach>
     </update>
 
-    <!-- 查询需要处理的订单 -->
-    <select id="listNeedProcess" resultMap="BaseResultMap">
-        SELECT
-        <include refid="Base_Column_List"/>
-        FROM trade_order
-        WHERE (status = #{pendingStatus}
-               AND COALESCE(pay_expire_time, DATE_ADD(create_time, INTERVAL 30 MINUTE)) &lt;= #{expireTime})
-        OR (status = #{cancelledStatus} AND stock_release_status IN (#{pendingReleaseStatus}, #{releaseFailedStatus}))
-    </select>
-
     <!-- 管理端分页查询订单 -->
-    <select id="adminList" parameterType="com.mallease.trade.model.client.query.OrderQuery" resultMap="BaseResultMap">
+    <select id="adminList" parameterType="com.mallease.trade.controller.admin.order.vo.OrderPageReqVO" resultMap="BaseResultMap">
         SELECT o.id, o.order_no, o.request_id, o.user_id, o.receiver_name, o.receiver_phone,
                o.receiver_province, o.receiver_city, o.receiver_district, o.receiver_address,
                o.total_amount, o.freight_amount, o.discount_amount, o.pay_amount, o.pay_expire_time,
-               o.status, o.remark, o.stock_release_status, o.create_time, o.update_time
+               o.status, o.remark, o.stock_process_status, o.create_time, o.update_time
         FROM trade_order o
         <if test="payChannel != null or paymentStatus != null">
             LEFT JOIN trade_payment_order p ON o.order_no = p.order_no
@@ -356,7 +391,7 @@
     </select>
 
     <!-- 订单趋势统计 -->
-    <select id="statsTrend" resultType="com.mallease.trade.model.client.vo.OrderStatsTrendVO">
+    <select id="statsTrend" resultType="com.mallease.trade.controller.admin.order.vo.OrderStatsTrendRespVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS date,
                COUNT(*) AS orderCount,
                COALESCE(SUM(pay_amount), 0) AS orderAmount
@@ -367,7 +402,7 @@
     </select>
 
     <!-- 订单状态分布统计 -->
-    <select id="statsStatusDistribution" resultType="com.mallease.trade.model.client.vo.OrderStatusDistributionVO">
+    <select id="statsStatusDistribution" resultType="com.mallease.trade.controller.admin.order.vo.OrderStatusDistributionRespVO">
         SELECT status, COUNT(*) AS count
         FROM trade_order
         GROUP BY status
