@@ -138,7 +138,7 @@ public class PaymentServiceImpl implements PaymentService {
             return PageUtils.buildPage(payments, Collections.emptyList());
         }
         List<PaymentRespVO> voList = payments.stream()
-                .map(paymentConvert::entityToVO)
+                .map(paymentConvert::toPaymentResp)
                 .toList();
         return PageUtils.buildPage(payments, voList);
     }
@@ -149,7 +149,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment == null) {
             throw new ApiException("支付单不存在");
         }
-        return paymentConvert.entityToVO(payment);
+        return paymentConvert.toPaymentResp(payment);
     }
 
     @Override

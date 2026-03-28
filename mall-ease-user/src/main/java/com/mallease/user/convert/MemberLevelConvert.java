@@ -23,22 +23,22 @@ public interface MemberLevelConvert {
      */
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
-    MemberLevel reqVOToEntity(MemberLevelReqVO reqVO);
+    MemberLevel toMemberLevel(MemberLevelReqVO reqVO);
 
     /**
      * ReqVO -> Entity（更新）
      */
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
-    void updateEntityFromReqVO(@MappingTarget MemberLevel entity, MemberLevelReqVO reqVO);
+    void copyToMemberLevel(@MappingTarget MemberLevel entity, MemberLevelReqVO reqVO);
 
     /**
      * Entity -> RespVO
      */
-    MemberLevelRespVO entityToRespVO(MemberLevel entity);
+    MemberLevelRespVO toMemberLevelResp(MemberLevel entity);
 
     /**
      * Entity List -> RespVO List
      */
-    List<MemberLevelRespVO> entityListToRespVOList(List<MemberLevel> entities);
+    List<MemberLevelRespVO> toMemberLevelRespList(List<MemberLevel> entities);
 }

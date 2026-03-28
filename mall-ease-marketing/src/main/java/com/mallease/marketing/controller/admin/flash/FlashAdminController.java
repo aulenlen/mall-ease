@@ -36,7 +36,7 @@ public class FlashAdminController {
     @Operation(summary = "创建场次")
     @PostMapping("/sessions")
     public R<Long> createSession(@Validated(FlashSessionReqVO.Create.class) @RequestBody FlashSessionReqVO reqVO) {
-        FlashSession session = flashConvert.reqVOToSession(reqVO);
+        FlashSession session = flashConvert.toFlashSession(reqVO);
         flashService.createSession(session);
         return R.success(session.getId());
     }
@@ -44,14 +44,14 @@ public class FlashAdminController {
     @Operation(summary = "更新场次")
     @PutMapping("/sessions")
     public R<Integer> updateSession(@Validated(FlashSessionReqVO.Update.class) @RequestBody FlashSessionReqVO reqVO) {
-        FlashSession session = flashConvert.reqVOToSession(reqVO);
+        FlashSession session = flashConvert.toFlashSession(reqVO);
         return R.success(flashService.updateSession(session));
     }
 
     @Operation(summary = "获取场次详情")
     @GetMapping("/sessions/{id:\\d+}")
     public R<FlashSessionRespVO> getSession(@Parameter(description = "秒杀场次ID", required = true) @PathVariable Long id) {
-        return R.success(flashConvert.sessionToRespVO(flashService.getSessionById(id)));
+        return R.success(flashConvert.toFlashSessionResp(flashService.getSessionById(id)));
     }
 
     @Operation(summary = "删除场次")
@@ -65,7 +65,7 @@ public class FlashAdminController {
     public R<Page<FlashSessionRespVO>> listSessions(@ParameterObject FlashSessionPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<FlashSession> sessionList = flashService.pageSessions(reqVO);
-        return R.success(PageUtils.convertPage(sessionList, flashConvert::sessionListToRespVOList));
+        return R.success(PageUtils.convertPage(sessionList, flashConvert::toFlashSessionRespList));
     }
 
     @Operation(summary = "批量修改场次状态")
@@ -81,7 +81,7 @@ public class FlashAdminController {
     @PostMapping("/products")
     public R<Long> createProduct(
             @Validated(FlashProductReqVO.Create.class) @RequestBody FlashProductReqVO reqVO) {
-        FlashProduct product = flashConvert.reqVOToProduct(reqVO);
+        FlashProduct product = flashConvert.toFlashProduct(reqVO);
         flashService.createProduct(product);
         return R.success(product.getId());
     }
@@ -91,7 +91,7 @@ public class FlashAdminController {
     public R<Integer> createProductBatch(
             @RequestBody List<FlashProductReqVO> reqVOList) {
         List<FlashProduct> productList = reqVOList.stream()
-                .map(flashConvert::reqVOToProduct)
+                .map(flashConvert::toFlashProduct)
                 .toList();
         return R.success(flashService.createProductBatch(productList));
     }
@@ -100,7 +100,7 @@ public class FlashAdminController {
     @PutMapping("/products")
     public R<Integer> updateProduct(
             @Validated(FlashProductReqVO.Update.class) @RequestBody FlashProductReqVO reqVO) {
-        FlashProduct product = flashConvert.reqVOToProduct(reqVO);
+        FlashProduct product = flashConvert.toFlashProduct(reqVO);
         return R.success(flashService.updateProduct(product));
     }
 
@@ -134,6 +134,6 @@ public class FlashAdminController {
     private FlashProductRespVO getEnrichedProduct(Long id) {
         FlashProduct product = flashService.getProductById(id);
         List<FlashProductRespVO> productRespVOList = flashService.enrichWithSkuInfo(List.of(product));
-        return productRespVOList.isEmpty() ? flashConvert.productToRespVO(product) : productRespVOList.get(0);
+        return productRespVOList.isEmpty() ? flashConvert.toFlashProductResp(product) : productRespVOList.get(0);
     }
 }

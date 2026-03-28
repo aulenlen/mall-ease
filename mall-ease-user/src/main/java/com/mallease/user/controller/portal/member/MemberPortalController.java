@@ -33,6 +33,6 @@ public class MemberPortalController {
     public R<MemberRespVO> getCurrentMember() {
         Long memberId = StpMemberUtil.getLoginIdAsLong();
         Member member = userService.getMemberById(memberId);
-        return R.success(memberConvert.entityToRespVO(member));
+        return R.success(memberConvert.toMemberResp(member));
     }
 }

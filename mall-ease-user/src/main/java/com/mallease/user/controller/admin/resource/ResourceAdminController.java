@@ -36,7 +36,7 @@ public class ResourceAdminController {
     @Operation(summary = "添加后台资源")
     @PostMapping("/create")
     public R<Integer> create(@Validated(ResourceReqVO.Create.class) @RequestBody ResourceReqVO reqVO) {
-        Resource resource = resourceConvert.reqVOToEntity(reqVO);
+        Resource resource = resourceConvert.toResource(reqVO);
         int count = resourceService.create(resource);
         return R.success(count);
     }
@@ -44,7 +44,7 @@ public class ResourceAdminController {
     @Operation(summary = "修改后台资源")
     @PostMapping("/update")
     public R<Integer> update(@Validated(ResourceReqVO.Update.class) @RequestBody ResourceReqVO reqVO) {
-        Resource resource = resourceConvert.reqVOToEntity(reqVO);
+        Resource resource = resourceConvert.toResource(reqVO);
         int count = resourceService.update(reqVO.getId(), resource);
         return R.success(count);
     }
@@ -53,7 +53,7 @@ public class ResourceAdminController {
     @GetMapping("/{id}")
     public R<ResourceRespVO> getItem(@Parameter(description = "资源ID") @PathVariable Long id) {
         Resource resource = resourceService.getItem(id);
-        return R.success(resourceConvert.entityToRespVO(resource));
+        return R.success(resourceConvert.toResourceResp(resource));
     }
 
     @Operation(summary = "根据ID删除后台资源")
@@ -72,7 +72,7 @@ public class ResourceAdminController {
                                     @Parameter(description = "当前页码") @RequestParam(defaultValue = "1") Integer pageNum) {
         PageHelper.startPage(pageNum, pageSize);
         List<Resource> resourceList = resourceService.list(name, url, categoryId);
-        List<ResourceRespVO> voList = resourceConvert.entityListToRespVOList(resourceList);
+        List<ResourceRespVO> voList = resourceConvert.toResourceRespList(resourceList);
         return R.success(PageUtils.buildPage(resourceList, voList));
     }
 
@@ -80,6 +80,6 @@ public class ResourceAdminController {
     @GetMapping("/listAll")
     public R<List<ResourceRespVO>> listAll() {
         List<Resource> resourceList = resourceService.listAll();
-        return R.success(resourceConvert.entityListToRespVOList(resourceList));
+        return R.success(resourceConvert.toResourceRespList(resourceList));
     }
 }

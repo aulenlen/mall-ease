@@ -42,7 +42,7 @@ public class FlashInternalController {
             @Parameter(description = "秒杀商品ID", required = true) @PathVariable Long id) {
         FlashProduct product = flashService.getProductById(id);
         List<FlashProductRespVO> productRespVOList = flashService.enrichWithSkuInfo(List.of(product));
-        return R.success(productRespVOList.isEmpty() ? flashConvert.productToRespVO(product) : productRespVOList.get(0));
+        return R.success(productRespVOList.isEmpty() ? flashConvert.toFlashProductResp(product) : productRespVOList.get(0));
     }
 
     @Operation(summary = "获取秒杀价格覆盖信息", description = "供商品服务合并秒杀价格与活动信息")

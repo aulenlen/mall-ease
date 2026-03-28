@@ -18,16 +18,16 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface SpuIndexConvert {
 
-    EsSpu spuIndexDTOToEsSpu(SpuIndexDTO spu);
+    EsSpu toEsSpu(SpuIndexDTO spu);
 
-    List<EsSpu> spuIndexDTOListToEsSpuList(List<SpuIndexDTO> spuIndexDTOList);
+    List<EsSpu> toEsSpuList(List<SpuIndexDTO> spuIndexDTOList);
 
     // 嵌套类型转换方法（MapStruct 自动调用）
-    EsSpuSku skuToEsSpuSku(SpuIndexDTO.Sku sku);
+    EsSpuSku toEsSpuSku(SpuIndexDTO.Sku sku);
 
-    List<EsSpuSku> skuListToEsSpuSkuList(List<SpuIndexDTO.Sku> skuList);
+    List<EsSpuSku> toEsSpuSkuList(List<SpuIndexDTO.Sku> skuList);
 
-    EsSpuAttrValue attrValueToEsSpuAttrValue(SpuIndexDTO.AttrValue attrValue);
+    EsSpuAttrValue toEsSpuAttrValue(SpuIndexDTO.AttrValue attrValue);
 
-    List<EsSpuAttrValue> attrValueListToEsSpuAttrValueList(List<SpuIndexDTO.AttrValue> attrValueList);
+    List<EsSpuAttrValue> toEsSpuAttrValueList(List<SpuIndexDTO.AttrValue> attrValueList);
 }

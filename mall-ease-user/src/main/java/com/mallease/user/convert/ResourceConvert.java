@@ -21,30 +21,30 @@ public interface ResourceConvert {
     /**
      * Entity -> RespVO
      */
-    ResourceRespVO entityToRespVO(Resource entity);
+    ResourceRespVO toResourceResp(Resource entity);
 
     /**
      * Entity List -> RespVO List
      */
-    List<ResourceRespVO> entityListToRespVOList(List<Resource> entities);
+    List<ResourceRespVO> toResourceRespList(List<Resource> entities);
 
     /**
      * Entity -> DTO
      */
-    ResourceDTO entityToDTO(Resource entity);
+    ResourceDTO toResourceRemote(Resource entity);
 
     /**
      * Entity List -> DTO List
      */
-    List<ResourceDTO> entityListToDTOList(List<Resource> entities);
+    List<ResourceDTO> toResourceRemoteList(List<Resource> entities);
 
     /**
      * ReqVO -> Entity
      */
-    Resource reqVOToEntity(ResourceReqVO cmd);
+    Resource toResource(ResourceReqVO cmd);
 
     /**
      * ReqVO -> Entity (更新)
      */
-    void updateEntityFromReqVO(@MappingTarget Resource entity, ResourceReqVO cmd);
+    void copyToResource(@MappingTarget Resource entity, ResourceReqVO cmd);
 }

@@ -31,18 +31,18 @@ public interface AttributeConvert {
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
     @Mapping(source = "options", target = "options", qualifiedByName = "optionsListToJson")
-    Attribute reqVOToEntity(AttributeSaveReqVO reqVO);
+    Attribute toAttribute(AttributeSaveReqVO reqVO);
 
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
     @Mapping(source = "options", target = "options", qualifiedByName = "optionsListToJson")
-    void copyToEntity(@MappingTarget Attribute entity, AttributeSaveReqVO reqVO);
+    void copyToAttribute(@MappingTarget Attribute entity, AttributeSaveReqVO reqVO);
 
     @Mapping(source = "options", target = "optionList", qualifiedByName = "parseOptions")
-    AttributeRespVO entityToRespVO(Attribute entity);
+    AttributeRespVO toAttributeResp(Attribute entity);
 
-    List<AttributeRespVO> entityListToRespVOList(List<Attribute> entities);
+    List<AttributeRespVO> toAttributeRespList(List<Attribute> entities);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createTime", ignore = true)
@@ -50,15 +50,15 @@ public interface AttributeConvert {
     @Mapping(source = "options", target = "options", qualifiedByName = "optionsListToJson")
     @Mapping(target = "sort", expression = "java(reqVO.getSort() != null ? reqVO.getSort() : 0)")
     @Mapping(target = "required", expression = "java(reqVO.getRequired() != null ? reqVO.getRequired() : 0)")
-    CategoryAttributeRelation relationReqVOToEntity(CategoryAttributeRelationSaveReqVO reqVO);
+    CategoryAttributeRelation toCategoryAttributeRelation(CategoryAttributeRelationSaveReqVO reqVO);
 
-    default List<CategoryAttributeRelation> relationReqVOListToEntityList(Long categoryId, List<CategoryAttributeRelationSaveReqVO> reqVOList) {
+    default List<CategoryAttributeRelation> toCategoryAttributeRelationList(Long categoryId, List<CategoryAttributeRelationSaveReqVO> reqVOList) {
         if (CollectionUtils.isEmpty(reqVOList)) {
             return Collections.emptyList();
         }
         return reqVOList.stream()
                 .map(reqVO -> {
-                    CategoryAttributeRelation entity = relationReqVOToEntity(reqVO);
+                    CategoryAttributeRelation entity = toCategoryAttributeRelation(reqVO);
                     entity.setCategoryId(categoryId);
                     return entity;
                 })
@@ -85,7 +85,7 @@ public interface AttributeConvert {
         return JSONUtil.toJsonStr(options);
     }
 
-    default CategoryAttributeRelationRespVO buildCategoryAttributeRelationRespVO(CategoryAttributeRelation relation, Attribute attr) {
+    default CategoryAttributeRelationRespVO buildCategoryAttributeRelationResp(CategoryAttributeRelation relation, Attribute attr) {
         if (attr == null) {
             return null;
         }
@@ -113,14 +113,14 @@ public interface AttributeConvert {
         return vo;
     }
 
-    default List<CategoryAttributeRelationRespVO> buildCategoryAttributeRelationRespVOList(List<CategoryAttributeRelation> relations,
+    default List<CategoryAttributeRelationRespVO> buildCategoryAttributeRelationRespList(List<CategoryAttributeRelation> relations,
                                                                                            List<Attribute> attributes) {
         if (CollectionUtils.isEmpty(relations)) {
             return Collections.emptyList();
         }
         Map<Long, Attribute> attrMap = attributes.stream().collect(Collectors.toMap(Attribute::getId, attribute -> attribute));
         return relations.stream()
-                .map(relation -> buildCategoryAttributeRelationRespVO(relation, attrMap.get(relation.getAttrId())))
+                .map(relation -> buildCategoryAttributeRelationResp(relation, attrMap.get(relation.getAttrId())))
                 .filter(vo -> vo != null)
                 .toList();
     }

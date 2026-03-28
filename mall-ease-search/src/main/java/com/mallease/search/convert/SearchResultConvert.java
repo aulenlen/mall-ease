@@ -29,20 +29,20 @@ public interface SearchResultConvert {
 
     @Mapping(target = "highlightName", ignore = true)
     @Mapping(target = "score", ignore = true)
-    SpuItemRespVO dtoToRespVO(SpuRecommendDTO dto);
+    SpuItemRespVO toSpuItemResp(SpuRecommendDTO dto);
 
-    List<SpuItemRespVO> dtoListToRespVOList(List<SpuRecommendDTO> dtoList);
+    List<SpuItemRespVO> toSpuItemRespList(List<SpuRecommendDTO> dtoList);
 
     // 筛选面板转换
 
-    @Mapping(target = "brands", source = "brands", qualifiedByName = "toBrandAggRespVOList")
-    @Mapping(target = "categories", source = "categories", qualifiedByName = "toCategoryAggRespVOList")
-    @Mapping(target = "attrs", source = "attrs", qualifiedByName = "toAttrAggRespVOList")
-    @Mapping(target = "priceRanges", source = "priceRange", qualifiedByName = "toPriceRangeRespVOList")
-    SearchFilterRespVO filterDtoToRespVO(SearchFilterDTO dto);
+    @Mapping(target = "brands", source = "brands", qualifiedByName = "toBrandAggRespList")
+    @Mapping(target = "categories", source = "categories", qualifiedByName = "toCategoryAggRespList")
+    @Mapping(target = "attrs", source = "attrs", qualifiedByName = "toAttrAggRespList")
+    @Mapping(target = "priceRanges", source = "priceRange", qualifiedByName = "toPriceRangeRespList")
+    SearchFilterRespVO toSearchFilterResp(SearchFilterDTO dto);
 
-    @Named("toBrandAggRespVOList")
-    default List<SearchFilterRespVO.BrandAggRespVO> toBrandAggRespVOList(List<SearchFilterDTO.FilterItem> items) {
+    @Named("toBrandAggRespList")
+    default List<SearchFilterRespVO.BrandAggRespVO> toBrandAggRespList(List<SearchFilterDTO.FilterItem> items) {
         if (items == null) return Collections.emptyList();
         return items.stream()
                 .map(item -> SearchFilterRespVO.BrandAggRespVO.builder()
@@ -53,8 +53,8 @@ public interface SearchResultConvert {
                 .toList();
     }
 
-    @Named("toCategoryAggRespVOList")
-    default List<SearchFilterRespVO.CategoryAggRespVO> toCategoryAggRespVOList(List<SearchFilterDTO.FilterItem> items) {
+    @Named("toCategoryAggRespList")
+    default List<SearchFilterRespVO.CategoryAggRespVO> toCategoryAggRespList(List<SearchFilterDTO.FilterItem> items) {
         if (items == null) return Collections.emptyList();
         return items.stream()
                 .map(item -> SearchFilterRespVO.CategoryAggRespVO.builder()
@@ -65,8 +65,8 @@ public interface SearchResultConvert {
                 .toList();
     }
 
-    @Named("toAttrAggRespVOList")
-    default List<SearchFilterRespVO.AttrAggRespVO> toAttrAggRespVOList(List<SearchFilterDTO.AttrFilterItem> items) {
+    @Named("toAttrAggRespList")
+    default List<SearchFilterRespVO.AttrAggRespVO> toAttrAggRespList(List<SearchFilterDTO.AttrFilterItem> items) {
         if (items == null) return Collections.emptyList();
         return items.stream()
                 .map(item -> SearchFilterRespVO.AttrAggRespVO.builder()
@@ -83,8 +83,8 @@ public interface SearchResultConvert {
                 .toList();
     }
 
-    @Named("toPriceRangeRespVOList")
-    default List<SearchFilterRespVO.PriceRangeRespVO> toPriceRangeRespVOList(SearchFilterDTO.PriceRange priceRange) {
+    @Named("toPriceRangeRespList")
+    default List<SearchFilterRespVO.PriceRangeRespVO> toPriceRangeRespList(SearchFilterDTO.PriceRange priceRange) {
         if (priceRange == null || priceRange.getMin() == null || priceRange.getMax() == null) {
             return Collections.emptyList();
         }
@@ -139,7 +139,7 @@ public interface SearchResultConvert {
         return ranges;
     }
 
-    default SpuSearchPageRespVO toPageRespVO(SpuSearchResultDTO dto) {
+    default SpuSearchPageRespVO buildSearchPageResp(SpuSearchResultDTO dto) {
         SpuSearchPageRespVO result = new SpuSearchPageRespVO();
 
         if (dto == null) {
@@ -152,7 +152,7 @@ public interface SearchResultConvert {
         Page<SpuItemRespVO> productPage = new Page<>();
         if (dto.getProducts() != null) {
             Page<SpuRecommendDTO> source = dto.getProducts();
-            List<SpuItemRespVO> items = dtoListToRespVOList(source.getList());
+            List<SpuItemRespVO> items = toSpuItemRespList(source.getList());
             productPage.setList(items);
             productPage.setPageNum(source.getPageNum());
             productPage.setPageSize(source.getPageSize());
@@ -161,7 +161,7 @@ public interface SearchResultConvert {
         }
 
         // 转换筛选面板
-        SearchFilterRespVO filters = filterDtoToRespVO(dto.getFilters());
+        SearchFilterRespVO filters = toSearchFilterResp(dto.getFilters());
 
         result.setProducts(productPage);
         result.setFilters(filters != null ? filters : new SearchFilterRespVO());

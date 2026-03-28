@@ -21,25 +21,25 @@ public interface RoleConvert {
     /**
      * Entity → VO
      */
-    RoleRespVO entityToRespVO(Role entity);
+    RoleRespVO toRoleResp(Role entity);
 
     /**
      * Entity List → VO List
      */
-    List<RoleRespVO> entityListToRespVOList(List<Role> entities);
+    List<RoleRespVO> toRoleRespList(List<Role> entities);
 
     /**
      * Entity → DetailVO
      */
-    RoleDetailRespVO entityToDetailRespVO(Role entity);
+    RoleDetailRespVO toRoleDetailResp(Role entity);
 
     /**
      * Cmd → Entity
      */
-    Role reqVOToEntity(RoleReqVO cmd);
+    Role toRole(RoleReqVO cmd);
 
     /**
      * Cmd → Entity (更新)
      */
-    void updateEntityFromReqVO(@MappingTarget Role entity, RoleReqVO cmd);
+    void copyToRole(@MappingTarget Role entity, RoleReqVO cmd);
 }

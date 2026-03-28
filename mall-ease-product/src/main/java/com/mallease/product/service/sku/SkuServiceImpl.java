@@ -79,7 +79,7 @@ public class SkuServiceImpl implements SkuService {
             throw new ApiException("SPU ID不能为空");
         }
 
-        Sku sku = skuConvert.reqVOToEntity(reqVO);
+        Sku sku = skuConvert.toSku(reqVO);
         if (sku == null) {
             throw new ApiException("SKU数据不能为空");
         }
@@ -110,7 +110,7 @@ public class SkuServiceImpl implements SkuService {
 
         Sku sku = new Sku();
         sku.setId(reqVO.getId());
-        skuConvert.updateEntityFromReqVO(sku, reqVO);
+        skuConvert.copyToSku(sku, reqVO);
         return update(sku);
     }
 

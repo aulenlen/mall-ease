@@ -57,7 +57,7 @@ public class UserAdminController {
             List<Role> roleList = userService.getCurrentRoles(admin.getId());
             List<String> roles = roleList.stream().map(Role::getName).toList();
             List<Menu> menus = userService.getCurrentMenus(admin.getId());
-            List<MenuRespVO> menuRespVOList = menuConvert.entityListToRespVOList(menus);
+            List<MenuRespVO> menuRespVOList = menuConvert.toMenuRespList(menus);
 
             CurrentAdminInfoRespVO data = CurrentAdminInfoRespVO.builder()
                     .username(admin.getUsername())
@@ -75,14 +75,14 @@ public class UserAdminController {
     @Operation(summary = "管理员注册")
     @PostMapping("/register")
     public R<Integer> register(@Validated(AdminReqVO.Create.class) @RequestBody AdminReqVO reqVO) {
-        Admin admin = adminConvert.reqVOToEntity(reqVO);
+        Admin admin = adminConvert.toAdmin(reqVO);
         return R.success(userService.create(admin));
     }
 
     @Operation(summary = "修改指定管理员信息")
     @PostMapping("/update/{id}")
     public R<Integer> update(@PathVariable Long id, @RequestBody AdminReqVO reqVO) {
-        Admin admin = adminConvert.reqVOToEntity(reqVO);
+        Admin admin = adminConvert.toAdmin(reqVO);
         return R.success(userService.update(id, admin));
     }
 
@@ -99,7 +99,7 @@ public class UserAdminController {
                                      @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize,
                                      @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum) {
         List<Admin> adminList = userService.list(keyword, status, pageSize, pageNum);
-        List<AdminRespVO> voList = adminConvert.entityListToRespVOList(adminList);
+        List<AdminRespVO> voList = adminConvert.toAdminRespList(adminList);
         return R.success(PageUtils.buildPage(adminList, voList));
     }
 
@@ -119,6 +119,6 @@ public class UserAdminController {
     @GetMapping("/role/{adminId}")
     public R<List<RoleRespVO>> getRoleList(@PathVariable Long adminId) {
         List<Role> roleList = userService.getRoleList(adminId);
-        return R.success(roleConvert.entityListToRespVOList(roleList));
+        return R.success(roleConvert.toRoleRespList(roleList));
     }
 }

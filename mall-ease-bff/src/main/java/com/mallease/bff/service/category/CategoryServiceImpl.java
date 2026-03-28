@@ -39,8 +39,8 @@ public class CategoryServiceImpl implements CategoryService {
         List<CategoryTreeDTO> categoryTreeDTOList = remoteCallSupport.getList(productFeignClient::portalTree, "分类树");
         List<SpuRecommendDTO> recommendDTOList = remoteCallSupport.getList(() -> searchFeignClient.listRecommend(6), "分类推荐商品");
 
-        List<CategoryTreeRespVO> categoryTreeRespVOList = categoryConvert.categoryTreeListDTOToRespVOList(categoryTreeDTOList);
-        List<RecommendProductRespVO> recommendRespVOList = homeConvert.spuRecommendDTOListToRespVOList(recommendDTOList);
+        List<CategoryTreeRespVO> categoryTreeRespVOList = categoryConvert.toCategoryTreeRespList(categoryTreeDTOList);
+        List<RecommendProductRespVO> recommendRespVOList = homeConvert.toRecommendProductRespList(recommendDTOList);
 
         Map<Long, List<RecommendProductRespVO>> recommendMap = recommendRespVOList.stream()
                 .map(respVO -> Map.entry(parseRootCategoryId(respVO.getCategoryPath()), respVO))

@@ -45,7 +45,7 @@ public class FlashPortalController {
     @Operation(summary = "查询已发布场次列表")
     @GetMapping("/sessions")
     public R<List<FlashPortalSessionRespVO>> listSessions() {
-        return R.success(flashConvert.sessionListToPortalRespVOList(
+        return R.success(flashConvert.toFlashPortalSessionRespList(
                 flashService.listPublishedSessions(LocalDateTime.now())
         ));
     }
@@ -87,6 +87,6 @@ public class FlashPortalController {
 
     private List<FlashPortalProductRespVO> toPortalProducts(List<FlashProduct> products) {
         List<FlashProductRespVO> productRespVOList = flashService.enrichWithSkuInfo(products);
-        return flashConvert.productRespVOListToPortalRespVOList(productRespVOList);
+        return flashConvert.toFlashPortalProductRespList(productRespVOList);
     }
 }

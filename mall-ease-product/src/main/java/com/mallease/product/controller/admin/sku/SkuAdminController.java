@@ -50,7 +50,7 @@ public class SkuAdminController {
     public R<Page<SkuRespVO>> page(@Validated @ModelAttribute SkuPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Sku> skuList = skuService.page(reqVO);
-        List<SkuRespVO> respVOList = skuConvert.entityListToRespVOList(skuList);
+        List<SkuRespVO> respVOList = skuConvert.toSkuRespList(skuList);
         Page<SkuRespVO> result = PageUtils.buildPage(skuList, respVOList);
         return R.success(result);
     }
@@ -62,7 +62,7 @@ public class SkuAdminController {
         if (sku == null) {
             return R.failed("SKU不存在");
         }
-        return R.success(skuConvert.entityToRespVO(sku));
+        return R.success(skuConvert.toSkuResp(sku));
     }
 
     @Operation(summary = "删除 SKU", description = "级联删除库存、促销、价格策略")
@@ -84,6 +84,6 @@ public class SkuAdminController {
     @GetMapping("/spu/{spuId}")
     public R<List<SkuRespVO>> listBySpuId(@Parameter(description = "SPU ID") @PathVariable Long spuId) {
         List<Sku> skuList = skuService.listBySpuId(spuId);
-        return R.success(skuConvert.entityListToRespVOList(skuList));
+        return R.success(skuConvert.toSkuRespList(skuList));
     }
 }

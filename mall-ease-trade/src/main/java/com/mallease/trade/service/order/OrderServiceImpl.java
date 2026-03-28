@@ -265,7 +265,7 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.groupingBy(OrderItem::getOrderId));
 
         List<OrderAdminRespVO> voList = orders.stream()
-                .map(order -> orderAdminConvert.toListVO(order, itemsMap.get(order.getId())))
+                .map(order -> orderAdminConvert.buildOrderListResp(order, itemsMap.get(order.getId())))
                 .toList();
         return PageUtils.buildPage(orders, voList);
     }
@@ -275,9 +275,9 @@ public class OrderServiceImpl implements OrderService {
         Order order = getRequiredOrder(orderNo);
         List<OrderItem> items = listOrderItemsByOrderNo(orderNo);
         PaymentOrder paymentOrder = paymentOrderDao.selectByOrderNo(orderNo);
-        PaymentRespVO paymentVO = paymentOrder != null ? paymentConvert.entityToVO(paymentOrder) : null;
+        PaymentRespVO paymentVO = paymentOrder != null ? paymentConvert.toPaymentResp(paymentOrder) : null;
 
-        OrderAdminRespVO vo = orderAdminConvert.toDetailVO(order, items, paymentVO);
+        OrderAdminRespVO vo = orderAdminConvert.buildOrderDetailResp(order, items, paymentVO);
         OrderShipment shipment = orderShipmentDao.selectByOrderNo(orderNo);
         if (shipment != null) {
             vo.setShipment(toShipmentVO(shipment));
@@ -693,7 +693,7 @@ public class OrderServiceImpl implements OrderService {
 
     private Order buildLockingOrder(Long userId, OrderSubmitReqVO reqVO, OrderConfirmRespVO snapshot,
                                     String requestId, String orderNo, LocalDateTime payExpireTime) {
-        Order order = orderConvert.reqVOToEntity(reqVO);
+        Order order = orderConvert.toOrder(reqVO);
         order.setOrderNo(orderNo);
         order.setRequestId(requestId);
         order.setUserId(userId);
@@ -1135,7 +1135,7 @@ public class OrderServiceImpl implements OrderService {
             return null;
         }
         List<OrderItem> safeOrderItems = orderItems == null ? Collections.emptyList() : orderItems;
-        return orderConvert.toOrderRespVO(
+        return orderConvert.buildOrderResp(
                 order,
                 safeOrderItems,
                 totalQuantity != null ? totalQuantity : calculateTotalQuantity(safeOrderItems)

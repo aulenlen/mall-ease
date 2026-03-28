@@ -24,34 +24,34 @@ public interface MenuConvert {
     /**
      * Entity → VO
      */
-    MenuRespVO entityToRespVO(Menu entity);
+    MenuRespVO toMenuResp(Menu entity);
 
     /**
      * Entity List → VO List
      */
-    List<MenuRespVO> entityListToRespVOList(List<Menu> entities);
+    List<MenuRespVO> toMenuRespList(List<Menu> entities);
 
-    List<MenuTreeRespVO> entityListToRespVOTree(List<Menu> entities);
+    List<MenuTreeRespVO> buildMenuRespTree(List<Menu> entities);
 
     /**
      * Entity → TreeVO
      */
-    MenuTreeRespVO entityToTreeRespVO(Menu entity);
+    MenuTreeRespVO toMenuTreeResp(Menu entity);
 
     /**
      * Entity List → TreeVO List
      */
-    List<MenuTreeRespVO> entityListToTreeRespVOList(List<Menu> entities);
+    List<MenuTreeRespVO> toMenuTreeRespList(List<Menu> entities);
 
     /**
      * Cmd → Entity
      */
-    Menu reqVOToEntity(MenuReqVO cmd);
+    Menu toMenu(MenuReqVO cmd);
 
     /**
      * Cmd → Entity (更新)
      */
-    void updateEntityFromReqVO(@MappingTarget Menu entity, MenuReqVO cmd);
+    void copyToMenu(@MappingTarget Menu entity, MenuReqVO cmd);
 
     /**
      * 将扁平列表构建为树形结构
@@ -59,12 +59,12 @@ public interface MenuConvert {
      * @param entities 扁平分类列表
      * @return 树形结构（只返回顶级节点）
      */
-    default List<MenuTreeRespVO> buildTree(List<Menu> entities) {
+    default List<MenuTreeRespVO> buildMenuTree(List<Menu> entities) {
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();
         }
 
-        List<MenuTreeRespVO> menuTree = entityListToTreeRespVOList(entities);
+        List<MenuTreeRespVO> menuTree = toMenuTreeRespList(entities);
         Map<Long, MenuTreeRespVO> menuTreeMap = menuTree.stream()
                 .collect(Collectors.toMap(MenuTreeRespVO::getId, menu -> menu));
 

@@ -40,26 +40,26 @@ public interface OrderConvert {
     @Mapping(target = "stockProcessStatus", ignore = true)
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
-    Order reqVOToEntity(OrderSubmitReqVO reqVO);
+    Order toOrder(OrderSubmitReqVO reqVO);
 
     /**
      * OrderItem -> OrderItemRespVO
      */
-    OrderItemRespVO itemToItemVO(OrderItem item);
+    OrderItemRespVO toOrderItemResp(OrderItem item);
 
     /**
      * OrderItem List -> OrderItemRespVO List
      */
-    List<OrderItemRespVO> itemsToItemVOs(List<OrderItem> items);
+    List<OrderItemRespVO> toOrderItemRespList(List<OrderItem> items);
 
     /**
      * Order + OrderItem List -> OrderRespVO
      */
-    default OrderRespVO toOrderRespVO(Order order, List<OrderItem> items, Integer totalQuantity) {
+    default OrderRespVO buildOrderResp(Order order, List<OrderItem> items, Integer totalQuantity) {
         if (order == null) {
             return null;
         }
-        List<OrderItemRespVO> itemVOs = items == null ? Collections.emptyList() : itemsToItemVOs(items);
+        List<OrderItemRespVO> itemVOs = items == null ? Collections.emptyList() : toOrderItemRespList(items);
 
         return OrderRespVO.builder()
                 .id(order.getId())

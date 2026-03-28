@@ -23,25 +23,25 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface HomeConvert {
 
-    HomeBannerRespVO bannerDTOToRespVO(BannerDTO dto);
+    HomeBannerRespVO toHomeBannerResp(BannerDTO dto);
 
-    List<HomeBannerRespVO> bannerDTOListToRespVOList(List<BannerDTO> dtoList);
+    List<HomeBannerRespVO> toHomeBannerRespList(List<BannerDTO> dtoList);
 
-    HomeCategoryRespVO categoryDTOToRespVO(CategoryDTO dto);
+    HomeCategoryRespVO toHomeCategoryResp(CategoryDTO dto);
 
-    List<HomeCategoryRespVO> categoryDTOListToRespVOList(List<CategoryDTO> dtoList);
+    List<HomeCategoryRespVO> toHomeCategoryRespList(List<CategoryDTO> dtoList);
 
-    HomeEditorialRespVO editorialDTOToRespVO(EditorialDTO dto);
+    HomeEditorialRespVO toHomeEditorialResp(EditorialDTO dto);
 
-    List<HomeEditorialRespVO> editorialDTOListToRespVOList(List<EditorialDTO> dtoList);
+    List<HomeEditorialRespVO> toHomeEditorialRespList(List<EditorialDTO> dtoList);
 
-    RecommendProductRespVO spuRecommendDTOToRespVO(SpuRecommendDTO dto);
+    RecommendProductRespVO toRecommendProductResp(SpuRecommendDTO dto);
 
-    List<RecommendProductRespVO> spuRecommendDTOListToRespVOList(List<SpuRecommendDTO> dtoList);
+    List<RecommendProductRespVO> toRecommendProductRespList(List<SpuRecommendDTO> dtoList);
 
-    HomeFlashRespVO flashDTOToRespVO(FlashCurrentDTO dto);
+    HomeFlashRespVO toHomeFlashResp(FlashCurrentDTO dto);
 
-    HomeFlashRespVO.FlashProductRespVO flashProductDTOToRespVO(FlashCurrentDTO.FlashProduct dto);
+    HomeFlashRespVO.FlashProductRespVO toHomeFlashProductResp(FlashCurrentDTO.FlashProduct dto);
 
-    List<HomeFlashRespVO.FlashProductRespVO> flashProductDTOListToRespVOList(List<FlashCurrentDTO.FlashProduct> dtoList);
+    List<HomeFlashRespVO.FlashProductRespVO> toHomeFlashProductRespList(List<FlashCurrentDTO.FlashProduct> dtoList);
 }

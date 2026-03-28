@@ -51,7 +51,7 @@ public class MemberLevelAdminController {
             } else {
                 list = memberLevelService.listAll();
             }
-            return R.success(memberLevelConvert.entityListToRespVOList(list));
+            return R.success(memberLevelConvert.toMemberLevelRespList(list));
         } catch (Exception e) {
             log.error("查询会员等级列表失败", e);
             return R.failed("查询会员等级列表失败: " + e.getMessage());
@@ -68,7 +68,7 @@ public class MemberLevelAdminController {
             if (memberLevel == null) {
                 return R.failed("会员等级不存在");
             }
-            return R.success(memberLevelConvert.entityToRespVO(memberLevel));
+            return R.success(memberLevelConvert.toMemberLevelResp(memberLevel));
         } catch (Exception e) {
             log.error("查询会员等级失败", e);
             return R.failed("查询会员等级失败: " + e.getMessage());
@@ -80,7 +80,7 @@ public class MemberLevelAdminController {
     public R<Integer> create(@Validated(MemberLevelReqVO.Create.class) @RequestBody MemberLevelReqVO reqVO) {
         log.info("创建会员等级, reqVO: {}", reqVO);
         try {
-            MemberLevel memberLevel = memberLevelConvert.reqVOToEntity(reqVO);
+            MemberLevel memberLevel = memberLevelConvert.toMemberLevel(reqVO);
             int count = memberLevelService.create(memberLevel);
             if (count > 0) {
                 return R.success(count);
@@ -97,7 +97,7 @@ public class MemberLevelAdminController {
     public R<Integer> update(@Validated(MemberLevelReqVO.Update.class) @RequestBody MemberLevelReqVO reqVO) {
         log.info("更新会员等级, reqVO: {}", reqVO);
         try {
-            MemberLevel memberLevel = memberLevelConvert.reqVOToEntity(reqVO);
+            MemberLevel memberLevel = memberLevelConvert.toMemberLevel(reqVO);
             int count = memberLevelService.update(memberLevel);
             if (count > 0) {
                 return R.success(count);

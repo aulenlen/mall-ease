@@ -65,7 +65,7 @@ public class CategoryAdminController {
             return R.success(null);
         }
 
-        CategoryDetailRespVO respVO = categoryConvert.entityToDetailRespVO(category);
+        CategoryDetailRespVO respVO = categoryConvert.toCategoryDetailResp(category);
         if (category.getParentId() != null && category.getParentId() > 0) {
             Category parent = categoryService.getById(category.getParentId());
             if (parent != null) {
@@ -87,26 +87,26 @@ public class CategoryAdminController {
     @GetMapping("/descendants/{id}")
     public R<List<CategoryListRespVO>> listDescendants(@Parameter(description = "分类ID") @PathVariable Long id) {
         List<Category> descendants = categoryService.listDescendants(id);
-        return R.success(categoryConvert.entityListToListRespVOList(descendants));
+        return R.success(categoryConvert.toCategoryListRespList(descendants));
     }
 
     @Operation(summary = "按层级查询分类")
     @GetMapping("/level/{level}")
     public R<List<CategoryListRespVO>> listByLevel(@Parameter(description = "层级：0=一级，1=二级，2=三级") @PathVariable Integer level) {
         List<Category> categories = categoryService.listByLevel(level);
-        return R.success(categoryConvert.entityListToListRespVOList(categories));
+        return R.success(categoryConvert.toCategoryListRespList(categories));
     }
 
     @Operation(summary = "获取完整分类树")
     @GetMapping("/tree")
     public R<List<CategoryTreeRespVO>> getFullTree() {
-        return R.success(categoryConvert.buildTree(categoryService.listAll()));
+        return R.success(categoryConvert.buildCategoryTree(categoryService.listAll()));
     }
 
     @Operation(summary = "获取分类树（支持筛选）")
     @GetMapping("/tree/query")
     public R<List<CategoryTreeRespVO>> getTree(@Validated @ModelAttribute CategoryQueryReqVO reqVO) {
-        return R.success(categoryConvert.buildTree(categoryService.listByQuery(reqVO)));
+        return R.success(categoryConvert.buildCategoryTree(categoryService.listByQuery(reqVO)));
     }
 
     @Operation(summary = "获取导航分类树")
@@ -116,7 +116,7 @@ public class CategoryAdminController {
                 .isNav(1)
                 .enableStatus(1)
                 .build();
-        return R.success(categoryConvert.buildTree(categoryService.listByQuery(reqVO)));
+        return R.success(categoryConvert.buildCategoryTree(categoryService.listByQuery(reqVO)));
     }
 
     @Operation(summary = "获取面包屑路径")
@@ -159,7 +159,7 @@ public class CategoryAdminController {
         if (categories == null || categories.isEmpty()) {
             return new ArrayList<>();
         }
-        List<CategoryListRespVO> respVOList = categoryConvert.entityListToListRespVOList(categories);
+        List<CategoryListRespVO> respVOList = categoryConvert.toCategoryListRespList(categories);
         List<Long> categoryIds = categories.stream().map(Category::getId).collect(Collectors.toList());
         Map<Long, Long> childCountMap = categoryService.countChildrenByParentIds(categoryIds);
         for (CategoryListRespVO respVO : respVOList) {

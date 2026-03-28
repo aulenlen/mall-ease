@@ -38,7 +38,7 @@ public class AddressServiceImpl implements AddressService {
             throw new ApiException("收货地址最多只能添加" + MAX_ADDRESS_COUNT + "条");
         }
 
-        MemberAddress address = addressConvert.reqVOToEntity(reqVO);
+        MemberAddress address = addressConvert.toAddress(reqVO);
         address.setMemberId(memberId);
 
         if (count == 0) {
@@ -65,7 +65,7 @@ public class AddressServiceImpl implements AddressService {
             memberAddressDao.clearDefaultByMemberId(memberId);
         }
 
-        MemberAddress address = addressConvert.reqVOToEntity(reqVO);
+        MemberAddress address = addressConvert.toAddress(reqVO);
         address.setId(reqVO.getId());
         memberAddressDao.updateByPrimaryKeySelective(address);
     }
@@ -110,7 +110,7 @@ public class AddressServiceImpl implements AddressService {
     @Override
     public List<AddressRespVO> list(Long memberId) {
         List<MemberAddress> addresses = memberAddressDao.selectByMemberId(memberId);
-        return addressConvert.entityListToRespVOList(addresses);
+        return addressConvert.toAddressRespList(addresses);
     }
 
     @Override
@@ -119,12 +119,12 @@ public class AddressServiceImpl implements AddressService {
         if (address == null) {
             throw new ApiException("地址不存在");
         }
-        return addressConvert.entityToRespVO(address);
+        return addressConvert.toAddressResp(address);
     }
 
     @Override
     public AddressRespVO getDefault(Long memberId) {
         MemberAddress address = memberAddressDao.selectDefaultByMemberId(memberId);
-        return address == null ? null : addressConvert.entityToRespVO(address);
+        return address == null ? null : addressConvert.toAddressResp(address);
     }
 }

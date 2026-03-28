@@ -20,22 +20,22 @@ public interface MemberConvert {
     /**
      * Entity → DTO（内部调用）
      */
-    MemberDTO entityToDTO(Member entity);
+    MemberDTO toMemberRemote(Member entity);
 
     /**
      * Entity List → DTO List（内部调用）
      */
-    List<MemberDTO> entityListToDTOList(List<Member> entities);
+    List<MemberDTO> toMemberRemoteList(List<Member> entities);
 
     /**
      * DTO → Entity（注册时使用）
      */
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
-    Member dtoToEntity(MemberDTO dto);
+    Member toMember(MemberDTO dto);
 
     /**
      * Entity → VO（对外响应）
      */
-    MemberRespVO entityToRespVO(Member entity);
+    MemberRespVO toMemberResp(Member entity);
 }

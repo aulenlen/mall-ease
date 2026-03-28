@@ -22,9 +22,9 @@ import java.util.Map;
 public interface SkuConvert {
 
     @Mapping(source = "attrValues", target = "attrValuesObj", qualifiedByName = "parseAttrValues")
-    SkuRespVO entityToRespVO(Sku entity);
+    SkuRespVO toSkuResp(Sku entity);
 
-    List<SkuRespVO> entityListToRespVOList(List<Sku> entities);
+    List<SkuRespVO> toSkuRespList(List<Sku> entities);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "spuId", ignore = true)
@@ -32,10 +32,10 @@ public interface SkuConvert {
 
     @Mapping(target = "deleted", constant = "0")
     @Mapping(source = "attrValues", target = "attrValues", qualifiedByName = "serializeAttrValues")
-    Sku reqVOToEntity(SkuSaveReqVO reqVO);
+    Sku toSku(SkuSaveReqVO reqVO);
 
     @Mapping(source = "attrValues", target = "attrValues", qualifiedByName = "serializeAttrValues")
-    void updateEntityFromReqVO(@MappingTarget Sku entity, SkuSaveReqVO reqVO);
+    void copyToSku(@MappingTarget Sku entity, SkuSaveReqVO reqVO);
 
     @Mapping(target = "lockStock", constant = "0")
     @Mapping(target = "sale", constant = "0")

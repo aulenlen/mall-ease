@@ -128,7 +128,7 @@ public class SkuStockAdminController {
         if (stock == null) {
             return R.failed("库存记录不存在");
         }
-        return R.success(skuStockConvert.entityToRespVO(stock));
+        return R.success(skuStockConvert.toSkuStockResp(stock));
     }
 
     @Operation(summary = "根据 SPU 获取库存列表", description = "查询某个 SPU 下所有 SKU 的库存，包含商品名称、规格信息，以及启用和停用两类 SKU")
@@ -153,7 +153,7 @@ public class SkuStockAdminController {
 
     private SkuStockRespVO toSkuStockRespVO(String spuName, Sku sku, SkuStock stock) {
         SkuStockRespVO respVO = stock != null
-                ? skuStockConvert.entityToRespVO(stock)
+                ? skuStockConvert.toSkuStockResp(stock)
                 : SkuStockRespVO.builder()
                 .skuId(sku.getId())
                 .spuId(sku.getSpuId())
@@ -186,7 +186,7 @@ public class SkuStockAdminController {
     @GetMapping("/warning")
     public R<List<SkuStockRespVO>> listLowStockWarning() {
         List<SkuStock> stockList = skuStockService.listLowStockWarning();
-        return R.success(skuStockConvert.entityListToRespVOList(stockList));
+        return R.success(skuStockConvert.toSkuStockRespList(stockList));
     }
 
     @Operation(summary = "批量更新库存状态")

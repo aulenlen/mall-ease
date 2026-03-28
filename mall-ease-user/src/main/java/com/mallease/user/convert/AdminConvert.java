@@ -21,25 +21,25 @@ public interface AdminConvert {
     /**
      * Entity -> RespVO
      */
-    AdminRespVO entityToRespVO(Admin entity);
+    AdminRespVO toAdminResp(Admin entity);
 
     /**
      * Entity List -> RespVO List
      */
-    List<AdminRespVO> entityListToRespVOList(List<Admin> entities);
+    List<AdminRespVO> toAdminRespList(List<Admin> entities);
 
     /**
      * Entity -> DTO
      */
-    AdminDTO entityToDTO(Admin entity);
+    AdminDTO toAdminRemote(Admin entity);
 
     /**
      * ReqVO -> Entity
      */
-    Admin reqVOToEntity(AdminReqVO cmd);
+    Admin toAdmin(AdminReqVO cmd);
 
     /**
      * ReqVO -> Entity (更新)
      */
-    void updateEntityFromReqVO(@MappingTarget Admin entity, AdminReqVO cmd);
+    void copyToAdmin(@MappingTarget Admin entity, AdminReqVO cmd);
 }

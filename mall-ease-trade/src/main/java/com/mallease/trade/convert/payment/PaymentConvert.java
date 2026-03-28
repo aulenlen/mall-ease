@@ -13,5 +13,5 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface PaymentConvert {
 
-    PaymentRespVO entityToVO(PaymentOrder entity);
+    PaymentRespVO toPaymentResp(PaymentOrder entity);
 }

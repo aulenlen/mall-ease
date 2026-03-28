@@ -37,7 +37,7 @@ public class SearchAdminController {
     @Operation(summary = "保存索引")
     @PostMapping("/index/batch")
     public R<Boolean> indexBatch(@RequestBody List<SpuIndexDTO> dtoList) {
-        List<EsSpu> entityList = spuIndexConvert.spuIndexDTOListToEsSpuList(dtoList);
+        List<EsSpu> entityList = spuIndexConvert.toEsSpuList(dtoList);
         spuSearchService.indexBatch(entityList);
         return R.success(true);
     }

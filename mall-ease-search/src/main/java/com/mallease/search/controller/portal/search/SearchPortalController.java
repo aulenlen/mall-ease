@@ -44,6 +44,6 @@ public class SearchPortalController {
             reqVO.setNeedAggregation(true);
         }
         SpuSearchResultDTO dto = spuSearchService.searchWithAggregation(reqVO);
-        return R.success(searchResultConvert.toPageRespVO(dto));
+        return R.success(searchResultConvert.buildSearchPageResp(dto));
     }
 }

@@ -28,14 +28,14 @@ public class MenuAdminController {
     @Operation(summary = "创建菜单")
     @PostMapping("/create")
     public R<Integer> create(@Validated(MenuReqVO.Create.class) @RequestBody MenuReqVO reqVO) {
-        Menu menu = menuConvert.reqVOToEntity(reqVO);
+        Menu menu = menuConvert.toMenu(reqVO);
         return R.success(menuService.create(menu));
     }
 
     @Operation(summary = "更新菜单")
     @PostMapping("/update")
     public R<Integer> update(@Validated(MenuReqVO.Update.class) @RequestBody MenuReqVO reqVO) {
-        Menu menu = menuConvert.reqVOToEntity(reqVO);
+        Menu menu = menuConvert.toMenu(reqVO);
         return R.success(menuService.update(menu));
     }
 
@@ -48,7 +48,7 @@ public class MenuAdminController {
     @Operation(summary = "获取菜单详情")
     @GetMapping("/{id}")
     public R<MenuRespVO> getById(@Parameter(description = "菜单ID") @PathVariable Long id) {
-        return R.success(menuConvert.entityToRespVO(menuService.getById(id)));
+        return R.success(menuConvert.toMenuResp(menuService.getById(id)));
     }
 
     @Operation(summary = "批量删除菜单")
@@ -62,7 +62,7 @@ public class MenuAdminController {
     @GetMapping("/tree")
     public R<List<MenuTreeRespVO>> treeMenu() {
         List<Menu> menus = menuService.listAll();
-        List<MenuTreeRespVO> menuTreeVOS = menuConvert.buildTree(menus);
+        List<MenuTreeRespVO> menuTreeVOS = menuConvert.buildMenuTree(menus);
         return R.success(menuTreeVOS);
     }
 }

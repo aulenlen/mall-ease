@@ -24,13 +24,13 @@ public interface SkuStockConvert {
     @Mapping(target = "pic", ignore = true)
     @Mapping(target = "attrValues", ignore = true)
     @Mapping(target = "attrValuesObj", ignore = true)
-    SkuStockRespVO entityToRespVO(SkuStock entity);
+    SkuStockRespVO toSkuStockResp(SkuStock entity);
 
-    List<SkuStockRespVO> entityListToRespVOList(List<SkuStock> entities);
+    List<SkuStockRespVO> toSkuStockRespList(List<SkuStock> entities);
 
-    SkuStock reqVOToEntity(SkuStockSaveReqVO reqVO);
+    SkuStock toSkuStock(SkuStockSaveReqVO reqVO);
 
-    void updateEntityFromReqVO(@MappingTarget SkuStock entity, SkuStockSaveReqVO reqVO);
+    void copyToSkuStock(@MappingTarget SkuStock entity, SkuStockSaveReqVO reqVO);
 
     @Named("calcLowStockWarning")
     default Boolean calcLowStockWarning(SkuStock stock) {

@@ -23,23 +23,23 @@ public interface OrderAdminConvert {
     /**
      * OrderItem -> OrderItemRespVO
      */
-    OrderItemRespVO itemToItemVO(OrderItem item);
+    OrderItemRespVO toOrderItemResp(OrderItem item);
 
     /**
      * OrderItem List -> OrderItemRespVO List
      */
-    List<OrderItemRespVO> itemsToItemVOs(List<OrderItem> items);
+    List<OrderItemRespVO> toOrderItemRespList(List<OrderItem> items);
 
     /**
      * Order -> OrderAdminRespVO（列表场景，含商品列表）
      */
-    default OrderAdminRespVO toListVO(Order order, List<OrderItem> items) {
+    default OrderAdminRespVO buildOrderListResp(Order order, List<OrderItem> items) {
         if (order == null) {
             return null;
         }
         List<OrderItemRespVO> itemVOs = items == null
                 ? Collections.emptyList()
-                : itemsToItemVOs(items);
+                : toOrderItemRespList(items);
 
         return OrderAdminRespVO.builder()
                 .id(order.getId())
@@ -67,8 +67,8 @@ public interface OrderAdminConvert {
     /**
      * Order -> OrderAdminRespVO（详情场景，含商品列表 + 支付信息）
      */
-    default OrderAdminRespVO toDetailVO(Order order, List<OrderItem> items, PaymentRespVO payment) {
-        OrderAdminRespVO vo = toListVO(order, items);
+    default OrderAdminRespVO buildOrderDetailResp(Order order, List<OrderItem> items, PaymentRespVO payment) {
+        OrderAdminRespVO vo = buildOrderListResp(order, items);
         if (vo != null) {
             vo.setPayment(payment);
         }

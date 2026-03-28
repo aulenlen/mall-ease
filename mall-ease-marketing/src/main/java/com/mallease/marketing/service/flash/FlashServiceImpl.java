@@ -209,7 +209,7 @@ public class FlashServiceImpl implements FlashService {
         Map<Long, FlashSession> sessionMap = batchGetSessionMap(products);
 
         return products.stream().map(p -> {
-            FlashProductRespVO vo = flashConvert.productToRespVO(p);
+            FlashProductRespVO vo = flashConvert.toFlashProductResp(p);
             SkuSimpleDTO sku = skuMap.get(p.getSkuId());
             FlashSession session = sessionMap.get(p.getFlashSessionId());
             if (sku != null) {

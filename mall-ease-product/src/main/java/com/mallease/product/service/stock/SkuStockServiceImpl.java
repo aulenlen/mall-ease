@@ -79,7 +79,7 @@ public class SkuStockServiceImpl implements SkuStockService {
             throw new ApiException("该SKU已存在库存记录");
         }
 
-        SkuStock stock = skuStockConvert.reqVOToEntity(reqVO);
+        SkuStock stock = skuStockConvert.toSkuStock(reqVO);
         stock.setLockStock(stock.getLockStock() != null ? stock.getLockStock() : 0);
         stock.setSale(stock.getSale() != null ? stock.getSale() : 0);
         stock.setVersion(stock.getVersion() != null ? stock.getVersion() : 0);
@@ -134,7 +134,7 @@ public class SkuStockServiceImpl implements SkuStockService {
 
         SkuStock stock = new SkuStock();
         stock.setId(reqVO.getId());
-        skuStockConvert.updateEntityFromReqVO(stock, reqVO);
+        skuStockConvert.copyToSkuStock(stock, reqVO);
         int updatedRows = skuStockDao.updateByPrimaryKeySelective(stock);
         if (updatedRows > 0) {
             SkuStock mergedStock = mergeUpdatedStock(existing, reqVO);

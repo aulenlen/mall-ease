@@ -19,11 +19,11 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface BrandConvert {
 
-    BrandListRespVO entityToListRespVO(Brand entity);
+    BrandListRespVO toBrandListResp(Brand entity);
 
-    BrandDetailRespVO entityToDetailRespVO(Brand entity);
+    BrandDetailRespVO toBrandDetailResp(Brand entity);
 
-    List<BrandListRespVO> entityListToListRespVOList(List<Brand> entities);
+    List<BrandListRespVO> toBrandListRespList(List<Brand> entities);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "spuCount", ignore = true)
@@ -32,23 +32,23 @@ public interface BrandConvert {
     @Mapping(target = "updateTime", ignore = true)
     @Mapping(target = "creator", ignore = true)
     @Mapping(target = "updater", ignore = true)
-    Brand reqVOToEntity(BrandSaveReqVO reqVO);
+    Brand toBrand(BrandSaveReqVO reqVO);
 
-    List<BrandDTO> entityListToDTOList(List<Brand> brands);
+    List<BrandDTO> toBrandRemoteList(List<Brand> brands);
 
-    default CategoryBrandRelation relationReqVOToEntity(Long categoryId, Long brandId) {
+    default CategoryBrandRelation toCategoryBrandRelation(Long categoryId, Long brandId) {
         CategoryBrandRelation entity = new CategoryBrandRelation();
         entity.setCategoryId(categoryId);
         entity.setBrandId(brandId);
         return entity;
     }
 
-    default List<CategoryBrandRelation> relationReqVOListToEntityList(Long categoryId, List<Long> brandIds) {
+    default List<CategoryBrandRelation> toCategoryBrandRelationList(Long categoryId, List<Long> brandIds) {
         if (CollectionUtils.isEmpty(brandIds)) {
             return Collections.emptyList();
         }
         return brandIds.stream()
-                .map(brandId -> relationReqVOToEntity(categoryId, brandId))
+                .map(brandId -> toCategoryBrandRelation(categoryId, brandId))
                 .toList();
     }
 }

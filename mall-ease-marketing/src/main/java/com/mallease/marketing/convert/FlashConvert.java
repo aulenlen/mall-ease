@@ -19,27 +19,27 @@ import java.util.List;
 public interface FlashConvert {
     // Session
     @Mapping(target = "timeStatus", expression = "java(resolveTimeStatus(session.getStartTime(), session.getEndTime()))")
-    FlashSessionRespVO sessionToRespVO(FlashSession session);
+    FlashSessionRespVO toFlashSessionResp(FlashSession session);
 
-    List<FlashSessionRespVO> sessionListToRespVOList(List<FlashSession> list);
+    List<FlashSessionRespVO> toFlashSessionRespList(List<FlashSession> list);
 
-    FlashSession reqVOToSession(FlashSessionReqVO cmd);
+    FlashSession toFlashSession(FlashSessionReqVO cmd);
 
     @Mapping(target = "timeStatus", expression = "java(resolveTimeStatus(session.getStartTime(), session.getEndTime()))")
-    FlashPortalSessionRespVO sessionToPortalRespVO(FlashSession session);
+    FlashPortalSessionRespVO toFlashPortalSessionResp(FlashSession session);
 
-    List<FlashPortalSessionRespVO> sessionListToPortalRespVOList(List<FlashSession> list);
+    List<FlashPortalSessionRespVO> toFlashPortalSessionRespList(List<FlashSession> list);
 
     // Product
-    FlashProductRespVO productToRespVO(FlashProduct product);
+    FlashProductRespVO toFlashProductResp(FlashProduct product);
 
-    List<FlashProductRespVO> productListToRespVOList(List<FlashProduct> list);
+    List<FlashProductRespVO> toFlashProductRespList(List<FlashProduct> list);
 
-    FlashProduct reqVOToProduct(FlashProductReqVO cmd);
+    FlashProduct toFlashProduct(FlashProductReqVO cmd);
 
-    FlashPortalProductRespVO productRespVOToPortalRespVO(FlashProductRespVO product);
+    FlashPortalProductRespVO toFlashPortalProductResp(FlashProductRespVO product);
 
-    List<FlashPortalProductRespVO> productRespVOListToPortalRespVOList(List<FlashProductRespVO> list);
+    List<FlashPortalProductRespVO> toFlashPortalProductRespList(List<FlashProductRespVO> list);
 
     default Integer resolveTimeStatus(LocalDateTime startTime, LocalDateTime endTime) {
         if (startTime == null || endTime == null) {

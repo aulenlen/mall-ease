@@ -43,11 +43,11 @@ public class HomeServiceImpl implements HomeService {
         List<SpuRecommendDTO> recommendDTOList = remoteCallSupport.getList(() -> searchFeignClient.listRecommend(20), "首页推荐商品");
 
         return HomePageRespVO.builder()
-                .banners(homeConvert.bannerDTOListToRespVOList(bannerDTOList))
-                .navCategories(homeConvert.categoryDTOListToRespVOList(categoryDTOList))
-                .flashData(homeConvert.flashDTOToRespVO(flashCurrentDTO))
-                .editorials(homeConvert.editorialDTOListToRespVOList(editorialDTOList))
-                .recommendProducts(homeConvert.spuRecommendDTOListToRespVOList(recommendDTOList))
+                .banners(homeConvert.toHomeBannerRespList(bannerDTOList))
+                .navCategories(homeConvert.toHomeCategoryRespList(categoryDTOList))
+                .flashData(homeConvert.toHomeFlashResp(flashCurrentDTO))
+                .editorials(homeConvert.toHomeEditorialRespList(editorialDTOList))
+                .recommendProducts(homeConvert.toRecommendProductRespList(recommendDTOList))
                 .build();
     }
 }

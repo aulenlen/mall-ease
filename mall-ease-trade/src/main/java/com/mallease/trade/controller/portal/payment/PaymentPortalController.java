@@ -38,7 +38,7 @@ public class PaymentPortalController {
     @PostMapping("/portal/create")
     public R<PaymentRespVO> create(@Validated @RequestBody PaymentCreateReqVO reqVO) {
         Long userId = LoginContextUtil.getUserId();
-        return R.success(paymentConverter.entityToVO(paymentService.create(userId, reqVO)));
+        return R.success(paymentConverter.toPaymentResp(paymentService.create(userId, reqVO)));
     }
 
     @Operation(summary = "执行支付")
@@ -47,7 +47,7 @@ public class PaymentPortalController {
         Long userId = LoginContextUtil.getUserId();
         String payForm = paymentService.pay(userId, paymentNo, payChannel);
 
-        PaymentRespVO vo = paymentConverter.entityToVO(paymentService.getByPaymentNo(paymentNo));
+        PaymentRespVO vo = paymentConverter.toPaymentResp(paymentService.getByPaymentNo(paymentNo));
         if (vo == null) {
             throw new ApiException("支付单不存在或不可支付");
         }
@@ -59,7 +59,7 @@ public class PaymentPortalController {
     @GetMapping("/portal/status")
     public R<PaymentRespVO> status(@RequestParam String orderNo) {
         Long userId = LoginContextUtil.getUserId();
-        return R.success(paymentConverter.entityToVO(paymentService.getByOrderNo(userId, orderNo)));
+        return R.success(paymentConverter.toPaymentResp(paymentService.getByOrderNo(userId, orderNo)));
     }
 
     @Operation(summary = "关闭支付单")

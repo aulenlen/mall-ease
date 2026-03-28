@@ -21,30 +21,30 @@ public interface CartConvert {
     /**
      * Cmd -> Entity
      */
-    CartItem cmdToEntity(CartItemQuantityUpdateReqVO cmd);
+    CartItem toCartItem(CartItemQuantityUpdateReqVO cmd);
 
     /**
      * Entity -> VO
      */
-    CartItemRespVO entityToVo(CartItem entity);
+    CartItemRespVO toCartItemResp(CartItem entity);
 
     /**
      * Entity List -> VO List
      */
-    List<CartItemRespVO> entityListToVoList(List<CartItem> entities);
+    List<CartItemRespVO> toCartItemRespList(List<CartItem> entities);
 
     /**
      * Entity -> DTO（内部调用）
      */
-    CartItemDTO entityToDto(CartItem entity);
+    CartItemDTO toCartItemRemote(CartItem entity);
 
     /**
      * Entity List -> DTO List（内部调用）
      */
-    List<CartItemDTO> entityListToDtoList(List<CartItem> entities);
+    List<CartItemDTO> toCartItemRemoteList(List<CartItem> entities);
 
     /**
      * AddCartItemDTO -> Entity（内部调用）
      */
-    CartItem addDtoToEntity(AddCartItemDTO dto);
+    CartItem toCartItem(AddCartItemDTO dto);
 }

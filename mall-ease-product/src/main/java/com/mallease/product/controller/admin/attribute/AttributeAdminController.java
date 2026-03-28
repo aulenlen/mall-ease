@@ -67,7 +67,7 @@ public class AttributeAdminController {
     @Operation(summary = "获取属性详情")
     @GetMapping("/{id}")
     public R<AttributeRespVO> get(@PathVariable Long id) {
-        return R.success(attributeConvert.entityToRespVO(attributeService.get(id)));
+        return R.success(attributeConvert.toAttributeResp(attributeService.get(id)));
     }
 
     @Operation(summary = "查询属性池列表", description = "支持分页、条件查询")
@@ -75,7 +75,7 @@ public class AttributeAdminController {
     public R<Page<AttributeRespVO>> page(@Validated @ModelAttribute AttributePageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Attribute> entities = attributeService.page(reqVO);
-        return R.success(PageUtils.convertPage(entities, attributeConvert::entityListToRespVOList));
+        return R.success(PageUtils.convertPage(entities, attributeConvert::toAttributeRespList));
     }
 
     @Operation(summary = "为分类关联属性")
@@ -113,19 +113,19 @@ public class AttributeAdminController {
     @Operation(summary = "查询分类已关联的属性")
     @GetMapping("/listByCategory/{categoryId}")
     public R<List<CategoryAttributeRelationRespVO>> listByCategory(@PathVariable Long categoryId) {
-        return R.success(buildCategoryAttributeRelationRespVOList(attributeService.listByCategory(categoryId)));
+        return R.success(buildCategoryAttributeRelationRespList(attributeService.listByCategory(categoryId)));
     }
 
     @Operation(summary = "查询分类已关联的规格属性")
     @GetMapping("/listSpecsByCategory/{categoryId}")
     public R<List<CategoryAttributeRelationRespVO>> listSpecsByCategory(@PathVariable Long categoryId) {
-        return R.success(buildCategoryAttributeRelationRespVOList(attributeService.listSpecsByCategory(categoryId)));
+        return R.success(buildCategoryAttributeRelationRespList(attributeService.listSpecsByCategory(categoryId)));
     }
 
     @Operation(summary = "查询分类已关联的参数属性")
     @GetMapping("/listParamsByCategory/{categoryId}")
     public R<List<CategoryAttributeRelationRespVO>> listParamsByCategory(@PathVariable Long categoryId) {
-        return R.success(buildCategoryAttributeRelationRespVOList(attributeService.listParamsByCategory(categoryId)));
+        return R.success(buildCategoryAttributeRelationRespList(attributeService.listParamsByCategory(categoryId)));
     }
 
     @Operation(summary = "查询分类未关联的属性（供勾选弹窗）", description = "支持分页、条件查询")
@@ -134,7 +134,7 @@ public class AttributeAdminController {
                                                          @ModelAttribute AttributePageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Attribute> entities = attributeService.listUnbindByCategory(categoryId, reqVO);
-        return R.success(PageUtils.convertPage(entities, attributeConvert::entityListToRespVOList));
+        return R.success(PageUtils.convertPage(entities, attributeConvert::toAttributeRespList));
     }
 
     @Operation(summary = "从父分类复制属性关联")
@@ -167,12 +167,12 @@ public class AttributeAdminController {
         return R.success(attributeService.getAttrOptions(categoryId, attrId));
     }
 
-    private List<CategoryAttributeRelationRespVO> buildCategoryAttributeRelationRespVOList(List<CategoryAttributeRelation> relations) {
+    private List<CategoryAttributeRelationRespVO> buildCategoryAttributeRelationRespList(List<CategoryAttributeRelation> relations) {
         if (CollectionUtils.isEmpty(relations)) {
             return Collections.emptyList();
         }
         List<Long> attrIds = relations.stream().map(CategoryAttributeRelation::getAttrId).toList();
         List<Attribute> attributes = attributeService.listByIds(attrIds);
-        return attributeConvert.buildCategoryAttributeRelationRespVOList(relations, attributes);
+        return attributeConvert.buildCategoryAttributeRelationRespList(relations, attributes);
     }
 }

@@ -49,7 +49,7 @@ public class BrandAdminController {
     public R<Page<BrandListRespVO>> page(@Validated @ModelAttribute BrandPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Brand> brandList = brandService.page(reqVO);
-        return R.success(PageUtils.convertPage(brandList, brandConvert::entityListToListRespVOList));
+        return R.success(PageUtils.convertPage(brandList, brandConvert::toBrandListRespList));
     }
 
     @Operation(summary = "创建品牌")
@@ -61,7 +61,7 @@ public class BrandAdminController {
     @Operation(summary = "获取品牌详情")
     @GetMapping("/{id}")
     public R<BrandDetailRespVO> get(@Parameter(description = "品牌ID") @PathVariable Long id) {
-        return R.success(brandConvert.entityToDetailRespVO(brandService.get(id)));
+        return R.success(brandConvert.toBrandDetailResp(brandService.get(id)));
     }
 
     @Operation(summary = "更新品牌")
@@ -116,13 +116,13 @@ public class BrandAdminController {
     @Operation(summary = "查询分类已关联的品牌")
     @GetMapping("/listByCategory/{categoryId}")
     public R<List<BrandListRespVO>> listByCategory(@PathVariable Long categoryId) {
-        return R.success(brandConvert.entityListToListRespVOList(brandService.listByCategory(categoryId)));
+        return R.success(brandConvert.toBrandListRespList(brandService.listByCategory(categoryId)));
     }
 
     @Operation(summary = "查询分类未关联的品牌（供勾选弹窗）")
     @GetMapping("/listUnbind/{categoryId}")
     public R<List<BrandListRespVO>> listUnbindByCategory(@PathVariable Long categoryId) {
-        return R.success(brandConvert.entityListToListRespVOList(brandService.listUnbindByCategory(categoryId)));
+        return R.success(brandConvert.toBrandListRespList(brandService.listUnbindByCategory(categoryId)));
     }
 
     @Operation(summary = "从父分类复制品牌关联")

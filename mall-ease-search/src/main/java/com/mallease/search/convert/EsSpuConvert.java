@@ -26,15 +26,15 @@ public interface EsSpuConvert {
 
     @Mapping(target = "score", ignore = true)
 
-    SpuItemRespVO entityToRespVO(EsSpu spu);
+    SpuItemRespVO toSpuItemResp(EsSpu spu);
 
 
 
-    List<SpuItemRespVO> entityListToRespVOList(List<EsSpu> spuList);
+    List<SpuItemRespVO> toSpuItemRespList(List<EsSpu> spuList);
 
     // ES 实体 -> SpuRecommendDTO（内部调用）
     @Mapping(target = "isNew", expression = "java(spu.getNewStatus() != null && spu.getNewStatus() == 1)")
-    SpuRecommendDTO entityToDTO(EsSpu spu);
+    SpuRecommendDTO toSpuRecommendRemote(EsSpu spu);
 
-    List<SpuRecommendDTO> entityListToDTOList(List<EsSpu> spuList);
+    List<SpuRecommendDTO> toSpuRecommendRemoteList(List<EsSpu> spuList);
 }

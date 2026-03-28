@@ -21,19 +21,19 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface CategoryConvert {
 
-    CategoryListRespVO entityToListRespVO(Category entity);
+    CategoryListRespVO toCategoryListResp(Category entity);
 
-    CategoryDetailRespVO entityToDetailRespVO(Category entity);
+    CategoryDetailRespVO toCategoryDetailResp(Category entity);
 
-    CategoryTreeRespVO entityToTreeRespVO(Category entity);
+    CategoryTreeRespVO toCategoryTreeResp(Category entity);
 
-    List<CategoryTreeRespVO> entityListToTreeRespVOList(List<Category> entities);
+    List<CategoryTreeRespVO> toCategoryTreeRespList(List<Category> entities);
 
-    List<CategoryListRespVO> entityListToListRespVOList(List<Category> entities);
+    List<CategoryListRespVO> toCategoryListRespList(List<Category> entities);
 
-    CategoryDTO entityToDTO(Category entity);
+    CategoryDTO toCategoryRemote(Category entity);
 
-    List<CategoryDTO> entityListToDTOList(List<Category> entities);
+    List<CategoryDTO> toCategoryRemoteList(List<Category> entities);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "path", ignore = true)
@@ -43,14 +43,14 @@ public interface CategoryConvert {
     @Mapping(target = "updateTime", ignore = true)
     @Mapping(target = "creator", ignore = true)
     @Mapping(target = "updater", ignore = true)
-    Category reqVOToEntity(CategorySaveReqVO reqVO);
+    Category toCategory(CategorySaveReqVO reqVO);
 
-    default List<CategoryTreeRespVO> buildTree(List<Category> entities) {
+    default List<CategoryTreeRespVO> buildCategoryTree(List<Category> entities) {
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();
         }
 
-        List<CategoryTreeRespVO> treeRespVOList = entityListToTreeRespVOList(entities);
+        List<CategoryTreeRespVO> treeRespVOList = toCategoryTreeRespList(entities);
         Map<Long, CategoryTreeRespVO> idMap = treeRespVOList.stream()
                 .collect(Collectors.toMap(CategoryTreeRespVO::getId, respVO -> respVO));
 
@@ -74,16 +74,16 @@ public interface CategoryConvert {
         return roots;
     }
 
-    CategoryTreeDTO entityToTreeDTO(Category entity);
+    CategoryTreeDTO toCategoryTreeRemote(Category entity);
 
-    List<CategoryTreeDTO> entityListToTreeDTOList(List<Category> entities);
+    List<CategoryTreeDTO> toCategoryTreeRemoteList(List<Category> entities);
 
-    default List<CategoryTreeDTO> buildTreeDTO(List<Category> entities) {
+    default List<CategoryTreeDTO> buildCategoryTreeRemote(List<Category> entities) {
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();
         }
 
-        List<CategoryTreeDTO> treeDtoList = entityListToTreeDTOList(entities);
+        List<CategoryTreeDTO> treeDtoList = toCategoryTreeRemoteList(entities);
         Map<Long, CategoryTreeDTO> idMap = treeDtoList.stream()
                 .collect(Collectors.toMap(CategoryTreeDTO::getId, dto -> dto));
 

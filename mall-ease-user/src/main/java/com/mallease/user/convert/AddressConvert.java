@@ -28,7 +28,7 @@ public interface AddressConvert {
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updater", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
-    MemberAddress reqVOToEntity(AddressReqVO cmd);
+    MemberAddress toAddress(AddressReqVO cmd);
 
     /**
      * Cmd 更新到 Entity（更新时使用）
@@ -39,25 +39,25 @@ public interface AddressConvert {
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updater", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
-    void updateEntityFromReqVO(@MappingTarget MemberAddress entity, AddressReqVO cmd);
+    void copyToAddress(@MappingTarget MemberAddress entity, AddressReqVO cmd);
 
     /**
      * Entity → VO（对外响应）
      */
-    AddressRespVO entityToRespVO(MemberAddress entity);
+    AddressRespVO toAddressResp(MemberAddress entity);
 
     /**
      * Entity List → VO List
      */
-    List<AddressRespVO> entityListToRespVOList(List<MemberAddress> entities);
+    List<AddressRespVO> toAddressRespList(List<MemberAddress> entities);
 
     /**
      * Entity → DTO（服务间调用）
      */
-    AddressDTO entityToDTO(MemberAddress entity);
+    AddressDTO toAddressRemote(MemberAddress entity);
 
     /**
      * Entity List → DTO List
      */
-    List<AddressDTO> entityListToDTOList(List<MemberAddress> entities);
+    List<AddressDTO> toAddressRemoteList(List<MemberAddress> entities);
 }

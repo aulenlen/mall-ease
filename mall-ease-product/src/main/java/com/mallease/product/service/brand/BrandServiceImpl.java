@@ -41,7 +41,7 @@ public class BrandServiceImpl implements BrandService {
     @CacheEvict(value = "product:brand", key = "'portal'")
     @Override
     public Long create(BrandSaveReqVO reqVO) {
-        Brand brand = brandConvert.reqVOToEntity(reqVO);
+        Brand brand = brandConvert.toBrand(reqVO);
         // 设置默认值
         if (brand.getSort() == null) {
             brand.setSort(0);
@@ -75,7 +75,7 @@ public class BrandServiceImpl implements BrandService {
         if (existingBrand == null) {
             throw new ApiException("品牌不存在");
         }
-        Brand brand = brandConvert.reqVOToEntity(reqVO);
+        Brand brand = brandConvert.toBrand(reqVO);
         brand.setId(reqVO.getId());
         int result = brandDao.updateByPrimaryKeySelective(brand);
         if (result > 0) {
@@ -135,7 +135,7 @@ public class BrandServiceImpl implements BrandService {
     @Override
     public List<BrandDTO> listEnabledBrands() {
         List<Brand> brands = brandDao.selectByShowStatus(1);
-        return brandConvert.entityListToDTOList(brands);
+        return brandConvert.toBrandRemoteList(brands);
     }
 
     // ==================== 分类关联品牌 ====================
@@ -147,7 +147,7 @@ public class BrandServiceImpl implements BrandService {
         if (existing != null) {
             throw new ApiException("该分类已关联此品牌");
         }
-        CategoryBrandRelation entity = brandConvert.relationReqVOToEntity(reqVO.getCategoryId(), reqVO.getBrandId());
+        CategoryBrandRelation entity = brandConvert.toCategoryBrandRelation(reqVO.getCategoryId(), reqVO.getBrandId());
         return categoryBrandRelationDao.insert(entity);
     }
 
@@ -157,7 +157,7 @@ public class BrandServiceImpl implements BrandService {
         if (CollectionUtils.isEmpty(brandIds)) {
             return 0;
         }
-        List<CategoryBrandRelation> entities = brandConvert.relationReqVOListToEntityList(categoryId, brandIds);
+        List<CategoryBrandRelation> entities = brandConvert.toCategoryBrandRelationList(categoryId, brandIds);
         return categoryBrandRelationDao.insertBatch(entities);
     }
 
@@ -193,7 +193,7 @@ public class BrandServiceImpl implements BrandService {
         }
 
         List<CategoryBrandRelation> childRelations = parentRelations.stream()
-                .map(parent -> brandConvert.relationReqVOToEntity(childCategoryId, parent.getBrandId()))
+                .map(parent -> brandConvert.toCategoryBrandRelation(childCategoryId, parent.getBrandId()))
                 .toList();
 
         return categoryBrandRelationDao.insertBatch(childRelations);

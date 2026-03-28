@@ -45,41 +45,41 @@ public class UserInternalController {
     @GetMapping("/admin/username/{username}")
     public R<AdminDTO> getAdminByUsername(@Parameter(description = "用户名") @PathVariable String username) {
         Admin admin = userService.getAdminByUsername(username);
-        return R.success(adminConvert.entityToDTO(admin));
+        return R.success(adminConvert.toAdminRemote(admin));
     }
 
     @Operation(summary = "根据ID查询管理员", description = "内部调用")
     @GetMapping("/admin/{id}")
     public R<AdminDTO> getAdminById(@Parameter(description = "管理员ID") @PathVariable Long id) {
         Admin admin = userService.getAdminById(id);
-        return R.success(adminConvert.entityToDTO(admin));
+        return R.success(adminConvert.toAdminRemote(admin));
     }
 
     @Operation(summary = "根据用户名查询会员", description = "内部调用")
     @GetMapping("/member/username/{username}")
     public R<MemberDTO> getMemberByUsername(@Parameter(description = "用户名") @PathVariable String username) {
         Member member = userService.getMemberByUsername(username);
-        return R.success(memberConvert.entityToDTO(member));
+        return R.success(memberConvert.toMemberRemote(member));
     }
 
     @Operation(summary = "根据ID查询会员", description = "内部调用")
     @GetMapping("/member/{id}")
     public R<MemberDTO> getMemberById(@Parameter(description = "会员ID") @PathVariable Long id) {
         Member member = userService.getMemberById(id);
-        return R.success(memberConvert.entityToDTO(member));
+        return R.success(memberConvert.toMemberRemote(member));
     }
 
     @Operation(summary = "获取管理员资源列表", description = "内部调用，用于权限校验")
     @GetMapping("/admin/resource/{adminId}")
     public R<List<ResourceDTO>> getResourceList(@Parameter(description = "管理员ID") @PathVariable Long adminId) {
         List<Resource> resourceList = userService.getResourceList(adminId);
-        return R.success(resourceConvert.entityListToDTOList(resourceList));
+        return R.success(resourceConvert.toResourceRemoteList(resourceList));
     }
 
     @Operation(summary = "会员注册", description = "内部调用")
     @PostMapping("/member/internal/register")
     public R<Long> registerMember(@RequestBody MemberDTO memberDTO) {
-        Member member = memberConvert.dtoToEntity(memberDTO);
+        Member member = memberConvert.toMember(memberDTO);
         return R.success(userService.registerMember(member));
     }
 
@@ -87,6 +87,6 @@ public class UserInternalController {
     @GetMapping("/member/internal/phone/{phone}")
     public R<MemberDTO> getMemberByPhone(@Parameter(description = "手机号") @PathVariable String phone) {
         Member member = userService.getMemberByPhone(phone);
-        return R.success(memberConvert.entityToDTO(member));
+        return R.success(memberConvert.toMemberRemote(member));
     }
 }

@@ -16,7 +16,7 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface CategoryConvert {
     @Mapping(target = "recommends", ignore = true)
-    CategoryTreeRespVO categoryTreeDTOToRespVO(CategoryTreeDTO dto);
+    CategoryTreeRespVO toCategoryTreeResp(CategoryTreeDTO dto);
 
-    List<CategoryTreeRespVO> categoryTreeListDTOToRespVOList(List<CategoryTreeDTO> treeList);
+    List<CategoryTreeRespVO> toCategoryTreeRespList(List<CategoryTreeDTO> treeList);
 }

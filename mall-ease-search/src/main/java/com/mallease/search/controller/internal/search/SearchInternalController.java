@@ -44,7 +44,7 @@ public class SearchInternalController {
         reqVO.setPageSize(limit);
 
         List<EsSpu> entityList = spuSearchService.search(reqVO);
-        return R.success(esSpuConvert.entityListToDTOList(entityList));
+        return R.success(esSpuConvert.toSpuRecommendRemoteList(entityList));
     }
 
     @Operation(summary = "下架商品", description = "内部调用，返回的是elasticsearch不存在的spuIds，若为空则全部更新成功")

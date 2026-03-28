@@ -53,7 +53,7 @@ public class AttributeServiceImpl implements AttributeService {
         if (existing != null) {
             throw new ApiException("已存在同名属性");
         }
-        Attribute entity = attributeConvert.reqVOToEntity(reqVO);
+        Attribute entity = attributeConvert.toAttribute(reqVO);
         attributeDao.insert(entity);
         return entity.getId();
     }
@@ -70,7 +70,7 @@ public class AttributeServiceImpl implements AttributeService {
             throw new ApiException("已存在同名属性");
         }
 
-        Attribute entity = attributeConvert.reqVOToEntity(reqVO);
+        Attribute entity = attributeConvert.toAttribute(reqVO);
         entity.setId(reqVO.getId());
         return attributeDao.updateById(entity);
     }
@@ -148,7 +148,7 @@ public class AttributeServiceImpl implements AttributeService {
         if (existing != null) {
             throw new ApiException("该分类已关联此属性");
         }
-        CategoryAttributeRelation entity = attributeConvert.relationReqVOToEntity(reqVO);
+        CategoryAttributeRelation entity = attributeConvert.toCategoryAttributeRelation(reqVO);
         return relationDao.insert(entity);
     }
 
@@ -158,7 +158,7 @@ public class AttributeServiceImpl implements AttributeService {
         if (CollectionUtils.isEmpty(reqVOList)) {
             return 0;
         }
-        return relationDao.insertBatch(attributeConvert.relationReqVOListToEntityList(categoryId, reqVOList));
+        return relationDao.insertBatch(attributeConvert.toCategoryAttributeRelationList(categoryId, reqVOList));
     }
 
     @Override
@@ -172,7 +172,7 @@ public class AttributeServiceImpl implements AttributeService {
         if (existing == null) {
             throw new ApiException("关联关系不存在");
         }
-        CategoryAttributeRelation entity = attributeConvert.relationReqVOToEntity(reqVO);
+        CategoryAttributeRelation entity = attributeConvert.toCategoryAttributeRelation(reqVO);
         entity.setId(existing.getId());
         return relationDao.updateById(entity);
     }
@@ -182,7 +182,7 @@ public class AttributeServiceImpl implements AttributeService {
         if (CollUtil.isEmpty(reqVOList)) {
             return 0;
         }
-        return relationDao.updateBatch(attributeConvert.relationReqVOListToEntityList(categoryId, reqVOList));
+        return relationDao.updateBatch(attributeConvert.toCategoryAttributeRelationList(categoryId, reqVOList));
     }
 
     @Override

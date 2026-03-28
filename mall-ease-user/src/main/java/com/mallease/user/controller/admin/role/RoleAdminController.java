@@ -39,7 +39,7 @@ public class RoleAdminController {
     @Operation(summary = "添加角色")
     @PostMapping("/create")
     public R<Long> create(@Validated(RoleReqVO.Create.class) @RequestBody RoleReqVO reqVO) {
-        Role role = roleConvert.reqVOToEntity(reqVO);
+        Role role = roleConvert.toRole(reqVO);
         Long id = roleService.create(role);
         return R.success(id);
     }
@@ -47,7 +47,7 @@ public class RoleAdminController {
     @Operation(summary = "修改角色")
     @PostMapping("/update")
     public R<Integer> update(@Validated(RoleReqVO.Update.class) @RequestBody RoleReqVO reqVO) {
-        Role role = roleConvert.reqVOToEntity(reqVO);
+        Role role = roleConvert.toRole(reqVO);
         int count = roleService.update(role);
         return R.success(count);
     }
@@ -73,7 +73,7 @@ public class RoleAdminController {
         if (role == null) {
             return R.failed("角色不存在");
         }
-        RoleDetailRespVO detailVO = roleConvert.entityToDetailRespVO(role);
+        RoleDetailRespVO detailVO = roleConvert.toRoleDetailResp(role);
 
         List<Long> roleIds = Collections.singletonList(id);
         List<Long> menuIds = roleService.getMenuIdsByRoleIds(roleIds);
@@ -91,7 +91,7 @@ public class RoleAdminController {
                                 @Parameter(description = "每页数量") @RequestParam(defaultValue = "10") Integer pageSize,
                                 @Parameter(description = "当前页码") @RequestParam(defaultValue = "1") Integer pageNum) {
         List<Role> roleList = roleService.list(keyword, pageNum, pageSize);
-        List<RoleRespVO> roleVOList = roleConvert.entityListToRespVOList(roleList);
+        List<RoleRespVO> roleVOList = roleConvert.toRoleRespList(roleList);
         return R.success(PageUtils.buildPage(roleList, roleVOList));
     }
 
@@ -99,7 +99,7 @@ public class RoleAdminController {
     @GetMapping("/listAll")
     public R<List<RoleRespVO>> listAll() {
         List<Role> roleList = roleService.listAll();
-        return R.success(roleConvert.entityListToRespVOList(roleList));
+        return R.success(roleConvert.toRoleRespList(roleList));
     }
 
     @Operation(summary = "修改角色状态")

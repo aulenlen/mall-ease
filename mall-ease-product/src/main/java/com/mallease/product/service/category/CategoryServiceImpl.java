@@ -69,7 +69,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(CategorySaveReqVO reqVO) {
-        Category entity = categoryConvert.reqVOToEntity(reqVO);
+        Category entity = categoryConvert.toCategory(reqVO);
         Long parentId = reqVO.getParentId();
         if (parentId == null || parentId == 0L) {
             entity.setParentId(0L);
@@ -101,7 +101,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int update(CategorySaveReqVO reqVO) {
-        Category entity = categoryConvert.reqVOToEntity(reqVO);
+        Category entity = categoryConvert.toCategory(reqVO);
         entity.setId(reqVO.getId());
         Long newParentId = reqVO.getParentId();
         Category original = categoryDao.selectByPrimaryKey(entity.getId());
@@ -334,7 +334,7 @@ public class CategoryServiceImpl implements CategoryService {
         long start = System.currentTimeMillis();
 
         List<Category> enabledCategories = categoryDao.selectByEnableStatus(1);
-        List<CategoryTreeDTO> tree = categoryConvert.buildTreeDTO(enabledCategories);
+        List<CategoryTreeDTO> tree = categoryConvert.buildCategoryTreeRemote(enabledCategories);
 
         log.info("分类树数据加载完成，节点数: {}, 耗时: {}ms", enabledCategories.size(), System.currentTimeMillis() - start);
         return tree;
@@ -347,7 +347,7 @@ public class CategoryServiceImpl implements CategoryService {
         long start = System.currentTimeMillis();
 
         List<Category> entities = categoryDao.selectNavCategories();
-        List<CategoryDTO> result = categoryConvert.entityListToDTOList(entities);
+        List<CategoryDTO> result = categoryConvert.toCategoryRemoteList(entities);
 
         log.info("导航分类数据加载完成，节点数: {}, 耗时: {}ms", entities.size(), System.currentTimeMillis() - start);
         return result;
@@ -376,13 +376,13 @@ public class CategoryServiceImpl implements CategoryService {
         if (isLeaf) {
 
             List<CategoryAttributeRelation> specRelations = attributeService.listSpecsByCategory(categoryId);
-            vo.setSpecs(buildCategoryAttributeRelationRespVOList(specRelations));
+            vo.setSpecs(buildCategoryAttributeRelationRespList(specRelations));
 
             List<CategoryAttributeRelation> paramRelations = attributeService.listParamsByCategory(categoryId);
-            vo.setParams(buildCategoryAttributeRelationRespVOList(paramRelations));
+            vo.setParams(buildCategoryAttributeRelationRespList(paramRelations));
 
             List<Brand> brands = brandService.listByCategory(categoryId);
-            List<BrandListRespVO> brandRespVOList = brandConvert.entityListToListRespVOList(brands);
+            List<BrandListRespVO> brandRespVOList = brandConvert.toBrandListRespList(brands);
             vo.setBrands(brandRespVOList);
         } else {
             vo.setSpecs(Collections.emptyList());
@@ -396,7 +396,7 @@ public class CategoryServiceImpl implements CategoryService {
     /**
      * 构建分类属性视图对象列表
      */
-    private List<CategoryAttributeRelationRespVO> buildCategoryAttributeRelationRespVOList(List<CategoryAttributeRelation> relations) {
+    private List<CategoryAttributeRelationRespVO> buildCategoryAttributeRelationRespList(List<CategoryAttributeRelation> relations) {
         if (CollectionUtils.isEmpty(relations)) {
             return Collections.emptyList();
         }
@@ -404,6 +404,6 @@ public class CategoryServiceImpl implements CategoryService {
                 .map(CategoryAttributeRelation::getAttrId)
                 .toList();
         List<Attribute> attributes = attributeService.listByIds(attrIds);
-        return attributeConvert.buildCategoryAttributeRelationRespVOList(relations, attributes);
+        return attributeConvert.buildCategoryAttributeRelationRespList(relations, attributes);
     }
 }

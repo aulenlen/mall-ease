@@ -433,7 +433,7 @@ public class SpuSearchServiceImpl implements SpuSearchService {
 
         log.info("【聚合搜索完成】命中总数={}, 返回数量={}", searchHits.getTotalHits(), entities.size());
 
-        List<SpuRecommendDTO> products = esSpuConvert.entityListToDTOList(entities);
+        List<SpuRecommendDTO> products = esSpuConvert.toSpuRecommendRemoteList(entities);
         Page<SpuRecommendDTO> productPage = buildPage(reqVO, searchHits.getTotalHits(), products);
 
         return SpuSearchResultDTO.builder()
