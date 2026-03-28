@@ -3,7 +3,7 @@ package com.mallease.content.service.storage;
 import cn.hutool.core.util.StrUtil;
 import com.mallease.common.exception.ApiException;
 import com.mallease.content.config.StorageProperties;
-import com.mallease.content.controller.media.vo.MediaUploadVO;
+import com.mallease.content.controller.admin.media.vo.MediaUploadRespVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -50,7 +50,7 @@ public class ObjectStorageServiceImpl implements ObjectStorageService {
     }
 
     @Override
-    public MediaUploadVO uploadFile(MultipartFile file) {
+    public MediaUploadRespVO uploadFile(MultipartFile file) {
         try {
             ensureBucketExists();
             String objectName = generateObjectName(file.getOriginalFilename());
@@ -64,9 +64,9 @@ public class ObjectStorageServiceImpl implements ObjectStorageService {
                         RequestBody.fromInputStream(inputStream, file.getSize())
                 );
             }
-            return MediaUploadVO.builder()
+            return MediaUploadRespVO.builder()
                     .url(buildFileUrl(objectName))
-                    .name(objectName)
+                    .objectName(objectName)
                     .build();
         } catch (Exception ex) {
             log.error("上传素材失败", ex);

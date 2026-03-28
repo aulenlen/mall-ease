@@ -1,6 +1,6 @@
 package com.mallease.content.service.storage;
 
-import com.mallease.content.controller.media.vo.MediaUploadVO;
+import com.mallease.content.controller.admin.media.vo.MediaUploadRespVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -13,7 +13,7 @@ public interface ObjectStorageService {
     /**
      * 上传文件
      */
-    MediaUploadVO uploadFile(MultipartFile file);
+    MediaUploadRespVO uploadFile(MultipartFile file);
 
     /**
      * 下载文件

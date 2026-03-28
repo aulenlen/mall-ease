@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.content.dao.SubjectDao">
-    <resultMap id="BaseResultMap" type="com.mallease.content.model.data.entity.Subject">
+<mapper namespace="com.mallease.content.dal.mapper.SubjectDao">
+    <resultMap id="BaseResultMap" type="com.mallease.content.dal.entity.Subject">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="category_id" property="categoryId" jdbcType="BIGINT"/>
         <result column="title" property="title" jdbcType="VARCHAR"/>
@@ -94,7 +94,7 @@
         where id = #{id,jdbcType=BIGINT}
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.content.model.data.entity.Subject">
+    <insert id="insert" parameterType="com.mallease.content.dal.entity.Subject">
         insert into content_subject (id, category_id, title,
                                  pic, spu_count, recommend_status,
                                  create_time, collect_count, read_count,
@@ -109,7 +109,7 @@
                 #{categoryName,jdbcType=VARCHAR})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.content.model.data.entity.Subject">
+    <insert id="insertSelective" parameterType="com.mallease.content.dal.entity.Subject">
         insert into content_subject
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
@@ -213,7 +213,7 @@
         </trim>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.model.data.entity.Subject">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.dal.entity.Subject">
         update content_subject
         <set>
             <if test="categoryId != null">
@@ -265,7 +265,7 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.content.model.data.entity.Subject">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.content.dal.entity.Subject">
         update content_subject
         set category_id = #{categoryId,jdbcType=BIGINT},
             title = #{title,jdbcType=VARCHAR},

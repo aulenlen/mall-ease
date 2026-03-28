@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.content.dao.EditorialSpuRelationDao">
-    <resultMap id="BaseResultMap" type="com.mallease.content.model.data.entity.EditorialSpuRelation">
+<mapper namespace="com.mallease.content.dal.mapper.EditorialSpuRelationDao">
+    <resultMap id="BaseResultMap" type="com.mallease.content.dal.entity.EditorialSpuRelation">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="editorial_id" property="editorialId" jdbcType="BIGINT"/>
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
@@ -61,13 +61,13 @@
         where spu_id = #{spuId,jdbcType=BIGINT}
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.content.model.data.entity.EditorialSpuRelation">
+    <insert id="insert" parameterType="com.mallease.content.dal.entity.EditorialSpuRelation">
         insert into content_editorial_spu_relation (id, editorial_id, spu_id, sort, create_time)
         values (#{id,jdbcType=BIGINT}, #{editorialId,jdbcType=BIGINT}, #{spuId,jdbcType=BIGINT},
                 #{sort,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.content.model.data.entity.EditorialSpuRelation">
+    <insert id="insertSelective" parameterType="com.mallease.content.dal.entity.EditorialSpuRelation">
         insert into content_editorial_spu_relation
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
@@ -94,7 +94,7 @@
         </foreach>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.model.data.entity.EditorialSpuRelation">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.dal.entity.EditorialSpuRelation">
         update content_editorial_spu_relation
         <set>
             <if test="editorialId != null">editorial_id = #{editorialId,jdbcType=BIGINT},</if>
@@ -105,7 +105,7 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.content.model.data.entity.EditorialSpuRelation">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.content.dal.entity.EditorialSpuRelation">
         update content_editorial_spu_relation
         set editorial_id = #{editorialId,jdbcType=BIGINT},
             spu_id = #{spuId,jdbcType=BIGINT},

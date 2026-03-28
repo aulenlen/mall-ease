@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.content.dao.SubjectSpuRelationDao">
-    <resultMap id="BaseResultMap" type="com.mallease.content.model.data.entity.SubjectSpuRelation">
+<mapper namespace="com.mallease.content.dal.mapper.SubjectSpuRelationDao">
+    <resultMap id="BaseResultMap" type="com.mallease.content.dal.entity.SubjectSpuRelation">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="subject_id" property="subjectId" jdbcType="BIGINT"/>
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
@@ -47,12 +47,12 @@
         where spu_id = #{spuId,jdbcType=BIGINT}
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.content.model.data.entity.SubjectSpuRelation" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.content.dal.entity.SubjectSpuRelation" useGeneratedKeys="true" keyProperty="id">
         insert into content_subject_spu_relation (id, subject_id, spu_id)
         values (#{id,jdbcType=BIGINT}, #{subjectId,jdbcType=BIGINT}, #{spuId,jdbcType=BIGINT})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.content.model.data.entity.SubjectSpuRelation" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.content.dal.entity.SubjectSpuRelation" useGeneratedKeys="true" keyProperty="id">
         insert into content_subject_spu_relation
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
@@ -78,7 +78,7 @@
         </trim>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.model.data.entity.SubjectSpuRelation">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.dal.entity.SubjectSpuRelation">
         update content_subject_spu_relation
         <set>
             <if test="subjectId != null">
@@ -91,7 +91,7 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.content.model.data.entity.SubjectSpuRelation">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.content.dal.entity.SubjectSpuRelation">
         update content_subject_spu_relation
         set subject_id = #{subjectId,jdbcType=BIGINT},
             spu_id = #{spuId,jdbcType=BIGINT}

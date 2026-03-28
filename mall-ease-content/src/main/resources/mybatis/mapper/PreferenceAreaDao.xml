@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.content.dao.PreferenceAreaDao">
-    <resultMap id="BaseResultMap" type="com.mallease.content.model.data.entity.PreferenceArea">
+<mapper namespace="com.mallease.content.dal.mapper.PreferenceAreaDao">
+    <resultMap id="BaseResultMap" type="com.mallease.content.dal.entity.PreferenceArea">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="sub_title" property="subTitle" jdbcType="VARCHAR"/>
@@ -70,14 +70,14 @@
         </foreach>
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.content.model.data.entity.PreferenceArea">
+    <insert id="insert" parameterType="com.mallease.content.dal.entity.PreferenceArea">
         insert into content_preference_area (id, name, sub_title,
                                         pic, sort, show_status)
         values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{subTitle,jdbcType=VARCHAR},
                 #{pic,jdbcType=VARBINARY}, #{sort,jdbcType=INTEGER}, #{showStatus,jdbcType=INTEGER})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.content.model.data.entity.PreferenceArea">
+    <insert id="insertSelective" parameterType="com.mallease.content.dal.entity.PreferenceArea">
         insert into content_preference_area
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
@@ -121,7 +121,7 @@
         </trim>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.model.data.entity.PreferenceArea">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.dal.entity.PreferenceArea">
         update content_preference_area
         <set>
             <if test="name != null">
@@ -143,7 +143,7 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.content.model.data.entity.PreferenceArea">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.content.dal.entity.PreferenceArea">
         update content_preference_area
         set name = #{name,jdbcType=VARCHAR},
             sub_title = #{subTitle,jdbcType=VARCHAR},

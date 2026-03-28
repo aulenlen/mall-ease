@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.content.dao.EditorialDao">
-    <resultMap id="BaseResultMap" type="com.mallease.content.model.data.entity.Editorial">
+<mapper namespace="com.mallease.content.dal.mapper.EditorialDao">
+    <resultMap id="BaseResultMap" type="com.mallease.content.dal.entity.Editorial">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="series_name" property="seriesName" jdbcType="VARCHAR"/>
         <result column="volume_no" property="volumeNo" jdbcType="INTEGER"/>
@@ -82,7 +82,7 @@
     </update>
 
     <!-- 插入 -->
-    <insert id="insert" parameterType="com.mallease.content.model.data.entity.Editorial" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.content.dal.entity.Editorial" useGeneratedKeys="true" keyProperty="id">
         insert into content_editorial (series_name, volume_no, title, sub_title, cover_pic,
                                        content, author, sort, status, publish_time,
                                        create_time, update_time, deleted)
@@ -94,7 +94,7 @@
     </insert>
 
     <!-- 选择性插入 -->
-    <insert id="insertSelective" parameterType="com.mallease.content.model.data.entity.Editorial" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.content.dal.entity.Editorial" useGeneratedKeys="true" keyProperty="id">
         insert into content_editorial
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="seriesName != null">series_name,</if>
@@ -129,7 +129,7 @@
     </insert>
 
     <!-- 选择性更新 -->
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.model.data.entity.Editorial">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.dal.entity.Editorial">
         update content_editorial
         <set>
             <if test="seriesName != null">series_name = #{seriesName,jdbcType=VARCHAR},</if>

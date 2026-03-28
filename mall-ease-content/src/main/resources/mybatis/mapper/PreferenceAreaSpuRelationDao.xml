@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.mallease.content.dao.PreferenceAreaSpuRelationDao">
-    <resultMap id="BaseResultMap" type="com.mallease.content.model.data.entity.PreferenceAreaSpuRelation">
+<mapper namespace="com.mallease.content.dal.mapper.PreferenceAreaSpuRelationDao">
+    <resultMap id="BaseResultMap" type="com.mallease.content.dal.entity.PreferenceAreaSpuRelation">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="preference_area_id" property="preferenceAreaId" jdbcType="BIGINT"/>
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
@@ -47,12 +47,12 @@
         where spu_id = #{spuId,jdbcType=BIGINT}
     </delete>
 
-    <insert id="insert" parameterType="com.mallease.content.model.data.entity.PreferenceAreaSpuRelation" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.mallease.content.dal.entity.PreferenceAreaSpuRelation" useGeneratedKeys="true" keyProperty="id">
         insert into content_preference_area_spu_relation (id, preference_area_id, spu_id)
         values (#{id,jdbcType=BIGINT}, #{preferenceAreaId,jdbcType=BIGINT}, #{spuId,jdbcType=BIGINT})
     </insert>
 
-    <insert id="insertSelective" parameterType="com.mallease.content.model.data.entity.PreferenceAreaSpuRelation" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.mallease.content.dal.entity.PreferenceAreaSpuRelation" useGeneratedKeys="true" keyProperty="id">
         insert into content_preference_area_spu_relation
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
@@ -78,7 +78,7 @@
         </trim>
     </insert>
 
-    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.model.data.entity.PreferenceAreaSpuRelation">
+    <update id="updateByPrimaryKeySelective" parameterType="com.mallease.content.dal.entity.PreferenceAreaSpuRelation">
         update content_preference_area_spu_relation
         <set>
             <if test="preferenceAreaId != null">
@@ -91,7 +91,7 @@
         where id = #{id,jdbcType=BIGINT}
     </update>
 
-    <update id="updateByPrimaryKey" parameterType="com.mallease.content.model.data.entity.PreferenceAreaSpuRelation">
+    <update id="updateByPrimaryKey" parameterType="com.mallease.content.dal.entity.PreferenceAreaSpuRelation">
         update content_preference_area_spu_relation
         set preference_area_id = #{preferenceAreaId,jdbcType=BIGINT},
             spu_id = #{spuId,jdbcType=BIGINT}

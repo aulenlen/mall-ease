@@ -1,0 +1,121 @@
+package com.mallease.content.dal.mapper;
+
+import com.mallease.content.dal.entity.Subject;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+/**
+ * 专题表 Mapper 接口
+ *
+ * @author: Aulen
+ * @create: 2025-11-13
+ */
+@Mapper
+public interface SubjectDao {
+    /**
+     * 根据主键删除
+     *
+     * @param id 主键ID
+     * @return 影响行数
+     */
+    int deleteByPrimaryKey(Long id);
+
+    /**
+     * 插入记录
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int insert(Subject record);
+
+    /**
+     * 选择性插入记录
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int insertSelective(Subject record);
+
+    /**
+     * 根据主键查询
+     *
+     * @param id 主键ID
+     * @return 记录
+     */
+    Subject selectByPrimaryKey(Long id);
+
+    /**
+     * 根据主键选择性更新
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int updateByPrimaryKeySelective(Subject record);
+
+    /**
+     * 根据主键更新
+     *
+     * @param record 记录
+     * @return 影响行数
+     */
+    int updateByPrimaryKey(Subject record);
+
+    /**
+     * 查询所有专题
+     *
+     * @return 专题列表
+     */
+    List<Subject> selectAll();
+
+    /**
+     * 根据关键字查询专题列表
+     *
+     * @param keyword 关键字（专题标题模糊匹配）
+     * @return 专题列表
+     */
+    List<Subject> selectByKeyword(@Param("keyword") String keyword);
+
+    /**
+     * 根据分类ID查询专题列表
+     *
+     * @param categoryId 分类ID
+     * @return 专题列表
+     */
+    List<Subject> selectByCategoryId(@Param("categoryId") Long categoryId);
+
+    /**
+     * 根据推荐状态查询专题列表
+     *
+     * @param recommendStatus 推荐状态：0->不推荐；1->推荐
+     * @return 专题列表
+     */
+    List<Subject> selectByRecommendStatus(@Param("recommendStatus") Integer recommendStatus);
+
+    /**
+     * 根据显示状态查询专题列表
+     *
+     * @param showStatus 显示状态：0->不显示；1->显示
+     * @return 专题列表
+     */
+    List<Subject> selectByShowStatus(@Param("showStatus") Integer showStatus);
+
+    /**
+     * 批量更新推荐状态
+     *
+     * @param ids 专题ID列表
+     * @param recommendStatus 推荐状态：0->不推荐；1->推荐
+     * @return 更新的记录数
+     */
+    int updateRecommendStatusBatch(@Param("ids") List<Long> ids, @Param("recommendStatus") Integer recommendStatus);
+
+    /**
+     * 批量更新显示状态
+     *
+     * @param ids 专题ID列表
+     * @param showStatus 显示状态：0->不显示；1->显示
+     * @return 更新的记录数
+     */
+    int updateShowStatusBatch(@Param("ids") List<Long> ids, @Param("showStatus") Integer showStatus);
+}
