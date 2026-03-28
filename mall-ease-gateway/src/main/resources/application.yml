@@ -8,52 +8,48 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: mall-ease-product
+        - id: api-v1-product
           uri: lb://mall-ease-product
           predicates:
-            - Path=/mall-ease-product/**
+            - Path=/api/v1/admin/catalog/**,/api/v1/portal/catalog/**
           filters:
-            - StripPrefix=1
-        - id: mall-ease-content
+            - StripPrefix=2
+        - id: api-v1-content
           uri: lb://mall-ease-content
           predicates:
-            - Path=/mall-ease-content/**
+            - Path=/api/v1/admin/content/**
           filters:
-            - StripPrefix=1
-        - id: mall-ease-user
+            - StripPrefix=2
+        - id: api-v1-user
           uri: lb://mall-ease-user
           predicates:
-            - Path=/mall-ease-user/**,/mall-ease-auth/**
+            - Path=/api/v1/admin/auth/**,/api/v1/admin/users/**,/api/v1/admin/roles/**,/api/v1/admin/menus/**,/api/v1/admin/resources/**,/api/v1/admin/member-levels/**,/api/v1/portal/auth/**,/api/v1/portal/account/**
           filters:
-            - StripPrefix=1
-        - id: mall-ease-marketing
+            - StripPrefix=2
+        - id: api-v1-marketing
           uri: lb://mall-ease-marketing
           predicates:
-            - Path=/mall-ease-marketing/**
+            - Path=/api/v1/admin/flash/**,/api/v1/portal/flash/**
           filters:
-            - StripPrefix=1
-        - id: mall-ease-bff
+            - StripPrefix=2
+        - id: api-v1-bff
           uri: lb://mall-ease-bff
           predicates:
-            - Path=/mall-ease-bff/**
+            - Path=/api/v1/portal/home,/api/v1/portal/home/**,/api/v1/portal/categories,/api/v1/portal/categories/**
           filters:
-            - StripPrefix=1
-        - id: mall-ease-search
+            - StripPrefix=2
+        - id: api-v1-search
           uri: lb://mall-ease-search
           predicates:
-            - Path=/mall-ease-search/**
+            - Path=/api/v1/admin/search/**,/api/v1/portal/search/**
           filters:
-            - StripPrefix=1
-        - id: mall-ease-trade
+            - StripPrefix=2
+        - id: api-v1-trade
           uri: lb://mall-ease-trade
           predicates:
-            - Path=/mall-ease-trade/**
+            - Path=/api/v1/admin/orders/**,/api/v1/admin/payments/**,/api/v1/portal/cart/**,/api/v1/portal/orders/**,/api/v1/portal/payments/**
           filters:
-            - StripPrefix=1
-        - id: mall-ease-detail
-          uri: no://op
-          predicates:
-            - Path=/mall-ease-detail/spu/*
+            - StripPrefix=2
 
   data:
     redis:

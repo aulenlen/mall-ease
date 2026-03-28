@@ -15,8 +15,8 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
@@ -27,17 +27,15 @@ import java.util.regex.Pattern;
 @Slf4j
 @RequiredArgsConstructor
 public class SpuDetailRouteGlobalFilter implements GlobalFilter, Ordered {
-    private static final Pattern DETAIL_PATH_PATTERN = Pattern.compile("^/mall-ease-detail/spu/(\\d+)$");
+    private static final Pattern API_V1_DETAIL_PATH_PATTERN = Pattern.compile("^/api/v1/portal/catalog/products/(\\d+)$");
 
     private final FlashRouteLookupService flashRouteLookupService;
     private final SpuDetailTargetUriBuilder targetUriBuilder;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-
         String path = exchange.getRequest().getURI().getPath();
-
-        Matcher matcher = DETAIL_PATH_PATTERN.matcher(path);
+        Matcher matcher = API_V1_DETAIL_PATH_PATTERN.matcher(path);
         if (!matcher.matches()) {
             return chain.filter(exchange);
         }
@@ -54,8 +52,7 @@ public class SpuDetailRouteGlobalFilter implements GlobalFilter, Ordered {
                             : targetUriBuilder.productFlashDetailUri(spuId, route.getSessionId());
                     return forward(exchange, chain, targetUri);
                 })
-                .switchIfEmpty(Mono.defer(() ->
-                        forward(exchange, chain, targetUriBuilder.productDetailUri(spuId))));
+                .switchIfEmpty(Mono.defer(() -> forward(exchange, chain, targetUriBuilder.productDetailUri(spuId))));
     }
 
     @Override
@@ -74,7 +71,6 @@ public class SpuDetailRouteGlobalFilter implements GlobalFilter, Ordered {
         newExchange.getAttributes().put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, requestUrl);
 
         log.info("详情请求路由转发，source: {}, target: {}", exchange.getRequest().getURI(), requestUrl);
-
         return chain.filter(newExchange);
     }
 

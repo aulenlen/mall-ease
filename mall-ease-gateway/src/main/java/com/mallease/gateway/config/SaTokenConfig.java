@@ -64,37 +64,25 @@ public class SaTokenConfig {
     /**
      * 前台公开接口 - 无需登录
      */    private static final List<String> PORTAL_PUBLIC_PATHS = List.of(
-            "/mall-ease-auth/auth/portal/login",
-            "/mall-ease-user/auth/portal/login",
-            "/mall-ease-auth/auth/portal/register",
-            "/mall-ease-user/auth/portal/register",
-            "/mall-ease-auth/auth/admin/login",
-            "/mall-ease-user/auth/admin/login",
-            "/mall-ease-product/product/spu/portal/*",
-            "/mall-ease-detail/spu/*",
-            "/mall-ease-search/search/suggest",
-            "/mall-ease-search/search/portal/product",
-            "/mall-ease-trade/trade/payment/notify/**"
+            "/api/v1/portal/auth/login",
+            "/api/v1/portal/auth/register",
+            "/api/v1/admin/auth/login",
+            "/api/v1/portal/catalog/products/*",
+            "/api/v1/portal/search/suggestions",
+            "/api/v1/portal/search/products",
+            "/api/v1/portal/payments/notify/**",
+            "/api/v1/portal/home",
+            "/api/v1/portal/home/**",
+            "/api/v1/portal/categories",
+            "/api/v1/portal/categories/**"
     );
-
-    /**
-     * 前台需登录接口 - 需要 member 登录
-     */    private static final List<String> PORTAL_AUTH_PATHS = List.of(
-            "/mall-ease-auth/auth/portal/logout",
-            "/mall-ease-user/auth/portal/logout",
-            "/mall-ease-user/user/member/portal/**",
-            "/mall-ease-user/user/address/portal/**",
-            "/mall-ease-trade/trade/cart/portal/**",
-            "/mall-ease-trade/trade/order/portal/**",
-            "/mall-ease-trade/trade/payment/portal/**"
-    );
-
-    /**
-     * BFF 聚合层放行路径
-     */
-    private static final String BFF_PATH_PATTERN = "/mall-ease-bff/**";
-
-    @Bean
+    private static final List<String> PORTAL_AUTH_PATHS = List.of(
+            "/api/v1/portal/auth/logout",
+            "/api/v1/portal/account/**",
+            "/api/v1/portal/cart/**",
+            "/api/v1/portal/orders/**",
+            "/api/v1/portal/payments/**"
+    );    @Bean
     public SaReactorFilter getSaReactorFilter() {
         return new SaReactorFilter()
                 .addInclude("/**")
@@ -112,9 +100,6 @@ public class SaTokenConfig {
                         return;
                     }
 
-                    if (PATH_MATCHER.match(BFF_PATH_PATTERN, requestPath)) {
-                        return;
-                    }
 
                     if (isPortalAuthPath(requestPath)) {
                         StpMemberUtil.checkLogin();

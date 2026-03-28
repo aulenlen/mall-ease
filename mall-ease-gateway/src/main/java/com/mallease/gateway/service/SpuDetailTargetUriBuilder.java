@@ -12,9 +12,9 @@ public class SpuDetailTargetUriBuilder {
     private static final String PRODUCT_SERVICE_URI = "lb://mall-ease-product";
     private static final String MARKETING_SERVICE_URI = "lb://mall-ease-marketing";
 
-    private static final String PRODUCT_DETAIL_PATH = "/portal/spu/{spuId}";
-    private static final String PRODUCT_FLASH_DETAIL_PATH = "/portal/spu/flash-portal/{spuId}";
-    private static final String MARKETING_DETAIL_PATH = "/portal/marketing/flash/detail/{spuId}";
+    private static final String PRODUCT_DETAIL_PATH = "/portal/catalog/products/{spuId}";
+    private static final String PRODUCT_FLASH_DETAIL_PATH = "/portal/catalog/products/flash/{spuId}";
+    private static final String MARKETING_DETAIL_PATH = "/portal/flash/detail/{spuId}";
 
     public String productDetailUri(Long spuId) {
         return UriComponentsBuilder.fromUriString(PRODUCT_SERVICE_URI)
