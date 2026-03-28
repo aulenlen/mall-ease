@@ -50,7 +50,7 @@ public class AdminAuthController {
     private R<TokenRespVO> buildTokenResponse(SaTokenInfo tokenInfo) {
         TokenRespVO respVO = new TokenRespVO();
         respVO.setToken(tokenInfo.getTokenValue());
-        respVO.setTokenHead(tokenHead + " ");
+        respVO.setTokenHead(tokenHead);
         return R.success(respVO);
     }
 }
