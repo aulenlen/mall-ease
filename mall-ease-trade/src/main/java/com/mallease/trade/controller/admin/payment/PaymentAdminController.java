@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,20 +23,20 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "管理端-支付管理")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/trade/admin/payment")
+@RequestMapping("/admin/payments")
 public class PaymentAdminController {
 
     private final PaymentService paymentService;
 
     @Operation(summary = "支付单分页列表", description = "支持多条件筛选")
-    @GetMapping("/list")
+    @GetMapping
     public R<Page<PaymentRespVO>> list(PaymentPageReqVO reqVO) {
         return R.success(paymentService.pageAdminPayments(reqVO));
     }
 
     @Operation(summary = "支付单详情")
-    @GetMapping("/detail")
-    public R<PaymentRespVO> detail(@RequestParam String paymentNo) {
+    @GetMapping("/{paymentNo}")
+    public R<PaymentRespVO> detail(@PathVariable String paymentNo) {
         return R.success(paymentService.getAdminPaymentDetail(paymentNo));
     }
 }

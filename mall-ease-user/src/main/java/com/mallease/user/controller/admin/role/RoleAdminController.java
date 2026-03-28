@@ -29,7 +29,7 @@ import java.util.List;
  */
 @Tag(name = "后台角色管理", description = "后台角色管理")
 @RestController
-@RequestMapping("/user/role")
+@RequestMapping("/admin/roles")
 @RequiredArgsConstructor
 public class RoleAdminController {
 
@@ -37,7 +37,7 @@ public class RoleAdminController {
     private final RoleConvert roleConvert;
 
     @Operation(summary = "添加角色")
-    @PostMapping("/create")
+    @PostMapping
     public R<Long> create(@Validated(RoleReqVO.Create.class) @RequestBody RoleReqVO reqVO) {
         Role role = roleConvert.toRole(reqVO);
         Long id = roleService.create(role);
@@ -45,7 +45,7 @@ public class RoleAdminController {
     }
 
     @Operation(summary = "修改角色")
-    @PostMapping("/update")
+    @PutMapping
     public R<Integer> update(@Validated(RoleReqVO.Update.class) @RequestBody RoleReqVO reqVO) {
         Role role = roleConvert.toRole(reqVO);
         int count = roleService.update(role);
@@ -53,14 +53,14 @@ public class RoleAdminController {
     }
 
     @Operation(summary = "根据ID删除角色")
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public R<Integer> delete(@Parameter(description = "角色ID") @PathVariable Long id) {
         int count = roleService.delete(id);
         return R.success(count);
     }
 
     @Operation(summary = "批量删除角色")
-    @PostMapping("/delete/batch")
+    @DeleteMapping("/batch")
     public R<Integer> deleteBatch(@RequestBody List<Long> ids) {
         int count = roleService.batchDelete(ids);
         return R.success(count);
@@ -86,7 +86,7 @@ public class RoleAdminController {
     }
 
     @Operation(summary = "分页查询角色列表")
-    @GetMapping("/list")
+    @GetMapping
     public R<Page<RoleRespVO>> list(@Parameter(description = "角色名称关键字") @RequestParam(required = false) String keyword,
                                 @Parameter(description = "每页数量") @RequestParam(defaultValue = "10") Integer pageSize,
                                 @Parameter(description = "当前页码") @RequestParam(defaultValue = "1") Integer pageNum) {
@@ -96,14 +96,14 @@ public class RoleAdminController {
     }
 
     @Operation(summary = "查询所有角色")
-    @GetMapping("/listAll")
+    @GetMapping("/all")
     public R<List<RoleRespVO>> listAll() {
         List<Role> roleList = roleService.listAll();
         return R.success(roleConvert.toRoleRespList(roleList));
     }
 
     @Operation(summary = "修改角色状态")
-    @PostMapping("/status/{id}")
+    @PutMapping("/{id}/status")
     public R<Integer> updateStatus(@Parameter(description = "角色ID") @PathVariable Long id,
                                    @Parameter(description = "状态：0->禁用；1->启用") @RequestParam Integer status) {
         int count = roleService.updateStatus(id, status);
@@ -111,14 +111,14 @@ public class RoleAdminController {
     }
 
     @Operation(summary = "给角色分配菜单")
-    @PostMapping("/allocMenu")
+    @PostMapping("/menus")
     public R<Integer> allocMenu(@Validated @RequestBody AllocMenuReqVO reqVO) {
         int count = roleService.allocMenu(reqVO.getRoleId(), reqVO.getMenuIds());
         return R.success(count);
     }
 
     @Operation(summary = "给角色分配资源")
-    @PostMapping("/allocResource")
+    @PostMapping("/resources")
     public R<Integer> allocResource(@Validated @RequestBody AllocResourceReqVO reqVO) {
         int count = roleService.allocResource(reqVO.getRoleId(), reqVO.getResourceIds());
         return R.success(count);

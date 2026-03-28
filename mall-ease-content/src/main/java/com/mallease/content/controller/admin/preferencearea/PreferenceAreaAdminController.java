@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,21 +35,21 @@ import java.util.List;
 @Tag(name = "优选专区管理", description = "优选专区增删改查、显示管理、商品关联")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/content/preferenceArea")
+@RequestMapping("/admin/content/preference-areas")
 public class PreferenceAreaAdminController {
 
     private final PreferenceAreaService preferenceAreaService;
     private final PreferenceAreaConvert preferenceAreaConvert;
 
     @Operation(summary = "创建优选专区")
-    @PostMapping("/create")
+    @PostMapping
     public R<Integer> create(@Validated(PreferenceAreaReqVO.Create.class) @RequestBody PreferenceAreaReqVO reqVO) {
         int count = preferenceAreaService.create(preferenceAreaConvert.toPreferenceArea(reqVO));
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
     @Operation(summary = "更新优选专区")
-    @PostMapping("/update/{id}")
+    @PutMapping("/{id}")
     public R<Integer> update(@PathVariable Long id,
                              @Validated(PreferenceAreaReqVO.Update.class) @RequestBody PreferenceAreaReqVO reqVO) {
         PreferenceArea preferenceArea = preferenceAreaService.get(id);
@@ -62,14 +63,14 @@ public class PreferenceAreaAdminController {
     }
 
     @Operation(summary = "删除优选专区")
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public R<Integer> delete(@PathVariable Long id) {
         int count = preferenceAreaService.delete(id);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
     @Operation(summary = "批量删除优选专区")
-    @PostMapping("/delete/batch")
+    @DeleteMapping("/batch")
     public R<Integer> deleteBatch(@Parameter(description = "优选专区ID列表") @RequestParam("ids") List<Long> ids) {
         int count = preferenceAreaService.deleteBatch(ids);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
@@ -82,13 +83,13 @@ public class PreferenceAreaAdminController {
     }
 
     @Operation(summary = "获取所有优选专区列表")
-    @GetMapping("/listAll")
+    @GetMapping("/all")
     public R<List<PreferenceAreaRespVO>> listAll() {
         return R.success(preferenceAreaConvert.toPreferenceAreaRespList(preferenceAreaService.listAll()));
     }
 
     @Operation(summary = "分页查询优选专区列表")
-    @GetMapping("/list")
+    @GetMapping
     public R<Page<PreferenceAreaListRespVO>> page(@ParameterObject PreferenceAreaPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<PreferenceArea> preferenceAreaList = preferenceAreaService.page(reqVO);
@@ -96,7 +97,7 @@ public class PreferenceAreaAdminController {
     }
 
     @Operation(summary = "根据显示状态查询优选专区")
-    @GetMapping("/list/showStatus/{showStatus}")
+    @GetMapping("/show-status/{showStatus}")
     public R<Page<PreferenceAreaListRespVO>> pageByShowStatus(@PathVariable Integer showStatus,
                                                               @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
                                                               @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
@@ -106,7 +107,7 @@ public class PreferenceAreaAdminController {
     }
 
     @Operation(summary = "批量更新显示状态")
-    @PostMapping("/update/showStatus")
+    @PutMapping("/status")
     public R<Integer> updateShowStatus(@RequestParam("ids") List<Long> ids,
                                        @RequestParam("showStatus") Integer showStatus) {
         int count = preferenceAreaService.updateShowStatusBatch(ids, showStatus);
@@ -114,20 +115,20 @@ public class PreferenceAreaAdminController {
     }
 
     @Operation(summary = "批量添加优选专区商品关联")
-    @PostMapping("/spu/relation/batch")
+    @PostMapping("/spu-relations/batch")
     public R<Integer> batchAddSpuRelation(@RequestBody List<PreferenceAreaSpuRelation> relationList) {
         int count = preferenceAreaService.batchAddSpuRelations(relationList);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
     @Operation(summary = "根据商品ID查询优选专区商品关联")
-    @GetMapping("/spu/relation/spu/{spuId}")
+    @GetMapping("/spu-relations/spus/{spuId}")
     public R<List<PreferenceAreaSpuRelation>> listRelationsBySpuId(@PathVariable("spuId") Long spuId) {
         return R.success(preferenceAreaService.listSpuRelationsBySpuId(spuId));
     }
 
     @Operation(summary = "根据商品ID删除优选专区商品关联")
-    @DeleteMapping("/spu/relation/spu/{spuId}")
+    @DeleteMapping("/spu-relations/spus/{spuId}")
     public R<Integer> deleteRelationsBySpuId(@PathVariable("spuId") Long spuId) {
         return R.success(preferenceAreaService.deleteSpuRelationsBySpuId(spuId));
     }

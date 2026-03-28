@@ -32,28 +32,28 @@ import java.util.List;
 @Tag(name = "Banner管理", description = "轮播图增删改查")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/content/banner")
+@RequestMapping("/admin/content/banners")
 public class BannerAdminController {
 
     private final BannerService bannerService;
     private final BannerConvert bannerConvert;
 
     @Operation(summary = "创建轮播图")
-    @PostMapping("/create")
+    @PostMapping
     public R<Integer> create(@Validated(BannerReqVO.Create.class) @RequestBody BannerReqVO reqVO) {
         int count = bannerService.create(bannerConvert.toBanner(reqVO));
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
     @Operation(summary = "更新轮播图")
-    @PutMapping("/update")
+    @PutMapping
     public R<Integer> update(@Validated(BannerReqVO.Update.class) @RequestBody BannerReqVO reqVO) {
         int count = bannerService.update(bannerConvert.toBanner(reqVO));
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
     @Operation(summary = "删除轮播图")
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public R<Integer> delete(@PathVariable Long id) {
         int count = bannerService.delete(id);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);

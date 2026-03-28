@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,14 +39,14 @@ import java.util.List;
 @Tag(name = "后台品牌管理", description = "品牌增删改查、状态管理")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/brand")
+@RequestMapping("/admin/catalog/brands")
 public class BrandAdminController {
 
     private final BrandService brandService;
     private final BrandConvert brandConvert;
 
     @Operation(summary = "查询品牌列表", description = "支持分页、模糊搜索、状态筛选")
-    @GetMapping("/list")
+    @GetMapping
     public R<Page<BrandListRespVO>> page(@Validated @ModelAttribute BrandPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Brand> brandList = brandService.page(reqVO);
@@ -53,7 +54,7 @@ public class BrandAdminController {
     }
 
     @Operation(summary = "创建品牌")
-    @PostMapping("/create")
+    @PostMapping
     public R<Long> create(@Validated(BrandSaveReqVO.Create.class) @RequestBody BrandSaveReqVO reqVO) {
         return R.success(brandService.create(reqVO));
     }
@@ -65,7 +66,7 @@ public class BrandAdminController {
     }
 
     @Operation(summary = "更新品牌")
-    @PostMapping("/update/{id}")
+    @PutMapping("/{id}")
     public R<Integer> update(@Parameter(description = "品牌ID") @PathVariable Long id,
                              @Validated(BrandSaveReqVO.Update.class) @RequestBody BrandSaveReqVO reqVO) {
         reqVO.setId(id);
@@ -73,13 +74,13 @@ public class BrandAdminController {
     }
 
     @Operation(summary = "删除品牌")
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public R<Integer> delete(@Parameter(description = "品牌ID") @PathVariable Long id) {
         return R.success(brandService.delete(id));
     }
 
     @Operation(summary = "批量更新显示状态", description = "批量修改品牌的显示/隐藏状态")
-    @PostMapping("/update/showStatus")
+    @PutMapping("/show-status")
     public R<Integer> updateShowStatus(@Parameter(description = "品牌ID列表") @RequestParam("ids") List<Long> ids,
                                        @Parameter(description = "显示状态(0:隐藏 1:显示)") @RequestParam("showStatus") Integer showStatus) {
         int count = brandService.updateShowStatusBatch(ids, showStatus);
@@ -87,7 +88,7 @@ public class BrandAdminController {
     }
 
     @Operation(summary = "批量更新制造商状态", description = "批量修改品牌的制造商标识")
-    @PostMapping("/update/factoryStatus")
+    @PutMapping("/factory-status")
     public R<Integer> updateFactoryStatus(@Parameter(description = "品牌ID列表") @RequestParam("ids") List<Long> ids,
                                           @Parameter(description = "制造商状态(0:否 1:是)") @RequestParam("factoryStatus") Integer factoryStatus) {
         int count = brandService.updateFactoryStatusBatch(ids, factoryStatus);
@@ -95,44 +96,44 @@ public class BrandAdminController {
     }
 
     @Operation(summary = "为分类关联品牌")
-    @PostMapping("/bindCategory")
+    @PostMapping("/category-relations")
     public R<Integer> bindCategory(@Validated @RequestBody CategoryBrandRelationSaveReqVO reqVO) {
         return R.success(brandService.bindCategory(reqVO));
     }
 
     @Operation(summary = "批量为分类关联品牌")
-    @PostMapping("/bindCategory/batch/{categoryId}")
+    @PostMapping("/category-relations/batch/{categoryId}")
     public R<Integer> bindCategoryBatch(@PathVariable Long categoryId,
                                         @RequestBody List<Long> brandIds) {
         return R.success(brandService.bindCategoryBatch(categoryId, brandIds));
     }
 
     @Operation(summary = "解除分类与品牌的关联")
-    @PostMapping("/unbindCategory")
+    @DeleteMapping("/category-relations")
     public R<Integer> unbindCategory(@RequestParam Long categoryId, @RequestParam Long brandId) {
         return R.success(brandService.unbindCategory(categoryId, brandId));
     }
 
     @Operation(summary = "查询分类已关联的品牌")
-    @GetMapping("/listByCategory/{categoryId}")
+    @GetMapping("/categories/{categoryId}")
     public R<List<BrandListRespVO>> listByCategory(@PathVariable Long categoryId) {
         return R.success(brandConvert.toBrandListRespList(brandService.listByCategory(categoryId)));
     }
 
     @Operation(summary = "查询分类未关联的品牌（供勾选弹窗）")
-    @GetMapping("/listUnbind/{categoryId}")
+    @GetMapping("/categories/{categoryId}/unbound")
     public R<List<BrandListRespVO>> listUnbindByCategory(@PathVariable Long categoryId) {
         return R.success(brandConvert.toBrandListRespList(brandService.listUnbindByCategory(categoryId)));
     }
 
     @Operation(summary = "从父分类复制品牌关联")
-    @PostMapping("/copyFromParent")
+    @PostMapping("/copy-from-parent")
     public R<Integer> copyFromParent(@RequestParam Long parentCategoryId, @RequestParam Long childCategoryId) {
         return R.success(brandService.copyFromParent(parentCategoryId, childCategoryId));
     }
 
     @Operation(summary = "批量解绑品牌")
-    @PostMapping("/unbindCategory/batch")
+    @DeleteMapping("/category-relations/batch")
     public R<Integer> unbindCategoryBatch(@Validated @RequestBody BrandRelationBatchUnbindReqVO reqVO) {
         return R.success(brandService.unbindCategoryBatch(reqVO));
     }

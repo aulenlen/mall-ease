@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 @Tag(name = "后台商品管理", description = "后台商品 CRUD")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/spu")
+@RequestMapping("/admin/catalog/products")
 public class SpuAdminController {
 
     private final com.mallease.product.service.spu.SpuService spuService;
@@ -89,7 +89,7 @@ public class SpuAdminController {
     }
 
     @Operation(summary = "批量删除商品", description = "批量逻辑删除商品及其关联数据")
-    @PostMapping("/delete/batch")
+    @DeleteMapping("/batch")
     public R<Integer> deleteBatch(@RequestBody List<Long> ids) {
         return R.success(spuService.deleteBatch(ids));
     }
@@ -107,7 +107,7 @@ public class SpuAdminController {
     }
 
     @Operation(summary = "搜索SPU列表（含SKU）", description = "用于秒杀/优惠券商品选择")
-    @GetMapping("/listWithSku")
+    @GetMapping("/with-skus")
     public R<Page<SpuPageRespVO>> listWithSku(@Validated @ModelAttribute SpuPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Spu> spuList = spuService.page(reqVO);

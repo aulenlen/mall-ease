@@ -33,7 +33,7 @@ import java.util.List;
  */
 @Tag(name = "后台商品属性管理")
 @RestController
-@RequestMapping("/admin/attribute")
+@RequestMapping("/admin/catalog/attributes")
 @RequiredArgsConstructor
 public class AttributeAdminController {
 
@@ -41,25 +41,25 @@ public class AttributeAdminController {
     private final AttributeConvert attributeConvert;
 
     @Operation(summary = "创建全局属性")
-    @PostMapping("/create")
+    @PostMapping
     public R<Long> create(@Validated(AttributeSaveReqVO.Create.class) @RequestBody AttributeSaveReqVO reqVO) {
         return R.success(attributeService.create(reqVO));
     }
 
     @Operation(summary = "更新属性")
-    @PostMapping("/update")
+    @PutMapping
     public R<Integer> update(@Validated(AttributeSaveReqVO.Update.class) @RequestBody AttributeSaveReqVO reqVO) {
         return R.success(attributeService.update(reqVO));
     }
 
     @Operation(summary = "删除属性")
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public R<Integer> delete(@PathVariable Long id) {
         return R.success(attributeService.delete(id));
     }
 
     @Operation(summary = "批量删除属性")
-    @PostMapping("/delete/batch")
+    @DeleteMapping("/batch")
     public R<Integer> deleteBatch(@RequestBody List<Long> ids) {
         return R.success(attributeService.deleteBatch(ids));
     }
@@ -71,7 +71,7 @@ public class AttributeAdminController {
     }
 
     @Operation(summary = "查询属性池列表", description = "支持分页、条件查询")
-    @GetMapping("/list")
+    @GetMapping
     public R<Page<AttributeRespVO>> page(@Validated @ModelAttribute AttributePageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Attribute> entities = attributeService.page(reqVO);
@@ -79,57 +79,57 @@ public class AttributeAdminController {
     }
 
     @Operation(summary = "为分类关联属性")
-    @PostMapping("/bindCategory")
+    @PostMapping("/category-relations")
     public R<Integer> bindCategory(@Validated @RequestBody CategoryAttributeRelationSaveReqVO reqVO) {
         return R.success(attributeService.bindCategory(reqVO));
     }
 
     @Operation(summary = "批量为分类关联属性")
-    @PostMapping("/bindCategory/batch/{categoryId}")
+    @PostMapping("/category-relations/batch/{categoryId}")
     public R<Integer> bindCategoryBatch(@PathVariable Long categoryId,
                                         @RequestBody List<CategoryAttributeRelationSaveReqVO> reqVOList) {
         return R.success(attributeService.bindCategoryBatch(categoryId, reqVOList));
     }
 
     @Operation(summary = "解除分类与属性的关联")
-    @PostMapping("/unbindCategory")
+    @DeleteMapping("/category-relations")
     public R<Integer> unbindCategory(@RequestParam Long categoryId, @RequestParam Long attrId) {
         return R.success(attributeService.unbindCategory(categoryId, attrId));
     }
 
     @Operation(summary = "更新分类-属性关联信息")
-    @PostMapping("/updateRelation")
+    @PutMapping("/category-relations")
     public R<Integer> updateRelation(@Validated @RequestBody CategoryAttributeRelationSaveReqVO reqVO) {
         return R.success(attributeService.updateRelation(reqVO));
     }
 
     @Operation(summary = "批量更新分类-属性关联信息")
-    @PostMapping("/updateRelation/batch/{categoryId}")
+    @PutMapping("/category-relations/batch/{categoryId}")
     public R<Integer> updateRelationBatch(@PathVariable Long categoryId,
                                           @RequestBody List<CategoryAttributeRelationSaveReqVO> reqVOList) {
         return R.success(attributeService.updateRelationBatch(categoryId, reqVOList));
     }
 
     @Operation(summary = "查询分类已关联的属性")
-    @GetMapping("/listByCategory/{categoryId}")
+    @GetMapping("/category-relations/categories/{categoryId}")
     public R<List<CategoryAttributeRelationRespVO>> listByCategory(@PathVariable Long categoryId) {
         return R.success(buildCategoryAttributeRelationRespList(attributeService.listByCategory(categoryId)));
     }
 
     @Operation(summary = "查询分类已关联的规格属性")
-    @GetMapping("/listSpecsByCategory/{categoryId}")
+    @GetMapping("/category-relations/categories/{categoryId}/specs")
     public R<List<CategoryAttributeRelationRespVO>> listSpecsByCategory(@PathVariable Long categoryId) {
         return R.success(buildCategoryAttributeRelationRespList(attributeService.listSpecsByCategory(categoryId)));
     }
 
     @Operation(summary = "查询分类已关联的参数属性")
-    @GetMapping("/listParamsByCategory/{categoryId}")
+    @GetMapping("/category-relations/categories/{categoryId}/params")
     public R<List<CategoryAttributeRelationRespVO>> listParamsByCategory(@PathVariable Long categoryId) {
         return R.success(buildCategoryAttributeRelationRespList(attributeService.listParamsByCategory(categoryId)));
     }
 
     @Operation(summary = "查询分类未关联的属性（供勾选弹窗）", description = "支持分页、条件查询")
-    @GetMapping("/listUnbind/{categoryId}")
+    @GetMapping("/unbound/categories/{categoryId}")
     public R<Page<AttributeRespVO>> listUnbindByCategory(@PathVariable Long categoryId,
                                                          @ModelAttribute AttributePageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
@@ -138,25 +138,25 @@ public class AttributeAdminController {
     }
 
     @Operation(summary = "从父分类复制属性关联")
-    @PostMapping("/copyFromParent")
+    @PostMapping("/copy-from-parent")
     public R<Integer> copyFromParent(@RequestParam Long parentCategoryId, @RequestParam Long childCategoryId) {
         return R.success(attributeService.copyFromParent(parentCategoryId, childCategoryId));
     }
 
     @Operation(summary = "批量解绑属性")
-    @PostMapping("/unbindCategory/batch")
+    @DeleteMapping("/category-relations/batch")
     public R<Integer> unbindCategoryBatch(@Validated @RequestBody AttributeRelationBatchUnbindReqVO reqVO) {
         return R.success(attributeService.unbindCategoryBatch(reqVO));
     }
 
     @Operation(summary = "模板预览", description = "预览从模板分类复制属性的影响")
-    @PostMapping("/template/preview")
+    @PostMapping("/template-preview")
     public R<AttributeTemplatePreviewRespVO> templatePreview(@Validated @RequestBody AttributeTemplatePreviewReqVO reqVO) {
         return R.success(attributeService.templatePreview(reqVO));
     }
 
     @Operation(summary = "模板应用", description = "执行模板复制（支持 replace/merge 模式）")
-    @PostMapping("/template/apply")
+    @PostMapping("/template-apply")
     public R<AttributeTemplateApplyRespVO> templateApply(@Validated @RequestBody AttributeTemplateApplyReqVO reqVO) {
         return R.success(attributeService.templateApply(reqVO));
     }

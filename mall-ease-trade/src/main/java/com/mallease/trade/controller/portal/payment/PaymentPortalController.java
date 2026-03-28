@@ -28,22 +28,22 @@ import java.util.Map;
 @Tag(name = "支付管理")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/trade/payment")
+@RequestMapping("/portal/payments")
 public class PaymentPortalController {
 
     private final PaymentService paymentService;
     private final PaymentConvert paymentConverter;
 
     @Operation(summary = "创建支付单")
-    @PostMapping("/portal/create")
+    @PostMapping
     public R<PaymentRespVO> create(@Validated @RequestBody PaymentCreateReqVO reqVO) {
         Long userId = LoginContextUtil.getUserId();
         return R.success(paymentConverter.toPaymentResp(paymentService.create(userId, reqVO)));
     }
 
     @Operation(summary = "执行支付")
-    @PostMapping("/portal/pay")
-    public R<PaymentRespVO> pay(@RequestParam String paymentNo, @RequestParam Integer payChannel) {
+    @PostMapping("/{paymentNo}/pay")
+    public R<PaymentRespVO> pay(@PathVariable String paymentNo, @RequestParam Integer payChannel) {
         Long userId = LoginContextUtil.getUserId();
         String payForm = paymentService.pay(userId, paymentNo, payChannel);
 
@@ -56,15 +56,15 @@ public class PaymentPortalController {
     }
 
     @Operation(summary = "查询支付状态")
-    @GetMapping("/portal/status")
-    public R<PaymentRespVO> status(@RequestParam String orderNo) {
+    @GetMapping("/orders/{orderNo}/status")
+    public R<PaymentRespVO> status(@PathVariable String orderNo) {
         Long userId = LoginContextUtil.getUserId();
         return R.success(paymentConverter.toPaymentResp(paymentService.getByOrderNo(userId, orderNo)));
     }
 
     @Operation(summary = "关闭支付单")
-    @PostMapping("/portal/close")
-    public R<Void> close(@RequestParam String orderNo) {
+    @PostMapping("/orders/{orderNo}/close")
+    public R<Void> close(@PathVariable String orderNo) {
         Long userId = LoginContextUtil.getUserId();
         paymentService.close(userId, orderNo);
         return R.success(null);

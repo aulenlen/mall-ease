@@ -26,27 +26,27 @@ import java.util.List;
 @Tag(name = "后台 SKU 管理", description = "SKU 增删改查")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/sku")
+@RequestMapping("/admin/catalog/skus")
 public class SkuAdminController {
 
     private final SkuService skuService;
     private final SkuConvert skuConvert;
 
     @Operation(summary = "创建 SKU", description = "在指定 SPU 下创建单个 SKU（含库存）")
-    @PostMapping("/spu/{spuId}")
+    @PostMapping("/spus/{spuId}")
     public R<Long> create(@Parameter(description = "SPU ID") @PathVariable Long spuId,
                           @Validated(SkuSaveReqVO.Create.class) @RequestBody SkuSaveReqVO reqVO) {
         return R.success(skuService.create(spuId, reqVO));
     }
 
     @Operation(summary = "更新 SKU", description = "更新 SKU 基础信息（不含库存、促销）")
-    @PutMapping("/update")
+    @PutMapping
     public R<Integer> update(@Validated(SkuSaveReqVO.Update.class) @RequestBody SkuSaveReqVO reqVO) {
         return R.success(skuService.update(reqVO));
     }
 
     @Operation(summary = "SKU 列表", description = "支持分页、多条件查询")
-    @GetMapping("/list")
+    @GetMapping
     public R<Page<SkuRespVO>> page(@Validated @ModelAttribute SkuPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Sku> skuList = skuService.page(reqVO);
@@ -81,7 +81,7 @@ public class SkuAdminController {
     }
 
     @Operation(summary = "根据 SPU 获取 SKU 列表", description = "查询某个 SPU 下的所有 SKU")
-    @GetMapping("/spu/{spuId}")
+    @GetMapping("/spus/{spuId}")
     public R<List<SkuRespVO>> listBySpuId(@Parameter(description = "SPU ID") @PathVariable Long spuId) {
         List<Sku> skuList = skuService.listBySpuId(spuId);
         return R.success(skuConvert.toSkuRespList(skuList));

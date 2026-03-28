@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Tag(name = "搜索管理", description = "索引管理")
 @RestController
-@RequestMapping("/search")
+@RequestMapping("/admin/search")
 @RequiredArgsConstructor
 public class SearchAdminController {
 
@@ -28,14 +28,14 @@ public class SearchAdminController {
     private final SpuIndexConvert spuIndexConvert;
 
     @Operation(summary = "重建索引")
-    @PostMapping("/admin/rebuild")
+    @PostMapping("/rebuild")
     public R<Void> rebuildIndex() {
         spuSearchService.rebuildIndex();
         return R.success(null);
     }
 
     @Operation(summary = "保存索引")
-    @PostMapping("/index/batch")
+    @PostMapping("/indexes/batch")
     public R<Boolean> indexBatch(@RequestBody List<SpuIndexDTO> dtoList) {
         List<EsSpu> entityList = spuIndexConvert.toEsSpuList(dtoList);
         spuSearchService.indexBatch(entityList);

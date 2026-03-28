@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/media/files")
+@RequestMapping("/admin/content/media/files")
 @Tag(name = "后台素材管理", description = "素材上传、下载、删除和访问地址管理")
 public class MediaAdminController {
 

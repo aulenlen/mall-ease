@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "前台会员中心", description = "会员个人信息查询")
 @RestController
-@RequestMapping("/user/member/portal")
+@RequestMapping("/portal/account/profile")
 @RequiredArgsConstructor
 public class MemberPortalController {
 
@@ -29,7 +29,7 @@ public class MemberPortalController {
     private final MemberConvert memberConvert;
 
     @Operation(summary = "获取当前登录会员信息", description = "前台接口，返回会员基本信息")
-    @GetMapping("/me")
+    @GetMapping
     public R<MemberRespVO> getCurrentMember() {
         Long memberId = StpMemberUtil.getLoginIdAsLong();
         Member member = userService.getMemberById(memberId);

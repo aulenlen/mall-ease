@@ -29,67 +29,67 @@ import java.util.List;
 @Tag(name = "管理端-订单管理")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/trade/admin/order")
+@RequestMapping("/admin/orders")
 public class OrderAdminController {
 
     private final OrderService orderService;
 
     @Operation(summary = "订单分页列表", description = "支持多条件筛选")
-    @GetMapping("/list")
+    @GetMapping
     public R<Page<OrderAdminRespVO>> list(OrderPageReqVO reqVO) {
         return R.success(orderService.pageAdminOrders(reqVO));
     }
 
     @Operation(summary = "订单详情", description = "包含商品列表、支付信息和物流信息")
-    @GetMapping("/detail")
-    public R<OrderAdminRespVO> detail(@RequestParam String orderNo) {
+    @GetMapping("/{orderNo}")
+    public R<OrderAdminRespVO> detail(@PathVariable String orderNo) {
         return R.success(orderService.getAdminOrderDetail(orderNo));
     }
 
     @Operation(summary = "发货", description = "填写物流公司和运单号，订单状态变更为待收货")
-    @PostMapping("/ship")
+    @PostMapping("/shipments")
     public R<Void> ship(@Validated @RequestBody OrderShipReqVO reqVO) {
         orderService.shipOrder(reqVO);
         return R.success();
     }
 
     @Operation(summary = "查询物流信息")
-    @GetMapping("/shipment")
-    public R<OrderShipmentRespVO> getShipment(@RequestParam String orderNo) {
+    @GetMapping("/{orderNo}/shipment")
+    public R<OrderShipmentRespVO> getShipment(@PathVariable String orderNo) {
         return R.success(orderService.getOrderShipment(orderNo));
     }
 
     @Operation(summary = "强制取消订单", description = "支持取消待支付/已支付/待收货订单，自动触发库存释放")
-    @PostMapping("/forceCancel")
-    public R<Void> forceCancel(@RequestParam String orderNo) {
+    @PostMapping("/{orderNo}/force-cancel")
+    public R<Void> forceCancel(@PathVariable String orderNo) {
         orderService.forceCancelOrder(orderNo);
         return R.success();
     }
 
     @Operation(summary = "修改收货地址", description = "仅限待支付/已支付订单")
-    @PutMapping("/updateAddress")
+    @PutMapping("/address")
     public R<Void> updateAddress(@Validated @RequestBody OrderUpdateReqVO reqVO) {
         orderService.updateOrderAddress(reqVO);
         return R.success();
     }
 
     @Operation(summary = "修改备注")
-    @PutMapping("/updateRemark")
+    @PutMapping("/remark")
     public R<Void> updateRemark(@Validated @RequestBody OrderUpdateReqVO reqVO) {
         orderService.updateOrderRemark(reqVO);
         return R.success();
     }
 
     @Operation(summary = "调整金额", description = "仅限待支付订单")
-    @PutMapping("/adjustAmount")
+    @PutMapping("/amount")
     public R<Void> adjustAmount(@Validated @RequestBody OrderUpdateReqVO reqVO) {
         orderService.adjustOrderAmount(reqVO);
         return R.success();
     }
 
     @Operation(summary = "查看操作日志")
-    @GetMapping("/operationLogs")
-    public R<List<OrderOperationLog>> getOperationLogs(@RequestParam String orderNo) {
+    @GetMapping("/{orderNo}/operation-logs")
+    public R<List<OrderOperationLog>> getOperationLogs(@PathVariable String orderNo) {
         return R.success(orderService.listOrderOperationLogs(orderNo));
     }
 
@@ -106,7 +106,7 @@ public class OrderAdminController {
     }
 
     @Operation(summary = "订单状态分布")
-    @GetMapping("/stats/statusDistribution")
+    @GetMapping("/stats/status-distribution")
     public R<List<OrderStatusDistributionRespVO>> statusDistribution() {
         return R.success(orderService.listAdminOrderStatusDistribution());
     }

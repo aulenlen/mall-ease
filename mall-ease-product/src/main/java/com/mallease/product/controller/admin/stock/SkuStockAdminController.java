@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 @Tag(name = "后台 SKU 库存管理", description = "库存查询、调整、预警、锁库存")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/stock")
+@RequestMapping("/admin/catalog/stocks")
 public class SkuStockAdminController {
 
     private final SkuStockService skuStockService;
@@ -52,25 +52,25 @@ public class SkuStockAdminController {
     private final CategoryService categoryService;
 
     @Operation(summary = "创建库存记录", description = "为指定 SKU 创建库存记录")
-    @PostMapping("/create")
+    @PostMapping
     public R<Long> create(@Validated(SkuStockSaveReqVO.Create.class) @RequestBody SkuStockSaveReqVO reqVO) {
         return R.success(skuStockService.create(reqVO));
     }
 
     @Operation(summary = "更新库存信息", description = "更新库存基础信息（预警值、状态等）")
-    @PutMapping("/update")
+    @PutMapping
     public R<Integer> update(@Validated(SkuStockSaveReqVO.Update.class) @RequestBody SkuStockSaveReqVO reqVO) {
         return R.success(skuStockService.update(reqVO));
     }
 
     @Operation(summary = "批量更新库存信息", description = "批量更新库存基础信息，供独立库存页保存使用")
-    @PutMapping("/update/batch")
+    @PutMapping("/batch")
     public R<Integer> updateBatch(@RequestBody List<SkuStockSaveReqVO> reqList) {
         return R.success(skuStockService.updateBatch(reqList));
     }
 
     @Operation(summary = "分页查询库存列表", description = "独立库存页使用，只返回 SPU 聚合行")
-    @GetMapping("/page")
+    @GetMapping
     public R<Page<InventorySpuRecordRespVO>> page(@Validated @ModelAttribute SkuStockPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<InventorySpuRecordRespVO> respVOList = skuStockService.page(reqVO);
@@ -114,7 +114,7 @@ public class SkuStockAdminController {
     }
 
     @Operation(summary = "分页查询库存日志", description = "独立库存页日志抽屉使用")
-    @GetMapping("/log/page")
+    @GetMapping("/logs")
     public R<Page<SkuStockLogRespVO>> logPage(@Validated @ModelAttribute SkuStockLogPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<SkuStockLogRespVO> respVOList = skuStockService.logPage(reqVO);
@@ -122,7 +122,7 @@ public class SkuStockAdminController {
     }
 
     @Operation(summary = "根据 SKU 获取库存")
-    @GetMapping("/sku/{skuId}")
+    @GetMapping("/by-sku/{skuId}")
     public R<SkuStockRespVO> getBySkuId(@Parameter(description = "SKU ID") @PathVariable Long skuId) {
         SkuStock stock = skuStockService.getBySkuId(skuId);
         if (stock == null) {
@@ -132,7 +132,7 @@ public class SkuStockAdminController {
     }
 
     @Operation(summary = "根据 SPU 获取库存列表", description = "查询某个 SPU 下所有 SKU 的库存，包含商品名称、规格信息，以及启用和停用两类 SKU")
-    @GetMapping("/spu/{spuId}")
+    @GetMapping("/by-spu/{spuId}")
     public R<List<SkuStockRespVO>> listBySpuId(@Parameter(description = "SPU ID") @PathVariable Long spuId) {
         List<Spu> spuList = spuService.listByIds(List.of(spuId));
         String spuName = spuList.isEmpty() ? null : spuList.get(0).getName();
@@ -174,7 +174,7 @@ public class SkuStockAdminController {
     }
 
     @Operation(summary = "调整库存", description = "手动入库/出库操作")
-    @PutMapping("/adjust")
+    @PutMapping("/adjustments")
     public R<Integer> adjustStock(
             @Parameter(description = "SKU ID") @RequestParam Long skuId,
             @Parameter(description = "调整数量（正数入库，负数出库）") @RequestParam Integer quantity) {
@@ -183,7 +183,7 @@ public class SkuStockAdminController {
     }
 
     @Operation(summary = "库存预警列表", description = "查询库存低于预警值的 SKU")
-    @GetMapping("/warning")
+    @GetMapping("/warnings")
     public R<List<SkuStockRespVO>> listLowStockWarning() {
         List<SkuStock> stockList = skuStockService.listLowStockWarning();
         return R.success(skuStockConvert.toSkuStockRespList(stockList));

@@ -26,7 +26,7 @@ import java.util.List;
  */
 @Tag(name = "后台资源管理", description = "后台资源管理")
 @RestController
-@RequestMapping("/user/resource")
+@RequestMapping("/admin/resources")
 @RequiredArgsConstructor
 public class ResourceAdminController {
 
@@ -34,7 +34,7 @@ public class ResourceAdminController {
     private final ResourceConvert resourceConvert;
 
     @Operation(summary = "添加后台资源")
-    @PostMapping("/create")
+    @PostMapping
     public R<Integer> create(@Validated(ResourceReqVO.Create.class) @RequestBody ResourceReqVO reqVO) {
         Resource resource = resourceConvert.toResource(reqVO);
         int count = resourceService.create(resource);
@@ -42,7 +42,7 @@ public class ResourceAdminController {
     }
 
     @Operation(summary = "修改后台资源")
-    @PostMapping("/update")
+    @PutMapping
     public R<Integer> update(@Validated(ResourceReqVO.Update.class) @RequestBody ResourceReqVO reqVO) {
         Resource resource = resourceConvert.toResource(reqVO);
         int count = resourceService.update(reqVO.getId(), resource);
@@ -57,14 +57,14 @@ public class ResourceAdminController {
     }
 
     @Operation(summary = "根据ID删除后台资源")
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public R<Integer> delete(@Parameter(description = "资源ID") @PathVariable Long id) {
         int count = resourceService.delete(id);
         return count > 0 ? R.success(count) : R.failed("删除失败");
     }
 
     @Operation(summary = "分页模糊查询后台资源")
-    @GetMapping("/list")
+    @GetMapping
     public R<Page<ResourceRespVO>> list(@Parameter(description = "资源名称") @RequestParam(required = false) String name,
                                     @Parameter(description = "资源URL") @RequestParam(required = false) String url,
                                     @Parameter(description = "分类ID") @RequestParam(required = false) Long categoryId,
@@ -77,7 +77,7 @@ public class ResourceAdminController {
     }
 
     @Operation(summary = "查询所有后台资源")
-    @GetMapping("/listAll")
+    @GetMapping("/all")
     public R<List<ResourceRespVO>> listAll() {
         List<Resource> resourceList = resourceService.listAll();
         return R.success(resourceConvert.toResourceRespList(resourceList));

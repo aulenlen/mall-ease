@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/portal/spu")
+@RequestMapping("/portal/catalog/products")
 public class SpuPortalController {
 
     private final SpuService spuService;
@@ -29,7 +29,7 @@ public class SpuPortalController {
     }
 
     @Operation(summary = "前台秒杀商品详情", description = "获取非热点秒杀商品详情并覆盖秒杀价格")
-    @GetMapping("/flash-portal/{spuId}")
+    @GetMapping("/flash/{spuId}")
     public R<ProductDetailRespVO> flashPortalDetail(@PathVariable Long spuId, @RequestParam Long sessionId) {
         return R.success(spuService.getFlashPortalDetail(spuId, sessionId));
     }

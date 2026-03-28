@@ -21,13 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -39,7 +33,7 @@ import java.util.List;
  */
 @Tag(name = "管理端-用户管理", description = "管理员信息、角色分配与当前登录信息")
 @RestController
-@RequestMapping("/user/admin")
+@RequestMapping("/admin/users")
 @Slf4j
 @RequiredArgsConstructor
 public class UserAdminController {
@@ -50,7 +44,7 @@ public class UserAdminController {
     private final MenuConvert menuConvert;
 
     @Operation(summary = "获取当前登录管理员信息", description = "返回用户名、头像、角色列表、菜单列表")
-    @GetMapping("/info")
+    @GetMapping("/me")
     public R<CurrentAdminInfoRespVO> getCurrentAdmin() {
         try {
             Admin admin = userService.getCurrentAdmin();
@@ -73,27 +67,27 @@ public class UserAdminController {
     }
 
     @Operation(summary = "管理员注册")
-    @PostMapping("/register")
+    @PostMapping
     public R<Integer> register(@Validated(AdminReqVO.Create.class) @RequestBody AdminReqVO reqVO) {
         Admin admin = adminConvert.toAdmin(reqVO);
         return R.success(userService.create(admin));
     }
 
     @Operation(summary = "修改指定管理员信息")
-    @PostMapping("/update/{id}")
+    @PutMapping("/{id}")
     public R<Integer> update(@PathVariable Long id, @RequestBody AdminReqVO reqVO) {
         Admin admin = adminConvert.toAdmin(reqVO);
         return R.success(userService.update(id, admin));
     }
 
     @Operation(summary = "删除指定管理员")
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public R<Integer> delete(@PathVariable Long id) {
         return R.success(userService.delete(id));
     }
 
     @Operation(summary = "根据用户名或姓名分页查询管理员")
-    @GetMapping("/list")
+    @GetMapping
     public R<Page<AdminRespVO>> list(@RequestParam(value = "keyword", required = false) String keyword,
                                      @RequestParam(value = "status", required = false) Integer status,
                                      @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize,
@@ -104,19 +98,19 @@ public class UserAdminController {
     }
 
     @Operation(summary = "修改帐号状态")
-    @PostMapping("/updateStatus/{id}")
+    @PutMapping("/{id}/status")
     public R<Integer> updateStatus(@PathVariable Long id, @RequestParam("status") Integer status) {
         return R.success(userService.updateStatus(id, status));
     }
 
     @Operation(summary = "给用户分配角色")
-    @PostMapping("/role/update")
+    @PostMapping("/roles")
     public R<Integer> updateRole(@Validated @RequestBody AllocRoleReqVO reqVO) {
         return R.success(userService.updateRole(reqVO.getAdminId(), reqVO.getRoleIds()));
     }
 
     @Operation(summary = "获取指定用户的角色")
-    @GetMapping("/role/{adminId}")
+    @GetMapping("/{adminId}/roles")
     public R<List<RoleRespVO>> getRoleList(@PathVariable Long adminId) {
         List<Role> roleList = userService.getRoleList(adminId);
         return R.success(roleConvert.toRoleRespList(roleList));

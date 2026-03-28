@@ -20,14 +20,14 @@ import java.util.List;
  */
 @Tag(name = "BFF分类页", description = "分类页聚合数据接口")
 @RestController
-@RequestMapping("/bff/category")
+@RequestMapping("/portal/categories")
 @RequiredArgsConstructor
 public class CategoryPortalController {
 
     private final CategoryService categoryService;
 
     @Operation(summary = "分类页数据", description = "获取分类树及各分类推荐商品")
-    @GetMapping("/tree")
+    @GetMapping
     public R<List<CategoryTreeRespVO>> portalTreeWithProducts() {
         return R.success(categoryService.getCategoryTree());
     }

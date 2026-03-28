@@ -27,7 +27,7 @@ import java.util.List;
 @Tag(name = "秒杀后台管理")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/marketing/flash")
+@RequestMapping("/admin/flash")
 public class FlashAdminController {
 
     private final FlashService flashService;

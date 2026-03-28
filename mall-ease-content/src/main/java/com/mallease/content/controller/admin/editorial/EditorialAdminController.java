@@ -32,21 +32,21 @@ import java.util.List;
 @Tag(name = "编辑精选管理", description = "品牌期刊增删改查")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/content/editorial")
+@RequestMapping("/admin/content/editorials")
 public class EditorialAdminController {
 
     private final EditorialConvert editorialConvert;
     private final EditorialService editorialService;
 
     @Operation(summary = "创建编辑精选")
-    @PostMapping("/create")
+    @PostMapping
     public R<Long> create(@Validated(EditorialReqVO.Create.class) @RequestBody EditorialReqVO reqVO) {
         Editorial editorial = editorialConvert.toEditorial(reqVO);
         return R.success(editorialService.create(editorial, reqVO.getSpuIds()));
     }
 
     @Operation(summary = "更新编辑精选")
-    @PutMapping("/update")
+    @PutMapping
     public R<Integer> update(@Validated(EditorialReqVO.Update.class) @RequestBody EditorialReqVO reqVO) {
         Editorial editorial = editorialConvert.toEditorial(reqVO);
         int count = editorialService.update(editorial, reqVO.getSpuIds());
@@ -54,14 +54,14 @@ public class EditorialAdminController {
     }
 
     @Operation(summary = "删除编辑精选")
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public R<Integer> delete(@PathVariable Long id) {
         int count = editorialService.delete(id);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
     @Operation(summary = "批量删除编辑精选")
-    @DeleteMapping("/delete/batch")
+    @DeleteMapping("/batch")
     public R<Integer> deleteBatch(@Parameter(description = "编辑精选ID列表") @RequestParam("ids") List<Long> ids) {
         int count = editorialService.deleteBatch(ids);
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);

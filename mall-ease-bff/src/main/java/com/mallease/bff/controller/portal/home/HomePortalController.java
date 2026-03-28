@@ -18,14 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "BFF首页", description = "首页聚合数据接口")
 @RestController
-@RequestMapping("/bff/home")
+@RequestMapping("/portal/home")
 @RequiredArgsConstructor
 public class HomePortalController {
 
     private final HomeService homeService;
 
     @Operation(summary = "获取首页数据", description = "聚合返回Banner、分类、秒杀、编辑精选、推荐商品")
-    @GetMapping("/index")
+    @GetMapping
     public R<HomePageRespVO> getHomeData() {
         return R.success(homeService.getHomePage());
     }

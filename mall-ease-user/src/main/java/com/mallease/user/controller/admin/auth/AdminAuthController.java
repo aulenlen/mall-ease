@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "管理端-认证", description = "后台管理员登录认证相关接口")
 @RestController
-@RequestMapping("/auth/admin")
+@RequestMapping("/admin/auth")
 @RequiredArgsConstructor
 public class AdminAuthController {
 

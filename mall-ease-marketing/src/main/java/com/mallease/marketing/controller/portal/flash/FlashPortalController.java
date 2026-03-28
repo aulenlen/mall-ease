@@ -29,7 +29,7 @@ import java.util.List;
 @Tag(name = "秒杀前台查询")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/portal/marketing/flash")
+@RequestMapping("/portal/flash")
 public class FlashPortalController {
 
     private final FlashService flashService;

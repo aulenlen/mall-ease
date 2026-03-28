@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "前台-会员认证", description = "前台会员登录认证相关接口")
 @RestController
-@RequestMapping("/auth/portal")
+@RequestMapping("/portal/auth")
 @RequiredArgsConstructor
 public class MemberAuthController {
 
