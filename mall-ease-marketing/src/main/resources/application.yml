@@ -84,9 +84,9 @@ springdoc:
   swagger-ui:
     enabled: true
   group-configs:
-    - group: '营销管理'
+    - group: "营销后台"
       paths-to-match:
-        - '/admin/marketing/flash/**'
-        - '/portal/marketing/flash/**'
-        - '/internal/marketing/flash/**'
-
+        - /admin/**
+    - group: "营销前台"
+      paths-to-match:
+        - /portal/**

@@ -58,5 +58,6 @@ springdoc:
   swagger-ui:
     enabled: true
   group-configs:
-    - group: 'BFF聚合接口'
-      paths-to-match: '/bff/**'
+    - group: "BFF前台"
+      paths-to-match:
+        - /portal/**

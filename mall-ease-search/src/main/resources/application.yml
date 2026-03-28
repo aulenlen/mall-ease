@@ -31,3 +31,17 @@ spring:
     uris: ${ES_URIS:http://localhost:9200}
     connection-timeout: 5s
     socket-timeout: 60s
+
+# SpringDoc OpenAPI配置
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+  group-configs:
+    - group: "搜索后台"
+      paths-to-match:
+        - /admin/**
+    - group: "搜索前台"
+      paths-to-match:
+        - /portal/**

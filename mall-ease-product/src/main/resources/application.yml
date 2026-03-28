@@ -95,17 +95,14 @@ thread-pool:
 
 # SpringDoc OpenAPI配置
 springdoc:
-  paths-to-match:
-    - /admin/stock/**
-    - /admin/sku/**
   api-docs:
     enabled: true
   swagger-ui:
     enabled: true
   group-configs:
-    - group: '商品后台'
+    - group: "商品后台"
       paths-to-match:
         - /admin/**
-    - group: '商品管理'
+    - group: "商品前台"
       paths-to-match:
-        - /product/**
+        - /portal/**

@@ -87,5 +87,9 @@ springdoc:
   swagger-ui:
     enabled: true
   group-configs:
-    - group: '交易管理'
-      paths-to-match: '/trade/**'
+    - group: "交易后台"
+      paths-to-match:
+        - /admin/**
+    - group: "交易前台"
+      paths-to-match:
+        - /portal/**

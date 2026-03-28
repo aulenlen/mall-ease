@@ -56,14 +56,11 @@ knife4j:
 
 # SpringDoc OpenAPI配置
 springdoc:
-  paths-to-match:
-    - /admin/media/files/**
   api-docs:
     enabled: true
   swagger-ui:
     enabled: true
   group-configs:
-    - group: '内容管理'
+    - group: "内容后台"
       paths-to-match:
-        - /content/**
-        - /admin/media/**
+        - /admin/**

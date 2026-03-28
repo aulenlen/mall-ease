@@ -59,3 +59,16 @@ sa-token:
   token-prefix: Bearer
   jwt-secret-key: ${SA_TOKEN_SECRET:sa-secret-key-default}
   is-print: false
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+  group-configs:
+    - group: "用户后台"
+      paths-to-match:
+        - /admin/**
+    - group: "用户前台"
+      paths-to-match:
+        - /portal/**
