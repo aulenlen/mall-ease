@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @RequiredArgsConstructor
 public class SpuDetailRouteGlobalFilter implements GlobalFilter, Ordered {
-    private static final Pattern API_V1_DETAIL_PATH_PATTERN = Pattern.compile("^/api/v1/portal/catalog/products/(\\d+)$");
+    private static final Pattern API_V1_DETAIL_PATH_PATTERN = Pattern.compile("^/api/v1/portal/products/(\\d+)$");
 
     private final FlashRouteLookupService flashRouteLookupService;
     private final SpuDetailTargetUriBuilder targetUriBuilder;

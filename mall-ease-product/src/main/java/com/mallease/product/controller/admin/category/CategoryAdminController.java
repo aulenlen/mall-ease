@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @Tag(name = "后台商品分类管理", description = "分类增删改查、树形结构、导航管理")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/catalog/categories")
+@RequestMapping("/admin/categories")
 public class CategoryAdminController {
 
     private final CategoryService categoryService;

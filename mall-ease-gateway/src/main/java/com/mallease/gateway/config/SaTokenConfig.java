@@ -37,7 +37,7 @@ import java.util.Set;
 
 /**
  * Sa-Token 权限认证全局配置类（支持多账号体系）
- *
+ * <p>
  * 接口分类：
  * 1. internal 接口 - 服务间调用，禁止外部访问
  * 2. portal 公开接口 - 前台无需登录（商品详情、搜索、注册登录）
@@ -63,11 +63,12 @@ public class SaTokenConfig {
 
     /**
      * 前台公开接口 - 无需登录
-     */    private static final List<String> PORTAL_PUBLIC_PATHS = List.of(
+     */
+    private static final List<String> PORTAL_PUBLIC_PATHS = List.of(
             "/api/v1/portal/auth/login",
             "/api/v1/portal/auth/register",
             "/api/v1/admin/auth/login",
-            "/api/v1/portal/catalog/products/*",
+            "/api/v1/portal/products/*",
             "/api/v1/portal/search/suggestions",
             "/api/v1/portal/search/products",
             "/api/v1/portal/payments/notify/**",
@@ -82,7 +83,9 @@ public class SaTokenConfig {
             "/api/v1/portal/cart/**",
             "/api/v1/portal/orders/**",
             "/api/v1/portal/payments/**"
-    );    @Bean
+    );
+
+    @Bean
     public SaReactorFilter getSaReactorFilter() {
         return new SaReactorFilter()
                 .addInclude("/**")
@@ -99,7 +102,6 @@ public class SaTokenConfig {
                     if (isPortalPublicPath(requestPath)) {
                         return;
                     }
-
 
                     if (isPortalAuthPath(requestPath)) {
                         StpMemberUtil.checkLogin();

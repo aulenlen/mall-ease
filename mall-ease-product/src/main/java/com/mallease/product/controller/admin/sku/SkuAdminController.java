@@ -26,7 +26,7 @@ import java.util.List;
 @Tag(name = "后台 SKU 管理", description = "SKU 增删改查")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/catalog/skus")
+@RequestMapping("/admin/skus")
 public class SkuAdminController {
 
     private final SkuService skuService;

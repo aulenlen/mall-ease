@@ -33,7 +33,7 @@ import java.util.List;
  */
 @Tag(name = "后台商品属性管理")
 @RestController
-@RequestMapping("/admin/catalog/attributes")
+@RequestMapping("/admin/attributes")
 @RequiredArgsConstructor
 public class AttributeAdminController {
 

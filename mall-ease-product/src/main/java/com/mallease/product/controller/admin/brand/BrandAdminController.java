@@ -39,7 +39,7 @@ import java.util.List;
 @Tag(name = "后台品牌管理", description = "品牌增删改查、状态管理")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/catalog/brands")
+@RequestMapping("/admin/brands")
 public class BrandAdminController {
 
     private final BrandService brandService;

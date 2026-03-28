@@ -11,7 +11,7 @@ spring:
         - id: api-v1-product
           uri: lb://mall-ease-product
           predicates:
-            - Path=/api/v1/admin/catalog/**,/api/v1/portal/catalog/**
+            - Path=/api/v1/admin/categories/**,/api/v1/admin/brands/**,/api/v1/admin/attributes/**,/api/v1/admin/products/**,/api/v1/admin/skus/**,/api/v1/admin/stocks/**,/api/v1/portal/products/**
           filters:
             - StripPrefix=2
         - id: api-v1-content

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/portal/catalog/products")
+@RequestMapping("/portal/products")
 public class SpuPortalController {
 
     private final SpuService spuService;

@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 @Tag(name = "后台 SKU 库存管理", description = "库存查询、调整、预警、锁库存")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/catalog/stocks")
+@RequestMapping("/admin/stocks")
 public class SkuStockAdminController {
 
     private final SkuStockService skuStockService;

@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 @Tag(name = "后台商品管理", description = "后台商品 CRUD")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/catalog/products")
+@RequestMapping("/admin/products")
 public class SpuAdminController {
 
     private final com.mallease.product.service.spu.SpuService spuService;
