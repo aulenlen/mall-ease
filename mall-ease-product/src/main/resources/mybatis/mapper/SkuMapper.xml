@@ -6,7 +6,6 @@
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="spu_id" property="spuId" jdbcType="BIGINT"/>
         <result column="sku_code" property="skuCode" jdbcType="VARCHAR"/>
-        <result column="attr_values" property="attrValues" jdbcType="VARCHAR"/>
         <result column="pic" property="pic" jdbcType="VARCHAR"/>
         <result column="base_price" property="basePrice" jdbcType="DECIMAL"/>
         <result column="compare_at_price" property="compareAtPrice" jdbcType="DECIMAL"/>
@@ -20,7 +19,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, spu_id, sku_code, attr_values, pic, base_price, compare_at_price,
+        id, spu_id, sku_code, pic, base_price, compare_at_price,
         deleted, enable_status, create_time, update_time, creator, updater, version
     </sql>
 
@@ -123,10 +122,10 @@
     <!-- 插入 -->
     <insert id="insert" parameterType="com.mallease.product.dal.entity.Sku" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_sku (
-            spu_id, sku_code, attr_values, pic, base_price, compare_at_price,
+            spu_id, sku_code, pic, base_price, compare_at_price,
             deleted, enable_status, creator, updater, version
         ) VALUES (
-            #{spuId,jdbcType=BIGINT}, #{skuCode,jdbcType=VARCHAR}, #{attrValues,jdbcType=VARCHAR},
+            #{spuId,jdbcType=BIGINT}, #{skuCode,jdbcType=VARCHAR},
             #{pic,jdbcType=VARCHAR}, #{basePrice,jdbcType=DECIMAL}, #{compareAtPrice,jdbcType=DECIMAL},
             0, #{enableStatus,jdbcType=TINYINT}, #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}, 0
         )
@@ -138,7 +137,6 @@
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="spuId != null">spu_id,</if>
             <if test="skuCode != null">sku_code,</if>
-            <if test="attrValues != null">attr_values,</if>
             <if test="pic != null">pic,</if>
             <if test="basePrice != null">base_price,</if>
             <if test="compareAtPrice != null">compare_at_price,</if>
@@ -149,7 +147,6 @@
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
             <if test="spuId != null">#{spuId,jdbcType=BIGINT},</if>
             <if test="skuCode != null">#{skuCode,jdbcType=VARCHAR},</if>
-            <if test="attrValues != null">#{attrValues,jdbcType=VARCHAR},</if>
             <if test="pic != null">#{pic,jdbcType=VARCHAR},</if>
             <if test="basePrice != null">#{basePrice,jdbcType=DECIMAL},</if>
             <if test="compareAtPrice != null">#{compareAtPrice,jdbcType=DECIMAL},</if>
@@ -162,13 +159,13 @@
     <!-- 批量插入 -->
     <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product_sku (
-            spu_id, sku_code, attr_values, pic, base_price, compare_at_price,
+            spu_id, sku_code, pic, base_price, compare_at_price,
             deleted, enable_status, creator, version
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
                 #{item.spuId,jdbcType=BIGINT}, #{item.skuCode,jdbcType=VARCHAR},
-                #{item.attrValues,jdbcType=VARCHAR}, #{item.pic,jdbcType=VARCHAR},
+                #{item.pic,jdbcType=VARCHAR},
                 #{item.basePrice,jdbcType=DECIMAL}, #{item.compareAtPrice,jdbcType=DECIMAL},
                 0, #{item.enableStatus,jdbcType=TINYINT}, #{item.creator,jdbcType=VARCHAR}, 0
             )
@@ -180,11 +177,6 @@
         SET sku_code = CASE id
         <foreach collection="list" item="item">
             WHEN #{item.id,jdbcType=BIGINT} THEN #{item.skuCode,jdbcType=VARCHAR}
-        </foreach>
-        END,
-            attr_values = CASE id
-        <foreach collection="list" item="item">
-            WHEN #{item.id,jdbcType=BIGINT} THEN #{item.attrValues,jdbcType=VARCHAR}
         </foreach>
         END,
             pic = CASE id
@@ -224,7 +216,6 @@
         UPDATE product_sku
         SET spu_id = #{spuId,jdbcType=BIGINT},
             sku_code = #{skuCode,jdbcType=VARCHAR},
-            attr_values = #{attrValues,jdbcType=VARCHAR},
             pic = #{pic,jdbcType=VARCHAR},
             base_price = #{basePrice,jdbcType=DECIMAL},
             compare_at_price = #{compareAtPrice,jdbcType=DECIMAL},
@@ -240,7 +231,6 @@
         <set>
             <if test="spuId != null">spu_id = #{spuId,jdbcType=BIGINT},</if>
             <if test="skuCode != null">sku_code = #{skuCode,jdbcType=VARCHAR},</if>
-            <if test="attrValues != null">attr_values = #{attrValues,jdbcType=VARCHAR},</if>
             <if test="pic != null">pic = #{pic,jdbcType=VARCHAR},</if>
             <if test="basePrice != null">base_price = #{basePrice,jdbcType=DECIMAL},</if>
             <if test="compareAtPrice != null">compare_at_price = #{compareAtPrice,jdbcType=DECIMAL},</if>
@@ -300,7 +290,16 @@
                 AND base_price &lt;= #{query.basePriceEnd,jdbcType=DECIMAL}
             </if>
             <if test="query.specKeyword != null and query.specKeyword != ''">
-                AND attr_values LIKE CONCAT('%', #{query.specKeyword,jdbcType=VARCHAR}, '%')
+                AND EXISTS (
+                    SELECT 1
+                    FROM product_attribute_value pav
+                    WHERE pav.sku_id = id
+                      AND pav.deleted = 0
+                      AND (
+                        pav.attr_name LIKE CONCAT('%', #{query.specKeyword,jdbcType=VARCHAR}, '%')
+                        OR pav.attr_value LIKE CONCAT('%', #{query.specKeyword,jdbcType=VARCHAR}, '%')
+                      )
+                )
             </if>
         </where>
         ORDER BY id DESC

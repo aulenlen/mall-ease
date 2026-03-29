@@ -16,6 +16,7 @@ import com.mallease.product.dal.entity.Sku;
 import com.mallease.product.dal.entity.SkuStock;
 import com.mallease.product.dal.entity.Spu;
 import com.mallease.product.service.sku.SkuService;
+import com.mallease.product.service.sku.support.SkuSpecResolver;
 import com.mallease.product.service.stock.SkuStockService;
 import com.mallease.product.service.spu.SpuPublishService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +48,7 @@ public class SpuAdminController {
     private final SpuPublishService spuPublishService;
     private final SpuConvert spuConvert;
     private final SkuService skuService;
+    private final SkuSpecResolver skuSpecResolver;
     private final SkuConvert skuConvert;
     private final SkuStockService skuStockService;
 
@@ -121,7 +123,8 @@ public class SpuAdminController {
                 .toList();
 
         List<Sku> skuList = skuService.selectEnabledBySpuIds(spuIds);
-        List<SkuRespVO> skuRespList = skuConvert.toSkuRespList(skuList);
+        Map<Long, String> attrValuesMap = skuSpecResolver.buildAttrValueJsonMap(skuList.stream().map(Sku::getId).toList());
+        List<SkuRespVO> skuRespList = skuConvert.toSkuRespList(skuList, attrValuesMap);
         Map<Long, SkuRespVO> skuRespMap = skuRespList.stream()
                 .collect(Collectors.toMap(SkuRespVO::getId, item -> item, (left, right) -> left));
 

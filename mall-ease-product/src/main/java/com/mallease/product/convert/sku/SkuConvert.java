@@ -21,7 +21,8 @@ import java.util.Map;
 @Mapper(componentModel = "spring")
 public interface SkuConvert {
 
-    @Mapping(source = "attrValues", target = "attrValuesObj", qualifiedByName = "parseAttrValues")
+    @Mapping(target = "attrValues", ignore = true)
+    @Mapping(target = "attrValuesObj", ignore = true)
     SkuRespVO toSkuResp(Sku entity);
 
     List<SkuRespVO> toSkuRespList(List<Sku> entities);
@@ -31,10 +32,8 @@ public interface SkuConvert {
     void mergeSkuStockToRespVO(@MappingTarget SkuRespVO respVO, SkuStock stock);
 
     @Mapping(target = "deleted", constant = "0")
-    @Mapping(source = "attrValues", target = "attrValues", qualifiedByName = "serializeAttrValues")
     Sku toSku(SkuSaveReqVO reqVO);
 
-    @Mapping(source = "attrValues", target = "attrValues", qualifiedByName = "serializeAttrValues")
     void copyToSku(@MappingTarget Sku entity, SkuSaveReqVO reqVO);
 
     @Mapping(target = "lockStock", constant = "0")
@@ -62,16 +61,19 @@ public interface SkuConvert {
         }
     }
 
-    @Named("serializeAttrValues")
-    default String serializeAttrValues(List<SkuSaveReqVO.AttrValueReqVO> attrValues) {
-        if (attrValues == null || attrValues.isEmpty()) {
-            return null;
+    default SkuRespVO toSkuResp(Sku entity, String attrValues) {
+        SkuRespVO respVO = toSkuResp(entity);
+        respVO.setAttrValues(attrValues);
+        respVO.setAttrValuesObj(parseAttrValues(attrValues));
+        return respVO;
+    }
+
+    default List<SkuRespVO> toSkuRespList(List<Sku> entities, Map<Long, String> attrValuesMap) {
+        if (entities == null || entities.isEmpty()) {
+            return List.of();
         }
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.writeValueAsString(attrValues);
-        } catch (JsonProcessingException e) {
-            return null;
-        }
+        return entities.stream()
+                .map(entity -> toSkuResp(entity, attrValuesMap.get(entity.getId())))
+                .toList();
     }
 }

@@ -22,6 +22,7 @@ import com.mallease.product.dal.entity.Spu;
 import com.mallease.product.service.brand.BrandService;
 import com.mallease.product.service.category.CategoryService;
 import com.mallease.product.service.sku.SkuService;
+import com.mallease.product.service.sku.support.SkuSpecResolver;
 import com.mallease.product.service.stock.SkuStockService;
 import com.mallease.product.service.spu.SpuService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,6 +49,7 @@ public class SkuStockAdminController {
     private final SkuStockConvert skuStockConvert;
     private final SpuService spuService;
     private final SkuService skuService;
+    private final SkuSpecResolver skuSpecResolver;
     private final BrandService brandService;
     private final CategoryService categoryService;
 
@@ -144,14 +146,15 @@ public class SkuStockAdminController {
 
         Map<Long, SkuStock> stockMap = skuStockService.listStockBySpuIds(List.of(spuId)).stream()
                 .collect(Collectors.toMap(SkuStock::getSkuId, item -> item, (left, right) -> left));
+        Map<Long, String> attrValuesMap = skuSpecResolver.buildAttrValueJsonMap(skuList.stream().map(Sku::getId).toList());
 
         List<SkuStockRespVO> respVOList = skuList.stream()
-                .map(sku -> toSkuStockRespVO(spuName, sku, stockMap.get(sku.getId())))
+                .map(sku -> toSkuStockRespVO(spuName, sku, stockMap.get(sku.getId()), attrValuesMap.get(sku.getId())))
                 .toList();
         return R.success(respVOList);
     }
 
-    private SkuStockRespVO toSkuStockRespVO(String spuName, Sku sku, SkuStock stock) {
+    private SkuStockRespVO toSkuStockRespVO(String spuName, Sku sku, SkuStock stock, String attrValuesJson) {
         SkuStockRespVO respVO = stock != null
                 ? skuStockConvert.toSkuStockResp(stock)
                 : SkuStockRespVO.builder()
@@ -164,7 +167,6 @@ public class SkuStockAdminController {
                 .stockStatus(0)
                 .lowStockWarning(false)
                 .build();
-        String attrValuesJson = sku.getAttrValues();
         respVO.setSpuName(spuName);
         respVO.setSkuCode(sku.getSkuCode());
         respVO.setPic(sku.getPic());

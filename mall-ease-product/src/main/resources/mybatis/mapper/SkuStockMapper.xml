@@ -140,8 +140,7 @@
                ss.lock_stock AS lockStock,
                ss.sale AS sale,
                ss.low_stock AS lowStock,
-               ss.stock_status AS stockStatus,
-               sku.attr_values AS attrValues
+               ss.stock_status AS stockStatus
         FROM product_sku_stock ss
         INNER JOIN product_sku sku ON sku.id = ss.sku_id AND sku.deleted = 0
         INNER JOIN product_spu spu ON spu.id = ss.spu_id AND spu.deleted = 0

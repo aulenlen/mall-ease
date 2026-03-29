@@ -30,6 +30,14 @@
         WHERE spu_id = #{spuId} AND deleted = 0
     </select>
 
+    <select id="selectBySpuIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM product_attribute_value
+        WHERE deleted = 0 AND spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+            #{spuId}
+        </foreach>
+    </select>
     <select id="selectParamsBySpuId" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM product_attribute_value

@@ -8,6 +8,4 @@ import com.mallease.product.dal.entity.SpuSnapshot;
 public record PublishSnapshotPlan(
         Long spuId,
         SpuSnapshot snapshot,
-        boolean contentChanged
-) {
-}
+        boolean contentChanged) {}

@@ -26,6 +26,11 @@ public interface AttributeValueDao {
     List<AttributeValue> selectBySpuId(@Param("spuId") Long spuId);
 
     /**
+     * 根据SPU ID列表批量查询所有属性值（参数 + SKU规格）
+     */
+    List<AttributeValue> selectBySpuIds(@Param("spuIds") List<Long> spuIds);
+
+    /**
      * 根据SPU ID查询参数（sku_id IS NULL）
      */
     List<AttributeValue> selectParamsBySpuId(@Param("spuId") Long spuId);

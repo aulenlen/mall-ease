@@ -1,8 +1,5 @@
 package com.mallease.product.convert.spu;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mallease.common.dto.remote.SpuIndexDTO;
 import com.mallease.product.controller.admin.spu.vo.SkuSaveReqVO;
 import com.mallease.product.controller.admin.spu.vo.SpuDetailRespVO;
@@ -28,8 +25,6 @@ import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface SpuConvert {
-
-    ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Mapping(source = "albumPics", target = "albumPics", qualifiedByName = "joinAlbumPics")
     Spu toSpu(SpuSaveReqVO reqVO);
@@ -69,14 +64,13 @@ public interface SpuConvert {
 
     List<SpuDetailRespVO.AttrValueRespVO> toAttrValueRespList(List<AttributeValue> attributeValues);
 
-    @Mapping(source = "attrValues", target = "attrValues", qualifiedByName = "serializeSkuAttrValues")
     Sku toSku(SkuSaveReqVO reqVO);
 
     @InheritConfiguration(name = "toSku")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void copyToSku(@MappingTarget Sku target, SkuSaveReqVO reqVO);
 
-    @Mapping(source = "attrValues", target = "attrValues", qualifiedByName = "deserializeSkuAttrValues")
+    @Mapping(target = "attrValues", ignore = true)
     SpuDetailRespVO.SkuRespVO toSkuRespVO(Sku sku);
 
     List<SpuDetailRespVO.SkuRespVO> toSkuRespList(List<Sku> skuList);
@@ -101,30 +95,5 @@ public interface SpuConvert {
                 .map(String::trim)
                 .filter(StringUtils::hasText)
                 .toList();
-    }
-
-    @Named("serializeSkuAttrValues")
-    default String serializeSkuAttrValues(List<SkuSaveReqVO.AttrValueReqVO> attrValues) {
-        if (attrValues == null || attrValues.isEmpty()) {
-            return null;
-        }
-        try {
-            return OBJECT_MAPPER.writeValueAsString(attrValues);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("SKU规格值序列化失败", e);
-        }
-    }
-
-    @Named("deserializeSkuAttrValues")
-    default List<SpuDetailRespVO.AttrValueRespVO> deserializeSkuAttrValues(String attrValues) {
-        if (!StringUtils.hasText(attrValues)) {
-            return List.of();
-        }
-        try {
-            return OBJECT_MAPPER.readValue(attrValues, new TypeReference<List<SpuDetailRespVO.AttrValueRespVO>>() {
-            });
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("SKU规格值反序列化失败", e);
-        }
     }
 }

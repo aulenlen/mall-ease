@@ -15,6 +15,7 @@ import com.mallease.product.dal.entity.Category;
 import com.mallease.product.dal.entity.Sku;
 import com.mallease.product.dal.entity.Spu;
 import com.mallease.product.dal.entity.SpuSnapshot;
+import com.mallease.product.dal.mapper.AttributeValueDao;
 import com.mallease.product.dal.mapper.SpuDao;
 import com.mallease.product.dal.mapper.SpuSnapshotDao;
 import com.mallease.product.feign.search.SpuSearchFeignClient;
@@ -52,6 +53,7 @@ public class SpuPublishServiceImpl implements SpuPublishService {
     private final SpuService spuService;
     private final SkuService skuService;
     private final ObjectMapper objectMapper;
+    private final AttributeValueDao attributeValueDao;
     private final AttributeService attributeService;
     private final CategoryService categoryService;
     private final SpuConvert spuConvert;
@@ -210,30 +212,19 @@ public class SpuPublishServiceImpl implements SpuPublishService {
         List<Sku> skuList = skuService.selectEnabledBySpuIds(successIds);
         Map<Long, List<Sku>> skuGroupMap = skuList.stream().collect(Collectors.groupingBy(Sku::getSpuId));
 
-        List<AttributeValue> paramValueList = attributeService.listParamValuesBySpuIds(successIds);
-        Map<Long, List<AttributeValue>> paramValueGroupMap = paramValueList.stream()
+        Set<Long> enabledSkuIds = skuList.stream().map(Sku::getId).collect(Collectors.toSet());
+        List<AttributeValue> attrValueList = attributeValueDao.selectBySpuIds(successIds);
+        Map<Long, List<AttributeValue>> paramValueGroupMap = attrValueList.stream()
+                .filter(item -> item.getSkuId() == null)
+                .collect(Collectors.groupingBy(AttributeValue::getSpuId));
+        Map<Long, List<AttributeValue>> specValueGroupMap = attrValueList.stream()
+                .filter(item -> item.getSkuId() != null && enabledSkuIds.contains(item.getSkuId()))
                 .collect(Collectors.groupingBy(AttributeValue::getSpuId));
 
-        Set<Long> attrIds = new HashSet<>();
-        paramValueList.forEach(pv -> attrIds.add(pv.getAttrId()));
-        skuList.forEach(sku -> {
-            if (!StringUtils.hasText(sku.getAttrValues())) {
-                return;
-            }
-            try {
-                List<Map<String, Object>> specList = objectMapper.readValue(sku.getAttrValues(), new TypeReference<>() {
-                });
-                if (specList != null) {
-                    specList.forEach(spec -> {
-                        if (spec.get("attrId") != null) {
-                            attrIds.add(((Number) spec.get("attrId")).longValue());
-                        }
-                    });
-                }
-            } catch (JsonProcessingException e) {
-                log.warn("解析SKU规格失败，skuId={}", sku.getId(), e);
-            }
-        });
+        Set<Long> attrIds = attrValueList.stream()
+                .map(AttributeValue::getAttrId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
         Map<Long, Attribute> attrMap = Map.of();
         if (!attrIds.isEmpty()) {
@@ -259,42 +250,24 @@ public class SpuPublishServiceImpl implements SpuPublishService {
 
             List<SpuIndexDTO.AttrValue> allAttrValues = new ArrayList<>();
             Set<String> seenSpecs = new HashSet<>();
-            for (Sku sku : spuSkuList) {
-                String jsonString = sku.getAttrValues();
-                if (!StringUtils.hasText(jsonString)) {
+            for (AttributeValue specValue : specValueGroupMap.getOrDefault(spu.getId(), Collections.emptyList())) {
+                Long attrId = specValue.getAttrId();
+                String attrName = specValue.getAttrName();
+                String attrValue = specValue.getAttrValue();
+                String uniqueKey = (attrId != null ? attrId : attrName) + ":" + attrValue;
+                if (!seenSpecs.add(uniqueKey)) {
                     continue;
                 }
 
-                try {
-                    List<Map<String, Object>> specList = objectMapper.readValue(jsonString, new TypeReference<>() {
-                    });
-                    if (specList == null) {
-                        continue;
-                    }
-
-                    for (Map<String, Object> spec : specList) {
-                        Long attrId = spec.get("attrId") != null ? ((Number) spec.get("attrId")).longValue() : null;
-                        String attrName = (String) spec.get("attrName");
-                        String attrValue = (String) spec.get("attrValue");
-                        String uniqueKey = (attrId != null ? attrId : attrName) + ":" + attrValue;
-                        if (seenSpecs.contains(uniqueKey)) {
-                            continue;
-                        }
-                        seenSpecs.add(uniqueKey);
-
-                        Attribute attr = attrId != null ? finalAttrMap.get(attrId) : null;
-                        allAttrValues.add(SpuIndexDTO.AttrValue.builder()
-                                .attrId(attrId)
-                                .attrName(attrName)
-                                .attrValue(attrValue)
-                                .type(1)
-                                .filterable(attr != null && Integer.valueOf(1).equals(attr.getFilterable()))
-                                .searchable(attr != null && Integer.valueOf(1).equals(attr.getSearchable()))
-                                .build());
-                    }
-                } catch (JsonProcessingException e) {
-                    log.warn("解析 SKU 属性值失败，skuId={}, json={}", sku.getId(), jsonString, e);
-                }
+                Attribute attr = attrId != null ? finalAttrMap.get(attrId) : null;
+                allAttrValues.add(SpuIndexDTO.AttrValue.builder()
+                        .attrId(attrId)
+                        .attrName(attrName)
+                        .attrValue(attrValue)
+                        .type(1)
+                        .filterable(attr != null && Integer.valueOf(1).equals(attr.getFilterable()))
+                        .searchable(attr != null && Integer.valueOf(1).equals(attr.getSearchable()))
+                        .build());
             }
 
             List<AttributeValue> spuParamValues = paramValueGroupMap.getOrDefault(spu.getId(), Collections.emptyList());

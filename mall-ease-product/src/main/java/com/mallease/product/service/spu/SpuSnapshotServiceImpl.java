@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,15 +45,14 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
 
     @Override
     public List<PublishSnapshotPlan> buildPublishPlans(List<Long> spuIds, LocalDateTime publishedAt) {
-        List<Long> normalizedSpuIds = normalizeSpuIds(spuIds);
         // 草稿对象
-        BatchSnapshotSource source = loadSnapshotSource(normalizedSpuIds);
+        BatchSnapshotSource source = loadSnapshotSource(spuIds);
         // 已发布的快照
-        Map<Long, SpuSnapshot> currentSnapshotMap = spuSnapshotDao.selectBySpuIds(normalizedSpuIds).stream()
+        Map<Long, SpuSnapshot> currentSnapshotMap = spuSnapshotDao.selectBySpuIds(spuIds).stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(SpuSnapshot::getSpuId, Function.identity(), (left, right) -> right));
 
-        return normalizedSpuIds.stream()
+        return spuIds.stream()
                 .map(spuId -> buildPublishPlan(source, spuId, currentSnapshotMap, publishedAt))
                 .toList();
     }
@@ -80,6 +80,7 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
                 source.spuDetailMap().get(spuId),
                 source.paramMap().getOrDefault(spuId, List.of()),
                 source.specMap().getOrDefault(spuId, List.of()),
+                source.skuSpecMap(),
                 skus
         );
 
@@ -113,14 +114,21 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
 
         List<SpuDetail> spuDetails = spuDetailDao.selectBySpuIds(spuIds);
         List<Sku> skus = skuDao.selectEnabledBySpuIds(spuIds);
-        List<AttributeValue> params = attributeValueDao.selectParamsBySpuIds(spuIds);
-        List<AttributeValue> specs = skus.isEmpty() ? List.of() : attributeValueDao.selectSpecsBySkuIds(skus.stream().map(Sku::getId).toList());
+        List<AttributeValue> attrValues = attributeValueDao.selectBySpuIds(spuIds);
+        Set<Long> enabledSkuIds = skus.stream().map(Sku::getId).collect(Collectors.toSet());
 
         return new BatchSnapshotSource(
                 spuMap,
                 spuDetails.stream().collect(Collectors.toMap(SpuDetail::getSpuId, Function.identity(), (left, right) -> left)),
-                params.stream().collect(Collectors.groupingBy(AttributeValue::getSpuId)),
-                specs.stream().collect(Collectors.groupingBy(AttributeValue::getSpuId)),
+                attrValues.stream()
+                        .filter(item -> item.getSkuId() == null)
+                        .collect(Collectors.groupingBy(AttributeValue::getSpuId)),
+                attrValues.stream()
+                        .filter(item -> item.getSkuId() != null && enabledSkuIds.contains(item.getSkuId()))
+                        .collect(Collectors.groupingBy(AttributeValue::getSpuId)),
+                attrValues.stream()
+                        .filter(item -> item.getSkuId() != null && enabledSkuIds.contains(item.getSkuId()))
+                        .collect(Collectors.groupingBy(AttributeValue::getSkuId)),
                 skus.stream().collect(Collectors.groupingBy(Sku::getSpuId))
         );
     }
@@ -149,7 +157,8 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
                 source.spuDetail(),
                 source.params(),
                 source.specs(),
-                source.skus()
+                source.skus(),
+                source.skuSpecMap()
         );
     }
 
@@ -209,24 +218,12 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
         return spu.getVersion();
     }
 
-    private List<Long> normalizeSpuIds(List<Long> spuIds) {
-        if (spuIds == null || spuIds.isEmpty()) {
-            throw new ApiException("商品ID不能为空");
-        }
-        if (spuIds.stream().anyMatch(Objects::isNull)) {
-            throw new ApiException("商品ID不能为空");
-        }
-
-        return spuIds.stream()
-                .distinct()
-                .toList();
-    }
-
     private record BatchSnapshotSource(
             Map<Long, Spu> spuMap,
             Map<Long, SpuDetail> spuDetailMap,
             Map<Long, List<AttributeValue>> paramMap,
             Map<Long, List<AttributeValue>> specMap,
+            Map<Long, List<AttributeValue>> skuSpecMap,
             Map<Long, List<Sku>> skuMap
     ) {
     }
@@ -236,6 +233,7 @@ public class SpuSnapshotServiceImpl implements SpuSnapshotService {
             SpuDetail spuDetail,
             List<AttributeValue> params,
             List<AttributeValue> specs,
+            Map<Long, List<AttributeValue>> skuSpecMap,
             List<Sku> skus
     ) {
     }

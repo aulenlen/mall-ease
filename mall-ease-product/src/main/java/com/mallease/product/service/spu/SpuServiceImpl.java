@@ -148,13 +148,14 @@ public class SpuServiceImpl implements SpuService {
         Spu spu = getRequiredSpu(spuId);
         SpuDetailRespVO respVO = spuConvert.toDetailRespVO(spu);
         respVO.setSpuDetail(spuConvert.toDetailDataRespVO(spuDetailDao.selectBySpuId(spuId)));
-        respVO.setAttrValueList(spuConvert.toAttrValueRespList(attributeValueDao.selectParamsBySpuId(spuId)));
+
+        AttrValueBundle attrValueBundle = loadAttrValueBundle(spuId);
+        respVO.setAttrValueList(spuConvert.toAttrValueRespList(attrValueBundle.params()));
 
         List<Sku> skuList = skuDao.selectEnabledBySpuId(spuId);
-        Map<Long, List<AttributeValue>> skuSpecMap = loadSkuSpecMap(skuList);
         List<SpuDetailRespVO.SkuRespVO> skuRespList = spuConvert.toSkuRespList(skuList);
         for (SpuDetailRespVO.SkuRespVO skuRespVO : skuRespList) {
-            List<AttributeValue> specValues = skuSpecMap.get(skuRespVO.getId());
+            List<AttributeValue> specValues = attrValueBundle.skuSpecMap().get(skuRespVO.getId());
             if (specValues == null || specValues.isEmpty()) {
                 continue;
             }
@@ -404,9 +405,9 @@ public class SpuServiceImpl implements SpuService {
     }
 
     private SnapshotVO loadPublishedProductDetail(Long spuId) {
-        String snapshotJson = typedRedisService.getString(ProductCacheKeys.spuDetailKey(spuId));
-        if (StringUtils.hasText(snapshotJson)) {
-            return spuSnapshotConvert.parseSnapshot(snapshotJson);
+        SnapshotVO snapshotVO = typedRedisService.getJson(ProductCacheKeys.spuDetailKey(spuId), SnapshotVO.class);
+        if (snapshotVO != null) {
+            return snapshotVO;
         }
 
         SpuSnapshot snapshot = spuSnapshotDao.selectBySpuId(spuId);
@@ -698,15 +699,19 @@ public class SpuServiceImpl implements SpuService {
         spu.setMaxPrice(maxPrice);
     }
 
-    private Map<Long, List<AttributeValue>> loadSkuSpecMap(List<Sku> skuList) {
-        if (skuList == null || skuList.isEmpty()) {
-            return Map.of();
+    private AttrValueBundle loadAttrValueBundle(Long spuId) {
+        List<AttributeValue> attrValues = attributeValueDao.selectBySpuId(spuId);
+        if (attrValues == null || attrValues.isEmpty()) {
+            return new AttrValueBundle(List.of(), Map.of());
         }
-        List<Long> skuIds = skuList.stream()
-                .map(Sku::getId)
+
+        List<AttributeValue> params = attrValues.stream()
+                .filter(item -> item.getSkuId() == null)
                 .toList();
-        return attributeValueDao.selectSpecsBySkuIds(skuIds).stream()
+        Map<Long, List<AttributeValue>> skuSpecMap = attrValues.stream()
+                .filter(item -> item.getSkuId() != null)
                 .collect(Collectors.groupingBy(AttributeValue::getSkuId));
+        return new AttrValueBundle(params, skuSpecMap);
     }
 
     private void upsertSpuDetail(Long spuId, SpuSaveReqVO.SpuDetailReqVO detailReqVO) {
@@ -855,6 +860,12 @@ public class SpuServiceImpl implements SpuService {
                 .unpublishedCount(0L)
                 .unverifiedCount(0L)
                 .build();
+    }
+
+    private record AttrValueBundle(
+            List<AttributeValue> params,
+            Map<Long, List<AttributeValue>> skuSpecMap
+    ) {
     }
 
     private record SkuSyncPlan(

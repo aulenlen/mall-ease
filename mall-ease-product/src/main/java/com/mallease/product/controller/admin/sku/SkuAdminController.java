@@ -11,6 +11,7 @@ import com.mallease.product.controller.admin.sku.vo.SkuSaveReqVO;
 import com.mallease.product.convert.sku.SkuConvert;
 import com.mallease.product.dal.entity.Sku;
 import com.mallease.product.service.sku.SkuService;
+import com.mallease.product.service.sku.support.SkuSpecResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +20,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 后台 SKU 管理
@@ -30,6 +32,7 @@ import java.util.List;
 public class SkuAdminController {
 
     private final SkuService skuService;
+    private final SkuSpecResolver skuSpecResolver;
     private final SkuConvert skuConvert;
 
     @Operation(summary = "创建 SKU", description = "在指定 SPU 下创建单个 SKU（含库存）")
@@ -50,7 +53,8 @@ public class SkuAdminController {
     public R<Page<SkuRespVO>> page(@Validated @ModelAttribute SkuPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Sku> skuList = skuService.page(reqVO);
-        List<SkuRespVO> respVOList = skuConvert.toSkuRespList(skuList);
+        Map<Long, String> attrValuesMap = skuSpecResolver.buildAttrValueJsonMap(skuList.stream().map(Sku::getId).toList());
+        List<SkuRespVO> respVOList = skuConvert.toSkuRespList(skuList, attrValuesMap);
         Page<SkuRespVO> result = PageUtils.buildPage(skuList, respVOList);
         return R.success(result);
     }
@@ -62,7 +66,8 @@ public class SkuAdminController {
         if (sku == null) {
             return R.failed("SKU不存在");
         }
-        return R.success(skuConvert.toSkuResp(sku));
+        Map<Long, String> attrValuesMap = skuSpecResolver.buildAttrValueJsonMap(List.of(id));
+        return R.success(skuConvert.toSkuResp(sku, attrValuesMap.get(id)));
     }
 
     @Operation(summary = "删除 SKU", description = "级联删除库存、促销、价格策略")
@@ -84,6 +89,7 @@ public class SkuAdminController {
     @GetMapping("/spus/{spuId}")
     public R<List<SkuRespVO>> listBySpuId(@Parameter(description = "SPU ID") @PathVariable Long spuId) {
         List<Sku> skuList = skuService.listBySpuId(spuId);
-        return R.success(skuConvert.toSkuRespList(skuList));
+        Map<Long, String> attrValuesMap = skuSpecResolver.buildAttrValueJsonMap(skuList.stream().map(Sku::getId).toList());
+        return R.success(skuConvert.toSkuRespList(skuList, attrValuesMap));
     }
 }

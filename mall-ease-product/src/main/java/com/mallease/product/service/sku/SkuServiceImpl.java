@@ -6,12 +6,13 @@ import com.mallease.common.exception.ApiException;
 import com.mallease.product.controller.admin.sku.vo.SkuPageReqVO;
 import com.mallease.product.controller.admin.sku.vo.SkuSaveReqVO;
 import com.mallease.product.convert.sku.SkuConvert;
-import com.mallease.product.dal.mapper.SkuDao;
-import com.mallease.product.dal.mapper.SkuStockDao;
-import com.mallease.product.dal.mapper.SpuDao;
 import com.mallease.product.dal.entity.Sku;
 import com.mallease.product.dal.entity.SkuStock;
 import com.mallease.product.dal.entity.Spu;
+import com.mallease.product.dal.mapper.SkuDao;
+import com.mallease.product.dal.mapper.SkuStockDao;
+import com.mallease.product.dal.mapper.SpuDao;
+import com.mallease.product.service.sku.support.SkuSpecResolver;
 import com.mallease.product.service.stock.SkuStockService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,8 @@ public class SkuServiceImpl implements SkuService {
     private SkuStockDao skuStockDao;
     @Autowired
     private SkuConvert skuConvert;
+    @Autowired
+    private SkuSpecResolver skuSpecResolver;
 
     @Override
     public List<SkuSimpleDTO> listSimpleByIds(List<Long> skuIds) {
@@ -45,6 +48,7 @@ public class SkuServiceImpl implements SkuService {
         if (skuList.isEmpty()) {
             return List.of();
         }
+        Map<Long, String> attrValuesJsonMap = skuSpecResolver.buildAttrValueJsonMap(skuIds);
 
         List<Long> spuIds = skuList.stream()
                 .map(Sku::getSpuId)
@@ -64,7 +68,7 @@ public class SkuServiceImpl implements SkuService {
                     .skuPic(sku.getPic())
                     .compareAtPrice(sku.getCompareAtPrice())
                     .basePrice(sku.getBasePrice())
-                    .attrValues(sku.getAttrValues())
+                    .attrValues(attrValuesJsonMap.get(sku.getId()))
                     .build();
         }).toList();
     }

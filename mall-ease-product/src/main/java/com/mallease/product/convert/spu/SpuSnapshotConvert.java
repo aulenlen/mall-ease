@@ -52,12 +52,17 @@ public interface SpuSnapshotConvert {
     }
 
     default SnapshotVO toSnapshotVO(Spu spu, SpuDetail spuDetail, List<AttributeValue> params, List<AttributeValue> specs, List<Sku> skus) {
+        return toSnapshotVO(spu, spuDetail, params, specs, skus, Map.of());
+    }
+
+    default SnapshotVO toSnapshotVO(Spu spu, SpuDetail spuDetail, List<AttributeValue> params, List<AttributeValue> specs,
+                                    List<Sku> skus, Map<Long, List<AttributeValue>> skuSpecMap) {
         return SnapshotVO.builder()
                 .spu(toSpuVO(spu))
                 .detail(toDetailVO(spuDetail))
                 .params(toParamVOS(params))
                 .specs(toSpecVOS(specs))
-                .skus(toSkuVOS(skus))
+                .skus(toSkuVOS(skus, skuSpecMap))
                 .services(toServicesVO(spuDetail))
                 .build();
     }
@@ -121,10 +126,14 @@ public interface SpuSnapshotConvert {
     }
 
     default List<SnapshotVO.AttrValue> toParamVOS(List<AttributeValue> params) {
-        if (params == null || params.isEmpty()) {
+        return toAttrValueVOS(params);
+    }
+
+    default List<SnapshotVO.AttrValue> toAttrValueVOS(List<AttributeValue> attrValues) {
+        if (attrValues == null || attrValues.isEmpty()) {
             return List.of();
         }
-        return params.stream()
+        return attrValues.stream()
                 .map(this::toAttrValueVO)
                 .toList();
     }
@@ -151,6 +160,10 @@ public interface SpuSnapshotConvert {
     }
 
     default SnapshotVO.Sku toSkuVO(Sku sku) {
+        return toSkuVO(sku, List.of());
+    }
+
+    default SnapshotVO.Sku toSkuVO(Sku sku, List<AttributeValue> specValues) {
         if (sku == null) {
             return null;
         }
@@ -161,17 +174,21 @@ public interface SpuSnapshotConvert {
         snapshotSku.setBasePrice(sku.getBasePrice());
         snapshotSku.setCompareAtPrice(sku.getCompareAtPrice());
         snapshotSku.setEnableStatus(sku.getEnableStatus());
-        snapshotSku.setAttrValues(parseSkuAttrValues(sku.getAttrValues()));
+        snapshotSku.setAttrValues(toAttrValueVOS(specValues));
         snapshotSku.setName(buildSkuName(snapshotSku.getAttrValues()));
         return snapshotSku;
     }
 
     default List<SnapshotVO.Sku> toSkuVOS(List<Sku> skus) {
+        return toSkuVOS(skus, Map.of());
+    }
+
+    default List<SnapshotVO.Sku> toSkuVOS(List<Sku> skus, Map<Long, List<AttributeValue>> skuSpecMap) {
         if (skus == null || skus.isEmpty()) {
             return List.of();
         }
         return skus.stream()
-                .map(this::toSkuVO)
+                .map(sku -> toSkuVO(sku, skuSpecMap != null ? skuSpecMap.getOrDefault(sku.getId(), List.of()) : List.of()))
                 .toList();
     }
 
@@ -235,18 +252,6 @@ public interface SpuSnapshotConvert {
                 .map(String::trim)
                 .filter(StringUtils::hasText)
                 .toList();
-    }
-
-    default List<SnapshotVO.AttrValue> parseSkuAttrValues(String attrValues) {
-        if (!StringUtils.hasText(attrValues)) {
-            return List.of();
-        }
-        try {
-            return OBJECT_MAPPER.readValue(attrValues, new TypeReference<List<SnapshotVO.AttrValue>>() {
-            });
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("SKU规格快照反序列化失败", e);
-        }
     }
 
     default SnapshotVO parseSnapshot(String snapshotJson) {

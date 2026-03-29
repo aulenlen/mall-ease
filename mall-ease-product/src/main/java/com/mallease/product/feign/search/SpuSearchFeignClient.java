@@ -12,7 +12,7 @@ import java.util.List;
 
 @FeignClient(name = "mall-ease-search")
 public interface SpuSearchFeignClient {
-    @PostMapping("/search/index/batch")
+    @PostMapping("/admin/search/indexes/batch")
     R<?> indexBatch(@RequestBody List<SpuIndexDTO> spuIndexDTOList);
 
     @Operation(summary = "下架商品", description = "内部调用，返回的是elasticsearch不存在的spuIds，若为空则全部更新成功")
