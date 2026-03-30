@@ -12,8 +12,8 @@ public final class OrderCacheKeys {
     private OrderCacheKeys() {
     }
 
-    public static String snapshotKey(String requestId) {
-        return SNAPSHOT_KEY_PREFIX + requestId;
+    public static String snapshotKey(Long userId, String requestId) {
+        return SNAPSHOT_KEY_PREFIX + userId + ":" + requestId;
     }
 
     public static long snapshotTtlSeconds() {

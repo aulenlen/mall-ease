@@ -1,6 +1,5 @@
 package com.mallease.trade.controller.portal.order.vo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,9 +46,9 @@ public class OrderConfirmRespVO implements Serializable {
 
     // 内部字段
 
-    @JsonIgnore
+//    @JsonIgnore
     private Long userId;
 
-    @JsonIgnore
+//    @JsonIgnore
     private LocalDateTime createTime;
 }

@@ -1,6 +1,7 @@
 package com.mallease.gateway.config;
 
 import cn.dev33.satoken.context.SaHolder;
+import cn.dev33.satoken.context.model.SaRequest;
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.reactor.context.SaReactorSyncHolder;
@@ -69,6 +70,8 @@ public class SaTokenConfig {
             "/api/v1/portal/auth/register",
             "/api/v1/admin/auth/login",
             "/api/v1/portal/products/*",
+            "/api/v1/portal/products/*/selector",
+            "/api/v1/portal/products/*/sku-selected",
             "/api/v1/portal/search/suggestions",
             "/api/v1/portal/search/products",
             "/api/v1/portal/payments/notify/**",

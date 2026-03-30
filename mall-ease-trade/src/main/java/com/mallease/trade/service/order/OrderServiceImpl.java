@@ -146,7 +146,7 @@ public class OrderServiceImpl implements OrderService {
                 .payAmount(totalAmount)
                 .createTime(LocalDateTime.now())
                 .build();
-        saveOrderSnapshot(requestId, snapshot);
+        saveOrderSnapshot(userId, requestId, snapshot);
         return snapshot;
     }
 
@@ -208,7 +208,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatus.PENDING_PAYMENT.getCode());
         order.setStockProcessStatus(OrderStockStatus.LOCKED.getCode());
         removeSubmittedCartItems(userId, snapshotItems);
-        deleteOrderSnapshot(requestId);
+        deleteOrderSnapshot(userId, requestId);
 
         log.info("订单创建成功，requestId={}, orderNo={}, userId={}", requestId, orderNo, userId);
         return buildSubmitOrderResponse(order);
@@ -648,11 +648,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderConfirmRespVO validateOrderSnapshot(Long userId, String requestId) {
-        OrderConfirmRespVO snapshot = loadOrderSnapshot(requestId);
+        OrderConfirmRespVO snapshot = loadOrderSnapshot(userId, requestId);
         if (snapshot == null) {
             throw new ApiException("订单已过期，请重新结算");
         }
-        if (!snapshot.getUserId().equals(userId)) {
+        if (!Objects.equals(snapshot.getUserId(), userId)) {
             throw new ApiException("非法请求");
         }
         return snapshot;
@@ -670,25 +670,25 @@ public class OrderServiceImpl implements OrderService {
         return existOrder;
     }
 
-    private void saveOrderSnapshot(String requestId, OrderConfirmRespVO snapshot) {
-        if (requestId == null || requestId.isBlank() || snapshot == null) {
+    private void saveOrderSnapshot(Long userId, String requestId, OrderConfirmRespVO snapshot) {
+        if (userId == null || requestId == null || requestId.isBlank() || snapshot == null) {
             return;
         }
-        typedRedisService.setJson(OrderCacheKeys.snapshotKey(requestId), snapshot, OrderCacheKeys.snapshotTtlSeconds());
+        typedRedisService.setJson(OrderCacheKeys.snapshotKey(userId, requestId), snapshot, OrderCacheKeys.snapshotTtlSeconds());
     }
 
-    private OrderConfirmRespVO loadOrderSnapshot(String requestId) {
-        if (requestId == null || requestId.isBlank()) {
+    private OrderConfirmRespVO loadOrderSnapshot(Long userId, String requestId) {
+        if (userId == null || requestId == null || requestId.isBlank()) {
             return null;
         }
-        return typedRedisService.getJson(OrderCacheKeys.snapshotKey(requestId), OrderConfirmRespVO.class);
+        return typedRedisService.getJson(OrderCacheKeys.snapshotKey(userId, requestId), OrderConfirmRespVO.class);
     }
 
-    private void deleteOrderSnapshot(String requestId) {
-        if (requestId == null || requestId.isBlank()) {
+    private void deleteOrderSnapshot(Long userId, String requestId) {
+        if (userId == null || requestId == null || requestId.isBlank()) {
             return;
         }
-        typedRedisService.delete(OrderCacheKeys.snapshotKey(requestId));
+        typedRedisService.delete(OrderCacheKeys.snapshotKey(userId, requestId));
     }
 
     private Order buildLockingOrder(Long userId, OrderSubmitReqVO reqVO, OrderConfirmRespVO snapshot,
