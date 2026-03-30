@@ -2,6 +2,8 @@ package com.mallease.product.controller.portal.spu;
 
 import com.mallease.common.api.R;
 import com.mallease.product.controller.portal.spu.vo.ProductDetailRespVO;
+import com.mallease.product.controller.portal.spu.vo.ProductSkuSelectedRespVO;
+import com.mallease.product.controller.portal.spu.vo.ProductSelectorRespVO;
 import com.mallease.product.service.spu.SpuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +28,18 @@ public class SpuPortalController {
     @GetMapping("/{spuId}")
     public R<ProductDetailRespVO> portalDetail(@PathVariable Long spuId) {
         return R.success(spuService.getPortalDetail(spuId));
+    }
+
+    @Operation(summary = "前台商品规格选择器", description = "获取商品规格选择器所需数据")
+    @GetMapping("/{spuId}/selector")
+    public R<ProductSelectorRespVO> portalSelector(@PathVariable Long spuId) {
+        return R.success(spuService.getPortalSelector(spuId));
+    }
+
+    @Operation(summary = "获取SKU价格与库存", description = "用户选择SKU后获取最终价格与库存")
+    @GetMapping("/{spuId}/sku-selected")
+    public R<ProductSkuSelectedRespVO> portalSkuSelected(@PathVariable Long spuId, @RequestParam Long skuId) {
+        return R.success(spuService.getPortalSkuSelected(spuId, skuId));
     }
 
     @Operation(summary = "前台秒杀商品详情", description = "获取非热点秒杀商品详情并覆盖秒杀价格")

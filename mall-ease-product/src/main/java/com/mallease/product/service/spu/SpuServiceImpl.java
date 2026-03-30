@@ -15,6 +15,8 @@ import com.mallease.common.service.TypedRedisService;
 import com.mallease.product.constant.ProductCacheKeys;
 import com.mallease.product.controller.admin.spu.vo.SnapshotVO;
 import com.mallease.product.controller.portal.spu.vo.ProductDetailRespVO;
+import com.mallease.product.controller.portal.spu.vo.ProductSkuSelectedRespVO;
+import com.mallease.product.controller.portal.spu.vo.ProductSelectorRespVO;
 import com.mallease.product.controller.admin.spu.vo.SkuSaveReqVO;
 import com.mallease.product.controller.admin.spu.vo.SpuDetailRespVO;
 import com.mallease.product.controller.admin.spu.vo.SpuPageReqVO;
@@ -22,6 +24,7 @@ import com.mallease.product.controller.admin.spu.vo.SpuSaveReqVO;
 import com.mallease.product.controller.admin.spu.vo.SpuStatsRespVO;
 import com.mallease.product.convert.spu.SpuConvert;
 import com.mallease.product.convert.spu.SpuSnapshotConvert;
+import com.mallease.product.dal.entity.*;
 import com.mallease.product.dal.mapper.AttributeDao;
 import com.mallease.product.dal.mapper.AttributeValueDao;
 import com.mallease.product.dal.mapper.SkuDao;
@@ -30,17 +33,9 @@ import com.mallease.product.dal.mapper.SpuDao;
 import com.mallease.product.dal.mapper.SpuDetailDao;
 import com.mallease.product.dal.mapper.SpuSnapshotDao;
 import com.mallease.product.feign.marketing.MarketingFlashFeignClient;
-import com.mallease.product.dal.entity.Attribute;
-import com.mallease.product.dal.entity.AttributeValue;
-import com.mallease.product.dal.entity.AttrValueAggregation;
-import com.mallease.product.dal.entity.Brand;
-import com.mallease.product.dal.entity.Category;
-import com.mallease.product.dal.entity.Sku;
-import com.mallease.product.dal.entity.Spu;
-import com.mallease.product.dal.entity.SpuDetail;
-import com.mallease.product.dal.entity.SpuSnapshot;
 import com.mallease.product.service.brand.BrandService;
 import com.mallease.product.service.category.CategoryService;
+import com.mallease.product.service.stock.SkuStockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +54,24 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static com.mallease.product.constant.ProductStatusConstants.ATTR_TYPE_PARAM;
+import static com.mallease.product.constant.ProductStatusConstants.ATTR_TYPE_SPEC;
+import static com.mallease.product.constant.ProductStatusConstants.DEFAULT_SORT;
+import static com.mallease.product.constant.ProductStatusConstants.DELETED_NO;
+import static com.mallease.product.constant.ProductStatusConstants.FLAG_DISABLED;
+import static com.mallease.product.constant.ProductStatusConstants.FLAG_ENABLED;
+import static com.mallease.product.constant.ProductStatusConstants.INITIAL_SALE;
+import static com.mallease.product.constant.ProductStatusConstants.INITIAL_VERSION;
+import static com.mallease.product.constant.ProductStatusConstants.NEW_STATUS_NO;
+import static com.mallease.product.constant.ProductStatusConstants.PUBLISHED_VERSION_INITIAL;
+import static com.mallease.product.constant.ProductStatusConstants.PUBLISH_STATUS_DRAFT;
+import static com.mallease.product.constant.ProductStatusConstants.PUBLISH_STATUS_PUBLISHED;
+import static com.mallease.product.constant.ProductStatusConstants.RECOMMEND_STATUS_NO;
+import static com.mallease.product.constant.ProductStatusConstants.STAGED_CHANGES_YES;
+import static com.mallease.product.constant.ProductStatusConstants.STOCK_STATUS_IN_STOCK;
+import static com.mallease.product.constant.ProductStatusConstants.STOCK_STATUS_OUT_OF_STOCK;
+import static com.mallease.product.constant.ProductStatusConstants.VERIFY_STATUS_PENDING;
+
 @Service
 @RequiredArgsConstructor
 public class SpuServiceImpl implements SpuService {
@@ -71,6 +84,7 @@ public class SpuServiceImpl implements SpuService {
     private final AttributeValueDao attributeValueDao;
     private final SkuDao skuDao;
     private final SkuStockDao skuStockDao;
+    private final SkuStockService skuStockService;
     private final SpuSnapshotDao spuSnapshotDao;
     private final SpuConvert spuConvert;
     private final SpuSnapshotConvert spuSnapshotConvert;
@@ -111,7 +125,7 @@ public class SpuServiceImpl implements SpuService {
 
         spuConvert.copyToSpu(existingSpu, reqVO);
         applySpuSaveFields(existingSpu, reqVO, brand, category);
-        existingSpu.setHasStagedChanges(1);
+        existingSpu.setHasStagedChanges(STAGED_CHANGES_YES);
         if (!StringUtils.hasText(existingSpu.getSpuCode())) {
             existingSpu.setSpuCode("SN" + IdUtil.getSnowflakeNextIdStr());
         }
@@ -249,10 +263,65 @@ public class SpuServiceImpl implements SpuService {
     @Override
     public ProductDetailRespVO getPortalDetail(Long spuId) {
         SnapshotVO snapshot = getPublishedProductDetail(spuId);
-        if (snapshot == null) {
+        ProductDetailRespVO product = spuSnapshotConvert.toProductDetailRespVO(snapshot);
+        product.getCurrentSku().setDisplayPrice(resolveDetailSkuDisplayPrice(product.getCurrentSku()));
+        product.getSelection().setDefaultSkuId(product.getCurrentSku().getId());
+        return product;
+    }
+
+    @Override
+    public ProductSelectorRespVO getPortalSelector(Long spuId) {
+        SnapshotVO snapshot = getPublishedProductDetail(spuId);
+        ProductSelectorRespVO selector = spuSnapshotConvert.toProductSelectorRespVO(snapshot);
+        enrichPortalSelector(selector, spuId);
+        return selector;
+    }
+
+    @Override
+    public ProductSkuSelectedRespVO getPortalSkuSelected(Long spuId, Long skuId) {
+        if (spuId == null || skuId == null) {
             return null;
         }
-        return spuSnapshotConvert.toProductDetailRespVO(snapshot);
+        SnapshotVO snapshot = getPublishedProductDetail(spuId);
+        if (snapshot == null || snapshot.getSkus() == null || snapshot.getSkus().isEmpty()) {
+            return null;
+        }
+        SnapshotVO.Sku snapshotSku = snapshot.getSkus().stream()
+                .filter(Objects::nonNull)
+                .filter(item -> Objects.equals(item.getSkuId(), skuId))
+                .findFirst()
+                .orElse(null);
+        if (snapshotSku == null) {
+            return null;
+        }
+        Map<Long, Boolean> stockMap = skuStockService.mapAvailabilityBySkuIds(spuId, List.of(skuId));
+        boolean inStock = Boolean.TRUE.equals(stockMap.get(skuId));
+        ProductDetailRespVO.SkuInfo skuInfo = ProductDetailRespVO.SkuInfo.builder()
+                .id(snapshotSku.getSkuId())
+                .skuCode(snapshotSku.getSkuCode())
+                .pic(snapshotSku.getPic())
+                .basePrice(snapshotSku.getBasePrice())
+                .compareAtPrice(snapshotSku.getCompareAtPrice())
+                .displayPrice(snapshotSku.getBasePrice())
+                .enableStatus(snapshotSku.getEnableStatus())
+                .build();
+        skuInfo.setDisplayPrice(resolveDetailSkuDisplayPrice(skuInfo));
+        return ProductSkuSelectedRespVO.builder()
+                .sku(skuInfo)
+                .specValues(snapshotSku.getAttrValues().stream()
+                        .filter(Objects::nonNull)
+                        .map(attrValue -> ProductDetailRespVO.AttrValueInfo.builder()
+                                .attrId(attrValue.getAttrId())
+                                .attrName(attrValue.getAttrName())
+                                .attrValue(attrValue.getAttrValue())
+                                .build())
+                        .toList())
+                .stock(ProductSelectorRespVO.StockInfo.builder()
+                        .inStock(inStock)
+                        .stockStatus(inStock ? STOCK_STATUS_IN_STOCK : STOCK_STATUS_OUT_OF_STOCK)
+                        .lowStock(null)
+                        .build())
+                .build();
     }
 
     @Override
@@ -291,7 +360,9 @@ public class SpuServiceImpl implements SpuService {
         if (snapshots.isEmpty()) {
             return Collections.emptyList();
         }
-        return spuSnapshotConvert.toProductDTOList(snapshots);
+        List<ProductDTO> products = spuSnapshotConvert.toProductDTOList(snapshots);
+        enrichProductSnapshots(products);
+        return products;
     }
 
     @Override
@@ -313,7 +384,7 @@ public class SpuServiceImpl implements SpuService {
                         .maxPrice(spu.getMaxPrice())
                         .sale(spu.getSale())
                         .inStock(Boolean.TRUE.equals(spu.getInStock()))
-                        .isNew(spu.getNewStatus() != null && spu.getNewStatus() == 1)
+                        .isNew(spu.getNewStatus() != null && spu.getNewStatus() == FLAG_ENABLED)
                         .build())
                 .toList();
 
@@ -412,7 +483,7 @@ public class SpuServiceImpl implements SpuService {
 
         SpuSnapshot snapshot = spuSnapshotDao.selectBySpuId(spuId);
         if (snapshot == null
-                || !Integer.valueOf(1).equals(snapshot.getPublishStatus())
+                || !Integer.valueOf(PUBLISH_STATUS_PUBLISHED).equals(snapshot.getPublishStatus())
                 || !StringUtils.hasText(snapshot.getSnapshotJson())) {
             return null;
         }
@@ -472,8 +543,8 @@ public class SpuServiceImpl implements SpuService {
 
     private void mergeFlashOverlay(ProductDetailRespVO product, SpuFlashOverlayDTO overlay) {
         if (product == null
-                || product.getSkuList() == null
-                || product.getSkuList().isEmpty()
+                || product.getCurrentSku() == null
+                || product.getCurrentSku().getId() == null
                 || overlay == null
                 || overlay.getSkuFlashList() == null
                 || overlay.getSkuFlashList().isEmpty()) {
@@ -484,30 +555,19 @@ public class SpuServiceImpl implements SpuService {
                 .filter(item -> item.getSkuId() != null)
                 .collect(Collectors.toMap(SpuFlashOverlayDTO.SkuFlashOverlayDTO::getSkuId, item -> item, (left, right) -> left));
 
-        LocalDateTime now = LocalDateTime.now();
-        for (ProductDetailRespVO.SkuInfo skuInfo : product.getSkuList()) {
-            if (skuInfo == null || skuInfo.getBasic() == null || skuInfo.getBasic().getId() == null) {
-                continue;
-            }
-
-            SpuFlashOverlayDTO.SkuFlashOverlayDTO overlaySku = overlaySkuMap.get(skuInfo.getBasic().getId());
-            if (overlaySku == null) {
-                continue;
-            }
-
-            if (skuInfo.getPrice() == null) {
-                skuInfo.setPrice(new ProductDetailRespVO.SkuPriceInfo());
-            }
-            if (overlaySku.getCompareAtPrice() != null && skuInfo.getPrice().getCompareAtPrice() == null) {
-                skuInfo.getPrice().setCompareAtPrice(overlaySku.getCompareAtPrice());
-            }
-
-            if (shouldUseFlashPrice(overlay, overlaySku, now)) {
-                skuInfo.getPrice().setPromotionPrice(overlaySku.getFlashPrice());
-            }
+        SpuFlashOverlayDTO.SkuFlashOverlayDTO overlaySku = overlaySkuMap.get(product.getCurrentSku().getId());
+        if (overlaySku == null) {
+            return;
         }
 
-        refreshSpuPriceRange(product);
+        LocalDateTime now = LocalDateTime.now();
+        if (overlaySku.getCompareAtPrice() != null && product.getCurrentSku().getCompareAtPrice() == null) {
+            product.getCurrentSku().setCompareAtPrice(overlaySku.getCompareAtPrice());
+        }
+        if (shouldUseFlashPrice(overlay, overlaySku, now)) {
+            product.getCurrentSku().setPromotionPrice(overlaySku.getFlashPrice());
+        }
+        product.getCurrentSku().setDisplayPrice(resolveDetailSkuDisplayPrice(product.getCurrentSku()));
     }
 
     private boolean shouldUseFlashPrice(SpuFlashOverlayDTO overlay,
@@ -525,49 +585,233 @@ public class SpuServiceImpl implements SpuService {
         return overlay.getEndTime() == null || now.isBefore(overlay.getEndTime());
     }
 
-    private void refreshSpuPriceRange(ProductDetailRespVO product) {
+    private BigDecimal resolveDetailSkuDisplayPrice(ProductDetailRespVO.SkuInfo skuInfo) {
+        return skuInfo.getPromotionPrice() != null ? skuInfo.getPromotionPrice() : skuInfo.getBasePrice();
+    }
+
+    private void enrichPortalSelector(ProductSelectorRespVO selector, Long spuId) {
+        List<Long> skuIds = selector.getSkuList().stream()
+                .map(ProductSelectorRespVO.SkuItem::getSkuId)
+                .toList();
+        Map<Long, Boolean> stockMap = skuStockService.mapAvailabilityBySkuIds(spuId, skuIds);
+
+        for (ProductSelectorRespVO.SkuItem skuItem : selector.getSkuList()) {
+            if (skuItem == null || skuItem.getSkuId() == null) {
+                continue;
+            }
+            if (skuItem.getStock() == null) {
+                skuItem.setStock(new ProductSelectorRespVO.StockInfo());
+            }
+
+            boolean inStock = Boolean.TRUE.equals(stockMap.get(skuItem.getSkuId()));
+            skuItem.getStock().setInStock(inStock);
+            skuItem.getStock().setStockStatus(inStock ? 1 : 0);
+            skuItem.getStock().setLowStock(null);
+        }
+
+        refreshPortalSelectorSelection(selector);
+    }
+
+    private void refreshPortalSelectorSelection(ProductSelectorRespVO selector) {
+        ProductSelectorRespVO.SkuItem selectedSku = selector.getSkuList().stream()
+                .filter(this::isSellableSku)
+                .findFirst()
+                .orElse(selector.getSkuList().get(0));
+
+        if (selector.getSelection() == null) {
+            selector.setSelection(new ProductDetailRespVO.SelectionInfo());
+        }
+        selector.getSelection().setDefaultSkuId(selectedSku.getSkuId());
+        selector.getSelection().setSelectedSpecValues(selectedSku.getSpecValues() == null ? List.of() : selectedSku.getSpecValues());
+    }
+
+    private boolean isSellableSku(ProductSelectorRespVO.SkuItem skuView) {
+        Integer stockStatus = skuView.getStock().getStockStatus();
+        return (stockStatus != null && stockStatus == STOCK_STATUS_IN_STOCK) || Boolean.TRUE.equals(skuView.getStock().getInStock());
+    }
+
+    private void enrichProductSnapshots(List<ProductDTO> products) {
+        if (products == null || products.isEmpty()) {
+            return;
+        }
+
+        List<Long> brandIds = products.stream()
+                .map(ProductDTO::getBrand)
+                .filter(Objects::nonNull)
+                .map(ProductDTO.BrandInfo::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, Brand> brandMap = brandIds.isEmpty()
+                ? Map.of()
+                : brandService.listByIds(brandIds).stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Brand::getId, brand -> brand, (left, right) -> left));
+
+        List<Long> spuIds = products.stream()
+                .map(ProductDTO::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, List<SkuStock>> stockGroupMap = spuIds.isEmpty()
+                ? Map.of()
+                : skuStockDao.selectBySpuIds(spuIds).stream()
+                .filter(Objects::nonNull)
+                .filter(stock -> stock.getSpuId() != null)
+                .collect(Collectors.groupingBy(SkuStock::getSpuId));
+
+        for (ProductDTO product : products) {
+            enrichProductSnapshotReferenceInfo(product, brandMap);
+            enrichProductSnapshotSaleInfo(product, stockGroupMap.getOrDefault(product.getId(), List.of()));
+            refreshProductSnapshotSelection(product);
+        }
+    }
+
+    private void enrichProductSnapshotReferenceInfo(ProductDTO product, Map<Long, Brand> brandMap) {
+        if (product == null) {
+            return;
+        }
+
+        if (product.getBrand() != null && product.getBrand().getId() != null) {
+            Brand brand = brandMap.get(product.getBrand().getId());
+            if (brand != null) {
+                product.getBrand().setLogo(brand.getLogo());
+            }
+        }
+
+        if (product.getCategory() != null && product.getCategory().getId() != null
+                && (product.getCategory().getBreadcrumb() == null || product.getCategory().getBreadcrumb().isEmpty())) {
+            List<Category> ancestors = categoryService.listAncestors(product.getCategory().getId());
+            if (ancestors != null && !ancestors.isEmpty()) {
+                product.getCategory().setBreadcrumb(ancestors.stream()
+                        .map(category -> ProductDTO.BreadcrumbItem.builder()
+                                .id(category.getId())
+                                .name(category.getName())
+                                .build())
+                        .toList());
+            }
+        }
+    }
+
+    private void enrichProductSnapshotSaleInfo(ProductDTO product, List<SkuStock> skuStocks) {
+        if (product == null) {
+            return;
+        }
+
+        Map<Long, SkuStock> stockMap = skuStocks == null
+                ? Map.of()
+                : skuStocks.stream()
+                .filter(stock -> stock.getSkuId() != null)
+                .collect(Collectors.toMap(SkuStock::getSkuId, stock -> stock, (left, right) -> left));
+
+        if (product.getSkuList() != null) {
+            for (ProductDTO.SkuViewInfo skuView : product.getSkuList()) {
+                if (skuView == null || skuView.getSku() == null || skuView.getSku().getId() == null) {
+                    continue;
+                }
+
+                skuView.getSku().setDisplayPrice(resolveProductDtoDisplayPrice(skuView));
+                if (skuView.getStock() == null) {
+                    skuView.setStock(new ProductDTO.SkuStockInfo());
+                }
+
+                SkuStock stock = stockMap.get(skuView.getSku().getId());
+                if (stock == null) {
+                    continue;
+                }
+
+                Integer stockStatus = resolveSkuStockStatus(stock);
+                boolean inStock = stockStatus != null && stockStatus == STOCK_STATUS_IN_STOCK;
+                boolean lowStock = stock.getLowStock() != null
+                        && stock.getStock() != null
+                        && stockStatus != null
+                        && stockStatus == STOCK_STATUS_IN_STOCK
+                        && stock.getStock() <= stock.getLowStock();
+                skuView.getStock().setInStock(inStock);
+                skuView.getStock().setStockStatus(stockStatus);
+                skuView.getStock().setLowStock(lowStock);
+            }
+        }
+
+        refreshProductSnapshotSpuStock(product, skuStocks == null ? List.of() : skuStocks);
+    }
+
+    private void refreshProductSnapshotSpuStock(ProductDTO product, List<SkuStock> skuStocks) {
+        if (product.getStock() == null) {
+            product.setStock(new ProductDTO.SpuStockInfo());
+        }
+        boolean hasInStock = skuStocks != null && skuStocks.stream()
+                .map(this::resolveSkuStockStatus)
+                .anyMatch(status -> status != null && status == STOCK_STATUS_IN_STOCK);
+        product.getStock().setInStock(hasInStock);
+        product.getStock().setStockStatus(hasInStock ? STOCK_STATUS_IN_STOCK : STOCK_STATUS_OUT_OF_STOCK);
+    }
+
+    private void refreshProductSnapshotSelection(ProductDTO product) {
         if (product == null || product.getSkuList() == null || product.getSkuList().isEmpty()) {
             return;
         }
 
-        List<BigDecimal> prices = product.getSkuList().stream()
-                .map(ProductDetailRespVO.SkuInfo::getPrice)
-                .filter(Objects::nonNull)
-                .map(this::resolveDisplayPrice)
-                .filter(Objects::nonNull)
-                .toList();
-        if (prices.isEmpty()) {
+        ProductDTO.SkuViewInfo selectedSku = product.getSkuList().stream()
+                .filter(this::isSellableSku)
+                .findFirst()
+                .orElse(product.getSkuList().get(0));
+        if (selectedSku == null || selectedSku.getSku() == null) {
             return;
         }
 
-        if (product.getSpuDetail() == null) {
-            product.setSpuDetail(new ProductDetailRespVO.SpuDetailInfo());
+        if (product.getSelection() == null) {
+            product.setSelection(new ProductDTO.SelectionInfo());
         }
-        product.getSpuDetail().setMinPrice(prices.stream().min(BigDecimal::compareTo).orElse(null));
-        product.getSpuDetail().setMaxPrice(prices.stream().max(BigDecimal::compareTo).orElse(null));
+        product.getSelection().setDefaultSkuId(selectedSku.getSku().getId());
+        product.getSelection().setSelectedSpecValues(selectedSku.getSpecValues() == null
+                ? List.of()
+                : selectedSku.getSpecValues());
+        product.setCurrentSku(selectedSku);
     }
 
-    private BigDecimal resolveDisplayPrice(ProductDetailRespVO.SkuPriceInfo priceInfo) {
-        if (priceInfo == null) {
+    private boolean isSellableSku(ProductDTO.SkuViewInfo skuView) {
+        if (skuView == null || skuView.getStock() == null) {
+            return false;
+        }
+        Integer stockStatus = skuView.getStock().getStockStatus();
+        return (stockStatus != null && stockStatus == STOCK_STATUS_IN_STOCK) || Boolean.TRUE.equals(skuView.getStock().getInStock());
+    }
+
+    private BigDecimal resolveProductDtoDisplayPrice(ProductDTO.SkuViewInfo skuView) {
+        if (skuView == null || skuView.getSku() == null) {
             return null;
         }
-        return priceInfo.getPromotionPrice() != null ? priceInfo.getPromotionPrice() : priceInfo.getBasePrice();
+        return skuView.getSku().getPromotionPrice() != null ? skuView.getSku().getPromotionPrice() : skuView.getSku().getBasePrice();
+    }
+
+    private Integer resolveSkuStockStatus(SkuStock stock) {
+        if (stock == null) {
+            return null;
+        }
+        if (stock.getStockStatus() != null) {
+            return stock.getStockStatus();
+        }
+        if (stock.getStock() == null) {
+            return STOCK_STATUS_OUT_OF_STOCK;
+        }
+        return stock.getStock() > 0 ? STOCK_STATUS_IN_STOCK : STOCK_STATUS_OUT_OF_STOCK;
     }
 
     private void initSpuForCreate(Spu spu) {
-        spu.setDeleted(0);
-        spu.setPublishStatus(0);
-        spu.setVerifyStatus(0);
-        spu.setNewStatus(0);
-        spu.setRecommendStatus(0);
-        spu.setSale(0);
+        spu.setDeleted(DELETED_NO);
+        spu.setPublishStatus(PUBLISH_STATUS_DRAFT);
+        spu.setVerifyStatus(VERIFY_STATUS_PENDING);
+        spu.setNewStatus(NEW_STATUS_NO);
+        spu.setRecommendStatus(RECOMMEND_STATUS_NO);
+        spu.setSale(INITIAL_SALE);
         spu.setInStock(Boolean.FALSE);
-        spu.setVersion(1);
-        spu.setHasStagedChanges(1);
-        spu.setPublishedVersion(0);
+        spu.setVersion(INITIAL_VERSION);
+        spu.setHasStagedChanges(STAGED_CHANGES_YES);
+        spu.setPublishedVersion(PUBLISHED_VERSION_INITIAL);
         spu.setPublishedAt(null);
         if (spu.getSort() == null) {
-            spu.setSort(0);
+            spu.setSort(DEFAULT_SORT);
         }
         if (!StringUtils.hasText(spu.getSpuCode())) {
             spu.setSpuCode("SN" + IdUtil.getSnowflakeNextIdStr());
@@ -640,7 +884,7 @@ public class SpuServiceImpl implements SpuService {
             if (attribute == null) {
                 throw new ApiException("属性不存在: " + attrId);
             }
-            if (!Integer.valueOf(0).equals(attribute.getType())) {
+            if (!Integer.valueOf(ATTR_TYPE_PARAM).equals(attribute.getType())) {
                 throw new ApiException("商品参数只能使用参数类型属性: " + attrId);
             }
         }
@@ -671,7 +915,7 @@ public class SpuServiceImpl implements SpuService {
                 if (attribute == null) {
                     throw new ApiException("属性不存在: " + attrId);
                 }
-                if (!Integer.valueOf(1).equals(attribute.getType())) {
+                if (!Integer.valueOf(ATTR_TYPE_SPEC).equals(attribute.getType())) {
                     throw new ApiException("SKU规格只能使用规格类型属性: " + attrId);
                 }
             }
@@ -739,7 +983,7 @@ public class SpuServiceImpl implements SpuService {
             skuDao.updateBatch(syncPlan.updateSkuList());
         }
         if (!syncPlan.disableSkuIds().isEmpty()) {
-            skuDao.updateEnableStatusBatch(syncPlan.disableSkuIds(), 0);
+            skuDao.updateEnableStatusBatch(syncPlan.disableSkuIds(), FLAG_DISABLED);
         }
 
         rebuildAttrValues(spuId, reqVO.getAttrValueList(), syncPlan.activeSkuSpecs());
@@ -747,7 +991,7 @@ public class SpuServiceImpl implements SpuService {
 
     private Sku buildSku(Long spuId, SkuSaveReqVO skuReqVO) {
         Sku sku = spuConvert.toSku(skuReqVO);
-        sku.setDeleted(0);
+        sku.setDeleted(DELETED_NO);
         sku.setSpuId(spuId);
         sku.setEnableStatus(normalizeEnableStatus(skuReqVO.getEnableStatus()));
         if (!StringUtils.hasText(sku.getSkuCode())) {
@@ -764,7 +1008,7 @@ public class SpuServiceImpl implements SpuService {
         specValues.forEach(item -> {
             item.setSpuId(spuId);
             item.setSkuId(skuId);
-            item.setDeleted(0);
+            item.setDeleted(DELETED_NO);
         });
         return specValues;
     }
@@ -836,21 +1080,21 @@ public class SpuServiceImpl implements SpuService {
         attrValues.forEach(item -> {
             item.setSpuId(spuId);
             item.setSkuId(null);
-            item.setDeleted(0);
+            item.setDeleted(DELETED_NO);
         });
         return attrValues;
     }
 
     private int normalizeEnableStatus(Integer enableStatus) {
-        return Integer.valueOf(0).equals(enableStatus) ? 0 : 1;
+        return Integer.valueOf(FLAG_DISABLED).equals(enableStatus) ? FLAG_DISABLED : FLAG_ENABLED;
     }
 
     private boolean isEnabledSku(SkuSaveReqVO skuReqVO) {
-        return normalizeEnableStatus(skuReqVO.getEnableStatus()) == 1;
+        return normalizeEnableStatus(skuReqVO.getEnableStatus()) == FLAG_ENABLED;
     }
 
     private boolean isEnabledSku(Sku sku) {
-        return normalizeEnableStatus(sku.getEnableStatus()) == 1;
+        return normalizeEnableStatus(sku.getEnableStatus()) == FLAG_ENABLED;
     }
 
     private SpuStatsRespVO emptyStats() {

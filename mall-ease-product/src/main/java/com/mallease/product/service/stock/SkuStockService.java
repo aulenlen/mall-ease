@@ -94,6 +94,15 @@ public interface SkuStockService {
     List<SkuAvailabilityDTO> listAvailabilityBySkuIds(List<SkuStockQueryDTO> queries);
 
     /**
+     * 按 SKU ID 列表批量查询是否有货，并返回 Map 结构。
+     *
+     * @param spuId  SPU ID
+     * @param skuIds SKU ID 列表
+     * @return skuId -> 是否有货
+     */
+    Map<Long, Boolean> mapAvailabilityBySkuIds(Long spuId, List<Long> skuIds);
+
+    /**
      * 分页查询后台库存列表。
      *
      * @param reqVO 查询参数

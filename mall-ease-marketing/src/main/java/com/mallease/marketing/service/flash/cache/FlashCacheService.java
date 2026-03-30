@@ -444,26 +444,23 @@ public class FlashCacheService {
                 .collect(Collectors.toMap(SpuFlashOverlayDTO.SkuFlashOverlayDTO::getSkuId, sku -> sku, (left, right) -> left));
 
         LocalDateTime now = LocalDateTime.now();
-        for (ProductDTO.SkuInfo skuInfo : merged.getSkuList()) {
-            if (skuInfo == null || skuInfo.getBasic() == null || skuInfo.getBasic().getId() == null) {
+        for (ProductDTO.SkuViewInfo skuView : merged.getSkuList()) {
+            if (skuView == null || skuView.getSku() == null || skuView.getSku().getId() == null) {
                 continue;
             }
 
-            SpuFlashOverlayDTO.SkuFlashOverlayDTO overlaySku = overlaySkuMap.get(skuInfo.getBasic().getId());
+            SpuFlashOverlayDTO.SkuFlashOverlayDTO overlaySku = overlaySkuMap.get(skuView.getSku().getId());
             if (overlaySku == null) {
                 continue;
             }
 
-            if (skuInfo.getPrice() == null) {
-                skuInfo.setPrice(new ProductDTO.SkuPriceInfo());
+            if (overlaySku.getCompareAtPrice() != null && skuView.getSku().getCompareAtPrice() == null) {
+                skuView.getSku().setCompareAtPrice(overlaySku.getCompareAtPrice());
             }
-            if (overlaySku.getCompareAtPrice() != null && skuInfo.getPrice().getCompareAtPrice() == null) {
-                skuInfo.getPrice().setCompareAtPrice(overlaySku.getCompareAtPrice());
-            }
-
             if (shouldUseFlashPrice(overlay, overlaySku, now)) {
-                skuInfo.getPrice().setPromotionPrice(overlaySku.getFlashPrice());
+                skuView.getSku().setPromotionPrice(overlaySku.getFlashPrice());
             }
+            skuView.getSku().setDisplayPrice(resolveDisplayPrice(skuView.getSku()));
         }
 
         refreshSpuPriceRange(merged);
@@ -491,7 +488,7 @@ public class FlashCacheService {
         }
 
         List<BigDecimal> prices = product.getSkuList().stream()
-                .map(ProductDTO.SkuInfo::getPrice)
+                .map(ProductDTO.SkuViewInfo::getSku)
                 .filter(Objects::nonNull)
                 .map(this::resolveDisplayPrice)
                 .filter(Objects::nonNull)
@@ -503,18 +500,18 @@ public class FlashCacheService {
         BigDecimal minPrice = prices.stream().min(BigDecimal::compareTo).orElse(null);
         BigDecimal maxPrice = prices.stream().max(BigDecimal::compareTo).orElse(null);
 
-        if (product.getSpuDetail() == null) {
-            product.setSpuDetail(new ProductDTO.SpuDetailInfo());
+        if (product.getSale() == null) {
+            product.setSale(new ProductDTO.SpuSaleInfo());
         }
-        product.getSpuDetail().setMinPrice(minPrice);
-        product.getSpuDetail().setMaxPrice(maxPrice);
+        product.getSale().setMinPrice(minPrice);
+        product.getSale().setMaxPrice(maxPrice);
     }
 
-    private BigDecimal resolveDisplayPrice(ProductDTO.SkuPriceInfo priceInfo) {
-        if (priceInfo == null) {
+    private BigDecimal resolveDisplayPrice(ProductDTO.SkuInfo skuInfo) {
+        if (skuInfo == null) {
             return null;
         }
-        return priceInfo.getPromotionPrice() != null ? priceInfo.getPromotionPrice() : priceInfo.getBasePrice();
+        return skuInfo.getPromotionPrice() != null ? skuInfo.getPromotionPrice() : skuInfo.getBasePrice();
     }
 
     private ProductDTO deepCopyProduct(ProductDTO snapshot) {

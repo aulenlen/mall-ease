@@ -38,8 +38,10 @@ public class SnapshotVO {
         private Integer newStatus;
         private Integer recommendStatus;
         private Integer sort;
+        private Integer sale;
         private BigDecimal minPrice;
         private BigDecimal maxPrice;
+        private Boolean inStock;
         private Brand brand;
         private Category category;
     }
@@ -63,6 +65,8 @@ public class SnapshotVO {
         private String detailDesc;
         private String detailHtml;
         private String detailMobileHtml;
+        private String packingList;
+        private String afterSaleService;
     }
 
     @Data

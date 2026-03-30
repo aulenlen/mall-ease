@@ -2,6 +2,8 @@ package com.mallease.product.service.spu;
 
 import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.product.controller.portal.spu.vo.ProductDetailRespVO;
+import com.mallease.product.controller.portal.spu.vo.ProductSkuSelectedRespVO;
+import com.mallease.product.controller.portal.spu.vo.ProductSelectorRespVO;
 import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
@@ -74,6 +76,16 @@ public interface SpuService {
      * 聚合前台商品详情页主数据。
      */
     ProductDetailRespVO getPortalDetail(Long spuId);
+
+    /**
+     * 聚合前台规格选择器数据。
+     */
+    ProductSelectorRespVO getPortalSelector(Long spuId);
+
+    /**
+     * 查询指定 SKU 的最终库存与价格
+     */
+    ProductSkuSelectedRespVO getPortalSkuSelected(Long spuId, Long skuId);
 
     /**
      * 聚合秒杀场景下的商品详情页主数据。

@@ -18,11 +18,7 @@ import org.mapstruct.ReportingPolicy;
 import org.springframework.util.StringUtils;
 
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -31,6 +27,11 @@ public interface SpuSnapshotConvert {
     ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    Map<Integer, String> SERVICE_NAME_MAP = Map.of(
+            1, "无忧退货",
+            2, "快速退款",
+            3, "免费包邮"
+    );
 
     default SpuSnapshot toSnapshot(Spu spu) {
         if (spu == null) {
@@ -95,8 +96,10 @@ public interface SpuSnapshotConvert {
         snapshotSpu.setNewStatus(spu.getNewStatus());
         snapshotSpu.setRecommendStatus(spu.getRecommendStatus());
         snapshotSpu.setSort(spu.getSort());
+        snapshotSpu.setSale(spu.getSale());
         snapshotSpu.setMinPrice(spu.getMinPrice());
         snapshotSpu.setMaxPrice(spu.getMaxPrice());
+        snapshotSpu.setInStock(spu.getInStock());
         snapshotSpu.setBrand(brand);
         snapshotSpu.setCategory(category);
         return snapshotSpu;
@@ -111,18 +114,20 @@ public interface SpuSnapshotConvert {
         detail.setDetailDesc(spuDetail.getDetailDesc());
         detail.setDetailHtml(spuDetail.getDetailHtml());
         detail.setDetailMobileHtml(spuDetail.getDetailMobileHtml());
+        detail.setPackingList(spuDetail.getPackingList());
+        detail.setAfterSaleService(spuDetail.getAfterSaleService());
         return detail;
     }
 
-    default SnapshotVO.AttrValue toAttrValueVO(AttributeValue param) {
-        if (param == null) {
+    default SnapshotVO.AttrValue toAttrValueVO(AttributeValue attrValue) {
+        if (attrValue == null) {
             return null;
         }
-        SnapshotVO.AttrValue attrValue = new SnapshotVO.AttrValue();
-        attrValue.setAttrId(param.getAttrId());
-        attrValue.setAttrName(param.getAttrName());
-        attrValue.setAttrValue(param.getAttrValue());
-        return attrValue;
+        SnapshotVO.AttrValue snapshotValue = new SnapshotVO.AttrValue();
+        snapshotValue.setAttrId(attrValue.getAttrId());
+        snapshotValue.setAttrName(attrValue.getAttrName());
+        snapshotValue.setAttrValue(attrValue.getAttrValue());
+        return snapshotValue;
     }
 
     default List<SnapshotVO.AttrValue> toParamVOS(List<AttributeValue> params) {
@@ -133,9 +138,7 @@ public interface SpuSnapshotConvert {
         if (attrValues == null || attrValues.isEmpty()) {
             return List.of();
         }
-        return attrValues.stream()
-                .map(this::toAttrValueVO)
-                .toList();
+        return attrValues.stream().map(this::toAttrValueVO).toList();
     }
 
     default List<SnapshotVO.SpecOption> toSpecVOS(List<AttributeValue> specs) {
@@ -210,13 +213,26 @@ public interface SpuSnapshotConvert {
             return null;
         }
         return ProductDetailRespVO.builder()
-                .spuBasic(toProductSpuBasic(snapshot.getSpu()))
-                .spuDetail(toProductSpuDetail(snapshot))
+                .spu(toProductSpu(snapshot.getSpu()))
+                .spuDetail(toProductSpuDetail(snapshot.getDetail(), snapshot.getServices()))
+                .sale(toProductSale(snapshot.getSpu()))
                 .brand(toProductBrand(snapshot.getSpu()))
                 .category(toProductCategory(snapshot.getSpu()))
-                .skuList(toProductSkuList(snapshot.getSkus()))
-                .cacheTime(resolveCacheTime(snapshot.getPublishMeta()))
-                .version(snapshot.getPublishMeta() != null ? snapshot.getPublishMeta().getVersion() : null)
+                .params(toProductAttrValues(snapshot.getParams()))
+                .selection(toProductSelection(snapshot.getSkus()))
+                .currentSku(toProductCurrentSku(snapshot.getSkus()))
+                .build();
+    }
+
+    default com.mallease.product.controller.portal.spu.vo.ProductSelectorRespVO toProductSelectorRespVO(SnapshotVO snapshot) {
+        if (snapshot == null) {
+            return null;
+        }
+        return com.mallease.product.controller.portal.spu.vo.ProductSelectorRespVO.builder()
+                .spuId(snapshot.getSpu() != null ? snapshot.getSpu().getId() : null)
+                .selection(toProductSelection(snapshot.getSkus()))
+                .specGroups(toProductSpecGroups(snapshot.getSpecs()))
+                .skuList(toProductSelectorSkuItems(snapshot.getSkus()))
                 .build();
     }
 
@@ -225,13 +241,18 @@ public interface SpuSnapshotConvert {
             return null;
         }
         return ProductDTO.builder()
-                .spuBasic(toProductDtoSpuBasic(snapshot.getSpu()))
-                .spuDetail(toProductDtoSpuDetail(snapshot))
+                .spu(toProductDtoSpu(snapshot.getSpu()))
+                .spuDetail(toProductDtoSpuDetail(snapshot.getDetail(), snapshot.getServices()))
+                .sale(toProductDtoSale(snapshot.getSpu()))
+                .stock(toProductDtoStock(snapshot.getSpu()))
                 .brand(toProductDtoBrand(snapshot.getSpu()))
                 .category(toProductDtoCategory(snapshot.getSpu()))
-                .skuList(toProductDtoSkuList(snapshot.getSkus()))
-                .cacheTime(resolveCacheTime(snapshot.getPublishMeta()))
-                .version(snapshot.getPublishMeta() != null ? snapshot.getPublishMeta().getVersion() : null)
+                .params(toProductDtoAttrValues(snapshot.getParams()))
+                .selection(toProductDtoSelection(snapshot.getSkus()))
+                .specGroups(toProductDtoSpecGroups(snapshot.getSpecs()))
+                .skuList(toProductDtoSkuViews(snapshot.getSkus()))
+                .currentSku(toProductDtoCurrentSku(snapshot.getSkus()))
+                .cacheMeta(toProductDtoCacheMeta(snapshot.getPublishMeta()))
                 .build();
     }
 
@@ -239,9 +260,7 @@ public interface SpuSnapshotConvert {
         if (snapshots == null || snapshots.isEmpty()) {
             return List.of();
         }
-        return snapshots.stream()
-                .map(this::toProductDTO)
-                .toList();
+        return snapshots.stream().map(this::toProductDTO).toList();
     }
 
     default List<String> splitAlbumPics(String albumPics) {
@@ -265,17 +284,6 @@ public interface SpuSnapshotConvert {
         }
     }
 
-    default String serializeSkuAttrValues(List<SnapshotVO.AttrValue> attrValues) {
-        if (attrValues == null || attrValues.isEmpty()) {
-            return null;
-        }
-        try {
-            return OBJECT_MAPPER.writeValueAsString(attrValues);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("SKU规格快照序列化失败", e);
-        }
-    }
-
     default String buildSkuName(List<SnapshotVO.AttrValue> attrValues) {
         if (attrValues == null || attrValues.isEmpty()) {
             return null;
@@ -286,19 +294,24 @@ public interface SpuSnapshotConvert {
                 .collect(Collectors.joining(" "));
     }
 
-    private ProductDetailRespVO.SpuBasicInfo toProductSpuBasic(SnapshotVO.Spu spu) {
+    private ProductDetailRespVO.SpuInfo toProductSpu(SnapshotVO.Spu spu) {
         if (spu == null) {
             return null;
         }
-        return ProductDetailRespVO.SpuBasicInfo.builder()
+        return ProductDetailRespVO.SpuInfo.builder()
                 .id(spu.getId())
                 .spuCode(spu.getSpuCode())
+                .brandId(spu.getBrand() != null ? spu.getBrand().getId() : null)
+                .brandName(spu.getBrand() != null ? spu.getBrand().getName() : null)
+                .categoryId(spu.getCategory() != null ? spu.getCategory().getId() : null)
+                .categoryName(spu.getCategory() != null ? spu.getCategory().getName() : null)
+                .categoryIds(spu.getCategory() != null ? spu.getCategory().getPath() : null)
                 .name(spu.getName())
                 .subTitle(spu.getSubTitle())
                 .description(spu.getDescription())
                 .keywords(spu.getKeywords())
                 .pic(spu.getPic())
-                .albumPicList(spu.getAlbumPics())
+                .albumPics(spu.getAlbumPics())
                 .unit(spu.getUnit())
                 .weight(spu.getWeight())
                 .publishStatus(spu.getPublishStatus())
@@ -308,17 +321,86 @@ public interface SpuSnapshotConvert {
                 .build();
     }
 
-    private ProductDetailRespVO.SpuDetailInfo toProductSpuDetail(SnapshotVO snapshot) {
+    private ProductDTO.SpuInfo toProductDtoSpu(SnapshotVO.Spu spu) {
+        if (spu == null) {
+            return null;
+        }
+        return ProductDTO.SpuInfo.builder()
+                .id(spu.getId())
+                .spuCode(spu.getSpuCode())
+                .brandId(spu.getBrand() != null ? spu.getBrand().getId() : null)
+                .brandName(spu.getBrand() != null ? spu.getBrand().getName() : null)
+                .categoryId(spu.getCategory() != null ? spu.getCategory().getId() : null)
+                .categoryName(spu.getCategory() != null ? spu.getCategory().getName() : null)
+                .categoryIds(spu.getCategory() != null ? spu.getCategory().getPath() : null)
+                .name(spu.getName())
+                .subTitle(spu.getSubTitle())
+                .description(spu.getDescription())
+                .keywords(spu.getKeywords())
+                .pic(spu.getPic())
+                .albumPics(spu.getAlbumPics())
+                .unit(spu.getUnit())
+                .weight(spu.getWeight())
+                .publishStatus(spu.getPublishStatus())
+                .newStatus(spu.getNewStatus())
+                .recommendStatus(spu.getRecommendStatus())
+                .sort(spu.getSort())
+                .build();
+    }
+
+    private ProductDetailRespVO.SpuDetailInfo toProductSpuDetail(SnapshotVO.Detail detail, SnapshotVO.Services services) {
         return ProductDetailRespVO.SpuDetailInfo.builder()
-                .detailTitle(snapshot.getDetail() != null ? snapshot.getDetail().getDetailTitle() : null)
-                .detailDesc(snapshot.getDetail() != null ? snapshot.getDetail().getDetailDesc() : null)
-                .serviceList(snapshot.getServices() == null || snapshot.getServices().getServiceIds() == null
-                        ? List.of()
-                        : snapshot.getServices().getServiceIds().stream().map(String::valueOf).toList())
-                .totalSale(0)
-                .minPrice(snapshot.getSpu() != null ? snapshot.getSpu().getMinPrice() : null)
-                .maxPrice(snapshot.getSpu() != null ? snapshot.getSpu().getMaxPrice() : null)
-                .inStock(Boolean.FALSE)
+                .detailTitle(detail != null ? detail.getDetailTitle() : null)
+                .detailDesc(detail != null ? detail.getDetailDesc() : null)
+                .detailHtml(detail != null ? detail.getDetailHtml() : null)
+                .detailMobileHtml(detail != null ? detail.getDetailMobileHtml() : null)
+                .services(toProductServices(services))
+                .packingList(detail != null ? detail.getPackingList() : null)
+                .afterSaleService(detail != null ? detail.getAfterSaleService() : null)
+                .build();
+    }
+
+    private ProductDTO.SpuDetailInfo toProductDtoSpuDetail(SnapshotVO.Detail detail, SnapshotVO.Services services) {
+        return ProductDTO.SpuDetailInfo.builder()
+                .detailTitle(detail != null ? detail.getDetailTitle() : null)
+                .detailDesc(detail != null ? detail.getDetailDesc() : null)
+                .detailHtml(detail != null ? detail.getDetailHtml() : null)
+                .detailMobileHtml(detail != null ? detail.getDetailMobileHtml() : null)
+                .services(toProductDtoServices(services))
+                .packingList(detail != null ? detail.getPackingList() : null)
+                .afterSaleService(detail != null ? detail.getAfterSaleService() : null)
+                .build();
+    }
+
+    private ProductDetailRespVO.SpuSaleInfo toProductSale(SnapshotVO.Spu spu) {
+        if (spu == null) {
+            return null;
+        }
+        return ProductDetailRespVO.SpuSaleInfo.builder()
+                .totalSale(spu.getSale())
+                .minPrice(spu.getMinPrice())
+                .maxPrice(spu.getMaxPrice())
+                .build();
+    }
+
+    private ProductDTO.SpuSaleInfo toProductDtoSale(SnapshotVO.Spu spu) {
+        if (spu == null) {
+            return null;
+        }
+        return ProductDTO.SpuSaleInfo.builder()
+                .totalSale(spu.getSale())
+                .minPrice(spu.getMinPrice())
+                .maxPrice(spu.getMaxPrice())
+                .build();
+    }
+
+    private ProductDTO.SpuStockInfo toProductDtoStock(SnapshotVO.Spu spu) {
+        if (spu == null) {
+            return null;
+        }
+        return ProductDTO.SpuStockInfo.builder()
+                .inStock(spu.getInStock())
+                .stockStatus(resolveStockStatus(spu.getInStock()))
                 .build();
     }
 
@@ -327,6 +409,16 @@ public interface SpuSnapshotConvert {
             return null;
         }
         return ProductDetailRespVO.BrandInfo.builder()
+                .id(spu.getBrand().getId())
+                .name(spu.getBrand().getName())
+                .build();
+    }
+
+    private ProductDTO.BrandInfo toProductDtoBrand(SnapshotVO.Spu spu) {
+        if (spu == null || spu.getBrand() == null) {
+            return null;
+        }
+        return ProductDTO.BrandInfo.builder()
                 .id(spu.getBrand().getId())
                 .name(spu.getBrand().getName())
                 .build();
@@ -343,74 +435,6 @@ public interface SpuSnapshotConvert {
                 .build();
     }
 
-    private List<ProductDetailRespVO.SkuInfo> toProductSkuList(List<SnapshotVO.Sku> skus) {
-        if (skus == null || skus.isEmpty()) {
-            return List.of();
-        }
-        return skus.stream()
-                .map(sku -> ProductDetailRespVO.SkuInfo.builder()
-                        .basic(ProductDetailRespVO.SkuBasicInfo.builder()
-                                .id(sku.getSkuId())
-                                .skuCode(sku.getSkuCode())
-                                .attrValues(serializeSkuAttrValues(sku.getAttrValues()))
-                                .pic(sku.getPic())
-                                .enableStatus(sku.getEnableStatus())
-                                .build())
-                        .price(ProductDetailRespVO.SkuPriceInfo.builder()
-                                .basePrice(sku.getBasePrice())
-                                .compareAtPrice(sku.getCompareAtPrice())
-                                .build())
-                        .config(ProductDetailRespVO.SkuConfigInfo.builder().build())
-                        .build())
-                .toList();
-    }
-
-    private ProductDTO.SpuBasicInfo toProductDtoSpuBasic(SnapshotVO.Spu spu) {
-        if (spu == null) {
-            return null;
-        }
-        return ProductDTO.SpuBasicInfo.builder()
-                .id(spu.getId())
-                .spuCode(spu.getSpuCode())
-                .name(spu.getName())
-                .subTitle(spu.getSubTitle())
-                .description(spu.getDescription())
-                .keywords(spu.getKeywords())
-                .pic(spu.getPic())
-                .albumPicList(spu.getAlbumPics())
-                .unit(spu.getUnit())
-                .weight(spu.getWeight())
-                .publishStatus(spu.getPublishStatus())
-                .newStatus(spu.getNewStatus())
-                .recommendStatus(spu.getRecommendStatus())
-                .sort(spu.getSort())
-                .build();
-    }
-
-    private ProductDTO.SpuDetailInfo toProductDtoSpuDetail(SnapshotVO snapshot) {
-        return ProductDTO.SpuDetailInfo.builder()
-                .detailTitle(snapshot.getDetail() != null ? snapshot.getDetail().getDetailTitle() : null)
-                .detailDesc(snapshot.getDetail() != null ? snapshot.getDetail().getDetailDesc() : null)
-                .serviceList(snapshot.getServices() == null || snapshot.getServices().getServiceIds() == null
-                        ? List.of()
-                        : snapshot.getServices().getServiceIds().stream().map(String::valueOf).toList())
-                .totalSale(0)
-                .minPrice(snapshot.getSpu() != null ? snapshot.getSpu().getMinPrice() : null)
-                .maxPrice(snapshot.getSpu() != null ? snapshot.getSpu().getMaxPrice() : null)
-                .inStock(Boolean.FALSE)
-                .build();
-    }
-
-    private ProductDTO.BrandInfo toProductDtoBrand(SnapshotVO.Spu spu) {
-        if (spu == null || spu.getBrand() == null) {
-            return null;
-        }
-        return ProductDTO.BrandInfo.builder()
-                .id(spu.getBrand().getId())
-                .name(spu.getBrand().getName())
-                .build();
-    }
-
     private ProductDTO.CategoryInfo toProductDtoCategory(SnapshotVO.Spu spu) {
         if (spu == null || spu.getCategory() == null) {
             return null;
@@ -422,26 +446,201 @@ public interface SpuSnapshotConvert {
                 .build();
     }
 
-    private List<ProductDTO.SkuInfo> toProductDtoSkuList(List<SnapshotVO.Sku> skus) {
+    private ProductDetailRespVO.SelectionInfo toProductSelection(List<SnapshotVO.Sku> skus) {
+        SnapshotVO.Sku selectedSku = resolveDefaultSku(skus);
+        if (selectedSku == null) {
+            return null;
+        }
+        return ProductDetailRespVO.SelectionInfo.builder()
+                .defaultSkuId(selectedSku.getSkuId())
+                .selectedSpecValues(toProductAttrValues(selectedSku.getAttrValues()))
+                .build();
+    }
+
+    private ProductDTO.SelectionInfo toProductDtoSelection(List<SnapshotVO.Sku> skus) {
+        SnapshotVO.Sku selectedSku = resolveDefaultSku(skus);
+        if (selectedSku == null) {
+            return null;
+        }
+        return ProductDTO.SelectionInfo.builder()
+                .defaultSkuId(selectedSku.getSkuId())
+                .selectedSpecValues(toProductDtoAttrValues(selectedSku.getAttrValues()))
+                .build();
+    }
+
+    private ProductDetailRespVO.SkuInfo toProductCurrentSku(List<SnapshotVO.Sku> skus) {
+        SnapshotVO.Sku selectedSku = resolveDefaultSku(skus);
+        return selectedSku == null ? null : toProductSku(selectedSku);
+    }
+
+    private ProductDTO.SkuViewInfo toProductDtoCurrentSku(List<SnapshotVO.Sku> skus) {
+        SnapshotVO.Sku selectedSku = resolveDefaultSku(skus);
+        return selectedSku == null ? null : toProductDtoSkuView(selectedSku);
+    }
+
+    private List<ProductDetailRespVO.SpecGroupInfo> toProductSpecGroups(List<SnapshotVO.SpecOption> specs) {
+        if (specs == null || specs.isEmpty()) {
+            return List.of();
+        }
+        return specs.stream()
+                .map(spec -> ProductDetailRespVO.SpecGroupInfo.builder()
+                        .attrId(spec.getAttrId())
+                        .attrName(spec.getAttrName())
+                        .build())
+                .toList();
+    }
+
+    private List<ProductDTO.SpecGroupInfo> toProductDtoSpecGroups(List<SnapshotVO.SpecOption> specs) {
+        if (specs == null || specs.isEmpty()) {
+            return List.of();
+        }
+        return specs.stream()
+                .map(spec -> ProductDTO.SpecGroupInfo.builder()
+                        .attrId(spec.getAttrId())
+                        .attrName(spec.getAttrName())
+                        .build())
+                .toList();
+    }
+
+    private List<com.mallease.product.controller.portal.spu.vo.ProductSelectorRespVO.SkuItem> toProductSelectorSkuItems(List<SnapshotVO.Sku> skus) {
         if (skus == null || skus.isEmpty()) {
             return List.of();
         }
-        return skus.stream()
-                .map(sku -> ProductDTO.SkuInfo.builder()
-                        .basic(ProductDTO.SkuBasicInfo.builder()
-                                .id(sku.getSkuId())
-                                .skuCode(sku.getSkuCode())
-                                .attrValues(serializeSkuAttrValues(sku.getAttrValues()))
-                                .pic(sku.getPic())
-                                .enableStatus(sku.getEnableStatus())
-                                .build())
-                        .price(ProductDTO.SkuPriceInfo.builder()
-                                .basePrice(sku.getBasePrice())
-                                .compareAtPrice(sku.getCompareAtPrice())
-                                .build())
-                        .config(ProductDTO.SkuConfigInfo.builder().build())
+        return skus.stream().map(this::toProductSelectorSkuItem).toList();
+    }
+
+    private List<ProductDTO.SkuViewInfo> toProductDtoSkuViews(List<SnapshotVO.Sku> skus) {
+        if (skus == null || skus.isEmpty()) {
+            return List.of();
+        }
+        return skus.stream().map(this::toProductDtoSkuView).toList();
+    }
+
+    private com.mallease.product.controller.portal.spu.vo.ProductSelectorRespVO.SkuItem toProductSelectorSkuItem(SnapshotVO.Sku sku) {
+        if (sku == null) {
+            return null;
+        }
+        return com.mallease.product.controller.portal.spu.vo.ProductSelectorRespVO.SkuItem.builder()
+                .skuId(sku.getSkuId())
+                .specValues(toProductAttrValues(sku.getAttrValues()))
+                .stock(com.mallease.product.controller.portal.spu.vo.ProductSelectorRespVO.StockInfo.builder().build())
+                .build();
+    }
+
+    private ProductDetailRespVO.SkuInfo toProductSku(SnapshotVO.Sku sku) {
+        if (sku == null) {
+            return null;
+        }
+        return ProductDetailRespVO.SkuInfo.builder()
+                .id(sku.getSkuId())
+                .skuCode(sku.getSkuCode())
+                .pic(sku.getPic())
+                .basePrice(sku.getBasePrice())
+                .compareAtPrice(sku.getCompareAtPrice())
+                .displayPrice(sku.getBasePrice())
+                .enableStatus(sku.getEnableStatus())
+                .build();
+    }
+
+    private ProductDTO.SkuViewInfo toProductDtoSkuView(SnapshotVO.Sku sku) {
+        if (sku == null) {
+            return null;
+        }
+        return ProductDTO.SkuViewInfo.builder()
+                .sku(ProductDTO.SkuInfo.builder()
+                        .id(sku.getSkuId())
+                        .skuCode(sku.getSkuCode())
+                        .pic(sku.getPic())
+                        .basePrice(sku.getBasePrice())
+                        .compareAtPrice(sku.getCompareAtPrice())
+                        .displayPrice(sku.getBasePrice())
+                        .enableStatus(sku.getEnableStatus())
+                        .build())
+                .specValues(toProductDtoAttrValues(sku.getAttrValues()))
+                .stock(ProductDTO.SkuStockInfo.builder().build())
+                .build();
+    }
+
+    private List<ProductDetailRespVO.AttrValueInfo> toProductAttrValues(List<SnapshotVO.AttrValue> attrValues) {
+        if (attrValues == null || attrValues.isEmpty()) {
+            return List.of();
+        }
+        return attrValues.stream()
+                .filter(Objects::nonNull)
+                .map(attrValue -> ProductDetailRespVO.AttrValueInfo.builder()
+                        .attrId(attrValue.getAttrId())
+                        .attrName(attrValue.getAttrName())
+                        .attrValue(attrValue.getAttrValue())
                         .build())
                 .toList();
+    }
+
+    private List<ProductDTO.AttrValueInfo> toProductDtoAttrValues(List<SnapshotVO.AttrValue> attrValues) {
+        if (attrValues == null || attrValues.isEmpty()) {
+            return List.of();
+        }
+        return attrValues.stream()
+                .filter(Objects::nonNull)
+                .map(attrValue -> ProductDTO.AttrValueInfo.builder()
+                        .attrId(attrValue.getAttrId())
+                        .attrName(attrValue.getAttrName())
+                        .attrValue(attrValue.getAttrValue())
+                        .build())
+                .toList();
+    }
+
+    private List<ProductDetailRespVO.ServiceInfo> toProductServices(SnapshotVO.Services services) {
+        if (services == null || services.getServiceIds() == null || services.getServiceIds().isEmpty()) {
+            return List.of();
+        }
+        return services.getServiceIds().stream()
+                .filter(Objects::nonNull)
+                .map(serviceId -> ProductDetailRespVO.ServiceInfo.builder()
+                        .code(serviceId)
+                        .name(resolveServiceName(serviceId))
+                        .build())
+                .toList();
+    }
+
+    private List<ProductDTO.ServiceInfo> toProductDtoServices(SnapshotVO.Services services) {
+        if (services == null || services.getServiceIds() == null || services.getServiceIds().isEmpty()) {
+            return List.of();
+        }
+        return services.getServiceIds().stream()
+                .filter(Objects::nonNull)
+                .map(serviceId -> ProductDTO.ServiceInfo.builder()
+                        .code(serviceId)
+                        .name(resolveServiceName(serviceId))
+                        .build())
+                .toList();
+    }
+
+    private ProductDTO.CacheMetaInfo toProductDtoCacheMeta(SnapshotVO.PublishMeta publishMeta) {
+        return ProductDTO.CacheMetaInfo.builder()
+                .cacheTime(resolveCacheTime(publishMeta))
+                .version(publishMeta != null ? publishMeta.getVersion() : null)
+                .build();
+    }
+
+    private SnapshotVO.Sku resolveDefaultSku(List<SnapshotVO.Sku> skus) {
+        if (skus == null || skus.isEmpty()) {
+            return null;
+        }
+        return skus.stream().filter(Objects::nonNull).findFirst().orElse(null);
+    }
+
+    private String resolveServiceName(Integer serviceId) {
+        if (serviceId == null) {
+            return null;
+        }
+        return SERVICE_NAME_MAP.getOrDefault(serviceId, "服务" + serviceId);
+    }
+
+    private Integer resolveStockStatus(Boolean inStock) {
+        if (inStock == null) {
+            return null;
+        }
+        return Boolean.TRUE.equals(inStock) ? 1 : 0;
     }
 
     private Long resolveCacheTime(SnapshotVO.PublishMeta publishMeta) {

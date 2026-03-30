@@ -13,13 +13,17 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "前台商品详情页响应")
 public class ProductDetailRespVO {
 
-    @Schema(description = "SPU基础信息")
-    private SpuBasicInfo spuBasic;
+    @Schema(description = "SPU静态信息")
+    private SpuInfo spu;
 
-    @Schema(description = "SPU详情信息")
+    @Schema(description = "SPU详情扩展")
     private SpuDetailInfo spuDetail;
+
+    @Schema(description = "SPU销售摘要")
+    private SpuSaleInfo sale;
 
     @Schema(description = "品牌信息")
     private BrandInfo brand;
@@ -27,21 +31,21 @@ public class ProductDetailRespVO {
     @Schema(description = "分类信息")
     private CategoryInfo category;
 
-    @Schema(description = "SKU列表")
-    private List<SkuInfo> skuList;
+    @Schema(description = "商品参数")
+    private List<AttrValueInfo> params;
 
-    @Schema(description = "缓存生成时间戳")
-    private Long cacheTime;
+    @Schema(description = "默认选中信息")
+    private SelectionInfo selection;
 
-    @Schema(description = "数据版本号")
-    private Integer version;
+    @Schema(description = "当前选中SKU信息")
+    private SkuInfo currentSku;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "SPU基础信息")
-    public static class SpuBasicInfo {
+    @Schema(description = "SPU静态信息")
+    public static class SpuInfo {
 
         @Schema(description = "SPU ID")
         private Long id;
@@ -49,40 +53,55 @@ public class ProductDetailRespVO {
         @Schema(description = "SPU编码")
         private String spuCode;
 
+        @Schema(description = "品牌ID")
+        private Long brandId;
+
+        @Schema(description = "品牌名称")
+        private String brandName;
+
+        @Schema(description = "分类ID")
+        private Long categoryId;
+
+        @Schema(description = "分类名称")
+        private String categoryName;
+
+        @Schema(description = "分类路径")
+        private String categoryIds;
+
         @Schema(description = "SPU名称")
         private String name;
 
         @Schema(description = "副标题")
         private String subTitle;
 
-        @Schema(description = "SPU描述")
+        @Schema(description = "商品描述")
         private String description;
 
         @Schema(description = "关键字")
         private String keywords;
 
-        @Schema(description = "SPU主图URL")
+        @Schema(description = "主图URL")
         private String pic;
 
         @Schema(description = "画册图片列表")
-        private List<String> albumPicList;
+        private List<String> albumPics;
 
         @Schema(description = "单位")
         private String unit;
 
-        @Schema(description = "商品重量（克）")
+        @Schema(description = "重量")
         private BigDecimal weight;
 
-        @Schema(description = "上架状态: 0-下架, 1-上架")
+        @Schema(description = "上架状态")
         private Integer publishStatus;
 
-        @Schema(description = "新品状态: 0-不是新品, 1-新品")
+        @Schema(description = "新品状态")
         private Integer newStatus;
 
-        @Schema(description = "推荐状态: 0-不推荐, 1-推荐")
+        @Schema(description = "推荐状态")
         private Integer recommendStatus;
 
-        @Schema(description = "排序")
+        @Schema(description = "排序值")
         private Integer sort;
     }
 
@@ -90,17 +109,37 @@ public class ProductDetailRespVO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "SPU详情信息")
+    @Schema(description = "SPU详情扩展")
     public static class SpuDetailInfo {
 
         @Schema(description = "详情标题")
         private String detailTitle;
 
-        @Schema(description = "详情描述（摘要）")
+        @Schema(description = "详情描述")
         private String detailDesc;
 
-        @Schema(description = "产品服务列表")
-        private List<String> serviceList;
+        @Schema(description = "PC详情HTML")
+        private String detailHtml;
+
+        @Schema(description = "移动端详情HTML")
+        private String detailMobileHtml;
+
+        @Schema(description = "服务项")
+        private List<ServiceInfo> services;
+
+        @Schema(description = "包装清单")
+        private String packingList;
+
+        @Schema(description = "售后服务")
+        private String afterSaleService;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "SPU销售摘要")
+    public static class SpuSaleInfo {
 
         @Schema(description = "总销量")
         private Integer totalSale;
@@ -110,9 +149,6 @@ public class ProductDetailRespVO {
 
         @Schema(description = "最高价格")
         private BigDecimal maxPrice;
-
-        @Schema(description = "是否有货")
-        private Boolean inStock;
     }
 
     @Data
@@ -147,23 +183,23 @@ public class ProductDetailRespVO {
 
         @Schema(description = "分类路径")
         private String categoryIds;
+
+        @Schema(description = "分类面包屑")
+        private List<BreadcrumbItem> breadcrumb;
     }
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "SKU聚合信息")
-    public static class SkuInfo {
+    @Schema(description = "默认选中信息")
+    public static class SelectionInfo {
 
-        @Schema(description = "SKU基础信息")
-        private SkuBasicInfo basic;
+        @Schema(description = "默认选中SKU ID")
+        private Long defaultSkuId;
 
-        @Schema(description = "SKU价格信息")
-        private SkuPriceInfo price;
-
-        @Schema(description = "SKU配置信息")
-        private SkuConfigInfo config;
+        @Schema(description = "当前选中规格值")
+        private List<AttrValueInfo> selectedSpecValues;
     }
 
     @Data
@@ -171,7 +207,7 @@ public class ProductDetailRespVO {
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(description = "SKU基础信息")
-    public static class SkuBasicInfo {
+    public static class SkuInfo {
 
         @Schema(description = "SKU ID")
         private Long id;
@@ -179,22 +215,8 @@ public class ProductDetailRespVO {
         @Schema(description = "SKU编码")
         private String skuCode;
 
-        @Schema(description = "SKU属性值（JSON格式）")
-        private String attrValues;
-
-        @Schema(description = "SKU图片URL")
+        @Schema(description = "SKU图片")
         private String pic;
-
-        @Schema(description = "启用状态: 0-禁用, 1-启用")
-        private Integer enableStatus;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "SKU价格信息")
-    public static class SkuPriceInfo {
 
         @Schema(description = "SKU基础成交价")
         private BigDecimal basePrice;
@@ -204,24 +226,81 @@ public class ProductDetailRespVO {
 
         @Schema(description = "SKU活动价")
         private BigDecimal promotionPrice;
+
+        @Schema(description = "SKU展示价")
+        private BigDecimal displayPrice;
+
+        @Schema(description = "启用状态")
+        private Integer enableStatus;
     }
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "SKU配置信息")
-    public static class SkuConfigInfo {
+    @Schema(description = "规格/参数值")
+    public static class AttrValueInfo {
 
-        @Schema(description = "库存预警值")
-        private Integer lowStock;
+        @Schema(description = "属性ID")
+        private Long attrId;
+
+        @Schema(description = "属性名称")
+        private String attrName;
+
+        @Schema(description = "属性值")
+        private String attrValue;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "服务项")
+    public static class ServiceInfo {
+
+        @Schema(description = "服务编码")
+        private Integer code;
+
+        @Schema(description = "服务名称")
+        private String name;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "规格维度定义")
+    public static class SpecGroupInfo {
+
+        @Schema(description = "属性ID")
+        private Long attrId;
+
+        @Schema(description = "属性名称")
+        private String attrName;
+
+        @Schema(description = "排序值")
+        private Integer sort;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "面包屑项")
+    public static class BreadcrumbItem {
+
+        @Schema(description = "分类ID")
+        private Long id;
+
+        @Schema(description = "分类名称")
+        private String name;
     }
 
     public Long getId() {
-        return spuBasic != null ? spuBasic.getId() : null;
+        return spu != null ? spu.getId() : null;
     }
 
     public String getName() {
-        return spuBasic != null ? spuBasic.getName() : null;
+        return spu != null ? spu.getName() : null;
     }
 }

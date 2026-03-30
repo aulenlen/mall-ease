@@ -265,6 +265,32 @@ public class SkuStockServiceImpl implements SkuStockService {
     }
 
     @Override
+    public Map<Long, Boolean> mapAvailabilityBySkuIds(Long spuId, List<Long> skuIds) {
+        if (skuIds == null || skuIds.isEmpty()) {
+            return Map.of();
+        }
+        List<SkuStockQueryDTO> queries = skuIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .map(skuId -> SkuStockQueryDTO.builder()
+                        .spuId(spuId)
+                        .skuId(skuId)
+                        .build())
+                .toList();
+        if (queries.isEmpty()) {
+            return Map.of();
+        }
+        return listAvailabilityBySkuIds(queries).stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getSkuId() != null)
+                .collect(Collectors.toMap(
+                        SkuAvailabilityDTO::getSkuId,
+                        item -> Boolean.TRUE.equals(item.getInStock()),
+                        (left, right) -> left
+                ));
+    }
+
+    @Override
     public List<InventorySpuRecordRespVO> page(SkuStockPageReqVO reqVO) {
         List<InventorySpuRecordRespVO> respVOList = skuStockDao.selectInventorySpuPage(reqVO == null ? new SkuStockPageReqVO() : reqVO);
         return respVOList == null ? List.of() : respVOList;

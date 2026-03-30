@@ -6,8 +6,6 @@ import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
 import com.mallease.common.dto.remote.SpuSearchResultDTO;
-import com.mallease.product.controller.admin.spu.vo.SnapshotVO;
-import com.mallease.product.convert.spu.SpuSnapshotConvert;
 import com.mallease.product.service.spu.SpuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,16 +27,15 @@ import java.util.List;
 public class SpuInternalController {
 
     private final SpuService spuService;
-    private final SpuSnapshotConvert spuSnapshotConvert;
 
     @Operation(summary = "获取完整商品信息", description = "内部调用")
     @GetMapping("/{spuId}")
     public R<ProductDTO> getProduct(@PathVariable Long spuId) {
-        SnapshotVO snapshot = spuService.getPublishedProductDetail(spuId);
-        if (snapshot == null) {
+        List<ProductDTO> products = spuService.listPublishedProductSnapshots(List.of(spuId));
+        if (products == null || products.isEmpty()) {
             return R.success(null);
         }
-        return R.success(spuSnapshotConvert.toProductDTO(snapshot));
+        return R.success(products.get(0));
     }
 
     @Operation(summary = "MySQL搜索商品", description = "内部调用")
