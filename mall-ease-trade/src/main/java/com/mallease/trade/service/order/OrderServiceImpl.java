@@ -480,6 +480,27 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public void advanceOrderToPaid(String orderNo) {
+        Order order = orderDao.selectByOrderNo(orderNo);
+        if (order == null) {
+            throw new ApiException("订单不存在");
+        }
+        if (Objects.equals(order.getStatus(), OrderStatus.PAID.getCode())
+                && Objects.equals(order.getStockProcessStatus(), OrderStockStatus.CONFIRMING.getCode())) {
+            return;
+        }
+        if (!Objects.equals(order.getStatus(), OrderStatus.PENDING_PAYMENT.getCode())
+                && !Objects.equals(order.getStatus(), OrderStatus.PAID.getCode())) {
+            throw new ApiException("当前订单状态不允许推进支付");
+        }
+        orderDao.updateByPrimaryKeySelective(Order.builder()
+                .id(order.getId())
+                .status(OrderStatus.PAID.getCode())
+                .stockProcessStatus(OrderStockStatus.CONFIRMING.getCode())
+                .build());
+    }
+
+    @Override
     public void confirmPaidOrder(String orderNo) {
         Order order = orderDao.selectByOrderNo(orderNo);
         if (order == null) {

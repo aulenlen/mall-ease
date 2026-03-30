@@ -134,6 +134,11 @@ public interface OrderService {
     int updateOrderStatus(String orderNo, int status);
 
     /**
+     * 支付成功后将订单状态推进到已支付+确认中
+     */
+    void advanceOrderToPaid(String orderNo);
+
+    /**
      * 支付成功后确认库存扣减，并把订单推进到待发货状态。
      */
     void confirmPaidOrder(String orderNo);

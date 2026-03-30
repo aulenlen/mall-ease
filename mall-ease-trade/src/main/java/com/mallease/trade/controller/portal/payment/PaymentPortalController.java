@@ -7,6 +7,7 @@ import com.mallease.trade.convert.payment.PaymentConvert;
 import com.mallease.trade.controller.portal.payment.vo.PaymentCreateReqVO;
 import com.mallease.trade.controller.admin.payment.vo.PaymentRespVO;
 import com.mallease.trade.service.payment.PaymentService;
+import com.mallease.trade.service.payment.handler.AlipayNotifyRequestParser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,9 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 支付控制器
@@ -33,6 +31,7 @@ public class PaymentPortalController {
 
     private final PaymentService paymentService;
     private final PaymentConvert paymentConverter;
+    private final AlipayNotifyRequestParser alipayNotifyRequestParser;
 
     @Operation(summary = "创建支付单")
     @PostMapping
@@ -73,17 +72,11 @@ public class PaymentPortalController {
     @Operation(summary = "支付宝异步回调", description = "支付宝服务器调用，无需登录")
     @PostMapping("/notify/alipay")
     public String alipayNotify(HttpServletRequest request) {
+        AlipayNotifyRequestParser.ParsedRequest parsedRequest = alipayNotifyRequestParser.parse(request);
 
-        Map<String, String> params = new HashMap<>();
-        request.getParameterMap().forEach((key, values) -> {
-            if (values != null && values.length > 0) {
-                params.put(key, values[0]);
-            }
-        });
+        log.info("收到支付宝回调: outTradeNo={}", parsedRequest.params().get("out_trade_no"));
 
-        log.info("收到支付宝回调: outTradeNo={}", params.get("out_trade_no"));
-
-        boolean success = paymentService.handleAlipayNotify(params);
+        boolean success = paymentService.handleAlipayNotify(parsedRequest.params(), parsedRequest.rawBody());
 
         return success ? "success" : "failure";
     }
