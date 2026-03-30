@@ -130,7 +130,7 @@
     <update id="updateReservationStatusByIds">
         UPDATE product_stock_reservation
         SET reservation_status = #{reservationStatus,jdbcType=TINYINT}, update_time = NOW()
-        WHERE id IN
+        WHERE reservation_status = 1 AND id IN
         <foreach collection="ids" item="id" open="(" close=")" separator=",">
             #{id}
         </foreach>

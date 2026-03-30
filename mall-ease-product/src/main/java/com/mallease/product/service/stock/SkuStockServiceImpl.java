@@ -27,17 +27,19 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -67,6 +69,7 @@ public class SkuStockServiceImpl implements SkuStockService {
     private final SkuStockConvert skuStockConvert;
     private final StockReservationService stockReservationService;
     private final TypedRedisService typedRedisService;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
     public Long create(SkuStockSaveReqVO reqVO) {
@@ -387,7 +390,6 @@ public class SkuStockServiceImpl implements SkuStockService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public List<String> unlockStock(List<String> orderNos) {
         if (orderNos == null || orderNos.isEmpty()) {
             return Collections.emptyList();
@@ -405,7 +407,7 @@ public class SkuStockServiceImpl implements SkuStockService {
             }
 
             try {
-                releaseLockedReservations(orderNo, lockedReservations);
+               releaseLockedReservations(orderNo, lockedReservations);
             } catch (RuntimeException ex) {
                 log.error("释放库存失败，orderNo={}", orderNo, ex);
                 failedOrderNos.add(orderNo);
@@ -431,10 +433,34 @@ public class SkuStockServiceImpl implements SkuStockService {
             throw new ApiException("订单不存在");
         }
 
-        List<StockReservation> lockedReservations = stockReservationService.listLockedByOrderNo(orderNo);
-        if (lockedReservations == null || lockedReservations.isEmpty()) {
+        List<StockReservation> reservations = stockReservationService.listByOrderNo(orderNo);
+        if (reservations == null || reservations.isEmpty()) {
+            throw new ApiException("预占库存单不存在");
+        }
+
+        int totalCount = reservations.size();
+        int lockedCount = countReservationsByStatus(reservations, ReservationStatus.LOCKED);
+        int confirmedCount = countReservationsByStatus(reservations, ReservationStatus.CONFIRMED);
+        int releasedCount = countReservationsByStatus(reservations, ReservationStatus.RELEASED);
+        ReservationAggregateStatus aggregateStatus = resolveReservationAggregateStatus(
+                totalCount,
+                lockedCount,
+                confirmedCount,
+                releasedCount
+        );
+        if (aggregateStatus == ReservationAggregateStatus.ALL_CONFIRMED) {
             return;
         }
+        if (aggregateStatus == ReservationAggregateStatus.ALL_RELEASED) {
+            throw new ApiException("订单库存已释放，无法确认扣减");
+        }
+        if (aggregateStatus != ReservationAggregateStatus.ALL_LOCKED) {
+            throw new ApiException("库存预占状态异常");
+        }
+
+        List<StockReservation> lockedReservations = reservations.stream()
+                .filter(item -> Objects.equals(item.getReservationStatus(), ReservationStatus.LOCKED.getCode()))
+                .toList();
 
         Map<Long, Integer> skuQuantityMap = aggregateSkuQuantityMap(lockedReservations);
         for (Map.Entry<Long, Integer> entry : skuQuantityMap.entrySet()) {
@@ -481,7 +507,6 @@ public class SkuStockServiceImpl implements SkuStockService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public int releaseExpiredReservations(int limit) {
         List<StockReservation> reservations = stockReservationService.listExpiredLocked(limit);
         if (reservations == null || reservations.isEmpty()) {
@@ -515,7 +540,7 @@ public class SkuStockServiceImpl implements SkuStockService {
                 .toList();
     }
 
-    private int releaseLockedReservations(String orderNo, List<StockReservation> lockedReservations) {
+    protected int releaseLockedReservations(String orderNo, List<StockReservation> lockedReservations) {
         if (lockedReservations == null || lockedReservations.isEmpty()) {
             return 0;
         }
@@ -524,23 +549,40 @@ public class SkuStockServiceImpl implements SkuStockService {
         List<UnlockStockItem> unlockItems = skuQuantityMap.entrySet().stream()
                 .map(entry -> new UnlockStockItem(entry.getKey(), entry.getValue()))
                 .toList();
-        int rows = skuStockDao.batchUnlockStock(unlockItems);
-        if (rows < unlockItems.size()) {
-            throw new ApiException("库存释放失败");
-        }
+        AtomicInteger updatedRows = new AtomicInteger();
+        AtomicReference<List<Long>> reservationIds = new AtomicReference<>();
+        transactionTemplate.execute((status) -> {
+            try {
+                int rows = skuStockDao.batchUnlockStock(unlockItems);
+                if (rows < unlockItems.size()) {
+                    log.error("库存释放失败 {}", unlockItems);
+                    throw new ApiException("库存释放SQL异常");
+                }
 
-        List<Long> reservationIds = lockedReservations.stream()
-                .map(StockReservation::getId)
-                .filter(Objects::nonNull)
-                .toList();
-        int updatedRows = stockReservationService.updateReservationStatusToReleasedByIds(reservationIds);
-        if (updatedRows < reservationIds.size()) {
-            throw new ApiException("库存释放失败");
-        }
+                reservationIds.set(lockedReservations.stream()
+                        .map(StockReservation::getId)
+                        .filter(Objects::nonNull)
+                        .toList());
+                updatedRows.set(stockReservationService.updateReservationStatusToReleasedByIds(reservationIds.get()));
+                if (updatedRows.get() < reservationIds.get().size()) {
+                    log.error("预占表修改状态失败 {}", reservationIds);
+                    throw new ApiException("预占表修改状态失败");
+                }
+                return rows;
+            } catch (Exception e) {
+                log.error("库存释放SQL异常 {}", e.getMessage(), e);
+                status.setRollbackOnly();
+                throw new ApiException("库存释放SQL异常");
+            }
+        });
 
-        evictAvailableStockCache(skuQuantityMap.keySet());
-        log.info("订单预占释放落库完成，orderNo={}, successReservationCount={}", orderNo, reservationIds.size());
-        return reservationIds.size();
+        try {
+            evictAvailableStockCache(skuQuantityMap.keySet());
+        } catch (Exception e) {
+            log.error("库存缓存清除失败");
+        }
+        log.info("订单预占释放落库完成，orderNo={}, successReservationCount={}", orderNo, reservationIds.get().size());
+        return updatedRows.get();
     }
 
     private int countReservationsByStatus(List<StockReservation> reservations, ReservationStatus reservationStatus) {
