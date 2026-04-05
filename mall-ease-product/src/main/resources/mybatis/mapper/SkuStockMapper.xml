@@ -364,14 +364,33 @@
 
     <!-- 批量解锁库存（按 SKU 汇总后批量释放） -->
     <update id="batchUnlockStock">
-        <foreach collection="items" item="item" separator=";">
-            UPDATE product_sku_stock
-            SET stock = stock + #{item.quantity,jdbcType=INTEGER},
-                lock_stock = lock_stock - #{item.quantity,jdbcType=INTEGER},
-                version = version + 1
-            WHERE sku_id = #{item.skuId,jdbcType=BIGINT}
-              AND lock_stock >= #{item.quantity,jdbcType=INTEGER}
+        UPDATE product_sku_stock
+        SET stock = stock + (
+            CASE sku_id
+            <foreach collection="items" item="item">
+                WHEN #{item.skuId,jdbcType=BIGINT} THEN #{item.quantity,jdbcType=INTEGER}
+            </foreach>
+            END
+        ),
+            lock_stock = lock_stock - (
+            CASE sku_id
+            <foreach collection="items" item="item">
+                WHEN #{item.skuId,jdbcType=BIGINT} THEN #{item.quantity,jdbcType=INTEGER}
+            </foreach>
+            END
+        ),
+            version = version + 1
+        WHERE sku_id IN
+        <foreach collection="items" item="item" open="(" separator="," close=")">
+            #{item.skuId,jdbcType=BIGINT}
         </foreach>
+          AND lock_stock >= (
+            CASE sku_id
+            <foreach collection="items" item="item">
+                WHEN #{item.skuId,jdbcType=BIGINT} THEN #{item.quantity,jdbcType=INTEGER}
+            </foreach>
+            END
+        )
     </update>
 
     <!-- 确认扣减库存（支付成功后） -->
