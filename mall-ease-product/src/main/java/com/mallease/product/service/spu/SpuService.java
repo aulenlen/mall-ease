@@ -88,11 +88,6 @@ public interface SpuService {
     ProductSkuSelectedRespVO getPortalSkuSelected(Long spuId, Long skuId);
 
     /**
-     * 聚合秒杀场景下的商品详情页主数据。
-     */
-    ProductDetailRespVO getFlashPortalDetail(Long spuId, Long sessionId);
-
-    /**
      * 按 SPU ID 批量查询已发布商品快照，供内部服务使用。
      */
     List<ProductDTO> listPublishedProductSnapshots(List<Long> spuIds);

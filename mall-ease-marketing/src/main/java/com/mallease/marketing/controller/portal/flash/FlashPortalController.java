@@ -1,10 +1,10 @@
 package com.mallease.marketing.controller.portal.flash;
 
 import com.mallease.common.api.R;
-import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.common.dto.remote.FlashCurrentDTO;
 import com.mallease.common.exception.ApiException;
-import com.mallease.marketing.service.flash.cache.FlashCacheService;
+import com.mallease.marketing.controller.portal.flash.vo.FlashPortalDetailRespVO;
+import com.mallease.marketing.service.flash.FlashPreheatService;
 import com.mallease.marketing.convert.FlashConvert;
 import com.mallease.marketing.controller.portal.flash.vo.FlashPortalProductRespVO;
 import com.mallease.marketing.controller.portal.flash.vo.FlashPortalSessionRespVO;
@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
@@ -34,7 +33,7 @@ public class FlashPortalController {
 
     private final FlashService flashService;
     private final FlashConvert flashConvert;
-    private final FlashCacheService flashCacheService;
+    private final FlashPreheatService flashPreheatService;
 
     @Operation(summary = "获取当前秒杀数据")
     @GetMapping("/current")
@@ -59,20 +58,11 @@ public class FlashPortalController {
     }
 
     @Operation(summary = "获取秒杀商品详情")
-    @GetMapping("/products/{id:\\d+}")
-    public R<FlashPortalProductRespVO> getProduct(
-            @Parameter(description = "秒杀商品ID", required = true) @PathVariable Long id) {
-        FlashProduct product = flashService.getProductById(id);
-        ensurePublishedSession(product.getFlashSessionId());
-        List<FlashPortalProductRespVO> productRespVOList = toPortalProducts(List.of(product));
-        return R.success(productRespVOList.isEmpty() ? null : productRespVOList.get(0));
-    }
-
-    @Operation(summary = "获取热点秒杀商品详情")
-    @GetMapping("/detail/{spuId:\\d+}")
-    public R<ProductDTO> getHotDetail(@Parameter(description = "SPU ID", required = true) @PathVariable Long spuId,
-                                      @Parameter(description = "秒杀场次ID", required = true) @RequestParam Long sessionId) {
-        return R.success(flashCacheService.getHotDetail(sessionId, spuId));
+    @GetMapping("/products/{sessionId:\\d+}/{spuId:\\d+}")
+    public R<FlashPortalDetailRespVO> getProduct(
+            @Parameter(description = "秒杀场次ID", required = true) @PathVariable Long sessionId,
+            @Parameter(description = "SPU ID", required = true) @PathVariable Long spuId) {
+        return R.success(flashPreheatService.getPortalDetail(sessionId, spuId));
     }
 
     private void ensurePublishedSession(Long sessionId) {

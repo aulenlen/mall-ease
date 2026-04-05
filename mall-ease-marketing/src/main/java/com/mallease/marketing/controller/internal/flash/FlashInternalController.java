@@ -2,8 +2,7 @@ package com.mallease.marketing.controller.internal.flash;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.FlashCurrentDTO;
-import com.mallease.common.dto.remote.SpuFlashOverlayDTO;
-import com.mallease.marketing.service.flash.cache.FlashCacheService;
+import com.mallease.marketing.service.flash.FlashPreheatService;
 import com.mallease.marketing.convert.FlashConvert;
 import com.mallease.marketing.controller.admin.flash.vo.FlashProductRespVO;
 import com.mallease.marketing.dal.entity.FlashProduct;
@@ -15,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -28,7 +26,7 @@ public class FlashInternalController {
 
     private final FlashService flashService;
     private final FlashConvert flashConvert;
-    private final FlashCacheService flashCacheService;
+    private final FlashPreheatService flashPreheatService;
 
     @Operation(summary = "获取当前秒杀数据", description = "供 BFF 或其他服务查询当前秒杀场次")
     @GetMapping("/current")
@@ -43,13 +41,5 @@ public class FlashInternalController {
         FlashProduct product = flashService.getProductById(id);
         List<FlashProductRespVO> productRespVOList = flashService.enrichWithSkuInfo(List.of(product));
         return R.success(productRespVOList.isEmpty() ? flashConvert.toFlashProductResp(product) : productRespVOList.get(0));
-    }
-
-    @Operation(summary = "获取秒杀价格覆盖信息", description = "供商品服务合并秒杀价格与活动信息")
-    @GetMapping("/overlay/{spuId:\\d+}")
-    public R<SpuFlashOverlayDTO> getOverlay(
-            @Parameter(description = "SPU ID", required = true) @PathVariable Long spuId,
-            @Parameter(description = "秒杀场次ID", required = true) @RequestParam Long sessionId) {
-        return R.success(flashCacheService.getOverlay(sessionId, spuId));
     }
 }

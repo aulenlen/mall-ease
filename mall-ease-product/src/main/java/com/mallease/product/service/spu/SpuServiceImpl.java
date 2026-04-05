@@ -2,10 +2,8 @@ package com.mallease.product.service.spu;
 
 import cn.hutool.core.util.IdUtil;
 import com.mallease.common.api.Page;
-import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.ProductDTO;
 import com.mallease.common.dto.remote.SearchFilterDTO;
-import com.mallease.common.dto.remote.SpuFlashOverlayDTO;
 import com.mallease.common.dto.remote.SpuMatchQueryDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
 import com.mallease.common.dto.remote.SpuSearchQuery;
@@ -32,7 +30,6 @@ import com.mallease.product.dal.mapper.SkuStockDao;
 import com.mallease.product.dal.mapper.SpuDao;
 import com.mallease.product.dal.mapper.SpuDetailDao;
 import com.mallease.product.dal.mapper.SpuSnapshotDao;
-import com.mallease.product.feign.marketing.MarketingFlashFeignClient;
 import com.mallease.product.service.brand.BrandService;
 import com.mallease.product.service.category.CategoryService;
 import com.mallease.product.service.stock.SkuStockService;
@@ -42,7 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -89,7 +85,6 @@ public class SpuServiceImpl implements SpuService {
     private final SpuConvert spuConvert;
     private final SpuSnapshotConvert spuSnapshotConvert;
     private final TypedRedisService typedRedisService;
-    private final MarketingFlashFeignClient marketingFlashFeignClient;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -325,27 +320,6 @@ public class SpuServiceImpl implements SpuService {
     }
 
     @Override
-    public ProductDetailRespVO getFlashPortalDetail(Long spuId, Long sessionId) {
-        ProductDetailRespVO product = getPortalDetail(spuId);
-        if (product == null) {
-            return null;
-        }
-
-        R<SpuFlashOverlayDTO> overlayResponse = marketingFlashFeignClient.getOverlay(spuId, sessionId);
-        if (overlayResponse == null || !overlayResponse.isSuccess()) {
-            return product;
-        }
-
-        SpuFlashOverlayDTO overlay = overlayResponse.getData();
-        if (overlay == null) {
-            return product;
-        }
-
-        mergeFlashOverlay(product, overlay);
-        return product;
-    }
-
-    @Override
     public List<ProductDTO> listPublishedProductSnapshots(List<Long> spuIds) {
         if (spuIds == null || spuIds.isEmpty()) {
             return Collections.emptyList();
@@ -539,50 +513,6 @@ public class SpuServiceImpl implements SpuService {
             }
         }
         return snapshotMap;
-    }
-
-    private void mergeFlashOverlay(ProductDetailRespVO product, SpuFlashOverlayDTO overlay) {
-        if (product == null
-                || product.getCurrentSku() == null
-                || product.getCurrentSku().getId() == null
-                || overlay == null
-                || overlay.getSkuFlashList() == null
-                || overlay.getSkuFlashList().isEmpty()) {
-            return;
-        }
-
-        Map<Long, SpuFlashOverlayDTO.SkuFlashOverlayDTO> overlaySkuMap = overlay.getSkuFlashList().stream()
-                .filter(item -> item.getSkuId() != null)
-                .collect(Collectors.toMap(SpuFlashOverlayDTO.SkuFlashOverlayDTO::getSkuId, item -> item, (left, right) -> left));
-
-        SpuFlashOverlayDTO.SkuFlashOverlayDTO overlaySku = overlaySkuMap.get(product.getCurrentSku().getId());
-        if (overlaySku == null) {
-            return;
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        if (overlaySku.getCompareAtPrice() != null && product.getCurrentSku().getCompareAtPrice() == null) {
-            product.getCurrentSku().setCompareAtPrice(overlaySku.getCompareAtPrice());
-        }
-        if (shouldUseFlashPrice(overlay, overlaySku, now)) {
-            product.getCurrentSku().setPromotionPrice(overlaySku.getFlashPrice());
-        }
-        product.getCurrentSku().setDisplayPrice(resolveDetailSkuDisplayPrice(product.getCurrentSku()));
-    }
-
-    private boolean shouldUseFlashPrice(SpuFlashOverlayDTO overlay,
-                                        SpuFlashOverlayDTO.SkuFlashOverlayDTO overlaySku,
-                                        LocalDateTime now) {
-        if (overlay == null || overlaySku == null || overlaySku.getFlashPrice() == null) {
-            return false;
-        }
-        if (overlaySku.getFlashStock() != null && overlaySku.getFlashStock() <= 0) {
-            return false;
-        }
-        if (overlay.getStartTime() != null && now.isBefore(overlay.getStartTime())) {
-            return false;
-        }
-        return overlay.getEndTime() == null || now.isBefore(overlay.getEndTime());
     }
 
     private BigDecimal resolveDetailSkuDisplayPrice(ProductDetailRespVO.SkuInfo skuInfo) {

@@ -13,6 +13,7 @@ import com.mallease.marketing.controller.admin.flash.vo.FlashProductRespVO;
 import com.mallease.marketing.controller.admin.flash.vo.FlashSessionRespVO;
 import com.mallease.marketing.dal.entity.FlashProduct;
 import com.mallease.marketing.dal.entity.FlashSession;
+import com.mallease.marketing.service.flash.FlashPreheatService;
 import com.mallease.marketing.service.flash.FlashService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,6 +33,7 @@ public class FlashAdminController {
 
     private final FlashService flashService;
     private final FlashConvert flashConvert;
+    private final FlashPreheatService  flashPreheatService;
 
     @Operation(summary = "创建场次")
     @PostMapping("/sessions")
@@ -129,6 +131,13 @@ public class FlashAdminController {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<FlashProduct> productList = flashService.pageProducts(reqVO);
         return R.success(PageUtils.convertPage(productList, flashService::enrichWithSkuInfo));
+    }
+
+    @Operation(summary = "场次预热")
+    @GetMapping("/session-warmup")
+    public R<?> sessionWarmup() {
+        flashPreheatService.warmUpCurrentSession();
+        return R.success();
     }
 
     private FlashProductRespVO getEnrichedProduct(Long id) {

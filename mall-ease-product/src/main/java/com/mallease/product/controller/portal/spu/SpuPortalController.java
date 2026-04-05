@@ -42,9 +42,4 @@ public class SpuPortalController {
         return R.success(spuService.getPortalSkuSelected(spuId, skuId));
     }
 
-    @Operation(summary = "前台秒杀商品详情", description = "获取非热点秒杀商品详情并覆盖秒杀价格")
-    @GetMapping("/flash/{spuId}")
-    public R<ProductDetailRespVO> flashPortalDetail(@PathVariable Long spuId, @RequestParam Long sessionId) {
-        return R.success(spuService.getFlashPortalDetail(spuId, sessionId));
-    }
 }
