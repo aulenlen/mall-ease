@@ -23,6 +23,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Tag(name = "秒杀后台管理")
@@ -136,7 +137,7 @@ public class FlashAdminController {
     @Operation(summary = "场次预热")
     @GetMapping("/session-warmup")
     public R<?> sessionWarmup() {
-        flashPreheatService.warmUpCurrentSession();
+        flashPreheatService.warmUpTodayFlashData(LocalDate.now());
         return R.success();
     }
 

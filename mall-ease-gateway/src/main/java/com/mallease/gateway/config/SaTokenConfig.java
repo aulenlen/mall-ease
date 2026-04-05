@@ -69,6 +69,7 @@ public class SaTokenConfig {
             "/api/v1/portal/auth/login",
             "/api/v1/portal/auth/register",
             "/api/v1/admin/auth/login",
+            "/api/v1/portal/flash/**",
             "/api/v1/portal/products/*",
             "/api/v1/portal/products/*/selector",
             "/api/v1/portal/products/*/sku-selected",
