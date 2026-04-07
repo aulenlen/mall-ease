@@ -8,6 +8,7 @@ import com.mallease.common.enums.PayChannel;
 import com.mallease.common.enums.PaymentStatus;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.util.NoGeneratorUtil;
+import com.mallease.trade.constant.OrderConstant;
 import com.mallease.trade.constant.PaymentNotifyProcessStatus;
 import com.mallease.trade.controller.admin.payment.vo.PaymentPageReqVO;
 import com.mallease.trade.controller.admin.payment.vo.PaymentRespVO;
@@ -74,7 +75,7 @@ public class PaymentServiceImpl implements PaymentService {
                     .userId(userId)
                     .payAmount(pendingOrder.getPayAmount())
                     .status(PaymentStatus.PENDING.getCode())
-                    .expireTime(LocalDateTime.now().plusMinutes(30))
+                    .expireTime(LocalDateTime.now().plusMinutes(OrderConstant.PAYMENT_TIMEOUT_MINUTES))
                     .build();
 
             paymentOrderDao.insert(payment);
@@ -89,7 +90,7 @@ public class PaymentServiceImpl implements PaymentService {
             paymentOrderDao.resetForRetry(
                     existPayment.getId(),
                     NoGeneratorUtil.generate(userId),
-                    LocalDateTime.now().plusMinutes(30)
+                    LocalDateTime.now().plusMinutes(OrderConstant.PAYMENT_TIMEOUT_MINUTES)
             );
             return paymentOrderDao.selectByOrderNo(reqVO.getOrderNo());
         }

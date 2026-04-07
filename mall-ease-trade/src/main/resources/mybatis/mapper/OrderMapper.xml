@@ -7,6 +7,9 @@
         <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
         <result column="request_id" property="requestId" jdbcType="VARCHAR"/>
         <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="order_source" property="orderSource" jdbcType="TINYINT"/>
+        <result column="flash_session_id" property="flashSessionId" jdbcType="BIGINT"/>
+        <result column="flash_product_id" property="flashProductId" jdbcType="BIGINT"/>
         <result column="receiver_name" property="receiverName" jdbcType="VARCHAR"/>
         <result column="receiver_phone" property="receiverPhone" jdbcType="VARCHAR"/>
         <result column="receiver_province" property="receiverProvince" jdbcType="VARCHAR"/>
@@ -26,8 +29,8 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, order_no, request_id, user_id, receiver_name, receiver_phone,
-        receiver_province, receiver_city, receiver_district, receiver_address,
+        id, order_no, request_id, user_id, order_source, flash_session_id, flash_product_id,
+        receiver_name, receiver_phone, receiver_province, receiver_city, receiver_district, receiver_address,
         total_amount, freight_amount, discount_amount, pay_amount, pay_expire_time,
         status, remark, stock_process_status, create_time, update_time
     </sql>
@@ -157,12 +160,13 @@
     <!-- 插入订单 -->
     <insert id="insert" parameterType="com.mallease.trade.dal.entity.Order" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO trade_order (
-            order_no, request_id, user_id, receiver_name, receiver_phone,
-            receiver_province, receiver_city, receiver_district, receiver_address,
+            order_no, request_id, user_id, order_source, flash_session_id, flash_product_id,
+            receiver_name, receiver_phone, receiver_province, receiver_city, receiver_district, receiver_address,
             total_amount, freight_amount, discount_amount, pay_amount, pay_expire_time,
             status, remark, stock_process_status
         ) VALUES (
             #{orderNo,jdbcType=VARCHAR}, #{requestId,jdbcType=VARCHAR}, #{userId,jdbcType=BIGINT},
+            #{orderSource,jdbcType=TINYINT}, #{flashSessionId,jdbcType=BIGINT}, #{flashProductId,jdbcType=BIGINT},
             #{receiverName,jdbcType=VARCHAR}, #{receiverPhone,jdbcType=VARCHAR},
             #{receiverProvince,jdbcType=VARCHAR}, #{receiverCity,jdbcType=VARCHAR},
             #{receiverDistrict,jdbcType=VARCHAR}, #{receiverAddress,jdbcType=VARCHAR},
@@ -179,6 +183,9 @@
             <if test="orderNo != null">order_no,</if>
             <if test="requestId != null">request_id,</if>
             <if test="userId != null">user_id,</if>
+            <if test="orderSource != null">order_source,</if>
+            <if test="flashSessionId != null">flash_session_id,</if>
+            <if test="flashProductId != null">flash_product_id,</if>
             <if test="receiverName != null">receiver_name,</if>
             <if test="receiverPhone != null">receiver_phone,</if>
             <if test="receiverProvince != null">receiver_province,</if>
@@ -198,6 +205,9 @@
             <if test="orderNo != null">#{orderNo,jdbcType=VARCHAR},</if>
             <if test="requestId != null">#{requestId,jdbcType=VARCHAR},</if>
             <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+            <if test="orderSource != null">#{orderSource,jdbcType=TINYINT},</if>
+            <if test="flashSessionId != null">#{flashSessionId,jdbcType=BIGINT},</if>
+            <if test="flashProductId != null">#{flashProductId,jdbcType=BIGINT},</if>
             <if test="receiverName != null">#{receiverName,jdbcType=VARCHAR},</if>
             <if test="receiverPhone != null">#{receiverPhone,jdbcType=VARCHAR},</if>
             <if test="receiverProvince != null">#{receiverProvince,jdbcType=VARCHAR},</if>
@@ -221,6 +231,9 @@
         SET order_no = #{orderNo,jdbcType=VARCHAR},
             request_id = #{requestId,jdbcType=VARCHAR},
             user_id = #{userId,jdbcType=BIGINT},
+            order_source = #{orderSource,jdbcType=TINYINT},
+            flash_session_id = #{flashSessionId,jdbcType=BIGINT},
+            flash_product_id = #{flashProductId,jdbcType=BIGINT},
             receiver_name = #{receiverName,jdbcType=VARCHAR},
             receiver_phone = #{receiverPhone,jdbcType=VARCHAR},
             receiver_province = #{receiverProvince,jdbcType=VARCHAR},
@@ -245,6 +258,9 @@
             <if test="orderNo != null">order_no = #{orderNo,jdbcType=VARCHAR},</if>
             <if test="requestId != null">request_id = #{requestId,jdbcType=VARCHAR},</if>
             <if test="userId != null">user_id = #{userId,jdbcType=BIGINT},</if>
+            <if test="orderSource != null">order_source = #{orderSource,jdbcType=TINYINT},</if>
+            <if test="flashSessionId != null">flash_session_id = #{flashSessionId,jdbcType=BIGINT},</if>
+            <if test="flashProductId != null">flash_product_id = #{flashProductId,jdbcType=BIGINT},</if>
             <if test="receiverName != null">receiver_name = #{receiverName,jdbcType=VARCHAR},</if>
             <if test="receiverPhone != null">receiver_phone = #{receiverPhone,jdbcType=VARCHAR},</if>
             <if test="receiverProvince != null">receiver_province = #{receiverProvince,jdbcType=VARCHAR},</if>

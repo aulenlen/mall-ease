@@ -1,6 +1,8 @@
 package com.mallease.trade.service.order;
 
 import com.mallease.common.api.Page;
+import com.mallease.common.dto.remote.FlashCreateOrderReqDTO;
+import com.mallease.common.dto.remote.FlashCreateOrderRespDTO;
 import com.mallease.trade.controller.admin.order.vo.OrderAdminRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderConfirmRespVO;
 import com.mallease.trade.controller.portal.order.vo.OrderRespVO;
@@ -241,4 +243,9 @@ public interface OrderService {
      * @return 各状态订单数量
      */
     List<OrderStatusDistributionRespVO> listOrderStatusDistribution();
+
+    /**
+     * 创建秒杀订单
+     */
+    FlashCreateOrderRespDTO createFlashOrder(FlashCreateOrderReqDTO req);
 }

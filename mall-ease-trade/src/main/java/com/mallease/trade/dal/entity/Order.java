@@ -41,6 +41,21 @@ public class Order {
     private Long userId;
 
     /**
+     * 订单来源：0-普通，1-秒杀
+     */
+    private Integer orderSource;
+
+    /**
+     * 秒杀场次ID
+     */
+    private Long flashSessionId;
+
+    /**
+     * 秒杀商品ID
+     */
+    private Long flashProductId;
+
+    /**
      * 收货人姓名
      */
     private String receiverName;
@@ -96,7 +111,7 @@ public class Order {
     private LocalDateTime payExpireTime;
 
     /**
-     * 订单主状态，详见 {@link OrderStatus}
+     * 订单主状态
      */
     private Integer status;
 

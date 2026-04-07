@@ -4,10 +4,11 @@ import com.github.pagehelper.PageHelper;
 import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
-import com.mallease.common.dto.remote.StockLockDTO;
-import com.mallease.common.dto.remote.StockReservationStatusDTO;
+import com.mallease.common.dto.remote.*;
+import com.mallease.common.enums.OrderSource;
 import com.mallease.common.enums.OrderStatus;
 import com.mallease.common.enums.OrderStockStatus;
+import com.mallease.common.enums.PaymentStatus;
 import com.mallease.common.enums.ReservationAggregateStatus;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.TypedRedisService;
@@ -31,6 +32,7 @@ import com.mallease.trade.dal.mapper.OrderItemDao;
 import com.mallease.trade.dal.mapper.OrderOperationLogDao;
 import com.mallease.trade.dal.mapper.OrderShipmentDao;
 import com.mallease.trade.dal.mapper.PaymentOrderDao;
+import com.mallease.trade.feign.product.MarketingFlashFeignClient;
 import com.mallease.trade.feign.product.ProductFeignClient;
 import com.mallease.trade.controller.admin.order.vo.OrderPageReqVO;
 import com.mallease.trade.controller.portal.order.vo.OrderItemRespVO;
@@ -105,6 +107,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderConvert orderConvert;
     private final OrderAdminConvert orderAdminConvert;
     private final PaymentConvert paymentConvert;
+    private final MarketingFlashFeignClient flashFeignClient;
 
     @Override
     public OrderConfirmRespVO createOrderSnapshot(Long userId) {
@@ -440,8 +443,18 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public boolean cancelOrder(String orderNo, Long userId, boolean restoreCart) {
         Order order = validatePendingOrderAccess(orderNo, userId);
+
+        if (isFlashOrder(order)) {
+            restoreFlashOrderAndMarkCancelled(order, "取消秒杀订单失败");
+            return true;
+        }
+
         releaseOrderStocks(List.of(order), restoreCart, true);
         return true;
+    }
+
+    private boolean isFlashOrder(Order order) {
+        return order != null && Objects.equals(order.getOrderSource(), OrderSource.FLASH.getCode());
     }
 
     @Override
@@ -517,6 +530,15 @@ public class OrderServiceImpl implements OrderService {
 
         markOrderStockConfirming(order);
 
+        if (isFlashOrder(order)) {
+            updateOrderProcessState(
+                    order.getId(),
+                    OrderStatus.PENDING_SHIPMENT.getCode(),
+                    OrderStockStatus.CONFIRMED.getCode()
+            );
+            return;
+        }
+
         try {
             R<Void> result = productFeignClient.confirmStock(orderNo);
             if (result == null || !result.isSuccess()) {
@@ -570,7 +592,24 @@ public class OrderServiceImpl implements OrderService {
         if (orders == null || orders.isEmpty()) {
             return;
         }
-        releaseOrderStocks(orders, false, true);
+
+        List<Order> flashOrders = orders.stream()
+                .filter(this::isFlashOrder)
+                .toList();
+        for (Order order : flashOrders) {
+            try {
+                restoreFlashOrderAndMarkCancelled(order, "关闭超时秒杀订单失败");
+            } catch (ApiException ex) {
+                log.warn("关闭超时秒杀订单失败，orderNo={}", order.getOrderNo(), ex);
+            }
+        }
+
+        List<Order> normalOrders = orders.stream()
+                .filter(order -> !isFlashOrder(order))
+                .toList();
+        if (!normalOrders.isEmpty()) {
+            releaseOrderStocks(normalOrders, false, true);
+        }
     }
 
     @Override
@@ -666,6 +705,135 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<OrderStatusDistributionRespVO> listOrderStatusDistribution() {
         return orderDao.statsStatusDistribution();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public FlashCreateOrderRespDTO createFlashOrder(FlashCreateOrderReqDTO req) {
+        validateFlashCreateOrderRequest(req);
+
+        String requestId = req.getRequestId();
+        Order existOrder = getValidIdempotentOrder(requestId);
+        if (existOrder != null) {
+            return buildFlashCreateOrderResponse(existOrder);
+        }
+
+        String orderNo = NoGeneratorUtil.generate(req.getUserId());
+        LocalDateTime payExpireTime = LocalDateTime.now().plusMinutes(PAYMENT_TIMEOUT_MINUTES);
+        BigDecimal payAmount = req.getFlashPrice().multiply(BigDecimal.valueOf(req.getQuantity()));
+        Order order = buildFlashOrder(req, orderNo, payExpireTime, payAmount);
+        OrderItem orderItem = buildFlashOrderItem(req, orderNo, payAmount);
+        try {
+            int inserted = orderDao.insert(order);
+            if (inserted <= 0 || order.getId() == null) {
+                throw new ApiException("创建秒杀订单失败");
+            }
+            orderItem.setOrderId(order.getId());
+            int itemInserted = orderItemDao.insertBatch(List.of(orderItem));
+            if (itemInserted <= 0) {
+                throw new ApiException("创建秒杀订单明细失败");
+            }
+        } catch (DuplicateKeyException ex) {
+            Order duplicatedOrder = getValidIdempotentOrder(requestId);
+            if (duplicatedOrder == null) {
+                log.error("秒杀订单创建发生唯一键冲突但未查询到幂等订单，requestId={}", requestId, ex);
+                throw new ApiException("秒杀订单创建失败");
+            }
+            log.info("秒杀订单并发重复提交，返回已有订单: requestId={}, orderNo={}, status={}",
+                    requestId, duplicatedOrder.getOrderNo(), duplicatedOrder.getStatus());
+            return buildFlashCreateOrderResponse(duplicatedOrder);
+        }
+
+        return buildFlashCreateOrderResponse(order);
+    }
+
+    private void validateFlashCreateOrderRequest(FlashCreateOrderReqDTO req) {
+        if (req == null) {
+            throw new ApiException("秒杀订单参数不能为空");
+        }
+        if (req.getUserId() == null) {
+            throw new ApiException("用户信息不能为空");
+        }
+        if (req.getRequestId() == null || req.getRequestId().isBlank()) {
+            throw new ApiException("请求ID不能为空");
+        }
+        if (req.getSessionId() == null) {
+            throw new ApiException("秒杀场次不能为空");
+        }
+        if (req.getFlashProductId() == null) {
+            throw new ApiException("秒杀商品不能为空");
+        }
+        if (req.getSpuId() == null || req.getSkuId() == null) {
+            throw new ApiException("商品信息不能为空");
+        }
+        if (req.getQuantity() == null || req.getQuantity() <= 0) {
+            throw new ApiException("商品数量不正确");
+        }
+        if (req.getFlashPrice() == null || req.getFlashPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ApiException("秒杀价格不正确");
+        }
+        if (req.getSpuName() == null || req.getSpuName().isBlank()) {
+            throw new ApiException("商品名称不能为空");
+        }
+        if (req.getReceiverName() == null || req.getReceiverName().isBlank()) {
+            throw new ApiException("收货人姓名不能为空");
+        }
+        if (req.getReceiverPhone() == null || req.getReceiverPhone().isBlank()) {
+            throw new ApiException("收货人电话不能为空");
+        }
+        if (req.getReceiverAddress() == null || req.getReceiverAddress().isBlank()) {
+            throw new ApiException("详细地址不能为空");
+        }
+    }
+
+    private Order buildFlashOrder(FlashCreateOrderReqDTO req, String orderNo,
+                                  LocalDateTime payExpireTime, BigDecimal payAmount) {
+        return Order.builder()
+                .orderNo(orderNo)
+                .requestId(req.getRequestId())
+                .userId(req.getUserId())
+                .orderSource(OrderSource.FLASH.getCode())
+                .flashSessionId(req.getSessionId())
+                .flashProductId(req.getFlashProductId())
+                .receiverName(req.getReceiverName())
+                .receiverPhone(req.getReceiverPhone())
+                .receiverProvince(req.getReceiverProvince())
+                .receiverCity(req.getReceiverCity())
+                .receiverDistrict(req.getReceiverDistrict())
+                .receiverAddress(req.getReceiverAddress())
+                .totalAmount(payAmount)
+                .freightAmount(BigDecimal.ZERO)
+                .discountAmount(BigDecimal.ZERO)
+                .payAmount(payAmount)
+                .payExpireTime(payExpireTime)
+                .status(OrderStatus.PENDING_PAYMENT.getCode())
+                .remark(req.getRemark())
+                .stockProcessStatus(OrderStockStatus.INIT.getCode())
+                .build();
+    }
+
+    private OrderItem buildFlashOrderItem(FlashCreateOrderReqDTO req, String orderNo, BigDecimal payAmount) {
+        return OrderItem.builder()
+                .orderNo(orderNo)
+                .spuId(req.getSpuId())
+                .skuId(req.getSkuId())
+                .spuName(req.getSpuName())
+                .skuPic(req.getSkuPic())
+                .skuAttrs(req.getSkuAttrs())
+                .price(req.getFlashPrice())
+                .quantity(req.getQuantity())
+                .subtotal(payAmount)
+                .build();
+    }
+
+    private FlashCreateOrderRespDTO buildFlashCreateOrderResponse(Order order) {
+        return FlashCreateOrderRespDTO.builder()
+                .orderNo(order.getOrderNo())
+                .payAmount(order.getPayAmount())
+                .payExpireTime(resolvePayExpireTime(order))
+                .orderStatus(order.getStatus())
+                .serverTime(LocalDateTime.now())
+                .build();
     }
 
     private OrderConfirmRespVO validateOrderSnapshot(Long userId, String requestId) {
@@ -856,6 +1024,7 @@ public class OrderServiceImpl implements OrderService {
                         OrderStatus.CANCELLED.getCode(),
                         OrderStockStatus.RELEASED.getCode()
                 );
+                closePendingPaymentOrders(releasedOrderNos);
                 if (restoreCart) {
                     refillCartItems(releasedOrderNos);
                 }
@@ -945,6 +1114,67 @@ public class OrderServiceImpl implements OrderService {
                         .build());
             }
         });
+    }
+
+    private void markFlashOrderCancelled(Order order) {
+        if (order == null || order.getId() == null) {
+            throw new ApiException("订单不存在");
+        }
+        transactionTemplate.executeWithoutResult(status ->
+                {
+                    orderDao.updateByPrimaryKeySelective(Order.builder()
+                            .id(order.getId())
+                            .status(OrderStatus.CANCELLED.getCode())
+                            .stockProcessStatus(OrderStockStatus.RELEASED.getCode())
+                            .build());
+                    closePendingPaymentOrders(List.of(order.getOrderNo()));
+                }
+        );
+    }
+
+    private void restoreFlashOrderAndMarkCancelled(Order order, String errorMessage) {
+        if (order == null || order.getId() == null) {
+            throw new ApiException("订单不存在");
+        }
+
+        List<OrderItem> orderItems = orderItemDao.selectByOrderId(order.getId());
+        if (orderItems == null || orderItems.isEmpty()) {
+            throw new ApiException("订单明细不存在");
+        }
+        OrderItem orderItem = orderItems.get(0);
+
+        try {
+            R<Long> result = flashFeignClient.restoreStock(
+                    FlashRestoreReqDTO.builder()
+                            .sessionId(order.getFlashSessionId())
+                            .skuId(orderItem.getSkuId())
+                            .userId(order.getUserId())
+                            .quantity(orderItem.getQuantity())
+                            .build());
+
+            if (result != null && result.isSuccess() && Objects.equals(result.getData(), 1L)) {
+                markFlashOrderCancelled(order);
+                return;
+            }
+        } catch (Exception ex) {
+            log.warn("秒杀库存回补失败，orderNo={}", order.getOrderNo(), ex);
+        }
+
+        throw new ApiException(errorMessage);
+    }
+
+    private void closePendingPaymentOrders(List<String> orderNos) {
+        if (orderNos == null || orderNos.isEmpty()) {
+            return;
+        }
+        List<String> validOrderNos = orderNos.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (validOrderNos.isEmpty()) {
+            return;
+        }
+        paymentOrderDao.closeByOrderNos(validOrderNos, PaymentStatus.CLOSED.getCode());
     }
 
     private String resolveErrorMessage(R<?> result, String defaultMessage) {

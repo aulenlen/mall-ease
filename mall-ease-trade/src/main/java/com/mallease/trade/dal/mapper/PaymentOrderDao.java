@@ -88,6 +88,16 @@ public interface PaymentOrderDao {
                        @Param("status") Integer status);
 
     /**
+     * 批量根据订单号关闭支付单（订单取消时联动）
+     *
+     * @param orderNos 订单号列表
+     * @param status   关闭状态
+     * @return 影响行数
+     */
+    int closeByOrderNos(@Param("orderNos") List<String> orderNos,
+                        @Param("status") Integer status);
+
+    /**
      * 重置失败支付单为待支付
      *
      * @param id         主键ID

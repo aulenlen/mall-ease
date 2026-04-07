@@ -101,6 +101,17 @@
           AND status = 1
     </update>
 
+    <update id="closeByOrderNos">
+        UPDATE trade_payment_order
+        SET status = #{status,jdbcType=TINYINT},
+            update_time = NOW()
+        WHERE status = 1
+          AND order_no IN
+        <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
+            #{orderNo,jdbcType=VARCHAR}
+        </foreach>
+    </update>
+
     <!-- 重置失败支付单为待支付 -->
     <update id="resetForRetry">
         UPDATE trade_payment_order
