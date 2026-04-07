@@ -5,6 +5,8 @@ import com.mallease.common.api.Page;
 import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.marketing.convert.FlashConvert;
+import com.mallease.marketing.controller.admin.flash.vo.FlashCacheActiveReqVO;
+import com.mallease.marketing.controller.admin.flash.vo.FlashCacheDateReqVO;
 import com.mallease.marketing.controller.admin.flash.vo.FlashProductReqVO;
 import com.mallease.marketing.controller.admin.flash.vo.FlashSessionReqVO;
 import com.mallease.marketing.controller.admin.flash.vo.FlashProductPageReqVO;
@@ -13,7 +15,8 @@ import com.mallease.marketing.controller.admin.flash.vo.FlashProductRespVO;
 import com.mallease.marketing.controller.admin.flash.vo.FlashSessionRespVO;
 import com.mallease.marketing.dal.entity.FlashProduct;
 import com.mallease.marketing.dal.entity.FlashSession;
-import com.mallease.marketing.service.flash.FlashPreheatService;
+import com.mallease.marketing.service.flash.FlashWarmUpResult;
+import com.mallease.marketing.service.flash.FlashWarmUpService;
 import com.mallease.marketing.service.flash.FlashService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,7 +26,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Tag(name = "秒杀后台管理")
@@ -34,7 +36,7 @@ public class FlashAdminController {
 
     private final FlashService flashService;
     private final FlashConvert flashConvert;
-    private final FlashPreheatService  flashPreheatService;
+    private final FlashWarmUpService flashWarmUpService;
 
     @Operation(summary = "创建场次")
     @PostMapping("/sessions")
@@ -134,11 +136,23 @@ public class FlashAdminController {
         return R.success(PageUtils.convertPage(productList, flashService::enrichWithSkuInfo));
     }
 
-    @Operation(summary = "场次预热")
-    @GetMapping("/session-warmup")
-    public R<?> sessionWarmup() {
-        flashPreheatService.warmUpTodayFlashData(LocalDate.now());
-        return R.success();
+    @Operation(summary = "按日期重建门户缓存")
+    @PostMapping("/cache/rebuild-by-date")
+    public R<FlashWarmUpResult> rebuildByDate(@Validated @RequestBody FlashCacheDateReqVO reqVO) {
+        return R.success(flashWarmUpService.rebuildPortalCacheByDate(reqVO.getDate()));
+    }
+
+    @Operation(summary = "按场次刷新缓存")
+    @PostMapping("/cache/sessions/{sessionId}/refresh")
+    public R<FlashWarmUpResult> refreshSession(@PathVariable Long sessionId) {
+        return R.success(flashWarmUpService.refreshSessionCache(sessionId));
+    }
+
+    @Operation(summary = "刷新当前和未来窗口内的活跃场次缓存")
+    @PostMapping("/cache/active/refresh")
+    public R<FlashWarmUpResult> refreshActive(@Validated @RequestBody(required = false) FlashCacheActiveReqVO reqVO) {
+        Integer windowMinutes = reqVO != null ? reqVO.getWindowMinutes() : null;
+        return R.success(flashWarmUpService.refreshActiveSessionsCache(windowMinutes));
     }
 
     private FlashProductRespVO getEnrichedProduct(Long id) {
