@@ -50,6 +50,18 @@ spring:
             - Path=/api/v1/admin/orders/**,/api/v1/admin/payments/**,/api/v1/portal/cart/**,/api/v1/portal/orders/**,/api/v1/portal/payments/**
           filters:
             - StripPrefix=2
+        - id: api-v1-flash-order
+          uri: lb://mall-ease-marketing
+          predicates:
+            - Path=/api/v1/portal/flash/orders
+          filters:
+            - StripPrefix=2
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userKeyResolver}"
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 15
+                redis-rate-limiter.requestedTokens: 1
 
   data:
     redis:
