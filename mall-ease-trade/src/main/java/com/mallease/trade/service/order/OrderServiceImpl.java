@@ -8,7 +8,6 @@ import com.mallease.common.dto.remote.*;
 import com.mallease.common.enums.OrderSource;
 import com.mallease.common.enums.OrderStatus;
 import com.mallease.common.enums.OrderStockStatus;
-import com.mallease.common.enums.PaymentStatus;
 import com.mallease.common.enums.ReservationAggregateStatus;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.TypedRedisService;
@@ -32,7 +31,6 @@ import com.mallease.trade.dal.mapper.OrderItemDao;
 import com.mallease.trade.dal.mapper.OrderOperationLogDao;
 import com.mallease.trade.dal.mapper.OrderShipmentDao;
 import com.mallease.trade.dal.mapper.PaymentOrderDao;
-import com.mallease.trade.feign.product.MarketingFlashFeignClient;
 import com.mallease.trade.feign.product.ProductFeignClient;
 import com.mallease.trade.controller.admin.order.vo.OrderPageReqVO;
 import com.mallease.trade.controller.portal.order.vo.OrderItemRespVO;
@@ -48,6 +46,7 @@ import com.mallease.trade.dal.entity.OrderOperationLog;
 import com.mallease.trade.dal.entity.OrderShipment;
 import com.mallease.trade.dal.entity.PaymentOrder;
 import com.mallease.trade.service.cart.CartService;
+import com.mallease.trade.service.order.handler.OrderSourceHandlerDispatcher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -62,7 +61,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +105,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderConvert orderConvert;
     private final OrderAdminConvert orderAdminConvert;
     private final PaymentConvert paymentConvert;
-    private final MarketingFlashFeignClient flashFeignClient;
+    private final OrderSourceHandlerDispatcher orderHandlerDispatcher;
 
     @Override
     public OrderConfirmRespVO createOrderSnapshot(Long userId) {
@@ -443,18 +441,18 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public boolean cancelOrder(String orderNo, Long userId, boolean restoreCart) {
         Order order = validatePendingOrderAccess(orderNo, userId);
-
-        if (isFlashOrder(order)) {
-            restoreFlashOrderAndMarkCancelled(order, "取消秒杀订单失败");
-            return true;
-        }
-
-        releaseOrderStocks(List.of(order), restoreCart, true);
-        return true;
+        return orderHandlerDispatcher.getHandler(resolveOrderSource(order)).cancelPending(order, restoreCart);
     }
 
-    private boolean isFlashOrder(Order order) {
-        return order != null && Objects.equals(order.getOrderSource(), OrderSource.FLASH.getCode());
+    private OrderSource resolveOrderSource(Order order) {
+        if (order == null) {
+            return OrderSource.NORMAL;
+        }
+        OrderSource orderSource = OrderSource.fromCode(order.getOrderSource());
+        if (orderSource == null) {
+            throw new ApiException("不支持的订单来源: " + order.getOrderSource());
+        }
+        return orderSource;
     }
 
     @Override
@@ -478,7 +476,12 @@ public class OrderServiceImpl implements OrderService {
             markOrdersCancelled(directCancelOrders);
         }
         if (!pendingOrders.isEmpty()) {
-            releaseOrderStocks(pendingOrders, false, true);
+            Map<OrderSource, List<Order>> groupedPendingOrders = pendingOrders.stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.groupingBy(this::resolveOrderSource));
+            groupedPendingOrders.forEach((source, sourceOrders) ->
+                    orderHandlerDispatcher.getHandler(source).cancelPending(sourceOrders, false)
+            );
         }
     }
 
@@ -530,27 +533,7 @@ public class OrderServiceImpl implements OrderService {
 
         markOrderStockConfirming(order);
 
-        if (isFlashOrder(order)) {
-            updateOrderProcessState(
-                    order.getId(),
-                    OrderStatus.PENDING_SHIPMENT.getCode(),
-                    OrderStockStatus.CONFIRMED.getCode()
-            );
-            return;
-        }
-
-        try {
-            R<Void> result = productFeignClient.confirmStock(orderNo);
-            if (result == null || !result.isSuccess()) {
-                markOrderStockConfirmFailed(order.getId());
-                throw new ApiException(resolveErrorMessage(result, "确认扣减库存失败"));
-            }
-        } catch (ApiException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            markOrderStockConfirmFailed(order.getId());
-            throw new ApiException("支付成功，订单处理中");
-        }
+        orderHandlerDispatcher.getHandler(resolveOrderSource(order)).confirmPaid(order);
 
         updateOrderProcessState(order.getId(), OrderStatus.PENDING_SHIPMENT.getCode(), OrderStockStatus.CONFIRMED.getCode());
     }
@@ -592,24 +575,13 @@ public class OrderServiceImpl implements OrderService {
         if (orders == null || orders.isEmpty()) {
             return;
         }
+        Map<OrderSource, List<Order>> groupedOrders = orders.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(this::resolveOrderSource));
 
-        List<Order> flashOrders = orders.stream()
-                .filter(this::isFlashOrder)
-                .toList();
-        for (Order order : flashOrders) {
-            try {
-                restoreFlashOrderAndMarkCancelled(order, "关闭超时秒杀订单失败");
-            } catch (ApiException ex) {
-                log.warn("关闭超时秒杀订单失败，orderNo={}", order.getOrderNo(), ex);
-            }
-        }
-
-        List<Order> normalOrders = orders.stream()
-                .filter(order -> !isFlashOrder(order))
-                .toList();
-        if (!normalOrders.isEmpty()) {
-            releaseOrderStocks(normalOrders, false, true);
-        }
+        groupedOrders.forEach((source, sourceOrders) -> {
+            orderHandlerDispatcher.getHandler(source).closeExpired(sourceOrders);
+        });
     }
 
     @Override
@@ -622,23 +594,13 @@ public class OrderServiceImpl implements OrderService {
         if (orders == null || orders.isEmpty()) {
             return;
         }
-        for (Order order : orders) {
-            if (order == null || order.getOrderNo() == null || order.getId() == null) {
-                continue;
-            }
-            try {
-                markOrderStockConfirming(order);
-                R<Void> result = productFeignClient.confirmStock(order.getOrderNo());
-                if (result != null && result.isSuccess()) {
-                    updateOrderProcessState(order.getId(), OrderStatus.PENDING_SHIPMENT.getCode(), OrderStockStatus.CONFIRMED.getCode());
-                } else {
-                    markOrderStockConfirmFailed(order.getId());
-                }
-            } catch (Exception ex) {
-                markOrderStockConfirmFailed(order.getId());
-                log.warn("重试确认库存失败，orderNo={}", order.getOrderNo(), ex);
-            }
-        }
+
+        Map<OrderSource, List<Order>> groupOrders = orders.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(this::resolveOrderSource));
+        groupOrders.forEach((source, sourceOrders) -> {
+            orderHandlerDispatcher.getHandler(source).retryConfirm(sourceOrders);
+        });
     }
 
     @Override
@@ -651,7 +613,12 @@ public class OrderServiceImpl implements OrderService {
         if (orders == null || orders.isEmpty()) {
             return;
         }
-        releaseOrderStocks(orders, false, false);
+        Map<OrderSource, List<Order>> groupOrders = orders.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(this::resolveOrderSource));
+        groupOrders.forEach((source, sourceOrders) -> {
+            orderHandlerDispatcher.getHandler(source).retryRelease(sourceOrders, false, false);
+        });
     }
 
     @Override
@@ -886,6 +853,7 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderNo(orderNo);
         order.setRequestId(requestId);
         order.setUserId(userId);
+        order.setOrderSource(OrderSource.NORMAL.getCode());
         order.setTotalAmount(snapshot.getTotalAmount());
         order.setFreightAmount(snapshot.getFreightAmount());
         order.setDiscountAmount(snapshot.getDiscountAmount());
@@ -983,64 +951,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private void releaseOrderStocks(List<Order> orders, boolean restoreCart, boolean needTransition) {
-        if (orders == null || orders.isEmpty()) {
-            return;
-        }
-
-        List<String> processingOrderNos = needTransition
-                ? transitionOrdersToReleasing(orders)
-                : orders.stream()
-                .map(Order::getOrderNo)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-
-        if (processingOrderNos.isEmpty()) {
-            return;
-        }
-
-        Set<String> failedOrderNos = new HashSet<>();
-        try {
-            R<List<String>> result = productFeignClient.unlock(processingOrderNos);
-            if (result == null || !result.isSuccess()) {
-                failedOrderNos.addAll(processingOrderNos);
-            } else if (result.getData() != null) {
-                failedOrderNos.addAll(result.getData());
-            }
-        } catch (Exception ex) {
-            log.warn("调用 Product 释放库存失败，orderNos={}", processingOrderNos, ex);
-            failedOrderNos.addAll(processingOrderNos);
-        }
-
-        List<String> releasedOrderNos = processingOrderNos.stream()
-                .filter(orderNo -> !failedOrderNos.contains(orderNo))
-                .toList();
-
-        if (!releasedOrderNos.isEmpty()) {
-            transactionTemplate.executeWithoutResult(status -> {
-                orderDao.batchUpdateStatusByOrderNos(
-                        releasedOrderNos,
-                        OrderStatus.CANCELLED.getCode(),
-                        OrderStockStatus.RELEASED.getCode()
-                );
-                closePendingPaymentOrders(releasedOrderNos);
-                if (restoreCart) {
-                    refillCartItems(releasedOrderNos);
-                }
-            });
-        }
-
-        if (!failedOrderNos.isEmpty()) {
-            transactionTemplate.executeWithoutResult(status ->
-                    orderDao.updateStockProcessStatusByOrderNos(
-                            new ArrayList<>(failedOrderNos),
-                            OrderStockStatus.RELEASE_FAILED.getCode()
-                    )
-            );
-        }
-    }
-
     private void markOrderStockConfirming(Order order) {
         if (Objects.equals(order.getStatus(), OrderStatus.PAID.getCode())
                 && Objects.equals(order.getStockProcessStatus(), OrderStockStatus.CONFIRMING.getCode())) {
@@ -1053,50 +963,6 @@ public class OrderServiceImpl implements OrderService {
                         .stockProcessStatus(OrderStockStatus.CONFIRMING.getCode())
                         .build())
         );
-    }
-
-    private void markOrderStockConfirmFailed(Long orderId) {
-        transactionTemplate.executeWithoutResult(status ->
-                orderDao.updateByPrimaryKeySelective(Order.builder()
-                        .id(orderId)
-                        .status(OrderStatus.PAID.getCode())
-                        .stockProcessStatus(OrderStockStatus.CONFIRM_FAILED.getCode())
-                        .build())
-        );
-    }
-
-    private List<String> transitionOrdersToReleasing(List<Order> orders) {
-        List<String> orderNos = orders.stream()
-                .filter(Objects::nonNull)
-                .map(Order::getOrderNo)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-        if (orderNos.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        int updatedRows = orderDao.batchUpdateStatusAndStockProcessByOrderNos(
-                orderNos,
-                OrderStatus.PENDING_PAYMENT.getCode(),
-                OrderStatus.CANCELLED.getCode(),
-                OrderStockStatus.RELEASING.getCode()
-        );
-        if (updatedRows <= 0) {
-            return Collections.emptyList();
-        }
-        if (updatedRows == orderNos.size()) {
-            return orderNos;
-        }
-
-        return orderDao.selectByOrderNos(orderNos).stream()
-                .filter(Objects::nonNull)
-                .filter(order -> Objects.equals(order.getStatus(), OrderStatus.CANCELLED.getCode()))
-                .filter(order -> Objects.equals(order.getStockProcessStatus(), OrderStockStatus.RELEASING.getCode()))
-                .map(Order::getOrderNo)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
     }
 
     private void markOrdersCancelled(List<Order> orders) {
@@ -1114,67 +980,6 @@ public class OrderServiceImpl implements OrderService {
                         .build());
             }
         });
-    }
-
-    private void markFlashOrderCancelled(Order order) {
-        if (order == null || order.getId() == null) {
-            throw new ApiException("订单不存在");
-        }
-        transactionTemplate.executeWithoutResult(status ->
-                {
-                    orderDao.updateByPrimaryKeySelective(Order.builder()
-                            .id(order.getId())
-                            .status(OrderStatus.CANCELLED.getCode())
-                            .stockProcessStatus(OrderStockStatus.RELEASED.getCode())
-                            .build());
-                    closePendingPaymentOrders(List.of(order.getOrderNo()));
-                }
-        );
-    }
-
-    private void restoreFlashOrderAndMarkCancelled(Order order, String errorMessage) {
-        if (order == null || order.getId() == null) {
-            throw new ApiException("订单不存在");
-        }
-
-        List<OrderItem> orderItems = orderItemDao.selectByOrderId(order.getId());
-        if (orderItems == null || orderItems.isEmpty()) {
-            throw new ApiException("订单明细不存在");
-        }
-        OrderItem orderItem = orderItems.get(0);
-
-        try {
-            R<Long> result = flashFeignClient.restoreStock(
-                    FlashRestoreReqDTO.builder()
-                            .sessionId(order.getFlashSessionId())
-                            .skuId(orderItem.getSkuId())
-                            .userId(order.getUserId())
-                            .quantity(orderItem.getQuantity())
-                            .build());
-
-            if (result != null && result.isSuccess() && Objects.equals(result.getData(), 1L)) {
-                markFlashOrderCancelled(order);
-                return;
-            }
-        } catch (Exception ex) {
-            log.warn("秒杀库存回补失败，orderNo={}", order.getOrderNo(), ex);
-        }
-
-        throw new ApiException(errorMessage);
-    }
-
-    private void closePendingPaymentOrders(List<String> orderNos) {
-        if (orderNos == null || orderNos.isEmpty()) {
-            return;
-        }
-        List<String> validOrderNos = orderNos.stream()
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-        if (validOrderNos.isEmpty()) {
-            return;
-        }
-        paymentOrderDao.closeByOrderNos(validOrderNos, PaymentStatus.CLOSED.getCode());
     }
 
     private String resolveErrorMessage(R<?> result, String defaultMessage) {

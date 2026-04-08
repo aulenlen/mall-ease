@@ -3,6 +3,8 @@ package com.mallease.common.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.Arrays;
+
 @Getter
 @AllArgsConstructor
 public enum OrderSource {
@@ -11,4 +13,14 @@ public enum OrderSource {
 
     private final int code;
     private final String desc;
+
+    public static OrderSource fromCode(Integer code) {
+        if (code == null) {
+            return null;
+        }
+        return Arrays.stream(values())
+                .filter(source -> source.code == code)
+                .findFirst()
+                .orElse(null);
+    }
 }
