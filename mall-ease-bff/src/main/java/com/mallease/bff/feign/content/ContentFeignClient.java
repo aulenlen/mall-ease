@@ -2,9 +2,11 @@ package com.mallease.bff.feign.content;
 
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.BannerDTO;
+import com.mallease.common.dto.remote.EditorialDetailDTO;
 import com.mallease.common.dto.remote.EditorialDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -35,4 +37,13 @@ public interface ContentFeignClient {
      */
     @GetMapping("/content/editorial/internal/published")
     R<List<EditorialDTO>> listPublishedEditorials(@RequestParam(defaultValue = "10") Integer limit);
+
+    /**
+     * 获取已发布编辑精选详情
+     *
+     * @param id 编辑精选ID
+     * @return 编辑精选详情
+     */
+    @GetMapping("/content/editorial/internal/published/{id}")
+    R<EditorialDetailDTO> getPublishedEditorialDetail(@PathVariable Long id);
 }

@@ -50,6 +50,15 @@ public interface ProductFeignClient {
     R<ProductDTO> getProduct(@PathVariable Long spuId);
 
     /**
+     * 批量获取商品详情快照
+     *
+     * @param spuIds SPU ID列表
+     * @return 商品详情快照列表
+     */
+    @PostMapping("/product/spu/internal/detailSnapshots")
+    R<List<ProductDTO>> detailSnapshots(@RequestBody List<Long> spuIds);
+
+    /**
      * MySQL 商品搜索（支持聚合筛选）
      *
      * @param query 查询条件

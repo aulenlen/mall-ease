@@ -78,6 +78,7 @@ public class SaTokenConfig {
             "/api/v1/portal/payments/notify/**",
             "/api/v1/portal/home",
             "/api/v1/portal/home/**",
+            "/api/v1/portal/editorials/*",
             "/api/v1/portal/categories",
             "/api/v1/portal/categories/**"
     );

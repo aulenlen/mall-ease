@@ -35,7 +35,7 @@ spring:
         - id: api-v1-bff
           uri: lb://mall-ease-bff
           predicates:
-            - Path=/api/v1/portal/home,/api/v1/portal/home/**,/api/v1/portal/categories,/api/v1/portal/categories/**
+            - Path=/api/v1/portal/home,/api/v1/portal/home/**,/api/v1/portal/categories,/api/v1/portal/categories/**,/api/v1/portal/editorials,/api/v1/portal/editorials/**
           filters:
             - StripPrefix=2
         - id: api-v1-search
