@@ -10,6 +10,7 @@ import com.mallease.content.controller.admin.editorial.vo.EditorialReqVO;
 import com.mallease.content.controller.admin.editorial.vo.EditorialRespVO;
 import com.mallease.content.convert.editorial.EditorialConvert;
 import com.mallease.content.dal.entity.Editorial;
+import com.mallease.content.service.editorial.EditorialContentCodec;
 import com.mallease.content.service.editorial.EditorialService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,12 +37,18 @@ import java.util.List;
 public class EditorialAdminController {
 
     private final EditorialConvert editorialConvert;
+    private final EditorialContentCodec editorialContentCodec;
     private final EditorialService editorialService;
 
     @Operation(summary = "创建编辑精选")
     @PostMapping
     public R<Long> create(@Validated(EditorialReqVO.Create.class) @RequestBody EditorialReqVO reqVO) {
         Editorial editorial = editorialConvert.toEditorial(reqVO);
+        try {
+            editorial.setContent(editorialContentCodec.encode(reqVO.getContent()));
+        } catch (IllegalArgumentException e) {
+            return R.failed(ResultCode.VALIDATE_FAILED, e.getMessage());
+        }
         return R.success(editorialService.create(editorial, reqVO.getSpuIds()));
     }
 
@@ -49,6 +56,11 @@ public class EditorialAdminController {
     @PutMapping
     public R<Integer> update(@Validated(EditorialReqVO.Update.class) @RequestBody EditorialReqVO reqVO) {
         Editorial editorial = editorialConvert.toEditorial(reqVO);
+        try {
+            editorial.setContent(editorialContentCodec.encode(reqVO.getContent()));
+        } catch (IllegalArgumentException e) {
+            return R.failed(ResultCode.VALIDATE_FAILED, e.getMessage());
+        }
         int count = editorialService.update(editorial, reqVO.getSpuIds());
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
@@ -74,7 +86,7 @@ public class EditorialAdminController {
         if (editorial == null) {
             return R.failed("编辑精选不存在");
         }
-        EditorialRespVO respVO = editorialConvert.toEditorialResp(editorial);
+        EditorialRespVO respVO = buildRespVO(editorial);
         respVO.setSpuIds(editorialService.listSpuIds(id));
         return R.success(respVO);
     }
@@ -84,7 +96,8 @@ public class EditorialAdminController {
     public R<Page<EditorialRespVO>> page(@ParameterObject EditorialPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
         List<Editorial> editorialList = editorialService.page(reqVO);
-        return R.success(PageUtils.convertPage(editorialList, editorialConvert::toEditorialRespList));
+        List<EditorialRespVO> respVOList = editorialList.stream().map(this::buildRespVO).toList();
+        return R.success(PageUtils.buildPage(editorialList, respVOList));
     }
 
     @Operation(summary = "批量更新状态")
@@ -109,5 +122,11 @@ public class EditorialAdminController {
     @DeleteMapping("/{id}/spus")
     public R<Integer> unbindSpus(@PathVariable("id") Long editorialId, @RequestParam("spuIds") List<Long> spuIds) {
         return R.success(editorialService.unbindSpuIds(editorialId, spuIds));
+    }
+
+    private EditorialRespVO buildRespVO(Editorial editorial) {
+        EditorialRespVO respVO = editorialConvert.toEditorialResp(editorial);
+        respVO.setContent(editorialContentCodec.decode(editorial.getContent()));
+        return respVO;
     }
 }

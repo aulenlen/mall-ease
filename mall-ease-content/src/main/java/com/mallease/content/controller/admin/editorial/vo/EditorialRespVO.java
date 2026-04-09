@@ -1,5 +1,6 @@
 package com.mallease.content.controller.admin.editorial.vo;
 
+import com.mallease.common.dto.content.EditorialContentDocument;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,7 +36,7 @@ public class EditorialRespVO {
     private String coverPic;
 
     @Schema(description = "正文内容")
-    private String content;
+    private EditorialContentDocument content;
 
     @Schema(description = "作者")
     private String author;

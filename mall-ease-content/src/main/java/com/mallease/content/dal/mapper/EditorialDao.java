@@ -41,6 +41,14 @@ public interface EditorialDao {
     Editorial selectByPrimaryKey(Long id);
 
     /**
+     * 根据主键查询已发布记录
+     *
+     * @param id 主键ID
+     * @return 已发布记录
+     */
+    Editorial selectPublishedById(Long id);
+
+    /**
      * 根据主键选择性更新
      *
      * @param record 记录

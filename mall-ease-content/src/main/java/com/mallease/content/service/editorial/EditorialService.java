@@ -14,6 +14,8 @@ public interface EditorialService {
 
     Editorial get(Long id);
 
+    Editorial getPublished(Long id);
+
     List<Long> listSpuIds(Long editorialId);
 
     List<EditorialSpuRelation> listSpuRelations(List<Long> editorialIds);

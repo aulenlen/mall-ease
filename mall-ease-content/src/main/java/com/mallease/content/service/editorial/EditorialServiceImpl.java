@@ -59,6 +59,11 @@ public class EditorialServiceImpl implements EditorialService {
     }
 
     @Override
+    public Editorial getPublished(Long id) {
+        return editorialDao.selectPublishedById(id);
+    }
+
+    @Override
     public List<Long> listSpuIds(Long editorialId) {
         List<EditorialSpuRelation> relations = editorialSpuRelationDao.selectByEditorialId(editorialId);
         if (CollectionUtils.isEmpty(relations)) {

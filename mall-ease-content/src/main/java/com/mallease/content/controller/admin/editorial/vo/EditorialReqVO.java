@@ -1,6 +1,8 @@
 package com.mallease.content.controller.admin.editorial.vo;
 
+import com.mallease.common.dto.content.EditorialContentDocument;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -50,7 +52,9 @@ public class EditorialReqVO {
     private String coverPic;
 
     @Schema(description = "正文内容")
-    private String content;
+    @Valid
+    @NotNull(groups = {Create.class, Update.class}, message = "正文内容不能为空")
+    private EditorialContentDocument content;
 
     @Schema(description = "作者")
     @Size(max = 64, message = "作者长度不能超过64个字符")
