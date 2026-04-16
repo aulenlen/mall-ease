@@ -30,6 +30,9 @@ public class RoleDetailRespVO {
     @Schema(description = "角色名称")
     private String name;
 
+    @Schema(description = "角色编码")
+    private String roleCode;
+
     @Schema(description = "角色描述")
     private String description;
 
@@ -38,6 +41,9 @@ public class RoleDetailRespVO {
 
     @Schema(description = "创建时间")
     private Date createTime;
+
+    @Schema(description = "最后修改时间")
+    private Date updateTime;
 
     @Schema(description = "启用状态：0->禁用；1->启用")
     private Integer status;

@@ -49,7 +49,7 @@ public class UserAdminController {
         try {
             Admin admin = userService.getCurrentAdmin();
             List<Role> roleList = userService.getCurrentRoles(admin.getId());
-            List<String> roles = roleList.stream().map(Role::getName).toList();
+            List<String> roles = roleList.stream().map(Role::getRoleCode).toList();
             List<Menu> menus = userService.getCurrentMenus(admin.getId());
             List<MenuRespVO> menuRespVOList = menuConvert.toMenuRespList(menus);
 

@@ -86,6 +86,14 @@ public interface RoleDao {
     List<Role> selectByKeyword(@Param("keyword") String keyword);
 
     /**
+     * 根据角色编码查询
+     *
+     * @param roleCode 角色编码
+     * @return 角色记录
+     */
+    Role selectByRoleCode(@Param("roleCode") String roleCode);
+
+    /**
      * 批量删除
      *
      * @param ids ID列表

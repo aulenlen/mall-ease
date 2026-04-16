@@ -23,6 +23,11 @@ public class Role {
     private String name;
 
     /**
+     * 角色编码
+     */
+    private String roleCode;
+
+    /**
      * 描述
      */
     private String description;
@@ -36,6 +41,11 @@ public class Role {
      * 创建时间
      */
     private Date createTime;
+
+    /**
+     * 更新时间
+     */
+    private Date updateTime;
 
     /**
      * 启用状态：0->禁用；1->启用

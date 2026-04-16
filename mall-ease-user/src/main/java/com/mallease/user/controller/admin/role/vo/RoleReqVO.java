@@ -44,6 +44,12 @@ public class RoleReqVO {
     @Size(max = 100, message = "角色名称长度不能超过100个字符")
     private String name;
 
+    @Schema(description = "角色编码", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(groups = {Create.class, Update.class}, message = "角色编码不能为空")
+    @Size(max = 64, message = "角色编码长度不能超过64个字符")
+    @Pattern(regexp = "^[A-Z][A-Z0-9_]*$", message = "角色编码仅支持大写字母、数字和下划线，且必须以大写字母开头")
+    private String roleCode;
+
     @Schema(description = "角色描述")
     @Size(max = 500, message = "角色描述长度不能超过500个字符")
     private String description;

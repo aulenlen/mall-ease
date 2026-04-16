@@ -84,7 +84,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<Resource> getResourceList(Long adminId) {
-        List<Long> roleIds = adminRoleRelationDao.selectRoleIdsByAdminId(adminId);
+        List<Long> roleIds = getEnabledRoleIds(adminId);
         if (CollUtil.isEmpty(roleIds)) {
             return Collections.emptyList();
         }
@@ -116,7 +116,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<Menu> getCurrentMenus(Long adminId) {
-        List<Long> roleIds = adminRoleRelationDao.selectRoleIdsByAdminId(adminId);
+        List<Long> roleIds = getEnabledRoleIds(adminId);
         if (CollUtil.isEmpty(roleIds)) {
             return Collections.emptyList();
         }
@@ -131,11 +131,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<Role> getCurrentRoles(Long adminId) {
-        List<Long> roleIds = adminRoleRelationDao.selectRoleIdsByAdminId(adminId);
-        if (CollUtil.isEmpty(roleIds)) {
-            return Collections.emptyList();
-        }
-        return roleService.listByIds(roleIds);
+        return getEnabledRoles(adminId);
     }
 
     @Override
@@ -313,5 +309,21 @@ public class UserServiceImpl implements UserService {
 
     private String buildAdminCacheKey(Long adminId) {
         return redisDatabase + ":" + redisKeyAdmin + ":" + adminId;
+    }
+
+    private List<Long> getEnabledRoleIds(Long adminId) {
+        return getEnabledRoles(adminId).stream()
+                .map(Role::getId)
+                .toList();
+    }
+
+    private List<Role> getEnabledRoles(Long adminId) {
+        List<Long> roleIds = adminRoleRelationDao.selectRoleIdsByAdminId(adminId);
+        if (CollUtil.isEmpty(roleIds)) {
+            return Collections.emptyList();
+        }
+        return roleService.listByIds(roleIds).stream()
+                .filter(role -> Objects.equals(role.getStatus(), 1))
+                .toList();
     }
 }

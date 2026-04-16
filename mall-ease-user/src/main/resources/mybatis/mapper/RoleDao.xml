@@ -4,15 +4,17 @@
     <resultMap id="BaseResultMap" type="com.mallease.user.dal.entity.Role">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="role_code" property="roleCode" jdbcType="VARCHAR"/>
         <result column="description" property="description" jdbcType="VARCHAR"/>
         <result column="admin_count" property="adminCount" jdbcType="INTEGER"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
         <result column="status" property="status" jdbcType="INTEGER"/>
         <result column="sort" property="sort" jdbcType="INTEGER"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, description, admin_count, create_time, status, sort
+        id, name, role_code, description, admin_count, create_time, update_time, status, sort
     </sql>
 
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
@@ -26,6 +28,7 @@
         select
         <include refid="Base_Column_List"/>
         from user_role
+        order by sort asc, create_time desc
     </select>
 
     <select id="selectByStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
@@ -33,6 +36,7 @@
         <include refid="Base_Column_List"/>
         from user_role
         where status = #{status,jdbcType=INTEGER}
+        order by sort asc, create_time desc
     </select>
 
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
@@ -41,11 +45,11 @@
     </delete>
 
     <insert id="insert" parameterType="com.mallease.user.dal.entity.Role" useGeneratedKeys="true" keyProperty="id">
-        insert into user_role (id, name, description,
-                              admin_count, create_time, status,
+        insert into user_role (id, name, role_code, description,
+                              admin_count, create_time, update_time, status,
                               sort)
-        values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR},
-                #{adminCount,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, #{status,jdbcType=INTEGER},
+        values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{roleCode,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR},
+                #{adminCount,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, #{status,jdbcType=INTEGER},
                 #{sort,jdbcType=INTEGER})
     </insert>
 
@@ -58,6 +62,9 @@
             <if test="name != null">
                 name,
             </if>
+            <if test="roleCode != null">
+                role_code,
+            </if>
             <if test="description != null">
                 description,
             </if>
@@ -66,6 +73,9 @@
             </if>
             <if test="createTime != null">
                 create_time,
+            </if>
+            <if test="updateTime != null">
+                update_time,
             </if>
             <if test="status != null">
                 status,
@@ -81,6 +91,9 @@
             <if test="name != null">
                 #{name,jdbcType=VARCHAR},
             </if>
+            <if test="roleCode != null">
+                #{roleCode,jdbcType=VARCHAR},
+            </if>
             <if test="description != null">
                 #{description,jdbcType=VARCHAR},
             </if>
@@ -89,6 +102,9 @@
             </if>
             <if test="createTime != null">
                 #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                #{updateTime,jdbcType=TIMESTAMP},
             </if>
             <if test="status != null">
                 #{status,jdbcType=INTEGER},
@@ -105,6 +121,9 @@
             <if test="name != null">
                 name = #{name,jdbcType=VARCHAR},
             </if>
+            <if test="roleCode != null">
+                role_code = #{roleCode,jdbcType=VARCHAR},
+            </if>
             <if test="description != null">
                 description = #{description,jdbcType=VARCHAR},
             </if>
@@ -113,6 +132,9 @@
             </if>
             <if test="createTime != null">
                 create_time = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime,jdbcType=TIMESTAMP},
             </if>
             <if test="status != null">
                 status = #{status,jdbcType=INTEGER},
@@ -127,9 +149,11 @@
     <update id="updateByPrimaryKey" parameterType="com.mallease.user.dal.entity.Role">
         update user_role
         set name = #{name,jdbcType=VARCHAR},
+            role_code = #{roleCode,jdbcType=VARCHAR},
             description = #{description,jdbcType=VARCHAR},
             admin_count = #{adminCount,jdbcType=INTEGER},
             create_time = #{createTime,jdbcType=TIMESTAMP},
+            update_time = #{updateTime,jdbcType=TIMESTAMP},
             status = #{status,jdbcType=INTEGER},
             sort = #{sort,jdbcType=INTEGER}
         where id = #{id,jdbcType=BIGINT}
@@ -141,10 +165,19 @@
         from user_role
         <where>
             <if test="keyword != null and keyword != ''">
-                name like concat('%', #{keyword}, '%')
+                (name like concat('%', #{keyword}, '%')
+                or role_code like concat('%', #{keyword}, '%'))
             </if>
         </where>
         order by sort asc, create_time desc
+    </select>
+
+    <select id="selectByRoleCode" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from user_role
+        where role_code = #{roleCode,jdbcType=VARCHAR}
+        limit 1
     </select>
 
     <delete id="deleteBatch">
@@ -163,6 +196,7 @@
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id,jdbcType=BIGINT}
         </foreach>
+        ORDER BY sort ASC, create_time DESC
     </select>
 </mapper>
 

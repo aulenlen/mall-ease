@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpLogic;
 import cn.hutool.core.util.StrUtil;
 import com.github.pagehelper.PageHelper;
 import com.mallease.common.constant.AuthConstant;
+import com.mallease.common.exception.Asserts;
 import com.mallease.user.dal.entity.AdminRoleRelation;
 import com.mallease.user.dal.entity.Role;
 import com.mallease.user.dal.entity.RoleMenuRelation;
@@ -55,6 +56,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(Role role) {
+        validateRoleCodeUnique(null, role.getRoleCode());
         role.setAdminCount(0);
         roleDao.insertSelective(role);
         return role.getId();
@@ -63,12 +65,14 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int update(Role role) {
+        validateRoleCodeUnique(role.getId(), role.getRoleCode());
         return roleDao.updateByPrimaryKeySelective(role);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int delete(Long id) {
+        getRequiredRole(id);
         List<Long> adminIds = getAdminIdsByRoleId(id);
         int count = roleDao.deleteByPrimaryKey(id);
         roleResourceRelationDao.deleteByRoleId(id);
@@ -84,6 +88,7 @@ public class RoleServiceImpl implements RoleService {
         if (ids == null || ids.isEmpty()) {
             return 0;
         }
+        ids.forEach(this::getRequiredRole);
         List<Long> adminIds = ids.stream()
                 .flatMap(roleId -> getAdminIdsByRoleId(roleId).stream())
                 .distinct()
@@ -124,6 +129,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateStatus(Long id, Integer status) {
+        getRequiredRole(id);
         Role role = new Role();
         role.setId(id);
         role.setStatus(status);
@@ -231,5 +237,27 @@ public class RoleServiceImpl implements RoleService {
                 action.run();
             }
         });
+    }
+
+    private void validateRoleCodeUnique(Long roleId, String roleCode) {
+        if (StrUtil.isBlank(roleCode)) {
+            Asserts.fail("角色编码不能为空");
+        }
+        Role existedRole = roleDao.selectByRoleCode(roleCode);
+        if (existedRole == null) {
+            return;
+        }
+        if (Objects.equals(existedRole.getId(), roleId)) {
+            return;
+        }
+        Asserts.fail("角色编码已存在");
+    }
+
+    private Role getRequiredRole(Long roleId) {
+        Role role = roleDao.selectByPrimaryKey(roleId);
+        if (role == null) {
+            Asserts.fail("角色不存在");
+        }
+        return role;
     }
 }
