@@ -59,36 +59,12 @@ public interface SkuStockDao {
     List<SkuStock> selectBySpuIds(@Param("spuIds") List<Long> spuIds);
 
     /**
-     * 独立库存页 SPU 聚合分页。
+     * SKU 库存平铺分页查询。
      *
      * @param reqVO 查询参数
-     * @return 分页结果
+     * @return SKU 平铺记录列表
      */
-    List<InventorySpuRecordRespVO> selectInventorySpuPage(@Param("reqVO") SkuStockPageReqVO reqVO);
-
-    /**
-     * 查询指定 SPU 列表下的 SKU 子表记录。
-     *
-     * @param spuIds SPU ID 列表
-     * @return SKU 子表记录
-     */
-    List<InventoryRecordRespVO> selectInventoryRecordsBySpuIds(@Param("spuIds") List<Long> spuIds);
-
-    /**
-     * 库存页 summary 统计。
-     *
-     * @param reqVO 查询参数
-     * @return 统计结果
-     */
-    InventorySummaryRespVO selectInventorySummary(@Param("reqVO") SkuStockPageReqVO reqVO);
-
-    /**
-     * 库存页 tab 统计。
-     *
-     * @param reqVO 查询参数
-     * @return tab 统计
-     */
-    InventoryTabTotalsRespVO selectInventoryTabTotals(@Param("reqVO") SkuStockPageReqVO reqVO);
+    List<SkuStockRespVO> selectSkuStockPage(@Param("reqVO") SkuStockPageReqVO reqVO);
 
     /**
      * 根据库存状态查询

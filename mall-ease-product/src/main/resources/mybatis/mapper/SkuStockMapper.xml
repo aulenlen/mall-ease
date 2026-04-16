@@ -63,14 +63,29 @@
         </foreach>
     </select>
 
-    <sql id="Inventory_Base_From">
-        FROM product_spu spu
-        INNER JOIN product_sku sku ON sku.spu_id = spu.id AND sku.deleted = 0
+    <!-- SKU 库存平铺分页查询 -->
+    <select id="selectSkuStockPage" resultType="com.mallease.product.controller.admin.stock.vo.SkuStockRespVO">
+        SELECT ss.id AS id,
+               sku.id AS skuId,
+               sku.sku_code AS skuCode,
+               sku.pic AS pic,
+               spu.id AS spuId,
+               spu.name AS spuName,
+               COALESCE(ss.stock, 0) AS stock,
+               COALESCE(ss.lock_stock, 0) AS lockStock,
+               COALESCE(ss.sale, 0) AS sale,
+               COALESCE(ss.low_stock, 0) AS lowStock,
+               COALESCE(ss.stock_status, 0) AS stockStatus,
+               ss.version AS version,
+               ss.create_time AS createTime,
+               ss.update_time AS updateTime,
+               CASE WHEN COALESCE(ss.low_stock, 0) > 0 AND COALESCE(ss.stock, 0) &lt;= COALESCE(ss.low_stock, 0)
+                    THEN TRUE ELSE FALSE END AS lowStockWarning
+        FROM product_sku sku
+        INNER JOIN product_spu spu ON spu.id = sku.spu_id AND spu.deleted = 0
         LEFT JOIN product_sku_stock ss ON ss.sku_id = sku.id
-    </sql>
-
-    <sql id="Inventory_Common_Where">
         <where>
+            AND sku.deleted = 0
             <if test="reqVO != null and reqVO.keyword != null and reqVO.keyword != ''">
                 AND (spu.name LIKE CONCAT('%', #{reqVO.keyword,jdbcType=VARCHAR}, '%')
                 OR sku.sku_code LIKE CONCAT('%', #{reqVO.keyword,jdbcType=VARCHAR}, '%'))
@@ -87,102 +102,20 @@
             <if test="reqVO != null and reqVO.categoryId != null">
                 AND spu.category_id = #{reqVO.categoryId,jdbcType=BIGINT}
             </if>
-            AND spu.deleted = 0
-        </where>
-    </sql>
-
-    <sql id="Inventory_Page_Row_Where">
-        <include refid="Inventory_Common_Where"/>
-        <if test="reqVO != null and reqVO.stockStatus != null">
-            AND COALESCE(ss.stock_status, 0) = #{reqVO.stockStatus,jdbcType=TINYINT}
-        </if>
-        <if test="reqVO != null and reqVO.lowStockWarning != null and reqVO.lowStockWarning">
-            AND COALESCE(ss.low_stock, 0) > 0
-            AND COALESCE(ss.stock, 0) &lt;= COALESCE(ss.low_stock, 0)
-        </if>
-    </sql>
-
-    <select id="selectInventorySpuPage" resultType="com.mallease.product.controller.admin.stock.vo.InventorySpuRecordRespVO">
-        SELECT spu.id AS spuId,
-               MAX(spu.name) AS spuName,
-               MAX(spu.pic) AS pic,
-               MAX(spu.brand_name) AS brandName,
-               MAX(spu.category_name) AS categoryName,
-               COUNT(DISTINCT sku.id) AS skuCount,
-               COALESCE(SUM(COALESCE(ss.stock, 0)), 0) AS totalAvailableStock,
-               COALESCE(SUM(COALESCE(ss.lock_stock, 0)), 0) AS totalLockStock,
-               COALESCE(SUM(COALESCE(ss.sale, 0)), 0) AS totalSale,
-               COALESCE(SUM(CASE WHEN COALESCE(ss.low_stock, 0) > 0 AND COALESCE(ss.stock, 0) &lt;= COALESCE(ss.low_stock, 0) THEN 1 ELSE 0 END), 0) AS warningSkuCount,
-               COALESCE(SUM(CASE WHEN COALESCE(ss.stock, 0) &lt;= 0 THEN 1 ELSE 0 END), 0) AS emptySkuCount,
-               COALESCE(SUM(CASE WHEN COALESCE(ss.stock_status, 0) = 2 THEN 1 ELSE 0 END), 0) AS presaleSkuCount
-        <include refid="Inventory_Base_From"/>
-        <include refid="Inventory_Page_Row_Where"/>
-        GROUP BY spu.id
-        <trim prefix="HAVING" prefixOverrides="AND">
+            <if test="reqVO != null and reqVO.stockStatus != null">
+                AND COALESCE(ss.stock_status, 0) = #{reqVO.stockStatus,jdbcType=TINYINT}
+            </if>
             <if test="reqVO != null and reqVO.tab == 'warning'">
-                AND COALESCE(SUM(CASE WHEN COALESCE(ss.low_stock, 0) > 0 AND COALESCE(ss.stock, 0) &lt;= COALESCE(ss.low_stock, 0) THEN 1 ELSE 0 END), 0) &gt; 0
+                AND COALESCE(ss.low_stock, 0) > 0 AND COALESCE(ss.stock, 0) &lt;= COALESCE(ss.low_stock, 0)
             </if>
             <if test="reqVO != null and reqVO.tab == 'empty'">
-                AND COALESCE(SUM(CASE WHEN COALESCE(ss.stock, 0) &lt;= 0 THEN 1 ELSE 0 END), 0) &gt; 0
+                AND COALESCE(ss.stock, 0) &lt;= 0
             </if>
             <if test="reqVO != null and reqVO.tab == 'presale'">
-                AND COALESCE(SUM(CASE WHEN COALESCE(ss.stock_status, 0) = 2 THEN 1 ELSE 0 END), 0) &gt; 0
+                AND COALESCE(ss.stock_status, 0) = 2
             </if>
-        </trim>
-        ORDER BY MAX(COALESCE(ss.update_time, sku.update_time, spu.update_time)) DESC, spu.id DESC
-    </select>
-
-    <select id="selectInventoryRecordsBySpuIds" resultType="com.mallease.product.controller.admin.stock.vo.InventoryRecordRespVO">
-        SELECT ss.spu_id AS spuId,
-               ss.sku_id AS skuId,
-               sku.sku_code AS skuCode,
-               ss.stock AS stock,
-               ss.lock_stock AS lockStock,
-               ss.sale AS sale,
-               ss.low_stock AS lowStock,
-               ss.stock_status AS stockStatus
-        FROM product_sku_stock ss
-        INNER JOIN product_sku sku ON sku.id = ss.sku_id AND sku.deleted = 0
-        INNER JOIN product_spu spu ON spu.id = ss.spu_id AND spu.deleted = 0
-        WHERE ss.spu_id IN
-        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
-            #{spuId,jdbcType=BIGINT}
-        </foreach>
-        ORDER BY ss.spu_id ASC, ss.id ASC
-    </select>
-
-    <select id="selectInventorySummary" resultType="com.mallease.product.controller.admin.stock.vo.InventorySummaryRespVO">
-        SELECT COALESCE(COUNT(*), 0) AS spuCount,
-               COALESCE(SUM(t.skuCount), 0) AS skuCount,
-               COALESCE(SUM(CASE WHEN t.warningSkuCount &gt; 0 THEN 1 ELSE 0 END), 0) AS warningSpuCount,
-               COALESCE(SUM(CASE WHEN t.emptySkuCount &gt; 0 THEN 1 ELSE 0 END), 0) AS emptySpuCount,
-               COALESCE(SUM(CASE WHEN t.presaleSkuCount &gt; 0 THEN 1 ELSE 0 END), 0) AS presaleSpuCount
-        FROM (
-            SELECT spu.id AS spuId,
-                   COUNT(DISTINCT sku.id) AS skuCount,
-                   COALESCE(SUM(CASE WHEN COALESCE(ss.low_stock, 0) > 0 AND COALESCE(ss.stock, 0) &lt;= COALESCE(ss.low_stock, 0) THEN 1 ELSE 0 END), 0) AS warningSkuCount,
-                   COALESCE(SUM(CASE WHEN COALESCE(ss.stock, 0) &lt;= 0 THEN 1 ELSE 0 END), 0) AS emptySkuCount,
-                   COALESCE(SUM(CASE WHEN COALESCE(ss.stock_status, 0) = 2 THEN 1 ELSE 0 END), 0) AS presaleSkuCount
-            <include refid="Inventory_Base_From"/>
-            <include refid="Inventory_Common_Where"/>
-            GROUP BY spu.id
-        ) t
-    </select>
-
-    <select id="selectInventoryTabTotals" resultType="com.mallease.product.controller.admin.stock.vo.InventoryTabTotalsRespVO">
-        SELECT COALESCE(COUNT(*), 0) AS `all`,
-               COALESCE(SUM(CASE WHEN t.warningSkuCount &gt; 0 THEN 1 ELSE 0 END), 0) AS `warning`,
-               COALESCE(SUM(CASE WHEN t.emptySkuCount &gt; 0 THEN 1 ELSE 0 END), 0) AS `empty`,
-               COALESCE(SUM(CASE WHEN t.presaleSkuCount &gt; 0 THEN 1 ELSE 0 END), 0) AS `presale`
-        FROM (
-            SELECT spu.id AS spuId,
-                   COALESCE(SUM(CASE WHEN COALESCE(ss.low_stock, 0) > 0 AND COALESCE(ss.stock, 0) &lt;= COALESCE(ss.low_stock, 0) THEN 1 ELSE 0 END), 0) AS warningSkuCount,
-                   COALESCE(SUM(CASE WHEN COALESCE(ss.stock, 0) &lt;= 0 THEN 1 ELSE 0 END), 0) AS emptySkuCount,
-                   COALESCE(SUM(CASE WHEN COALESCE(ss.stock_status, 0) = 2 THEN 1 ELSE 0 END), 0) AS presaleSkuCount
-            <include refid="Inventory_Base_From"/>
-            <include refid="Inventory_Common_Where"/>
-            GROUP BY spu.id
-        ) t
+        </where>
+        ORDER BY COALESCE(ss.update_time, sku.update_time) DESC, sku.id DESC
     </select>
 
     <!-- 根据库存状态查询 -->

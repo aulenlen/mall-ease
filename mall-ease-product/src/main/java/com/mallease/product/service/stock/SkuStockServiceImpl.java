@@ -4,15 +4,12 @@ import com.mallease.common.dto.remote.SkuAvailabilityDTO;
 import com.mallease.common.dto.remote.SkuStockQueryDTO;
 import com.mallease.common.dto.remote.StockReservationStatusDTO;
 import com.mallease.common.enums.ReservationAggregateStatus;
-import com.mallease.product.controller.admin.stock.vo.InventorySpuRecordRespVO;
-import com.mallease.product.controller.admin.stock.vo.InventoryStatsRespVO;
-import com.mallease.product.controller.admin.stock.vo.InventorySummaryRespVO;
-import com.mallease.product.controller.admin.stock.vo.InventoryTabTotalsRespVO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.TypedRedisService;
 import com.mallease.product.controller.admin.stock.vo.SkuStockLogPageReqVO;
 import com.mallease.product.controller.admin.stock.vo.SkuStockLogRespVO;
 import com.mallease.product.controller.admin.stock.vo.SkuStockPageReqVO;
+import com.mallease.product.controller.admin.stock.vo.SkuStockRespVO;
 import com.mallease.product.controller.admin.stock.vo.SkuStockSaveReqVO;
 import com.mallease.product.convert.stock.SkuStockConvert;
 import com.mallease.product.dal.entity.SkuStock;
@@ -20,6 +17,7 @@ import com.mallease.product.dal.entity.SkuStockLog;
 import com.mallease.product.dal.entity.StockReservation;
 import com.mallease.product.dal.mapper.SkuStockDao;
 import com.mallease.product.dal.mapper.SkuStockLogDao;
+import com.mallease.product.service.sku.support.SkuSpecResolver;
 import com.mallease.product.service.stock.enums.ReservationStatus;
 import com.mallease.product.service.stock.model.LockStockItem;
 import com.mallease.product.service.stock.model.UnlockStockItem;
@@ -67,6 +65,7 @@ public class SkuStockServiceImpl implements SkuStockService {
     private final SkuStockDao skuStockDao;
     private final SkuStockLogDao skuStockLogDao;
     private final SkuStockConvert skuStockConvert;
+    private final SkuSpecResolver skuSpecResolver;
     private final StockReservationService stockReservationService;
     private final TypedRedisService typedRedisService;
     private final TransactionTemplate transactionTemplate;
@@ -294,20 +293,20 @@ public class SkuStockServiceImpl implements SkuStockService {
     }
 
     @Override
-    public List<InventorySpuRecordRespVO> page(SkuStockPageReqVO reqVO) {
-        List<InventorySpuRecordRespVO> respVOList = skuStockDao.selectInventorySpuPage(reqVO == null ? new SkuStockPageReqVO() : reqVO);
-        return respVOList == null ? List.of() : respVOList;
-    }
-
-    @Override
-    public InventoryStatsRespVO stats(SkuStockPageReqVO reqVO) {
-        SkuStockPageReqVO safeReqVO = reqVO == null ? new SkuStockPageReqVO() : reqVO;
-        InventorySummaryRespVO summary = skuStockDao.selectInventorySummary(safeReqVO);
-        InventoryTabTotalsRespVO tabTotals = skuStockDao.selectInventoryTabTotals(safeReqVO);
-        return InventoryStatsRespVO.builder()
-                .summary(summary != null ? summary : emptySummary())
-                .tabTotals(tabTotals != null ? tabTotals : emptyTabTotals())
-                .build();
+    public List<SkuStockRespVO> page(SkuStockPageReqVO reqVO) {
+        List<SkuStockRespVO> list = skuStockDao.selectSkuStockPage(reqVO == null ? new SkuStockPageReqVO() : reqVO);
+        if (list == null || list.isEmpty()) {
+            return List.of();
+        }
+        // 批量填充 SKU 规格属性
+        List<Long> skuIds = list.stream().map(SkuStockRespVO::getSkuId).filter(Objects::nonNull).toList();
+        Map<Long, String> attrValuesMap = skuSpecResolver.buildAttrValueJsonMap(skuIds);
+        for (SkuStockRespVO item : list) {
+            String attrValuesJson = attrValuesMap.get(item.getSkuId());
+            item.setAttrValues(attrValuesJson);
+            item.setAttrValuesObj(skuStockConvert.parseAttrValues(attrValuesJson));
+        }
+        return list;
     }
 
     @Override
@@ -761,24 +760,6 @@ public class SkuStockServiceImpl implements SkuStockService {
         return initialStock;
     }
 
-    private InventorySummaryRespVO emptySummary() {
-        return InventorySummaryRespVO.builder()
-                .spuCount(0L)
-                .skuCount(0L)
-                .warningSpuCount(0L)
-                .emptySpuCount(0L)
-                .presaleSpuCount(0L)
-                .build();
-    }
-
-    private InventoryTabTotalsRespVO emptyTabTotals() {
-        return InventoryTabTotalsRespVO.builder()
-                .all(0L)
-                .warning(0L)
-                .empty(0L)
-                .presale(0L)
-                .build();
-    }
 
     private SkuStockLog buildStockLog(SkuStock beforeStock,
                                       Integer afterStock,

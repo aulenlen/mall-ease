@@ -3,11 +3,10 @@ package com.mallease.product.service.stock;
 import com.mallease.common.dto.remote.SkuAvailabilityDTO;
 import com.mallease.common.dto.remote.SkuStockQueryDTO;
 import com.mallease.common.dto.remote.StockReservationStatusDTO;
-import com.mallease.product.controller.admin.stock.vo.InventorySpuRecordRespVO;
-import com.mallease.product.controller.admin.stock.vo.InventoryStatsRespVO;
 import com.mallease.product.controller.admin.stock.vo.SkuStockLogPageReqVO;
 import com.mallease.product.controller.admin.stock.vo.SkuStockLogRespVO;
 import com.mallease.product.controller.admin.stock.vo.SkuStockPageReqVO;
+import com.mallease.product.controller.admin.stock.vo.SkuStockRespVO;
 import com.mallease.product.controller.admin.stock.vo.SkuStockSaveReqVO;
 import com.mallease.product.dal.entity.SkuStock;
 
@@ -103,20 +102,12 @@ public interface SkuStockService {
     Map<Long, Boolean> mapAvailabilityBySkuIds(Long spuId, List<Long> skuIds);
 
     /**
-     * 分页查询后台库存列表。
+     * 分页查询后台库存列表（SKU 平铺展示）。
      *
      * @param reqVO 查询参数
-     * @return 库存分页数据
+     * @return SKU 库存平铺列表
      */
-    List<InventorySpuRecordRespVO> page(SkuStockPageReqVO reqVO);
-
-    /**
-     * 统计后台库存页卡片数据。
-     *
-     * @param reqVO 查询参数
-     * @return 库存统计
-     */
-    InventoryStatsRespVO stats(SkuStockPageReqVO reqVO);
+    List<SkuStockRespVO> page(SkuStockPageReqVO reqVO);
 
     /**
      * 分页查询库存日志。

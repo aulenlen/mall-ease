@@ -6,25 +6,13 @@ import com.mallease.common.api.PageUtils;
 import com.mallease.common.api.R;
 import com.mallease.common.api.ResultCode;
 import com.mallease.common.dto.remote.BrandDTO;
-import com.mallease.product.controller.admin.stock.vo.InventoryFilterOptionsRespVO;
-import com.mallease.product.controller.admin.stock.vo.InventorySpuRecordRespVO;
-import com.mallease.product.controller.admin.stock.vo.InventoryStatsRespVO;
-import com.mallease.product.controller.admin.stock.vo.SkuStockLogPageReqVO;
-import com.mallease.product.controller.admin.stock.vo.SkuStockLogRespVO;
-import com.mallease.product.controller.admin.stock.vo.SkuStockPageReqVO;
-import com.mallease.product.controller.admin.stock.vo.SkuStockRespVO;
-import com.mallease.product.controller.admin.stock.vo.SkuStockSaveReqVO;
+import com.mallease.product.controller.admin.stock.vo.*;
 import com.mallease.product.convert.stock.SkuStockConvert;
 import com.mallease.product.dal.entity.Category;
-import com.mallease.product.dal.entity.Sku;
 import com.mallease.product.dal.entity.SkuStock;
-import com.mallease.product.dal.entity.Spu;
 import com.mallease.product.service.brand.BrandService;
 import com.mallease.product.service.category.CategoryService;
-import com.mallease.product.service.sku.SkuService;
-import com.mallease.product.service.sku.support.SkuSpecResolver;
 import com.mallease.product.service.stock.SkuStockService;
-import com.mallease.product.service.spu.SpuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,8 +21,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 后台 SKU 库存管理
@@ -47,9 +33,6 @@ public class SkuStockAdminController {
 
     private final SkuStockService skuStockService;
     private final SkuStockConvert skuStockConvert;
-    private final SpuService spuService;
-    private final SkuService skuService;
-    private final SkuSpecResolver skuSpecResolver;
     private final BrandService brandService;
     private final CategoryService categoryService;
 
@@ -71,18 +54,12 @@ public class SkuStockAdminController {
         return R.success(skuStockService.updateBatch(reqList));
     }
 
-    @Operation(summary = "分页查询库存列表", description = "独立库存页使用，只返回 SPU 聚合行")
+    @Operation(summary = "分页查询库存列表", description = "SKU 维度平铺展示，每行一条 SKU 库存记录")
     @GetMapping
-    public R<Page<InventorySpuRecordRespVO>> page(@Validated @ModelAttribute SkuStockPageReqVO reqVO) {
+    public R<Page<SkuStockRespVO>> page(@Validated @ModelAttribute SkuStockPageReqVO reqVO) {
         PageHelper.startPage(reqVO.getPageNum(), reqVO.getPageSize());
-        List<InventorySpuRecordRespVO> respVOList = skuStockService.page(reqVO);
+        List<SkuStockRespVO> respVOList = skuStockService.page(reqVO);
         return R.success(PageUtils.buildPage(respVOList, respVOList));
-    }
-
-    @Operation(summary = "库存页统计", description = "返回 summary 和 tabTotals，忽略页签和库存状态条件")
-    @GetMapping("/stats")
-    public R<InventoryStatsRespVO> stats(@Validated @ModelAttribute SkuStockPageReqVO reqVO) {
-        return R.success(skuStockService.stats(reqVO));
     }
 
     @Operation(summary = "库存页筛选项", description = "只返回当前真实数据模型支持的品牌、分类、库存状态和页签")
@@ -131,48 +108,6 @@ public class SkuStockAdminController {
             return R.failed("库存记录不存在");
         }
         return R.success(skuStockConvert.toSkuStockResp(stock));
-    }
-
-    @Operation(summary = "根据 SPU 获取库存列表", description = "查询某个 SPU 下所有 SKU 的库存，包含商品名称、规格信息，以及启用和停用两类 SKU")
-    @GetMapping("/by-spu/{spuId}")
-    public R<List<SkuStockRespVO>> listBySpuId(@Parameter(description = "SPU ID") @PathVariable Long spuId) {
-        List<Spu> spuList = spuService.listByIds(List.of(spuId));
-        String spuName = spuList.isEmpty() ? null : spuList.get(0).getName();
-
-        List<Sku> skuList = skuService.listBySpuId(spuId);
-        if (skuList.isEmpty()) {
-            return R.success(List.of());
-        }
-
-        Map<Long, SkuStock> stockMap = skuStockService.listStockBySpuIds(List.of(spuId)).stream()
-                .collect(Collectors.toMap(SkuStock::getSkuId, item -> item, (left, right) -> left));
-        Map<Long, String> attrValuesMap = skuSpecResolver.buildAttrValueJsonMap(skuList.stream().map(Sku::getId).toList());
-
-        List<SkuStockRespVO> respVOList = skuList.stream()
-                .map(sku -> toSkuStockRespVO(spuName, sku, stockMap.get(sku.getId()), attrValuesMap.get(sku.getId())))
-                .toList();
-        return R.success(respVOList);
-    }
-
-    private SkuStockRespVO toSkuStockRespVO(String spuName, Sku sku, SkuStock stock, String attrValuesJson) {
-        SkuStockRespVO respVO = stock != null
-                ? skuStockConvert.toSkuStockResp(stock)
-                : SkuStockRespVO.builder()
-                .skuId(sku.getId())
-                .spuId(sku.getSpuId())
-                .stock(0)
-                .lockStock(0)
-                .sale(0)
-                .lowStock(0)
-                .stockStatus(0)
-                .lowStockWarning(false)
-                .build();
-        respVO.setSpuName(spuName);
-        respVO.setSkuCode(sku.getSkuCode());
-        respVO.setPic(sku.getPic());
-        respVO.setAttrValues(attrValuesJson);
-        respVO.setAttrValuesObj(skuStockConvert.parseAttrValues(attrValuesJson));
-        return respVO;
     }
 
     @Operation(summary = "调整库存", description = "手动入库/出库操作")
