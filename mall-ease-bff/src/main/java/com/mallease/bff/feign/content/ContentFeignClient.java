@@ -1,9 +1,8 @@
 package com.mallease.bff.feign.content;
 
 import com.mallease.common.api.R;
-import com.mallease.common.dto.remote.BannerDTO;
-import com.mallease.common.dto.remote.EditorialDetailDTO;
-import com.mallease.common.dto.remote.EditorialDTO;
+import com.mallease.common.dto.remote.ArticleDetailDTO;
+import com.mallease.common.dto.remote.SlotRenderDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,30 +19,16 @@ import java.util.List;
 @FeignClient(name = "mall-ease-content")
 public interface ContentFeignClient {
 
-    /**
-     * 获取首页轮播图
-     *
-     * @param position 投放位置
-     * @return 轮播图列表
-     */
-    @GetMapping("/content/banner/internal/published")
-    R<List<BannerDTO>> listPublishedBanners(@RequestParam(defaultValue = "home") String position);
+    @GetMapping("/content/slot/internal/render")
+    R<SlotRenderDTO> getSlotRender(@RequestParam String slotCode,
+                                   @RequestParam(defaultValue = "10") Integer limit);
 
     /**
-     * 获取已发布编辑精选
+     * 获取已发布文章详情
      *
-     * @param limit 返回数量
-     * @return 编辑精选列表
+     * @param id 文章ID
+     * @return 文章详情
      */
-    @GetMapping("/content/editorial/internal/published")
-    R<List<EditorialDTO>> listPublishedEditorials(@RequestParam(defaultValue = "10") Integer limit);
-
-    /**
-     * 获取已发布编辑精选详情
-     *
-     * @param id 编辑精选ID
-     * @return 编辑精选详情
-     */
-    @GetMapping("/content/editorial/internal/published/{id}")
-    R<EditorialDetailDTO> getPublishedEditorialDetail(@PathVariable Long id);
+    @GetMapping("/content/article/internal/published/{id}")
+    R<ArticleDetailDTO> getPublishedArticleDetail(@PathVariable Long id);
 }

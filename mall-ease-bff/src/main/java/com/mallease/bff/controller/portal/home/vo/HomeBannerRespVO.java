@@ -25,7 +25,7 @@ public class HomeBannerRespVO {
     @Schema(description = "图片URL")
     private String pic;
 
-    @Schema(description = "跳转类型：0-无跳转 1-活动页 2-商品详情 3-专题页 4-外链 5-优选专区")
+    @Schema(description = "跳转类型：0-无跳转 1-活动页 2-商品详情 3-内容文章 4-外链")
     private Integer type;
 
     @Schema(description = "跳转目标ID")

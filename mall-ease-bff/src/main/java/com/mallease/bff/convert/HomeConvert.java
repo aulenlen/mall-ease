@@ -1,16 +1,17 @@
 package com.mallease.bff.convert;
 
 import com.mallease.bff.controller.portal.common.vo.RecommendProductRespVO;
+import com.mallease.bff.controller.portal.home.vo.HomeArticleRespVO;
 import com.mallease.bff.controller.portal.home.vo.HomeBannerRespVO;
 import com.mallease.bff.controller.portal.home.vo.HomeCategoryRespVO;
-import com.mallease.bff.controller.portal.home.vo.HomeEditorialRespVO;
 import com.mallease.bff.controller.portal.home.vo.HomeFlashRespVO;
-import com.mallease.common.dto.remote.BannerDTO;
+import com.mallease.common.dto.remote.ArticleDTO;
 import com.mallease.common.dto.remote.CategoryDTO;
-import com.mallease.common.dto.remote.EditorialDTO;
 import com.mallease.common.dto.remote.FlashCurrentDTO;
+import com.mallease.common.dto.remote.SlotCardDTO;
 import com.mallease.common.dto.remote.SpuRecommendDTO;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
@@ -23,17 +24,19 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface HomeConvert {
 
-    HomeBannerRespVO toHomeBannerResp(BannerDTO dto);
+    @Mapping(target = "type", source = "jumpType")
+    @Mapping(target = "targetId", source = "jumpTargetId")
+    HomeBannerRespVO toHomeBannerResp(SlotCardDTO dto);
 
-    List<HomeBannerRespVO> toHomeBannerRespList(List<BannerDTO> dtoList);
+    List<HomeBannerRespVO> toHomeBannerRespList(List<SlotCardDTO> dtoList);
 
     HomeCategoryRespVO toHomeCategoryResp(CategoryDTO dto);
 
     List<HomeCategoryRespVO> toHomeCategoryRespList(List<CategoryDTO> dtoList);
 
-    HomeEditorialRespVO toHomeEditorialResp(EditorialDTO dto);
+    HomeArticleRespVO toHomeArticleResp(ArticleDTO dto);
 
-    List<HomeEditorialRespVO> toHomeEditorialRespList(List<EditorialDTO> dtoList);
+    List<HomeArticleRespVO> toHomeArticleRespList(List<ArticleDTO> dtoList);
 
     RecommendProductRespVO toRecommendProductResp(SpuRecommendDTO dto);
 

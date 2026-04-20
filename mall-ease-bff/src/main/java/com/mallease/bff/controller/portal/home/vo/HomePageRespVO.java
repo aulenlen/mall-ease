@@ -31,8 +31,8 @@ public class HomePageRespVO {
     @Schema(description = "当前秒杀数据")
     private HomeFlashRespVO flashData;
 
-    @Schema(description = "编辑精选列表")
-    private List<HomeEditorialRespVO> editorials;
+    @Schema(description = "文章列表")
+    private List<HomeArticleRespVO> articles;
 
     @Schema(description = "推荐商品列表")
     private List<RecommendProductRespVO> recommendProducts;

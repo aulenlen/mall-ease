@@ -91,7 +91,6 @@ public class RedisConfig {
         configMap.put("product:category", cacheConfig.entryTtl(Duration.ofHours(24)));
         configMap.put("product:spu", cacheConfig.entryTtl(Duration.ofHours(1)));
         configMap.put("product:brand", cacheConfig.entryTtl(Duration.ofHours(12)));
-        configMap.put("content:banner", cacheConfig.entryTtl(Duration.ofHours(6)));
 
         return RedisCacheManager.builder(redisCacheWriter)
                 .cacheDefaults(cacheConfig)

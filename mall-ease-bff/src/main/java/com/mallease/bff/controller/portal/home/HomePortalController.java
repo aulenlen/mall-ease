@@ -24,7 +24,7 @@ public class HomePortalController {
 
     private final HomeService homeService;
 
-    @Operation(summary = "获取首页数据", description = "聚合返回Banner、分类、秒杀、编辑精选、推荐商品")
+    @Operation(summary = "获取首页数据", description = "聚合返回Banner、分类、秒杀、文章、推荐商品")
     @GetMapping
     public R<HomePageRespVO> getHomeData() {
         return R.success(homeService.getHomePage());
