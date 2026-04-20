@@ -22,6 +22,12 @@ public class HomeBannerRespVO {
     @Schema(description = "Banner ID")
     private Long id;
 
+    @Schema(description = "标题")
+    private String title;
+
+    @Schema(description = "副标题")
+    private String subTitle;
+
     @Schema(description = "图片URL")
     private String pic;
 

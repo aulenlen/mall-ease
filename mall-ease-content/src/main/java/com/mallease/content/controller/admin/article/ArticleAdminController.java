@@ -9,6 +9,7 @@ import com.mallease.content.constant.ContentStatusConstants;
 import com.mallease.content.controller.admin.article.vo.ArticlePageReqVO;
 import com.mallease.content.controller.admin.article.vo.ArticleReqVO;
 import com.mallease.content.controller.admin.article.vo.ArticleRespVO;
+import com.mallease.content.controller.admin.article.vo.ArticleStatusBatchReqVO;
 import com.mallease.content.convert.article.ArticleConvert;
 import com.mallease.content.dal.entity.Article;
 import com.mallease.content.service.article.ArticleExtrasCodec;
@@ -114,12 +115,8 @@ public class ArticleAdminController {
 
     @Operation(summary = "批量更新状态")
     @PutMapping("/status")
-    public R<Integer> updateStatus(@Parameter(description = "文章ID列表") @RequestParam("ids") List<Long> ids,
-                                   @Parameter(description = ContentStatusConstants.ARTICLE_STATUS_SCHEMA) @RequestParam("status") Integer status) {
-        if (!ContentStatusConstants.isValidArticleStatus(status)) {
-            return R.failed(ResultCode.VALIDATE_FAILED, ContentStatusConstants.ARTICLE_STATUS_INVALID_MESSAGE);
-        }
-        int count = articleService.updateStatusBatch(ids, status);
+    public R<Integer> updateStatus(@Validated @RequestBody ArticleStatusBatchReqVO reqVO) {
+        int count = articleService.updateStatusBatch(reqVO.getIds(), reqVO.getStatus());
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 

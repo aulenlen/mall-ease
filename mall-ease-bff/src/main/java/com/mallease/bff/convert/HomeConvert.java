@@ -26,6 +26,8 @@ public interface HomeConvert {
 
     @Mapping(target = "type", source = "jumpType")
     @Mapping(target = "targetId", source = "jumpTargetId")
+    @Mapping(target = "title", source = "title")
+    @Mapping(target = "subTitle", source = "subTitle")
     HomeBannerRespVO toHomeBannerResp(SlotCardDTO dto);
 
     List<HomeBannerRespVO> toHomeBannerRespList(List<SlotCardDTO> dtoList);
