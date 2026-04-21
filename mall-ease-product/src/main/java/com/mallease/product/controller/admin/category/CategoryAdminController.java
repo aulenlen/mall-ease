@@ -141,6 +141,13 @@ public class CategoryAdminController {
         return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
     }
 
+    @Operation(summary = "批量更新同级分类排序", description = "拖拽排序专用接口")
+    @PutMapping("/sort")
+    public R<Integer> updateSortBatch(@Validated @RequestBody CategorySortReqVO reqVO) {
+        int count = categoryService.updateSortBatch(reqVO);
+        return count > 0 ? R.success(count) : R.failed(ResultCode.FAILED);
+    }
+
     @Operation(summary = "更新导航显示状态")
     @PutMapping("/{id}/nav-status")
     public R<Integer> updateNavStatus(@Parameter(description = "分类ID") @PathVariable Long id,

@@ -1,6 +1,7 @@
 package com.mallease.product.dal.mapper;
 
 import com.mallease.product.dal.entity.Category;
+import com.mallease.product.service.category.model.CategorySortItem;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -135,6 +136,15 @@ public interface CategoryDao {
      * @return 影响行数
      */
     int updateEnableStatusBatch(@Param("ids") List<Long> ids, @Param("enableStatus") Integer enableStatus);
+
+    /**
+     * 批量更新同级分类排序
+     *
+     * @param parentId 父分类ID（0=顶级）
+     * @param items    排序项列表
+     * @return 影响行数（应等于 items.size()，若小于说明有 id 非同级或已删除）
+     */
+    int updateSortBatch(@Param("parentId") Long parentId, @Param("items") List<CategorySortItem> items);
 
     /**
      * 批量更新路径（移动分类时使用）

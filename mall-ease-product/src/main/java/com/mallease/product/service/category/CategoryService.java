@@ -5,6 +5,7 @@ import com.mallease.common.dto.remote.CategoryTreeDTO;
 import com.mallease.product.controller.admin.category.vo.CategoryConfigSnapshotRespVO;
 import com.mallease.product.controller.admin.category.vo.CategoryQueryReqVO;
 import com.mallease.product.controller.admin.category.vo.CategorySaveReqVO;
+import com.mallease.product.controller.admin.category.vo.CategorySortReqVO;
 import com.mallease.product.dal.entity.Category;
 
 import java.util.List;
@@ -131,6 +132,14 @@ public interface CategoryService {
      * @return 影响行数
      */
     int updateEnableStatusBatch(List<Long> ids, Integer enableStatus);
+
+    /**
+     * 批量更新同级分类排序
+     *
+     * @param reqVO 父分类ID + 同级排序项列表
+     * @return 实际更新行数
+     */
+    int updateSortBatch(CategorySortReqVO reqVO);
 
     /**
      * 更新导航显示状态

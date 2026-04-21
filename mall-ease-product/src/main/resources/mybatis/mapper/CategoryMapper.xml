@@ -209,6 +209,22 @@
         </foreach>
     </update>
 
+    <!-- 批量更新同级分类排序-->
+    <update id="updateSortBatch">
+        UPDATE product_category
+        SET sort = CASE id
+            <foreach collection="items" item="item">
+                WHEN #{item.id,jdbcType=BIGINT} THEN #{item.sort,jdbcType=INTEGER}
+            </foreach>
+        END
+        WHERE deleted = 0
+          AND parent_id = #{parentId,jdbcType=BIGINT}
+          AND id IN
+        <foreach collection="items" item="item" open="(" separator="," close=")">
+            #{item.id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
     <!-- 批量更新路径（移动分类时使用） -->
     <update id="updatePathBatch">
         UPDATE product_category

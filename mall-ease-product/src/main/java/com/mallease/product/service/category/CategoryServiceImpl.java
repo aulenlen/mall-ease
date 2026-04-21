@@ -9,6 +9,8 @@ import com.mallease.product.controller.admin.brand.vo.BrandListRespVO;
 import com.mallease.product.controller.admin.category.vo.CategoryConfigSnapshotRespVO;
 import com.mallease.product.controller.admin.category.vo.CategoryQueryReqVO;
 import com.mallease.product.controller.admin.category.vo.CategorySaveReqVO;
+import com.mallease.product.controller.admin.category.vo.CategorySortReqVO;
+import com.mallease.product.service.category.model.CategorySortItem;
 import com.mallease.product.convert.attribute.AttributeConvert;
 import com.mallease.product.convert.brand.BrandConvert;
 import com.mallease.product.convert.category.CategoryConvert;
@@ -308,6 +310,38 @@ public class CategoryServiceImpl implements CategoryService {
             return 0;
         }
         return categoryDao.updateEnableStatusBatch(ids, enableStatus);
+    }
+
+    @CacheEvict(value = "product:category", allEntries = true)
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateSortBatch(CategorySortReqVO reqVO) {
+        List<CategorySortReqVO.Item> items = reqVO.getItems();
+        Long parentId = reqVO.getParentId();
+
+        List<Long> ids = items.stream().map(CategorySortReqVO.Item::getId).toList();
+        if (ids.size() != ids.stream().distinct().count()) {
+            throw new ApiException("排序项中存在重复的分类ID");
+        }
+
+        List<Category> existing = categoryDao.selectByIds(ids);
+        if (existing.size() != ids.size()) {
+            throw new ApiException("部分分类不存在或已删除");
+        }
+
+        boolean allSameParent = existing.stream()
+                .allMatch(c -> Objects.equals(c.getParentId(), parentId));
+        if (!allSameParent) {
+            throw new ApiException("排序项必须来自同一父分类，不允许跨级排序");
+        }
+
+        List<CategorySortItem> sortItems = items.stream()
+                .map(it -> new CategorySortItem(it.getId(), it.getSort()))
+                .toList();
+
+        int updated = categoryDao.updateSortBatch(parentId, sortItems);
+        log.info("批量更新分类排序完成，parentId={}, 更新行数={}", parentId, updated);
+        return updated;
     }
 
     @CacheEvict(value = "product:category", allEntries = true)
