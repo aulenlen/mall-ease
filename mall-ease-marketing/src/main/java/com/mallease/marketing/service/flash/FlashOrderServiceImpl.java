@@ -111,44 +111,52 @@ public class FlashOrderServiceImpl implements FlashOrderService {
             throw new ApiException("确认页数据不完整，请重新抢购");
         }
 
-        FlashDeductResultDTO deductResult = deductStock(
-                FlashDeductReqDTO.builder()
-                        .flashLimit(snapshot.getFlashLimit() != null ? snapshot.getFlashLimit() : 0)
-                        .skuId(snapshot.getItem().getSkuId())
-                        .quantity(snapshot.getItem().getQuantity())
-                        .sessionId(snapshot.getSessionId())
-                        .userId(userId)
-                        .build()
-        );
+        FlashDeductReqDTO reqDTO = FlashDeductReqDTO.builder()
+                .flashLimit(snapshot.getFlashLimit() != null ? snapshot.getFlashLimit() : 0)
+                .skuId(snapshot.getItem().getSkuId())
+                .quantity(snapshot.getItem().getQuantity())
+                .sessionId(snapshot.getSessionId())
+                .userId(userId)
+                .build();
+        FlashDeductResultDTO deductResult = deductStock(reqDTO);
 
         if (!Boolean.TRUE.equals(deductResult.getSuccess())) {
             throw new ApiException(deductResult.getErrorMessage());
         }
 
-        R<FlashCreateOrderRespDTO> tradeResp = flashTradeOrderFeignClient.createFlashOrder(
-                FlashCreateOrderReqDTO.builder()
-                        .userId(userId)
-                        .requestId(snapshot.getRequestId())
-                        .sessionId(snapshot.getSessionId())
-                        .flashProductId(snapshot.getFlashProductId())
-                        .spuId(snapshot.getItem().getSpuId())
-                        .skuId(snapshot.getItem().getSkuId())
-                        .quantity(snapshot.getItem().getQuantity())
-                        .flashPrice(snapshot.getItem().getPrice())
-                        .spuName(snapshot.getItem().getSpuName())
-                        .skuPic(snapshot.getItem().getSkuPic())
-                        .skuAttrs(snapshot.getItem().getSkuAttrs())
-                        .receiverName(reqVO.getReceiverName())
-                        .receiverPhone(reqVO.getReceiverPhone())
-                        .receiverProvince(reqVO.getReceiverProvince())
-                        .receiverCity(reqVO.getReceiverCity())
-                        .receiverDistrict(reqVO.getReceiverDistrict())
-                        .receiverAddress(reqVO.getReceiverAddress())
-                        .remark(reqVO.getRemark())
-                        .build()
-        );
+        R<FlashCreateOrderRespDTO> tradeResp;
+        try {
+            tradeResp = flashTradeOrderFeignClient.createFlashOrder(
+                    FlashCreateOrderReqDTO.builder()
+                            .userId(userId)
+                            .requestId(snapshot.getRequestId())
+                            .sessionId(snapshot.getSessionId())
+                            .flashProductId(snapshot.getFlashProductId())
+                            .spuId(snapshot.getItem().getSpuId())
+                            .skuId(snapshot.getItem().getSkuId())
+                            .quantity(snapshot.getItem().getQuantity())
+                            .flashPrice(snapshot.getItem().getPrice())
+                            .spuName(snapshot.getItem().getSpuName())
+                            .skuPic(snapshot.getItem().getSkuPic())
+                            .skuAttrs(snapshot.getItem().getSkuAttrs())
+                            .receiverName(reqVO.getReceiverName())
+                            .receiverPhone(reqVO.getReceiverPhone())
+                            .receiverProvince(reqVO.getReceiverProvince())
+                            .receiverCity(reqVO.getReceiverCity())
+                            .receiverDistrict(reqVO.getReceiverDistrict())
+                            .receiverAddress(reqVO.getReceiverAddress())
+                            .remark(reqVO.getRemark())
+                            .build()
+            );
+        } catch (Exception e) {
+            restoreAfterCreateOrderFailed(userId, reqDTO);
+            log.error("秒杀订单创建异常，已回补库存，requestId={}, sessionId={}, skuId={}, userId={}",
+                    snapshot.getRequestId(), reqDTO.getSessionId(), reqDTO.getSkuId(), userId, e);
+            throw new ApiException("秒杀订单创建失败，请重试");
+        }
 
         if (tradeResp == null || !tradeResp.isSuccess() || tradeResp.getData() == null) {
+            restoreAfterCreateOrderFailed(userId, reqDTO);
             throw new ApiException(tradeResp != null ? tradeResp.getMessage() : "秒杀订单创建失败");
         }
 
@@ -161,6 +169,23 @@ public class FlashOrderServiceImpl implements FlashOrderService {
                 .orderStatus(tradeOrder.getOrderStatus())
                 .serverTime(tradeOrder.getServerTime())
                 .build();
+    }
+
+    private void restoreAfterCreateOrderFailed(Long userId, FlashDeductReqDTO reqDTO) {
+        try {
+            restoreStock(
+                    FlashRestoreReqDTO.builder()
+                            .sessionId(reqDTO.getSessionId())
+                            .skuId(reqDTO.getSkuId())
+                            .userId(userId)
+                            .quantity(reqDTO.getQuantity())
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("秒杀订单创建失败后库存回补失败，sessionId={}, skuId={}, userId={}, quantity={}",
+                    reqDTO.getSessionId(), reqDTO.getSkuId(), userId, reqDTO.getQuantity(), e);
+            throw new ApiException("秒杀订单创建失败，库存回补失败");
+        }
     }
 
     @Override
