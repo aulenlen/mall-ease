@@ -29,7 +29,7 @@ spring:
         - id: api-v1-marketing
           uri: lb://mall-ease-marketing
           predicates:
-            - Path=/api/v1/admin/flash/**,/api/v1/portal/flash/**
+            - Path=/api/v1/admin/flash/**,/api/v1/portal/flash/**,/api/v1/admin/sign/**,/api/v1/portal/sign/**
           filters:
             - StripPrefix=2
         - id: api-v1-bff

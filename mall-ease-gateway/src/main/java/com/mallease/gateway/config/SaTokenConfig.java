@@ -70,6 +70,7 @@ public class SaTokenConfig {
             "/api/v1/portal/auth/register",
             "/api/v1/admin/auth/login",
             "/api/v1/portal/flash/**",
+            "/api/v1/portal/sign/rules",
             "/api/v1/portal/products/*",
             "/api/v1/portal/products/*/selector",
             "/api/v1/portal/products/*/sku-selected",
@@ -85,6 +86,7 @@ public class SaTokenConfig {
     private static final List<String> PORTAL_AUTH_PATHS = List.of(
             "/api/v1/portal/auth/logout",
             "/api/v1/portal/account/**",
+            "/api/v1/portal/sign/**",
             "/api/v1/portal/cart/**",
             "/api/v1/portal/orders/**",
             "/api/v1/portal/payments/**"

@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.github.pagehelper.PageHelper;
 import com.mallease.common.constant.AuthConstant;
+import com.mallease.common.dto.remote.MemberRewardReqDTO;
 import com.mallease.common.dto.remote.UserDTO;
 import com.mallease.common.exception.ApiException;
 import com.mallease.common.service.TypedRedisService;
@@ -13,16 +14,19 @@ import com.mallease.common.util.LoginContextUtil;
 import com.mallease.user.dal.entity.Admin;
 import com.mallease.user.dal.entity.AdminRoleRelation;
 import com.mallease.user.dal.entity.Member;
+import com.mallease.user.dal.entity.MemberRewardLog;
 import com.mallease.user.dal.entity.Menu;
 import com.mallease.user.dal.entity.Resource;
 import com.mallease.user.dal.entity.Role;
 import com.mallease.user.dal.mapper.AdminDao;
 import com.mallease.user.dal.mapper.AdminRoleRelationDao;
 import com.mallease.user.dal.mapper.MemberDao;
+import com.mallease.user.dal.mapper.MemberRewardLogDao;
 import com.mallease.user.service.menu.MenuService;
 import com.mallease.user.service.resource.ResourceService;
 import com.mallease.user.service.role.RoleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +51,7 @@ public class UserServiceImpl implements UserService {
 
     private final AdminDao adminDao;
     private final MemberDao memberDao;
+    private final MemberRewardLogDao memberRewardLogDao;
     private final TypedRedisService typedRedisService;
     private final AdminRoleRelationDao adminRoleRelationDao;
     private final RoleService roleService;
@@ -253,6 +258,47 @@ public class UserServiceImpl implements UserService {
     @Override
     public Member getMemberByPhone(String phone) {
         return memberDao.selectByPhone(phone);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Member addMemberRewards(Long memberId, MemberRewardReqDTO reqDTO) {
+        if (memberId == null) {
+            throw new ApiException("会员ID不能为空");
+        }
+        if (reqDTO == null) {
+            throw new ApiException("奖励请求不能为空");
+        }
+        if (StrUtil.isBlank(reqDTO.getBusinessType()) || StrUtil.isBlank(reqDTO.getBusinessKey())) {
+            throw new ApiException("奖励业务幂等键不能为空");
+        }
+
+        int integrationDelta = reqDTO.getIntegrationDelta() == null ? 0 : reqDTO.getIntegrationDelta();
+        int growthDelta = reqDTO.getGrowthDelta() == null ? 0 : reqDTO.getGrowthDelta();
+
+        MemberRewardLog rewardLog = new MemberRewardLog();
+        rewardLog.setMemberId(memberId);
+        rewardLog.setBusinessType(reqDTO.getBusinessType());
+        rewardLog.setBusinessKey(reqDTO.getBusinessKey());
+        rewardLog.setIntegrationDelta(integrationDelta);
+        rewardLog.setGrowthDelta(growthDelta);
+        rewardLog.setReason(reqDTO.getReason());
+
+        try {
+            memberRewardLogDao.insert(rewardLog);
+        } catch (DuplicateKeyException e) {
+            Member member = memberDao.selectByPrimaryKey(memberId);
+            if (member == null) {
+                throw new ApiException("会员不存在");
+            }
+            return member;
+        }
+
+        int count = memberDao.incrementRewards(memberId, integrationDelta, growthDelta);
+        if (count != 1) {
+            throw new ApiException("积分不足或会员不存在");
+        }
+        return memberDao.selectByPrimaryKey(memberId);
     }
 
     private void kickoutAdminsAfterCommit(List<Long> adminIds) {

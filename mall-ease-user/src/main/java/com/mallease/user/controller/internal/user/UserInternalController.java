@@ -3,6 +3,7 @@ package com.mallease.user.controller.internal.user;
 import com.mallease.common.api.R;
 import com.mallease.common.dto.remote.AdminDTO;
 import com.mallease.common.dto.remote.MemberDTO;
+import com.mallease.common.dto.remote.MemberRewardReqDTO;
 import com.mallease.common.dto.remote.ResourceDTO;
 import com.mallease.user.convert.AdminConvert;
 import com.mallease.user.convert.MemberConvert;
@@ -87,6 +88,13 @@ public class UserInternalController {
     @GetMapping("/member/internal/phone/{phone}")
     public R<MemberDTO> getMemberByPhone(@Parameter(description = "手机号") @PathVariable String phone) {
         Member member = userService.getMemberByPhone(phone);
+        return R.success(memberConvert.toMemberRemote(member));
+    }
+
+    @Operation(summary = "变更会员积分/成长值", description = "内部调用，按业务键幂等")
+    @PostMapping("/member/internal/{id}/rewards")
+    public R<MemberDTO> addMemberRewards(@Parameter(description = "会员ID") @PathVariable Long id, @RequestBody MemberRewardReqDTO reqDTO) {
+        Member member = userService.addMemberRewards(id, reqDTO);
         return R.success(memberConvert.toMemberRemote(member));
     }
 }

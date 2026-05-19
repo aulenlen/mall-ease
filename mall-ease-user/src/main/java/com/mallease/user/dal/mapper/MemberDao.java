@@ -79,6 +79,13 @@ public interface MemberDao {
     Member selectByPhone(@Param("phone") String phone);
 
     /**
+     * 变更会员积分和成长值。
+     */
+    int incrementRewards(@Param("id") Long id,
+                         @Param("integrationDelta") Integer integrationDelta,
+                         @Param("growthDelta") Integer growthDelta);
+
+    /**
      * 查询所有记录
      *
      * @return 记录列表

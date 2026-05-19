@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mallease.user.dal.mapper.MemberRewardLogDao">
+    <resultMap id="BaseResultMap" type="com.mallease.user.dal.entity.MemberRewardLog">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="member_id" property="memberId" jdbcType="BIGINT"/>
+        <result column="business_type" property="businessType" jdbcType="VARCHAR"/>
+        <result column="business_key" property="businessKey" jdbcType="VARCHAR"/>
+        <result column="integration_delta" property="integrationDelta" jdbcType="INTEGER"/>
+        <result column="growth_delta" property="growthDelta" jdbcType="INTEGER"/>
+        <result column="reason" property="reason" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, member_id, business_type, business_key, integration_delta, growth_delta, reason, create_time
+    </sql>
+
+    <insert id="insert" parameterType="com.mallease.user.dal.entity.MemberRewardLog"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_member_reward_log
+        (member_id, business_type, business_key, integration_delta, growth_delta, reason, create_time)
+        VALUES
+        (#{memberId,jdbcType=BIGINT}, #{businessType,jdbcType=VARCHAR}, #{businessKey,jdbcType=VARCHAR},
+         #{integrationDelta,jdbcType=INTEGER}, #{growthDelta,jdbcType=INTEGER},
+         #{reason,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP})
+    </insert>
+
+    <select id="selectByBusinessKey" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM user_member_reward_log
+        WHERE business_type = #{businessType,jdbcType=VARCHAR}
+          AND business_key = #{businessKey,jdbcType=VARCHAR}
+    </select>
+</mapper>

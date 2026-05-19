@@ -1,5 +1,6 @@
 package com.mallease.user.service.user;
 
+import com.mallease.common.dto.remote.MemberRewardReqDTO;
 import com.mallease.user.dal.entity.*;
 
 import java.util.List;
@@ -103,4 +104,9 @@ public interface UserService {
      * 根据手机号获取会员
      */
     Member getMemberByPhone(String phone);
+
+    /**
+     * 变更会员积分/成长值
+     */
+    Member addMemberRewards(Long memberId, MemberRewardReqDTO reqDTO);
 }

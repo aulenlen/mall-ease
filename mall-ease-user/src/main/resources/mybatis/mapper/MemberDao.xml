@@ -294,4 +294,17 @@
             login_time = #{loginTime,jdbcType=TIMESTAMP}
         where id = #{id,jdbcType=BIGINT}
     </update>
+
+    <update id="incrementRewards">
+        update user_member
+        set integration = IFNULL(integration, 0) + #{integrationDelta,jdbcType=INTEGER},
+            growth = IFNULL(growth, 0) + #{growthDelta,jdbcType=INTEGER},
+            history_integration = IFNULL(history_integration, 0) + GREATEST(#{integrationDelta,jdbcType=INTEGER}, 0),
+            update_time = NOW()
+        where id = #{id,jdbcType=BIGINT}
+          and IFNULL(deleted, 0) = 0
+          and status = 1
+          and IFNULL(integration, 0) + #{integrationDelta,jdbcType=INTEGER} &gt;= 0
+          and IFNULL(growth, 0) + #{growthDelta,jdbcType=INTEGER} &gt;= 0
+    </update>
 </mapper>
