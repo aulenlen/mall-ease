@@ -3,71 +3,47 @@ package com.mallease.content.service.storage;
 import cn.hutool.core.util.StrUtil;
 import com.mallease.common.exception.ApiException;
 import com.mallease.content.config.StorageProperties;
-import com.mallease.content.controller.admin.media.vo.MediaUploadRespVO;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.InputStream;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.UUID;
 
 /**
  * R2 素材存储服务实现
  */
 @Slf4j
 @Service
+@AllArgsConstructor
 public class ObjectStorageServiceImpl implements ObjectStorageService {
-
-    private static final int DEFAULT_URL_EXPIRE_SECONDS = 7 * 24 * 60 * 60;
 
     private final S3Client storageClient;
 
-    private final S3Presigner storagePresigner;
-
     private final StorageProperties storageProperties;
 
-    public ObjectStorageServiceImpl(S3Client storageClient,
-                                    S3Presigner storagePresigner,
-                                    StorageProperties storageProperties) {
-        this.storageClient = storageClient;
-        this.storagePresigner = storagePresigner;
-        this.storageProperties = storageProperties;
-    }
-
     @Override
-    public MediaUploadRespVO uploadFile(MultipartFile file) {
+    public String uploadFile(byte[] bytes, String objectName, String contentType) {
         try {
-            ensureBucketExists();
-            String objectName = generateObjectName(file.getOriginalFilename());
-            try (InputStream inputStream = file.getInputStream()) {
-                storageClient.putObject(
-                        PutObjectRequest.builder()
-                                .bucket(storageProperties.getBucketName())
-                                .key(objectName)
-                                .contentType(file.getContentType())
-                                .build(),
-                        RequestBody.fromInputStream(inputStream, file.getSize())
-                );
+            if (bytes == null || bytes.length == 0) {
+                throw new ApiException("文件不能为空");
             }
-            return MediaUploadRespVO.builder()
-                    .url(buildFileUrl(objectName))
-                    .objectName(objectName)
-                    .build();
+            if (StrUtil.isBlank(objectName)) {
+                throw new ApiException("对象名称不能为空");
+            }
+            ensureBucketExists();
+            PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder()
+                    .bucket(storageProperties.getBucketName())
+                    .key(objectName);
+            if (StrUtil.isNotBlank(contentType)) {
+                requestBuilder.contentType(contentType);
+            }
+            storageClient.putObject(requestBuilder.build(), RequestBody.fromBytes(bytes));
+            return buildFileUrl(objectName);
+        } catch (ApiException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("上传素材失败", ex);
             throw new ApiException("上传素材失败: " + ex.getMessage());
@@ -102,47 +78,6 @@ public class ObjectStorageServiceImpl implements ObjectStorageService {
         } catch (Exception ex) {
             log.error("删除素材失败", ex);
             throw new ApiException("删除素材失败: " + ex.getMessage());
-        }
-    }
-
-    @Override
-    public String getFileUrl(String objectName, Integer expiry) {
-        try {
-            int safeExpiry = expiry == null || expiry <= 0 ? DEFAULT_URL_EXPIRE_SECONDS : expiry;
-            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                    .bucket(storageProperties.getBucketName())
-                    .key(objectName)
-                    .build();
-            PresignedGetObjectRequest presignedRequest = storagePresigner.presignGetObject(
-                    GetObjectPresignRequest.builder()
-                            .signatureDuration(Duration.ofSeconds(safeExpiry))
-                            .getObjectRequest(getObjectRequest)
-                            .build()
-            );
-            return presignedRequest.url().toString();
-        } catch (Exception ex) {
-            log.error("获取素材访问 URL 失败", ex);
-            throw new ApiException("获取素材访问URL失败: " + ex.getMessage());
-        }
-    }
-
-    @Override
-    public String getFileUrl(String objectName) {
-        return getFileUrl(objectName, null);
-    }
-
-    @Override
-    public boolean fileExists(String objectName) {
-        try {
-            storageClient.headObject(
-                    HeadObjectRequest.builder()
-                            .bucket(storageProperties.getBucketName())
-                            .key(objectName)
-                            .build()
-            );
-            return true;
-        } catch (Exception ex) {
-            return false;
         }
     }
 
@@ -196,14 +131,4 @@ public class ObjectStorageServiceImpl implements ObjectStorageService {
                 + objectName;
     }
 
-    private String generateObjectName(String originalFilename) {
-        String extension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        }
-
-        String datePath = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
-        String fileName = UUID.randomUUID().toString().replace("-", "") + extension;
-        return "media/" + datePath + "/" + fileName;
-    }
 }
