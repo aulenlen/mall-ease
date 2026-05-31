@@ -2,6 +2,7 @@
 -- Time: 2026-05-31 22:43:00
 -- Database: mall-ease
 
+CREATE DATABASE IF NOT EXISTS `mall-ease`;
 USE `mall-ease`;
 
 SET FOREIGN_KEY_CHECKS=0;

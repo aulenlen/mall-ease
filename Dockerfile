@@ -83,7 +83,7 @@ ENV GATEWAY_PORT=7860
 ENV NACOS_SERVER_ADDR=127.0.0.1:8848
 ENV NACOS_NAMESPACE=public
 ENV NACOS_GROUP=DEFAULT_GROUP
-ENV DB_URL="jdbc:mysql://127.0.0.1:3306/mall_ease?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
+ENV DB_URL="jdbc:mysql://127.0.0.1:3306/mall-ease?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
 ENV DB_USERNAME=mall
 ENV DB_PASSWORD=mall_ease_demo
 ENV REDIS_HOST=127.0.0.1
