@@ -1,3 +1,8 @@
+---
+title: Mall Ease Demo
+sdk: docker
+app_port: 7860
+---
 # Mall-Ease 商城项目
 
 ## 项目简介
