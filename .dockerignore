@@ -1,0 +1,13 @@
+.git
+.idea
+.vscode
+**/target
+**/.mvn/wrapper/maven-wrapper.jar
+*.log
+*.tmp
+*.tar
+*.zip
+node_modules
+dist
+build
+.env
