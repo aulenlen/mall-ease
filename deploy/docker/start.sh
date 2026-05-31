@@ -9,7 +9,7 @@ if [ ! -d /var/lib/mysql/mysql ]; then
   mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql
 fi
 
-mysqld_safe --datadir=/var/lib/mysql --bind-address=127.0.0.1 > /var/log/mall-ease/mysql-init.log 2>&1 &
+mysqld_safe --datadir=/var/lib/mysql --bind-address=127.0.0.1 --sql-mode=NO_ENGINE_SUBSTITUTION > /var/log/mall-ease/mysql-init.log 2>&1 &
 
 for i in $(seq 1 90); do
   if mysqladmin ping --silent; then
